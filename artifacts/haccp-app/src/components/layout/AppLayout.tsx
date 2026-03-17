@@ -7,7 +7,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <div className="flex flex-1 max-w-[1600px] mx-auto w-full">
+      <div className="flex flex-1 w-full">
         <Sidebar />
         <main className="flex-1 overflow-x-hidden relative">
           <motion.div
