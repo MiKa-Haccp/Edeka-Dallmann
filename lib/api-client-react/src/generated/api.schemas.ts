@@ -191,6 +191,89 @@ export interface UpsertMarketInfo {
   plzOrt?: string | null;
 }
 
+export interface TrainingTopic {
+  id: number;
+  title: string;
+  responsible?: string | null;
+  trainingMaterial?: string | null;
+  sortOrder: number;
+  isDefault: boolean;
+}
+
+export interface TrainingSession {
+  id: number;
+  tenantId: number;
+  marketId: number;
+  sessionDate: string;
+  trainerId?: number | null;
+  trainerName?: string | null;
+  notes?: string | null;
+  attendanceCount: number;
+  topicCount: number;
+  createdAt: string;
+}
+
+export interface TrainingSessionTopicItem {
+  id: number;
+  topicId: number;
+  title: string;
+  customTitle?: string | null;
+  responsible?: string | null;
+  trainingMaterial?: string | null;
+  checked: boolean;
+}
+
+export interface TrainingAttendance {
+  id: number;
+  sessionId: number;
+  userId: number;
+  initials: string;
+  userName: string;
+  confirmedAt: string;
+}
+
+export interface TrainingSessionDetail {
+  id: number;
+  tenantId: number;
+  marketId: number;
+  sessionDate: string;
+  trainerId?: number | null;
+  trainerName?: string | null;
+  notes?: string | null;
+  topics: TrainingSessionTopicItem[];
+  attendances: TrainingAttendance[];
+  createdAt: string;
+}
+
+export interface CreateTrainingSession {
+  tenantId: number;
+  sessionDate: string;
+  trainerId?: number | null;
+  trainerName?: string | null;
+  notes?: string | null;
+  topicIds: number[];
+  customTopicTitle?: string | null;
+}
+
+export type UpdateTrainingSessionTopicsItem = {
+  topicId: number;
+  checked: boolean;
+  customTitle?: string | null;
+};
+
+export interface UpdateTrainingSession {
+  sessionDate?: string;
+  trainerId?: number | null;
+  trainerName?: string | null;
+  notes?: string | null;
+  topics?: UpdateTrainingSessionTopicsItem[];
+}
+
+export interface AddTrainingAttendance {
+  initials: string;
+  pin: string;
+}
+
 export type ListMarketsParams = {
   tenantId?: number;
 };
@@ -236,6 +319,10 @@ export type VerifyPin200 = {
 export type ResetUserCredentialsBody = {
   initials: string;
   pin: string;
+};
+
+export type ListTrainingSessionsParams = {
+  year?: number;
 };
 
 export type ListResponsibilitiesParams = {

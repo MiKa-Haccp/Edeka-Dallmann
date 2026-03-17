@@ -12,6 +12,7 @@ import adminAuthRouter from "./admin-auth";
 import permissionsRouter from "./permissions";
 import seedRouter from "./seed";
 import responsibilitiesRouter from "./responsibilities";
+import trainingRouter from "./training";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(adminAuthRouter);
 router.use(permissionsRouter);
 router.use(seedRouter);
 router.use(responsibilitiesRouter);
+router.use(trainingRouter);
 
 export default router;

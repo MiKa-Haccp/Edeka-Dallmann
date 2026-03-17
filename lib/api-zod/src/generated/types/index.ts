@@ -6,9 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./addTrainingAttendance";
 export * from "./category";
 export * from "./createFormEntry";
 export * from "./createFormInstance";
+export * from "./createTrainingSession";
 export * from "./formDefinition";
 export * from "./formDefinitionFieldType";
 export * from "./formEntry";
@@ -19,6 +21,7 @@ export * from "./healthStatus";
 export * from "./listFormInstancesParams";
 export * from "./listMarketsParams";
 export * from "./listResponsibilitiesParams";
+export * from "./listTrainingSessionsParams";
 export * from "./listUsersParams";
 export * from "./market";
 export * from "./marketInfoResponse";
@@ -31,6 +34,13 @@ export * from "./seedData200";
 export * from "./suggestInitials200";
 export * from "./suggestInitialsBody";
 export * from "./tenant";
+export * from "./trainingAttendance";
+export * from "./trainingSession";
+export * from "./trainingSessionDetail";
+export * from "./trainingSessionTopicItem";
+export * from "./trainingTopic";
+export * from "./updateTrainingSession";
+export * from "./updateTrainingSessionTopicsItem";
 export * from "./upsertMarketInfo";
 export * from "./upsertResponsibilities";
 export * from "./upsertResponsibilitiesItemsItem";

@@ -12,6 +12,7 @@ import UserRegistry from "./pages/UserRegistry";
 import AdminLogin from "./pages/AdminLogin";
 import AdminRegister from "./pages/AdminRegister";
 import AdminUserManagement from "./pages/AdminUserManagement";
+import TrainingRecords from "./pages/TrainingRecords";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -31,6 +32,7 @@ function Router() {
       <Route path="/section/:sectionId" component={SectionDetail} />
       <Route path="/responsibilities" component={Responsibilities} />
       <Route path="/user-registry" component={UserRegistry} />
+      <Route path="/training-records" component={TrainingRecords} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/register" component={AdminRegister} />
       <Route path="/admin/users" component={AdminUserManagement} />

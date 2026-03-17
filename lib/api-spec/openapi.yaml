@@ -389,6 +389,169 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
 
+  /training-topics:
+    get:
+      operationId: listTrainingTopics
+      tags: [training]
+      summary: List all default training topics
+      responses:
+        "200":
+          description: List of training topics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrainingTopic"
+
+  /markets/{marketId}/training-sessions:
+    get:
+      operationId: listTrainingSessions
+      tags: [training]
+      summary: List training sessions for a market
+      parameters:
+        - name: marketId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of training sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrainingSession"
+    post:
+      operationId: createTrainingSession
+      tags: [training]
+      summary: Create a new training session
+      parameters:
+        - name: marketId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTrainingSession"
+      responses:
+        "201":
+          description: Created training session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingSession"
+
+  /training-sessions/{sessionId}:
+    get:
+      operationId: getTrainingSession
+      tags: [training]
+      summary: Get a training session with details
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Training session with topics and attendances
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingSessionDetail"
+    put:
+      operationId: updateTrainingSession
+      tags: [training]
+      summary: Update a training session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTrainingSession"
+      responses:
+        "200":
+          description: Updated training session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingSessionDetail"
+    delete:
+      operationId: deleteTrainingSession
+      tags: [training]
+      summary: Delete a training session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /training-sessions/{sessionId}/attendance:
+    post:
+      operationId: addTrainingAttendance
+      tags: [training]
+      summary: Add attendance to a training session (user confirms with initials)
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddTrainingAttendance"
+      responses:
+        "201":
+          description: Attendance added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingAttendance"
+
+  /training-sessions/{sessionId}/attendance/{attendanceId}:
+    delete:
+      operationId: removeTrainingAttendance
+      tags: [training]
+      summary: Remove attendance from a training session
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: attendanceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Attendance removed
+
   /markets/{marketId}/responsibilities:
     get:
       operationId: listResponsibilities
@@ -928,3 +1091,225 @@ components:
           nullable: true
       required:
         - year
+
+    TrainingTopic:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        responsible:
+          type: string
+          nullable: true
+        trainingMaterial:
+          type: string
+          nullable: true
+        sortOrder:
+          type: integer
+        isDefault:
+          type: boolean
+      required:
+        - id
+        - title
+        - sortOrder
+        - isDefault
+
+    TrainingSession:
+      type: object
+      properties:
+        id:
+          type: integer
+        tenantId:
+          type: integer
+        marketId:
+          type: integer
+        sessionDate:
+          type: string
+          format: date
+        trainerId:
+          type: integer
+          nullable: true
+        trainerName:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        attendanceCount:
+          type: integer
+        topicCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - tenantId
+        - marketId
+        - sessionDate
+        - attendanceCount
+        - topicCount
+        - createdAt
+
+    TrainingSessionDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+        tenantId:
+          type: integer
+        marketId:
+          type: integer
+        sessionDate:
+          type: string
+          format: date
+        trainerId:
+          type: integer
+          nullable: true
+        trainerName:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        topics:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrainingSessionTopicItem"
+        attendances:
+          type: array
+          items:
+            $ref: "#/components/schemas/TrainingAttendance"
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - tenantId
+        - marketId
+        - sessionDate
+        - topics
+        - attendances
+        - createdAt
+
+    TrainingSessionTopicItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        topicId:
+          type: integer
+        title:
+          type: string
+        customTitle:
+          type: string
+          nullable: true
+        responsible:
+          type: string
+          nullable: true
+        trainingMaterial:
+          type: string
+          nullable: true
+        checked:
+          type: boolean
+      required:
+        - id
+        - topicId
+        - title
+        - checked
+
+    TrainingAttendance:
+      type: object
+      properties:
+        id:
+          type: integer
+        sessionId:
+          type: integer
+        userId:
+          type: integer
+        initials:
+          type: string
+        userName:
+          type: string
+        confirmedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sessionId
+        - userId
+        - initials
+        - userName
+        - confirmedAt
+
+    CreateTrainingSession:
+      type: object
+      properties:
+        tenantId:
+          type: integer
+        sessionDate:
+          type: string
+          format: date
+        trainerId:
+          type: integer
+          nullable: true
+        trainerName:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        topicIds:
+          type: array
+          items:
+            type: integer
+        customTopicTitle:
+          type: string
+          nullable: true
+      required:
+        - tenantId
+        - sessionDate
+        - topicIds
+
+    UpdateTrainingSession:
+      type: object
+      properties:
+        sessionDate:
+          type: string
+          format: date
+        trainerId:
+          type: integer
+          nullable: true
+        trainerName:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        topics:
+          type: array
+          items:
+            type: object
+            properties:
+              topicId:
+                type: integer
+              checked:
+                type: boolean
+              customTitle:
+                type: string
+                nullable: true
+            required:
+              - topicId
+              - checked
+
+    AddTrainingAttendance:
+      type: object
+      properties:
+        initials:
+          type: string
+        pin:
+          type: string
+      required:
+        - initials
+        - pin

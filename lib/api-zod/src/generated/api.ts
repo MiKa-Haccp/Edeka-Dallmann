@@ -262,6 +262,186 @@ export const ResetUserCredentialsResponse = zod.object({
 });
 
 /**
+ * @summary List all default training topics
+ */
+export const ListTrainingTopicsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  responsible: zod.string().nullish(),
+  trainingMaterial: zod.string().nullish(),
+  sortOrder: zod.number(),
+  isDefault: zod.boolean(),
+});
+export const ListTrainingTopicsResponse = zod.array(
+  ListTrainingTopicsResponseItem,
+);
+
+/**
+ * @summary List training sessions for a market
+ */
+export const ListTrainingSessionsParams = zod.object({
+  marketId: zod.coerce.number(),
+});
+
+export const ListTrainingSessionsQueryParams = zod.object({
+  year: zod.coerce.number().optional(),
+});
+
+export const ListTrainingSessionsResponseItem = zod.object({
+  id: zod.number(),
+  tenantId: zod.number(),
+  marketId: zod.number(),
+  sessionDate: zod.date(),
+  trainerId: zod.number().nullish(),
+  trainerName: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  attendanceCount: zod.number(),
+  topicCount: zod.number(),
+  createdAt: zod.date(),
+});
+export const ListTrainingSessionsResponse = zod.array(
+  ListTrainingSessionsResponseItem,
+);
+
+/**
+ * @summary Create a new training session
+ */
+export const CreateTrainingSessionParams = zod.object({
+  marketId: zod.coerce.number(),
+});
+
+export const CreateTrainingSessionBody = zod.object({
+  tenantId: zod.number(),
+  sessionDate: zod.date(),
+  trainerId: zod.number().nullish(),
+  trainerName: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  topicIds: zod.array(zod.number()),
+  customTopicTitle: zod.string().nullish(),
+});
+
+/**
+ * @summary Get a training session with details
+ */
+export const GetTrainingSessionParams = zod.object({
+  sessionId: zod.coerce.number(),
+});
+
+export const GetTrainingSessionResponse = zod.object({
+  id: zod.number(),
+  tenantId: zod.number(),
+  marketId: zod.number(),
+  sessionDate: zod.date(),
+  trainerId: zod.number().nullish(),
+  trainerName: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  topics: zod.array(
+    zod.object({
+      id: zod.number(),
+      topicId: zod.number(),
+      title: zod.string(),
+      customTitle: zod.string().nullish(),
+      responsible: zod.string().nullish(),
+      trainingMaterial: zod.string().nullish(),
+      checked: zod.boolean(),
+    }),
+  ),
+  attendances: zod.array(
+    zod.object({
+      id: zod.number(),
+      sessionId: zod.number(),
+      userId: zod.number(),
+      initials: zod.string(),
+      userName: zod.string(),
+      confirmedAt: zod.date(),
+    }),
+  ),
+  createdAt: zod.date(),
+});
+
+/**
+ * @summary Update a training session
+ */
+export const UpdateTrainingSessionParams = zod.object({
+  sessionId: zod.coerce.number(),
+});
+
+export const UpdateTrainingSessionBody = zod.object({
+  sessionDate: zod.date().optional(),
+  trainerId: zod.number().nullish(),
+  trainerName: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  topics: zod
+    .array(
+      zod.object({
+        topicId: zod.number(),
+        checked: zod.boolean(),
+        customTitle: zod.string().nullish(),
+      }),
+    )
+    .optional(),
+});
+
+export const UpdateTrainingSessionResponse = zod.object({
+  id: zod.number(),
+  tenantId: zod.number(),
+  marketId: zod.number(),
+  sessionDate: zod.date(),
+  trainerId: zod.number().nullish(),
+  trainerName: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  topics: zod.array(
+    zod.object({
+      id: zod.number(),
+      topicId: zod.number(),
+      title: zod.string(),
+      customTitle: zod.string().nullish(),
+      responsible: zod.string().nullish(),
+      trainingMaterial: zod.string().nullish(),
+      checked: zod.boolean(),
+    }),
+  ),
+  attendances: zod.array(
+    zod.object({
+      id: zod.number(),
+      sessionId: zod.number(),
+      userId: zod.number(),
+      initials: zod.string(),
+      userName: zod.string(),
+      confirmedAt: zod.date(),
+    }),
+  ),
+  createdAt: zod.date(),
+});
+
+/**
+ * @summary Delete a training session
+ */
+export const DeleteTrainingSessionParams = zod.object({
+  sessionId: zod.coerce.number(),
+});
+
+/**
+ * @summary Add attendance to a training session (user confirms with initials)
+ */
+export const AddTrainingAttendanceParams = zod.object({
+  sessionId: zod.coerce.number(),
+});
+
+export const AddTrainingAttendanceBody = zod.object({
+  initials: zod.string(),
+  pin: zod.string(),
+});
+
+/**
+ * @summary Remove attendance from a training session
+ */
+export const RemoveTrainingAttendanceParams = zod.object({
+  sessionId: zod.coerce.number(),
+  attendanceId: zod.coerce.number(),
+});
+
+/**
  * @summary List responsibilities for a market
  */
 export const ListResponsibilitiesParams = zod.object({
