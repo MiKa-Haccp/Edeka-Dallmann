@@ -1,7 +1,7 @@
 import { useListCategories, useListSections } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import * as Accordion from "@radix-ui/react-accordion";
-import { ChevronDown, Folder, FileText, ClipboardList, GripVertical } from "lucide-react";
+import { ChevronDown, Folder, FileText, ClipboardList, GripVertical, X } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useState, useCallback, useEffect, useRef } from "react";
@@ -15,7 +15,7 @@ const MAX_WIDTH = 500;
 const DEFAULT_WIDTH = 288;
 const STORAGE_KEY = "haccp-sidebar-width";
 
-function CategorySections({ categoryId }: { categoryId: number }) {
+function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNavigate?: () => void }) {
   const { data: sections, isLoading } = useListSections(categoryId);
   const [location] = useLocation();
 
@@ -31,6 +31,7 @@ function CategorySections({ categoryId }: { categoryId: number }) {
           <Link
             key={section.id}
             href={href}
+            onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 px-4 py-2 text-sm rounded-lg transition-all duration-200 group",
               isActive 
@@ -47,8 +48,103 @@ function CategorySections({ categoryId }: { categoryId: number }) {
   );
 }
 
-export function Sidebar() {
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { data: categories, isLoading } = useListCategories();
+
+  return (
+    <>
+      <div className="p-4">
+        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 px-2">
+          HACCP Handbuch
+        </div>
+        
+        {isLoading ? (
+          <div className="px-2 space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="animate-pulse flex gap-3 items-center">
+                <div className="w-5 h-5 bg-muted rounded"></div>
+                <div className="h-4 bg-muted rounded flex-1"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Accordion.Root type="multiple" className="space-y-2">
+            {categories?.map((category) => (
+              <Accordion.Item 
+                key={category.id} 
+                value={category.id.toString()}
+                className="border border-transparent focus-within:border-border rounded-xl overflow-hidden"
+              >
+                <Accordion.Header>
+                  <Accordion.Trigger className="flex items-center justify-between w-full px-3 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary rounded-lg transition-colors group [&[data-state=open]>div>svg]:rotate-180">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors flex-shrink-0">
+                        <Folder className="h-4 w-4" />
+                      </div>
+                      <span className="truncate">{category.label}</span>
+                    </div>
+                    <div className="text-muted-foreground transition-transform duration-200 flex-shrink-0">
+                      <ChevronDown className="h-4 w-4" />
+                    </div>
+                  </Accordion.Trigger>
+                </Accordion.Header>
+                <Accordion.Content className="overflow-hidden text-sm data-[state=closed]:animate-slideUp data-[state=open]:animate-slideDown pl-3">
+                  <div className="ml-4 border-l border-border/60 pl-2 my-1">
+                    <CategorySections categoryId={category.id} onNavigate={onNavigate} />
+                  </div>
+                </Accordion.Content>
+              </Accordion.Item>
+            ))}
+          </Accordion.Root>
+        )}
+      </div>
+
+      <div className="mt-auto p-4 border-t border-border/60">
+        <Link
+          href="/"
+          onClick={onNavigate}
+          className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors"
+        >
+          <ClipboardList className="h-4 w-4" />
+          Aufgaben Übersicht
+        </Link>
+      </div>
+    </>
+  );
+}
+
+export function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 lg:hidden">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <aside className="absolute left-0 top-0 bottom-0 w-[min(320px,85vw)] bg-white shadow-2xl flex flex-col overflow-y-auto animate-in slide-in-from-left duration-200">
+        <div className="flex items-center justify-between p-4 border-b border-border/60">
+          <span className="text-sm font-bold text-foreground">Navigation</span>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <SidebarContent onNavigate={onClose} />
+      </aside>
+    </div>
+  );
+}
+
+export function Sidebar() {
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Number(saved))) : DEFAULT_WIDTH;
@@ -95,62 +191,11 @@ export function Sidebar() {
   return (
     <aside
       ref={sidebarRef}
-      className="flex-shrink-0 bg-white border-r border-border/60 flex h-[calc(100vh-4rem)] sticky top-16 relative"
+      className="hidden lg:flex flex-shrink-0 bg-white border-r border-border/60 h-[calc(100vh-4rem)] sticky top-16 relative"
       style={{ width }}
     >
       <div className="flex-1 flex flex-col overflow-y-auto haccp-table-container">
-        <div className="p-4">
-          <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 px-2">
-            HACCP Handbuch
-          </div>
-          
-          {isLoading ? (
-            <div className="px-2 space-y-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="animate-pulse flex gap-3 items-center">
-                  <div className="w-5 h-5 bg-muted rounded"></div>
-                  <div className="h-4 bg-muted rounded flex-1"></div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <Accordion.Root type="multiple" className="space-y-2">
-              {categories?.map((category) => (
-                <Accordion.Item 
-                  key={category.id} 
-                  value={category.id.toString()}
-                  className="border border-transparent focus-within:border-border rounded-xl overflow-hidden"
-                >
-                  <Accordion.Header>
-                    <Accordion.Trigger className="flex items-center justify-between w-full px-3 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary rounded-lg transition-colors group [&[data-state=open]>div>svg]:rotate-180">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors flex-shrink-0">
-                          <Folder className="h-4 w-4" />
-                        </div>
-                        <span className="truncate">{category.label}</span>
-                      </div>
-                      <div className="text-muted-foreground transition-transform duration-200 flex-shrink-0">
-                        <ChevronDown className="h-4 w-4" />
-                      </div>
-                    </Accordion.Trigger>
-                  </Accordion.Header>
-                  <Accordion.Content className="overflow-hidden text-sm data-[state=closed]:animate-slideUp data-[state=open]:animate-slideDown pl-3">
-                    <div className="ml-4 border-l border-border/60 pl-2 my-1">
-                      <CategorySections categoryId={category.id} />
-                    </div>
-                  </Accordion.Content>
-                </Accordion.Item>
-              ))}
-            </Accordion.Root>
-          )}
-        </div>
-
-        <div className="mt-auto p-4 border-t border-border/60">
-          <Link href="/" className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary rounded-lg transition-colors">
-            <ClipboardList className="h-4 w-4" />
-            Aufgaben Übersicht
-          </Link>
-        </div>
+        <SidebarContent />
       </div>
 
       <div

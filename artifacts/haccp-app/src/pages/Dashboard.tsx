@@ -10,28 +10,27 @@ export default function Dashboard() {
     <AppLayout>
       <div className="max-w-5xl mx-auto space-y-8">
         
-        {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-3xl bg-white border border-border shadow-sm p-8 md:p-12">
-          <div className="absolute top-0 right-0 -mr-20 -mt-20 opacity-10 pointer-events-none">
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white border border-border shadow-sm p-5 sm:p-8 md:p-12">
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 opacity-10 pointer-events-none hidden sm:block">
              <ShieldCheck className="w-96 h-96 text-primary" />
           </div>
           <div className="relative z-10 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider mb-4 sm:mb-6">
               <Activity className="w-4 h-4" /> System Status: Online
             </div>
-            <h1 className="text-4xl md:text-5xl font-display font-bold text-foreground mb-4">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-display font-bold text-foreground mb-3 sm:mb-4">
               Guten Morgen,<br/>
               <span className="text-primary">Ihre HACCP Übersicht.</span>
             </h1>
-            <p className="text-lg text-muted-foreground mb-8">
+            <p className="text-sm sm:text-lg text-muted-foreground">
               Verwalten Sie alle Kontrollpunkte, Reinigungsprotokolle und Temperaturmessungen zentral. Wählen Sie einen Bereich, um fortzufahren.
             </p>
           </div>
         </div>
 
         {/* Quick Stats (Mocked for dashboard feel) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-card p-6 rounded-2xl border border-border shadow-sm shadow-black/5 flex items-start gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
+          <div className="bg-card p-4 sm:p-6 rounded-2xl border border-border shadow-sm shadow-black/5 flex items-start gap-3 sm:gap-4">
             <div className="p-3 bg-green-500/10 text-green-600 rounded-xl">
               <FileCheck className="w-6 h-6" />
             </div>
@@ -41,7 +40,7 @@ export default function Dashboard() {
               <p className="text-xs text-green-600 font-medium mt-1">Dieser Monat</p>
             </div>
           </div>
-          <div className="bg-card p-6 rounded-2xl border border-border shadow-sm shadow-black/5 flex items-start gap-4">
+          <div className="bg-card p-4 sm:p-6 rounded-2xl border border-border shadow-sm shadow-black/5 flex items-start gap-3 sm:gap-4">
             <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl">
               <AlertCircle className="w-6 h-6" />
             </div>
@@ -51,7 +50,7 @@ export default function Dashboard() {
               <p className="text-xs text-amber-600 font-medium mt-1">Aktion erforderlich</p>
             </div>
           </div>
-          <div className="bg-card p-6 rounded-2xl border border-border shadow-sm shadow-black/5 flex items-start gap-4">
+          <div className="bg-card p-4 sm:p-6 rounded-2xl border border-border shadow-sm shadow-black/5 flex items-start gap-3 sm:gap-4">
             <div className="p-3 bg-destructive/10 text-destructive rounded-xl">
               <Activity className="w-6 h-6" />
             </div>
@@ -63,11 +62,10 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Categories Grid */}
         <div className="space-y-4">
-          <h2 className="text-2xl font-display font-bold text-foreground">HACCP Bereiche</h2>
+          <h2 className="text-xl sm:text-2xl font-display font-bold text-foreground">HACCP Bereiche</h2>
           
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {isLoading ? (
               [1,2,3].map(i => <div key={i} className="h-48 rounded-2xl bg-white border border-border animate-pulse" />)
             ) : categories?.map((cat) => (
