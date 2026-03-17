@@ -13,6 +13,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminRegister from "./pages/AdminRegister";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import TrainingRecords from "./pages/TrainingRecords";
+import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,13 +42,20 @@ function Router() {
   );
 }
 
+function AutoLogoutWrapper({ children }: { children: React.ReactNode }) {
+  useAutoLogout();
+  return <>{children}</>;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
+        <AutoLogoutWrapper>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+        </AutoLogoutWrapper>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
