@@ -9,7 +9,7 @@ import { eq, and, ilike } from "drizzle-orm";
 const router: IRouter = Router();
 
 function stripSensitive(user: any) {
-  const { pin, ...safe } = user;
+  const { pin, password, ...safe } = user;
   return safe;
 }
 

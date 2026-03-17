@@ -62,13 +62,17 @@ artifacts-monorepo/
 - **User Registration** (Section 1.2): Employees register with first name, last name, birth date → system suggests unique 2-3 letter initials → employee sets a 4-digit PIN
 - **PIN Verification on HACCP entries**: Before saving any form entry, the user must enter their Kürzel + 4-digit PIN which is verified against the database
 - **Admin PIN/Kürzel Reset**: Only admins can reset a user's initials and PIN
+- **Admin Authentication**: Invite-only admin registration with scrypt password hashing. SUPERADMIN seeded (admin@haccp.de / admin1234). Admin session stored in Zustand with localStorage persistence.
+- **Access Control on User Registry**: Non-admins see only Kürzel/Role/Date columns; admins see full names, birth dates, reset actions, and can invite new admins.
 - Monthly form instances with daily entries
 - Sidebar section 1.1 → Responsibilities page, section 1.2 → User Registry page
 
 ## Custom Pages
 
 - `/responsibilities` — Section 1.1: Verantwortlichkeiten (market info, department responsibilities)
-- `/user-registry` — Section 1.2: Kürzelliste (user registration form + registered user list with admin reset)
+- `/user-registry` — Section 1.2: Kürzelliste (user registration form + registered user list with admin reset + admin invite section)
+- `/admin/login` — Admin login page (email + password)
+- `/admin/register` — Admin registration via invitation token
 
 ## API Endpoints
 
@@ -88,6 +92,11 @@ All endpoints are prefixed with `/api`:
 - `POST /users/suggest-initials` - Suggest unique initials for a name
 - `POST /users/verify-pin` - Verify user initials + PIN
 - `PUT /users/:userId/reset` - Admin reset of initials/PIN
+- `POST /admin/invite` - Create admin invitation (requires adminEmail)
+- `GET /admin/invite/:token` - Validate invitation token
+- `POST /admin/register` - Register as admin via invitation
+- `POST /admin/login` - Admin login (email + password)
+- `GET /admin/list-invitations` - List invitations for tenant
 - `POST /seed` - Seed initial data
 
 ## TypeScript & Composite Projects

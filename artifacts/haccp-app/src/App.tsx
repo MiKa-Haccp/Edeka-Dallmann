@@ -4,12 +4,13 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 
-// Page Imports
 import Dashboard from "./pages/Dashboard";
 import SectionDetail from "./pages/SectionDetail";
 import CategoryView from "./pages/CategoryView";
 import Responsibilities from "./pages/Responsibilities";
 import UserRegistry from "./pages/UserRegistry";
+import AdminLogin from "./pages/AdminLogin";
+import AdminRegister from "./pages/AdminRegister";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,6 +30,8 @@ function Router() {
       <Route path="/section/:sectionId" component={SectionDetail} />
       <Route path="/responsibilities" component={Responsibilities} />
       <Route path="/user-registry" component={UserRegistry} />
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/register" component={AdminRegister} />
       <Route component={NotFound} />
     </Switch>
   );
