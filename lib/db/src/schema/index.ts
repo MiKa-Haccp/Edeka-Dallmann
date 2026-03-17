@@ -8,3 +8,4 @@ export * from "./formEntries";
 export * from "./users";
 export * from "./responsibilities";
 export * from "./adminInvitations";
+export * from "./userPermissions";

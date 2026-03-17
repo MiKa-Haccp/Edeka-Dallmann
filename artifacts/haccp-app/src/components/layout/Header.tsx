@@ -1,6 +1,6 @@
 import { useListMarkets } from "@workspace/api-client-react";
 import { useAppStore } from "@/store/use-app-store";
-import { MapPin, ShieldCheck, User as UserIcon, Bell, LogIn, LogOut, Shield } from "lucide-react";
+import { MapPin, ShieldCheck, User as UserIcon, Bell, LogIn, LogOut, Shield, Settings } from "lucide-react";
 import { useEffect } from "react";
 import { Link, useLocation } from "wouter";
 
@@ -79,6 +79,15 @@ export function Header() {
                   {adminSession.role}
                 </span>
               </div>
+              {(adminSession.role === "SUPERADMIN") && (
+                <button
+                  onClick={() => navigate("/admin/users")}
+                  className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-full transition-colors"
+                  title="Benutzerverwaltung"
+                >
+                  <Settings className="h-4 w-4" />
+                </button>
+              )}
               <button
                 onClick={() => {
                   setAdminSession(null);

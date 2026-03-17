@@ -9,6 +9,7 @@ import formInstancesRouter from "./formInstances";
 import formEntriesRouter from "./formEntries";
 import usersRouter from "./users";
 import adminAuthRouter from "./admin-auth";
+import permissionsRouter from "./permissions";
 import seedRouter from "./seed";
 import responsibilitiesRouter from "./responsibilities";
 
@@ -24,6 +25,7 @@ router.use(formInstancesRouter);
 router.use(formEntriesRouter);
 router.use(usersRouter);
 router.use(adminAuthRouter);
+router.use(permissionsRouter);
 router.use(seedRouter);
 router.use(responsibilitiesRouter);
 

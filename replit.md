@@ -64,6 +64,9 @@ artifacts-monorepo/
 - **Admin PIN/Kürzel Reset**: Only admins can reset a user's initials and PIN
 - **Admin Authentication**: Invite-only admin registration with scrypt password hashing. SUPERADMIN seeded (admin@haccp.de / admin1234). Admin session stored in Zustand with localStorage persistence.
 - **Access Control on User Registry**: Non-admins see only Kürzel/Role/Date columns; admins see full names, birth dates, reset actions, and can invite new admins.
+- **4-Level Role System**: SUPERADMIN (full access), ADMIN (cross-market), MARKTLEITER (assigned markets only), USER (own entries only)
+- **Granular Permissions**: Per-user permission checkboxes (users.view, users.manage, entries.create, entries.view_all, entries.edit, entries.delete, reports.view, reports.export, settings.manage) manageable by SUPERADMINs
+- **Market Assignments**: Marktleiter can be assigned to specific markets (Leeder, Buching, MOD)
 - Monthly form instances with daily entries
 - Sidebar section 1.1 → Responsibilities page, section 1.2 → User Registry page
 
@@ -73,6 +76,21 @@ artifacts-monorepo/
 - `/user-registry` — Section 1.2: Kürzelliste (user registration form + registered user list with admin reset + admin invite section)
 - `/admin/login` — Admin login page (email + password)
 - `/admin/register` — Admin registration via invitation token
+- `/admin/users` — Benutzerverwaltung: Role management, permission checkboxes, market assignments (SUPERADMIN only)
+
+## Role Hierarchy
+
+| Role | Access | Example |
+|------|--------|---------|
+| SUPERADMIN | All functions, all markets, system settings | Michael Dallmann, Kai Martin |
+| ADMIN | All markets, user management, reports | Sonja Wörishofer, Marina Kienle |
+| MARKTLEITER | Assigned markets only, team entries, checklists | Marktleiter, Stellvertretung |
+| USER | Own HACCP entries only (Kürzel + PIN) | All other employees |
+
+## Database Schema (Permissions)
+
+- **user_permissions** — Per-user permission flags (permissionType, resourceType, resourceId, granted)
+- **user_market_assignments** — Links Marktleiter to specific markets
 
 ## API Endpoints
 
@@ -97,6 +115,10 @@ All endpoints are prefixed with `/api`:
 - `POST /admin/register` - Register as admin via invitation
 - `POST /admin/login` - Admin login (email + password)
 - `GET /admin/list-invitations` - List invitations for tenant
+- `GET /permissions/areas` - List all permission areas, roles, and defaults
+- `GET /permissions/user/:userId` - Get user's permissions and market assignments
+- `PUT /permissions/user/:userId` - Update user's permissions and market assignments
+- `PUT /permissions/user/:userId/role` - Change user's role (sets default permissions)
 - `POST /seed` - Seed initial data
 
 ## TypeScript & Composite Projects
