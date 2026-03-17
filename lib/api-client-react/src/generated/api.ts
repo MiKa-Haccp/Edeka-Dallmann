@@ -1183,7 +1183,7 @@ export const useSuggestInitials = <
 };
 
 /**
- * @summary Verify user initials and PIN
+ * @summary Verify user PIN (identifies user automatically)
  */
 export const getVerifyPinUrl = () => {
   return `/api/users/verify-pin`;
@@ -1246,7 +1246,7 @@ export type VerifyPinMutationBody = BodyType<VerifyPinBody>;
 export type VerifyPinMutationError = ErrorType<unknown>;
 
 /**
- * @summary Verify user initials and PIN
+ * @summary Verify user PIN (identifies user automatically)
  */
 export const useVerifyPin = <
   TError = ErrorType<unknown>,

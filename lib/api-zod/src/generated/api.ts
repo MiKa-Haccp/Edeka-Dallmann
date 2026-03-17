@@ -220,10 +220,10 @@ export const SuggestInitialsResponse = zod.object({
 });
 
 /**
- * @summary Verify user initials and PIN
+ * @summary Verify user PIN (identifies user automatically)
  */
 export const VerifyPinBody = zod.object({
-  initials: zod.string(),
+  initials: zod.string().optional(),
   pin: zod.string(),
   tenantId: zod.number(),
 });
@@ -232,6 +232,7 @@ export const VerifyPinResponse = zod.object({
   valid: zod.boolean(),
   userId: zod.number().nullish(),
   userName: zod.string().nullish(),
+  initials: zod.string().nullish(),
 });
 
 /**
@@ -429,7 +430,6 @@ export const AddTrainingAttendanceParams = zod.object({
 });
 
 export const AddTrainingAttendanceBody = zod.object({
-  initials: zod.string(),
   pin: zod.string(),
 });
 

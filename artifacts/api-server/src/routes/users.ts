@@ -98,6 +98,21 @@ router.post("/users/register", async (req, res) => {
     return;
   }
 
+  const existingPin = await db
+    .select()
+    .from(usersTable)
+    .where(
+      and(
+        eq(usersTable.tenantId, body.tenantId),
+        eq(usersTable.pin, body.pin)
+      )
+    );
+
+  if (existingPin.length > 0) {
+    res.status(409).json({ error: "Diese PIN ist bereits vergeben. Bitte wählen Sie eine andere 4-stellige PIN." });
+    return;
+  }
+
   const [user] = await db
     .insert(usersTable)
     .values({
@@ -117,24 +132,44 @@ router.post("/users/register", async (req, res) => {
 });
 
 router.post("/users/verify-pin", async (req, res) => {
-  const body = req.body as { initials: string; pin: string; tenantId: number };
+  const body = req.body as { initials?: string; pin: string; tenantId: number };
 
-  const users = await db
-    .select()
-    .from(usersTable)
-    .where(
-      and(
-        eq(usersTable.tenantId, body.tenantId),
-        ilike(usersTable.initials, body.initials)
-      )
-    );
-
-  if (users.length === 0 || users[0].pin !== body.pin) {
-    res.json({ valid: false, userId: null, userName: null });
-    return;
+  let users;
+  if (body.initials) {
+    users = await db
+      .select()
+      .from(usersTable)
+      .where(
+        and(
+          eq(usersTable.tenantId, body.tenantId),
+          ilike(usersTable.initials, body.initials)
+        )
+      );
+    if (users.length === 0 || users[0].pin !== body.pin) {
+      res.json({ valid: false, userId: null, userName: null, initials: null });
+      return;
+    }
+  } else {
+    users = await db
+      .select()
+      .from(usersTable)
+      .where(
+        and(
+          eq(usersTable.tenantId, body.tenantId),
+          eq(usersTable.pin, body.pin)
+        )
+      );
+    if (users.length === 0) {
+      res.json({ valid: false, userId: null, userName: null, initials: null });
+      return;
+    }
+    if (users.length > 1) {
+      res.status(409).json({ error: "PIN ist mehrfach vergeben. Bitte Admin kontaktieren." });
+      return;
+    }
   }
 
-  res.json({ valid: true, userId: users[0].id, userName: users[0].name });
+  res.json({ valid: true, userId: users[0].id, userName: users[0].name, initials: users[0].initials });
 });
 
 router.put("/users/:userId/reset", async (req, res) => {
@@ -173,6 +208,21 @@ router.put("/users/:userId/reset", async (req, res) => {
 
   if (conflicting.length > 0 && conflicting[0].id !== params.userId) {
     res.status(409).json({ error: `Kürzel "${body.initials.toUpperCase()}" ist bereits vergeben.` });
+    return;
+  }
+
+  const conflictingPin = await db
+    .select()
+    .from(usersTable)
+    .where(
+      and(
+        eq(usersTable.tenantId, existingUser[0].tenantId),
+        eq(usersTable.pin, body.pin)
+      )
+    );
+
+  if (conflictingPin.length > 0 && conflictingPin[0].id !== params.userId) {
+    res.status(409).json({ error: "Diese PIN ist bereits vergeben. Bitte wählen Sie eine andere 4-stellige PIN." });
     return;
   }
 

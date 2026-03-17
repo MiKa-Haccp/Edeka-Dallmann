@@ -50,7 +50,7 @@ artifacts-monorepo/
 - **training_topics** - Default training topics from EDEKA quality handbook (13 predefined)
 - **training_sessions** - Training sessions per market with date, trainer, and notes
 - **training_session_topics** - Topics covered in each training session (checkbox tracking)
-- **training_attendances** - Employee attendance confirmations via Kürzel+PIN (unique per session+user)
+- **training_attendances** - Employee attendance confirmations via PIN-only (unique per session+user)
 
 ## HACCP Categories
 
@@ -64,14 +64,15 @@ artifacts-monorepo/
 - Temperature validation (MoPro >7°C warning, Fleisch >2°C warning)
 - Photo trigger when condition is "Nicht OK"
 - **User Registration** (Section 1.2): Employees register with first name, last name, birth date → system suggests unique 2-3 letter initials → employee sets a 4-digit PIN
-- **PIN Verification on HACCP entries**: Before saving any form entry, the user must enter their Kürzel + 4-digit PIN which is verified against the database
+- **PIN Verification on HACCP entries**: Before saving any form entry, the user must enter their 4-digit PIN which identifies them automatically (no Kürzel needed). PINs are unique per tenant (enforced by DB constraint).
 - **Admin PIN/Kürzel Reset**: Only admins can reset a user's initials and PIN
 - **Admin Authentication**: Invite-only admin registration with scrypt password hashing. SUPERADMIN seeded (admin@haccp.de / admin1234). Admin session stored in Zustand with localStorage persistence.
 - **Access Control on User Registry**: Non-admins see only Kürzel/Role/Date columns; admins see full names, birth dates, reset actions, and can invite new admins.
 - **4-Level Role System**: SUPERADMIN (full access), ADMIN (cross-market), MARKTLEITER (assigned markets only), USER (own entries only)
 - **Granular Permissions**: Per-user permission checkboxes (users.view, users.manage, entries.create, entries.view_all, entries.edit, entries.delete, reports.view, reports.export, settings.manage) manageable by SUPERADMINs
 - **Market Assignments**: Marktleiter can be assigned to specific markets (Leeder, Buching, MOD)
-- **Training Records (Section 1.3)**: Schulungsnachweise page — Admins/Marktleiter create training sessions, select topics from 13 EDEKA-standard topics (IfSG, Hygiene, Bio, Arzneimittel, etc.), assign a Schulungsleiter. Employees confirm attendance via Kürzel+PIN.
+- **Training Records (Section 1.3)**: Schulungsnachweise page — Admins/Marktleiter create training sessions, select topics from 13 EDEKA-standard topics (IfSG, Hygiene, Bio, Arzneimittel, etc.), assign a Schulungsleiter. Employees confirm attendance via PIN-only.
+- **Auto-Logout**: Admin sessions automatically expire after 5 minutes of inactivity (useAutoLogout hook in App.tsx)
 - Monthly form instances with daily entries
 - Sidebar section 1.1 → Responsibilities page, section 1.2 → User Registry page
 
@@ -79,7 +80,7 @@ artifacts-monorepo/
 
 - `/responsibilities` — Section 1.1: Verantwortlichkeiten (market info, department responsibilities)
 - `/user-registry` — Section 1.2: Kürzelliste (user registration form + registered user list with admin reset + admin invite section)
-- `/training-records` — Section 1.3: Schulungsnachweise (training protocols with topic checklists, attendance via Kürzel+PIN)
+- `/training-records` — Section 1.3: Schulungsnachweise (training protocols with topic checklists, attendance via PIN-only)
 - `/admin/login` — Admin login page (email + password)
 - `/admin/register` — Admin registration via invitation token
 - `/admin/users` — Benutzerverwaltung: Role management, permission checkboxes, market assignments (SUPERADMIN only)

@@ -9,18 +9,18 @@ interface PinVerificationProps {
 }
 
 export function PinVerification({ open, onVerified, onCancel }: PinVerificationProps) {
-  const [initials, setInitials] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+  const [identifiedUser, setIdentifiedUser] = useState<string | null>(null);
   const verifyPin = useVerifyPin();
-  const initialsRef = useRef<HTMLInputElement>(null);
+  const pinRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
-      setInitials("");
       setPin("");
       setError("");
-      setTimeout(() => initialsRef.current?.focus(), 100);
+      setIdentifiedUser(null);
+      setTimeout(() => pinRef.current?.focus(), 100);
     }
   }, [open]);
 
@@ -29,10 +29,6 @@ export function PinVerification({ open, onVerified, onCancel }: PinVerificationP
   const handleVerify = async () => {
     setError("");
 
-    if (!initials) {
-      setError("Bitte Kürzel eingeben.");
-      return;
-    }
     if (!pin || pin.length !== 4) {
       setError("Bitte 4-stelligen PIN eingeben.");
       return;
@@ -40,13 +36,17 @@ export function PinVerification({ open, onVerified, onCancel }: PinVerificationP
 
     try {
       const result = await verifyPin.mutateAsync({
-        data: { initials: initials.toUpperCase(), pin, tenantId: 1 },
+        data: { pin, tenantId: 1 },
       });
 
       if (result.valid && result.userId) {
-        onVerified(result.userId, result.userName || initials, initials.toUpperCase());
+        const userInitials = result.initials || "";
+        setIdentifiedUser(result.userName || userInitials);
+        setTimeout(() => {
+          onVerified(result.userId, result.userName || userInitials, userInitials);
+        }, 600);
       } else {
-        setError("Kürzel oder PIN ungültig.");
+        setError("PIN ungültig. Kein Mitarbeiter gefunden.");
       }
     } catch {
       setError("Verifizierung fehlgeschlagen.");
@@ -71,7 +71,7 @@ export function PinVerification({ open, onVerified, onCancel }: PinVerificationP
 
         <div className="p-5 space-y-4">
           <p className="text-sm text-muted-foreground">
-            Bitte geben Sie Ihr Kürzel und Ihren 4-stelligen PIN ein, um die Eingabe zu bestätigen.
+            Bitte geben Sie Ihren 4-stelligen PIN ein, um die Eingabe zu bestätigen.
           </p>
 
           {error && (
@@ -81,24 +81,17 @@ export function PinVerification({ open, onVerified, onCancel }: PinVerificationP
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-semibold text-foreground mb-1.5">Kürzel</label>
-            <input
-              ref={initialsRef}
-              type="text"
-              value={initials}
-              onChange={(e) => setInitials(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").substring(0, 3))}
-              onKeyDown={handleKeyDown}
-              className="w-full border border-border rounded-xl px-4 py-3 text-center text-lg font-mono font-bold tracking-[0.3em] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-              placeholder="z.B. AS"
-              maxLength={3}
-              autoComplete="off"
-            />
-          </div>
+          {identifiedUser && (
+            <div className="p-2.5 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700 flex items-center gap-2">
+              <Check className="h-4 w-4 flex-shrink-0" />
+              Erkannt: <span className="font-semibold">{identifiedUser}</span>
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-semibold text-foreground mb-1.5">PIN (4 Ziffern)</label>
             <input
+              ref={pinRef}
               type="password"
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, "").substring(0, 4))}
@@ -119,7 +112,7 @@ export function PinVerification({ open, onVerified, onCancel }: PinVerificationP
             </button>
             <button
               onClick={handleVerify}
-              disabled={verifyPin.isPending || !initials || pin.length !== 4}
+              disabled={verifyPin.isPending || pin.length !== 4 || !!identifiedUser}
               className="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {verifyPin.isPending ? (

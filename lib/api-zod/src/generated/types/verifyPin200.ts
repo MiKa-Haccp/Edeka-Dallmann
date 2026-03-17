@@ -10,4 +10,5 @@ export type VerifyPin200 = {
   valid: boolean;
   userId?: number | null;
   userName?: string | null;
+  initials?: string | null;
 };

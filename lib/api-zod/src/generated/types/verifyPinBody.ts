@@ -7,7 +7,7 @@
  */
 
 export type VerifyPinBody = {
-  initials: string;
+  initials?: string;
   pin: string;
   tenantId: number;
 };

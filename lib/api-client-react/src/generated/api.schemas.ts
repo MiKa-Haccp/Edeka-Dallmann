@@ -270,7 +270,6 @@ export interface UpdateTrainingSession {
 }
 
 export interface AddTrainingAttendance {
-  initials: string;
   pin: string;
 }
 
@@ -305,7 +304,7 @@ export type SuggestInitials200 = {
 };
 
 export type VerifyPinBody = {
-  initials: string;
+  initials?: string;
   pin: string;
   tenantId: number;
 };
@@ -314,6 +313,7 @@ export type VerifyPin200 = {
   valid: boolean;
   userId?: number | null;
   userName?: string | null;
+  initials?: string | null;
 };
 
 export type ResetUserCredentialsBody = {

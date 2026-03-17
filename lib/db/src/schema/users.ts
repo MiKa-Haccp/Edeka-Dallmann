@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, date, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, date, boolean, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
@@ -17,7 +17,9 @@ export const usersTable = pgTable("users", {
   pin: text("pin"),
   isRegistered: boolean("is_registered").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  uniqueIndex("users_tenant_pin_unique").on(table.tenantId, table.pin),
+]);
 
 export const insertUserSchema = createInsertSchema(usersTable).omit({ id: true, createdAt: true });
 export type InsertUser = z.infer<typeof insertUserSchema>;

@@ -7,6 +7,5 @@
  */
 
 export interface AddTrainingAttendance {
-  initials: string;
   pin: string;
 }

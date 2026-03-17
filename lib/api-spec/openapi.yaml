@@ -319,7 +319,7 @@ paths:
     post:
       operationId: verifyPin
       tags: [users]
-      summary: Verify user initials and PIN
+      summary: Verify user PIN (identifies user automatically)
       requestBody:
         required: true
         content:
@@ -334,7 +334,6 @@ paths:
                 tenantId:
                   type: integer
               required:
-                - initials
                 - pin
                 - tenantId
       responses:
@@ -351,6 +350,9 @@ paths:
                     type: integer
                     nullable: true
                   userName:
+                    type: string
+                    nullable: true
+                  initials:
                     type: string
                     nullable: true
                 required:
@@ -1306,10 +1308,7 @@ components:
     AddTrainingAttendance:
       type: object
       properties:
-        initials:
-          type: string
         pin:
           type: string
       required:
-        - initials
         - pin

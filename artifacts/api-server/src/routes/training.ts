@@ -252,7 +252,7 @@ router.delete("/training-sessions/:sessionId", async (req, res) => {
 
 router.post("/training-sessions/:sessionId/attendance", async (req, res) => {
   const sessionId = parseInt(req.params.sessionId);
-  const { initials, pin } = req.body;
+  const { pin } = req.body;
 
   const [session] = await db
     .select()
@@ -269,18 +269,13 @@ router.post("/training-sessions/:sessionId/attendance", async (req, res) => {
     .from(usersTable)
     .where(
       and(
-        eq(usersTable.initials, initials.toUpperCase()),
+        eq(usersTable.pin, pin),
         eq(usersTable.tenantId, session.tenantId)
       )
     );
 
   if (!user) {
-    res.status(404).json({ error: "Kein Mitarbeiter mit diesem Kürzel gefunden." });
-    return;
-  }
-
-  if (user.pin !== pin) {
-    res.status(401).json({ error: "Falsche PIN." });
+    res.status(404).json({ error: "Kein Mitarbeiter mit dieser PIN gefunden." });
     return;
   }
 
@@ -304,7 +299,7 @@ router.post("/training-sessions/:sessionId/attendance", async (req, res) => {
     .values({
       sessionId,
       userId: user.id,
-      initials: initials.toUpperCase(),
+      initials: user.initials?.toUpperCase() || "",
     })
     .returning();
 

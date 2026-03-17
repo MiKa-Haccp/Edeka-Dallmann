@@ -270,23 +270,21 @@ function AttendanceDialog({
 }) {
   const addAttendance = useAddTrainingAttendance();
   const queryClient = useQueryClient();
-  const [initials, setInitials] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [showPin, setShowPin] = useState(false);
 
   const handleSubmit = async () => {
-    if (!initials || !pin) return;
+    if (!pin || pin.length < 4) return;
     setError("");
     try {
       await addAttendance.mutateAsync({
         sessionId,
-        data: { initials: initials.toUpperCase(), pin },
+        data: { pin },
       });
       queryClient.invalidateQueries({
         queryKey: [`/api/training-sessions/${sessionId}`],
       });
-      setInitials("");
       setPin("");
       onClose();
     } catch (err: any) {
@@ -307,23 +305,13 @@ function AttendanceDialog({
           </Dialog.Title>
 
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Kürzel *
-              </label>
-              <input
-                type="text"
-                value={initials}
-                onChange={(e) => setInitials(e.target.value.toUpperCase())}
-                placeholder="z.B. AS"
-                maxLength={3}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm uppercase font-mono tracking-widest text-center text-lg"
-              />
-            </div>
+            <p className="text-sm text-muted-foreground">
+              Geben Sie Ihre 4-stellige PIN ein. Ihr Kürzel wird automatisch erkannt.
+            </p>
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
-                4-stellige PIN *
+                PIN (4 Ziffern) *
               </label>
               <div className="relative">
                 <input
@@ -334,6 +322,7 @@ function AttendanceDialog({
                   }
                   placeholder="****"
                   maxLength={4}
+                  autoFocus
                   className="w-full border border-border rounded-lg px-3 py-2 text-sm font-mono tracking-widest text-center text-lg"
                 />
                 <button
@@ -357,7 +346,6 @@ function AttendanceDialog({
           <div className="flex gap-3 mt-6">
             <button
               onClick={() => {
-                setInitials("");
                 setPin("");
                 setError("");
                 onClose();
@@ -368,9 +356,7 @@ function AttendanceDialog({
             </button>
             <button
               onClick={handleSubmit}
-              disabled={
-                addAttendance.isPending || !initials || pin.length < 4
-              }
+              disabled={addAttendance.isPending || pin.length < 4}
               className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {addAttendance.isPending ? (
@@ -593,7 +579,7 @@ function SessionDetailView({
           {session.attendances?.length === 0 ? (
             <div className="border border-dashed border-border rounded-lg p-6 text-center text-muted-foreground text-sm">
               Noch keine Teilnehmer eingetragen. Mitarbeiter können sich mit
-              ihrem Kürzel und PIN eintragen.
+              ihrer PIN eintragen.
             </div>
           ) : (
             <div className="border border-border rounded-lg divide-y divide-border">
