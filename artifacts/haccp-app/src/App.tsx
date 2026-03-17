@@ -13,6 +13,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminRegister from "./pages/AdminRegister";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import TrainingRecords from "./pages/TrainingRecords";
+import InfoDocumentation from "./pages/InfoDocumentation";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/section/:sectionId" component={SectionDetail} />
       <Route path="/responsibilities" component={Responsibilities} />
       <Route path="/user-registry" component={UserRegistry} />
+      <Route path="/info-documentation" component={InfoDocumentation} />
       <Route path="/training-records" component={TrainingRecords} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/register" component={AdminRegister} />
