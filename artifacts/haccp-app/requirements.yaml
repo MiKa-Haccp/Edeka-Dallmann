@@ -1,0 +1,20 @@
+packages:
+  "zustand": "Global state management for selected market/branch"
+  "date-fns": "Easy date manipulation for the monthly grids"
+  "framer-motion": "Smooth page transitions and micro-interactions"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility to merge tailwind classes without conflicts"
+  "@radix-ui/react-accordion": "For collapsible sidebar sections"
+  "@radix-ui/react-dialog": "For form entry modals"
+  "@radix-ui/react-popover": "For contextual popups"
+  "@radix-ui/react-slot": "For component slotting"
+
+images:
+  - path: "artifacts/haccp-app/public/images/dashboard-hero.png"
+    description: "A clean, abstract, enterprise-style geometric background in subtle shades of blue and silver, suggesting data, security, and hygiene."
+    aspect_ratio: "16:9"
+
+notes:
+  - Using generated Orval hooks from @workspace/api-client-react
+  - Assuming standard shadcn-like UI components exist in @/components/ui/ based on the provided directory structure
+  - File uploads for 'photo' fields are simulated as URL strings since there's no dedicated upload endpoint provided in the schema

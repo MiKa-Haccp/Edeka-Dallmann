@@ -1,22 +1,36 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: HACCP Management API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: tenants
+    description: Tenant (company) operations
+  - name: markets
+    description: Market/branch operations
+  - name: categories
+    description: HACCP category operations
+  - name: sections
+    description: HACCP section operations
+  - name: formDefinitions
+    description: Form definition operations
+  - name: formInstances
+    description: Form instance operations
+  - name: formEntries
+    description: Form entry operations
+  - name: users
+    description: User operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +38,231 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /tenants:
+    get:
+      operationId: listTenants
+      tags: [tenants]
+      summary: List all tenants
+      responses:
+        "200":
+          description: List of tenants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tenant"
+
+  /markets:
+    get:
+      operationId: listMarkets
+      tags: [markets]
+      summary: List all markets
+      parameters:
+        - name: tenantId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of markets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Market"
+
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all HACCP categories
+      responses:
+        "200":
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  /categories/{categoryId}/sections:
+    get:
+      operationId: listSections
+      tags: [sections]
+      summary: List sections for a category
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of sections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Section"
+
+  /sections/{sectionId}/form-definitions:
+    get:
+      operationId: listFormDefinitions
+      tags: [formDefinitions]
+      summary: List form definitions for a section
+      parameters:
+        - name: sectionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of form definitions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FormDefinition"
+
+  /form-instances:
+    get:
+      operationId: listFormInstances
+      tags: [formInstances]
+      summary: List form instances
+      parameters:
+        - name: marketId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: sectionId
+          in: query
+          schema:
+            type: integer
+        - name: year
+          in: query
+          schema:
+            type: integer
+        - name: month
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of form instances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FormInstance"
+    post:
+      operationId: createFormInstance
+      tags: [formInstances]
+      summary: Create a new form instance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFormInstance"
+      responses:
+        "201":
+          description: Created form instance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormInstance"
+
+  /form-instances/{instanceId}/entries:
+    get:
+      operationId: listFormEntries
+      tags: [formEntries]
+      summary: List form entries for an instance
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of form entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FormEntry"
+    post:
+      operationId: createFormEntry
+      tags: [formEntries]
+      summary: Create a new form entry
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFormEntry"
+      responses:
+        "201":
+          description: Created form entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FormEntry"
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List users
+      parameters:
+        - name: tenantId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /seed:
+    post:
+      operationId: seedData
+      tags: [tenants]
+      summary: Seed initial HACCP data
+      responses:
+        "200":
+          description: Data seeded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +273,260 @@ components:
       required:
         - status
 
+    Tenant:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - createdAt
+
+    Market:
+      type: object
+      properties:
+        id:
+          type: integer
+        tenantId:
+          type: integer
+        name:
+          type: string
+        code:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - tenantId
+        - name
+        - code
+        - createdAt
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        label:
+          type: string
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - label
+        - sortOrder
+        - createdAt
+
+    Section:
+      type: object
+      properties:
+        id:
+          type: integer
+        categoryId:
+          type: integer
+        number:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - categoryId
+        - number
+        - title
+        - sortOrder
+        - createdAt
+
+    FormDefinition:
+      type: object
+      properties:
+        id:
+          type: integer
+        sectionId:
+          type: integer
+        fieldName:
+          type: string
+        fieldType:
+          type: string
+          enum: [temperature, boolean, text, photo, signature, pin]
+        label:
+          type: string
+        required:
+          type: boolean
+        validationMin:
+          type: number
+          nullable: true
+        validationMax:
+          type: number
+          nullable: true
+        warningThreshold:
+          type: number
+          nullable: true
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sectionId
+        - fieldName
+        - fieldType
+        - label
+        - required
+        - sortOrder
+        - createdAt
+
+    FormInstance:
+      type: object
+      properties:
+        id:
+          type: integer
+        marketId:
+          type: integer
+        sectionId:
+          type: integer
+        year:
+          type: integer
+        month:
+          type: integer
+        status:
+          type: string
+          enum: [open, closed]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - marketId
+        - sectionId
+        - year
+        - month
+        - status
+        - createdAt
+
+    CreateFormInstance:
+      type: object
+      properties:
+        marketId:
+          type: integer
+        sectionId:
+          type: integer
+        year:
+          type: integer
+        month:
+          type: integer
+      required:
+        - marketId
+        - sectionId
+        - year
+        - month
+
+    FormEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        formInstanceId:
+          type: integer
+        formDefinitionId:
+          type: integer
+        value:
+          type: string
+          nullable: true
+        signature:
+          type: string
+          nullable: true
+        pin:
+          type: string
+          nullable: true
+        photoUrl:
+          type: string
+          nullable: true
+        entryDate:
+          type: string
+          format: date
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - formInstanceId
+        - formDefinitionId
+        - entryDate
+        - createdAt
+
+    CreateFormEntry:
+      type: object
+      properties:
+        formDefinitionId:
+          type: integer
+        value:
+          type: string
+          nullable: true
+        signature:
+          type: string
+          nullable: true
+        pin:
+          type: string
+          nullable: true
+        photoUrl:
+          type: string
+          nullable: true
+        entryDate:
+          type: string
+          format: date
+      required:
+        - formDefinitionId
+        - entryDate
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        tenantId:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [SUPERADMIN, ADMIN, USER]
+        initials:
+          type: string
+          nullable: true
+        pin:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - tenantId
+        - name
+        - email
+        - role
+        - createdAt
