@@ -1,11 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable } from "@workspace/db";
 import {
-  ListUsersResponse,
-  ListUsersQueryParams,
-  RegisterUserBody,
-  SuggestInitialsBody,
-  VerifyPinBody,
   ResetUserCredentialsParams,
   ResetUserCredentialsBody,
 } from "@workspace/api-zod";
@@ -13,16 +8,20 @@ import { eq, and, ilike } from "drizzle-orm";
 
 const router: IRouter = Router();
 
+function stripSensitive(user: any) {
+  const { pin, ...safe } = user;
+  return safe;
+}
+
 router.get("/users", async (req, res) => {
-  const query = ListUsersQueryParams.parse(req.query);
+  const tenantId = req.query.tenantId ? Number(req.query.tenantId) : undefined;
   let result;
-  if (query.tenantId) {
-    result = await db.select().from(usersTable).where(eq(usersTable.tenantId, query.tenantId));
+  if (tenantId && !isNaN(tenantId)) {
+    result = await db.select().from(usersTable).where(eq(usersTable.tenantId, tenantId));
   } else {
     result = await db.select().from(usersTable);
   }
-  const data = ListUsersResponse.parse(result);
-  res.json(data);
+  res.json(result.map(stripSensitive));
 });
 
 function generateInitialsSuggestions(firstName: string, lastName: string): string[] {
@@ -51,7 +50,7 @@ function generateInitialsSuggestions(firstName: string, lastName: string): strin
 }
 
 router.post("/users/suggest-initials", async (req, res) => {
-  const body = SuggestInitialsBody.parse(req.body);
+  const body = req.body as { firstName: string; lastName: string; tenantId: number };
 
   const existingUsers = await db
     .select({ initials: usersTable.initials })
@@ -72,7 +71,7 @@ router.post("/users/suggest-initials", async (req, res) => {
 });
 
 router.post("/users/register", async (req, res) => {
-  const body = RegisterUserBody.parse(req.body);
+  const body = req.body as { tenantId: number; firstName: string; lastName: string; birthDate: string; initials: string; pin: string };
 
   if (!body.initials || body.initials.length < 2 || body.initials.length > 3) {
     res.status(400).json({ error: "Kürzel muss 2-3 Buchstaben lang sein." });
@@ -114,11 +113,11 @@ router.post("/users/register", async (req, res) => {
     })
     .returning();
 
-  res.status(201).json(user);
+  res.status(201).json(stripSensitive(user));
 });
 
 router.post("/users/verify-pin", async (req, res) => {
-  const body = VerifyPinBody.parse(req.body);
+  const body = req.body as { initials: string; pin: string; tenantId: number };
 
   const users = await db
     .select()
@@ -186,7 +185,7 @@ router.put("/users/:userId/reset", async (req, res) => {
     .where(eq(usersTable.id, params.userId))
     .returning();
 
-  res.json(updated);
+  res.json(stripSensitive(updated));
 });
 
 export default router;

@@ -5,15 +5,16 @@ import {
   useCreateFormInstance,
   useListFormEntries,
   useCreateFormEntry,
-  useListSections
+  useListSections,
+  useVerifyPin
 } from "@workspace/api-client-react";
 import { useAppStore } from "@/store/use-app-store";
 import { useRoute } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { getDaysInMonth, format, isToday, isFuture } from "date-fns";
 import { de } from "date-fns/locale";
-import { Info, Plus, ChevronLeft, ChevronRight, AlertTriangle, Check, X, Thermometer, PenTool, FileText } from "lucide-react";
+import { Info, Plus, ChevronLeft, ChevronRight, AlertTriangle, Check, X, Thermometer, PenTool, FileText, KeyRound, Loader2 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -43,49 +44,70 @@ function EntryDialog({
   const [pin, setPin] = useState("");
   const [photoUrl, setPhotoUrl] = useState(existingEntry?.photoUrl || "");
   const [error, setError] = useState("");
+  const [pinVerified, setPinVerified] = useState(false);
+  const [verifiedName, setVerifiedName] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const queryClient = useQueryClient();
   const { mutate: createEntry, isPending } = useCreateFormEntry();
+  const verifyPin = useVerifyPin();
 
-  // Reset form when dialog opens
-  useMemo(() => {
+  useEffect(() => {
     if (isOpen) {
       setValue(existingEntry?.value || "");
       setInitials(existingEntry?.signature || "");
       setPin("");
       setError("");
       setPhotoUrl(existingEntry?.photoUrl || "");
+      setPinVerified(false);
+      setVerifiedName("");
+      setIsVerifying(false);
     }
   }, [isOpen, existingEntry]);
 
   const needsPhoto = definition.fieldType === 'boolean' && value === 'false';
 
+  const handleVerifyPin = async () => {
+    setError("");
+    if (!initials || initials.length < 2) {
+      setError("Bitte Kürzel eingeben (mind. 2 Zeichen).");
+      return;
+    }
+    if (!pin || pin.length !== 4) {
+      setError("Bitte 4-stelligen PIN eingeben.");
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const result = await verifyPin.mutateAsync({
+        data: { initials: initials.toUpperCase(), pin, tenantId: 1 },
+      });
+      if (result.valid && result.userId) {
+        setPinVerified(true);
+        setVerifiedName(result.userName || initials);
+      } else {
+        setError("Kürzel oder PIN ungültig. Bitte prüfen oder beim Admin melden.");
+        setPinVerified(false);
+      }
+    } catch {
+      setError("Verifizierung fehlgeschlagen.");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Validate
     if (definition.required && !value) {
       setError("Bitte füllen Sie den Wert aus.");
       return;
     }
-    if (!initials || !pin) {
-      setError("Unterschrift (Kürzel) und PIN sind erforderlich.");
+    if (!pinVerified) {
+      setError("Bitte zuerst Kürzel und PIN verifizieren.");
       return;
-    }
-    if (pin.length !== 4) {
-      setError("PIN muss 4-stellig sein.");
-      return;
-    }
-
-    // Temperature Logic specifically requested
-    let isWarning = false;
-    if (definition.fieldType === 'temperature') {
-      const numVal = parseFloat(value);
-      if (definition.validationMax && numVal > definition.validationMax) {
-        // Technically should warn, but we'll still save. Backend can handle strict rejections.
-        isWarning = true;
-      }
     }
 
     createEntry(
@@ -95,7 +117,7 @@ function EntryDialog({
           formDefinitionId: definition.id,
           entryDate: dateStr,
           value,
-          signature: initials,
+          signature: initials.toUpperCase(),
           pin,
           photoUrl: needsPhoto ? photoUrl : null
         } 
@@ -203,29 +225,75 @@ function EntryDialog({
               )}
             </div>
 
-            {/* Signature Area */}
+            {/* Signature Area with PIN Verification */}
             <div className="space-y-4">
               <label className="text-sm font-bold text-foreground flex items-center gap-2">
-                <PenTool className="w-4 h-4" /> Digitale Signatur
+                <KeyRound className="w-4 h-4" /> Bestätigung mit Kürzel & PIN
               </label>
-              <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="Kürzel (z.B. MM)"
-                  value={initials}
-                  onChange={(e) => setInitials(e.target.value.toUpperCase())}
-                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm uppercase ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  maxLength={3}
-                />
-                <input
-                  type="password"
-                  placeholder="4-stellige PIN"
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  maxLength={4}
-                />
-              </div>
+
+              {pinVerified ? (
+                <div className="flex items-center gap-3 p-3 bg-green-50 border border-green-200 rounded-xl">
+                  <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                    <Check className="w-4 h-4 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-green-700">Verifiziert</div>
+                    <div className="text-xs text-green-600">{verifiedName} ({initials.toUpperCase()})</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPinVerified(false);
+                      setInitials("");
+                      setPin("");
+                      setVerifiedName("");
+                    }}
+                    className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Ändern
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder="Kürzel (z.B. AS)"
+                      value={initials}
+                      onChange={(e) => {
+                        setInitials(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3));
+                        setPinVerified(false);
+                      }}
+                      className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm uppercase font-mono tracking-widest ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      maxLength={3}
+                    />
+                    <input
+                      type="password"
+                      placeholder="4-stelliger PIN"
+                      value={pin}
+                      onChange={(e) => {
+                        setPin(e.target.value.replace(/\D/g, '').slice(0, 4));
+                        setPinVerified(false);
+                      }}
+                      className="flex h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm font-mono tracking-widest ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      maxLength={4}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleVerifyPin}
+                    disabled={isVerifying || !initials || pin.length !== 4}
+                    className="w-full px-4 py-2.5 rounded-xl font-semibold text-sm bg-[#1a3a6b] text-white hover:bg-[#1a3a6b]/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isVerifying ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <KeyRound className="h-4 w-4" />
+                    )}
+                    {isVerifying ? "Wird geprüft..." : "PIN prüfen"}
+                  </button>
+                </div>
+              )}
             </div>
 
             {error && (
@@ -244,7 +312,7 @@ function EntryDialog({
               </button>
               <button
                 type="submit"
-                disabled={isPending}
+                disabled={isPending || !pinVerified}
                 className="px-6 py-2.5 rounded-xl font-semibold bg-primary text-primary-foreground shadow-md hover:bg-primary/90 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 disabled:opacity-50"
               >
                 {isPending ? "Speichere..." : "Eintrag speichern"}

@@ -19,7 +19,7 @@ function CategorySections({ categoryId }: { categoryId: number }) {
   return (
     <div className="flex flex-col gap-0.5 py-1">
       {sections.map((section) => {
-        const href = section.number === "1.1" ? "/responsibilities" : `/section/${section.id}`;
+        const href = section.number === "1.1" ? "/responsibilities" : section.number === "1.2" ? "/user-registry" : `/section/${section.id}`;
         const isActive = location === href;
         return (
           <Link

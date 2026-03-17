@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import SectionDetail from "./pages/SectionDetail";
 import CategoryView from "./pages/CategoryView";
 import Responsibilities from "./pages/Responsibilities";
+import UserRegistry from "./pages/UserRegistry";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/category/:categoryId" component={CategoryView} />
       <Route path="/section/:sectionId" component={SectionDetail} />
       <Route path="/responsibilities" component={Responsibilities} />
+      <Route path="/user-registry" component={UserRegistry} />
       <Route component={NotFound} />
     </Switch>
   );
