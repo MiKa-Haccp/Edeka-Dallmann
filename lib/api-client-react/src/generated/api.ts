@@ -31,13 +31,20 @@ import type {
   ListUsersParams,
   Market,
   MarketInfoResponse,
+  RegisterUser,
+  RegisterUser409,
+  ResetUserCredentialsBody,
   Responsibility,
   Section,
   SeedData200,
+  SuggestInitials200,
+  SuggestInitialsBody,
   Tenant,
   UpsertMarketInfo,
   UpsertResponsibilities,
   User,
+  VerifyPin200,
+  VerifyPinBody,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -902,7 +909,7 @@ export const useCreateFormEntry = <
 };
 
 /**
- * @summary List users
+ * @summary List registered users
  */
 export const getListUsersUrl = (params?: ListUsersParams) => {
   const normalizedParams = new URLSearchParams();
@@ -969,7 +976,7 @@ export type ListUsersQueryResult = NonNullable<
 export type ListUsersQueryError = ErrorType<unknown>;
 
 /**
- * @summary List users
+ * @summary List registered users
  */
 
 export function useListUsers<
@@ -994,6 +1001,352 @@ export function useListUsers<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary Register a new user with initials and PIN
+ */
+export const getRegisterUserUrl = () => {
+  return `/api/users/register`;
+};
+
+export const registerUser = async (
+  registerUser: RegisterUser,
+  options?: RequestInit,
+): Promise<User> => {
+  return customFetch<User>(getRegisterUserUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(registerUser),
+  });
+};
+
+export const getRegisterUserMutationOptions = <
+  TError = ErrorType<RegisterUser409>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof registerUser>>,
+    TError,
+    { data: BodyType<RegisterUser> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof registerUser>>,
+  TError,
+  { data: BodyType<RegisterUser> },
+  TContext
+> => {
+  const mutationKey = ["registerUser"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof registerUser>>,
+    { data: BodyType<RegisterUser> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return registerUser(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RegisterUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof registerUser>>
+>;
+export type RegisterUserMutationBody = BodyType<RegisterUser>;
+export type RegisterUserMutationError = ErrorType<RegisterUser409>;
+
+/**
+ * @summary Register a new user with initials and PIN
+ */
+export const useRegisterUser = <
+  TError = ErrorType<RegisterUser409>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof registerUser>>,
+    TError,
+    { data: BodyType<RegisterUser> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof registerUser>>,
+  TError,
+  { data: BodyType<RegisterUser> },
+  TContext
+> => {
+  return useMutation(getRegisterUserMutationOptions(options));
+};
+
+/**
+ * @summary Suggest unique initials for a new user
+ */
+export const getSuggestInitialsUrl = () => {
+  return `/api/users/suggest-initials`;
+};
+
+export const suggestInitials = async (
+  suggestInitialsBody: SuggestInitialsBody,
+  options?: RequestInit,
+): Promise<SuggestInitials200> => {
+  return customFetch<SuggestInitials200>(getSuggestInitialsUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(suggestInitialsBody),
+  });
+};
+
+export const getSuggestInitialsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof suggestInitials>>,
+    TError,
+    { data: BodyType<SuggestInitialsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof suggestInitials>>,
+  TError,
+  { data: BodyType<SuggestInitialsBody> },
+  TContext
+> => {
+  const mutationKey = ["suggestInitials"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof suggestInitials>>,
+    { data: BodyType<SuggestInitialsBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return suggestInitials(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SuggestInitialsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof suggestInitials>>
+>;
+export type SuggestInitialsMutationBody = BodyType<SuggestInitialsBody>;
+export type SuggestInitialsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Suggest unique initials for a new user
+ */
+export const useSuggestInitials = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof suggestInitials>>,
+    TError,
+    { data: BodyType<SuggestInitialsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof suggestInitials>>,
+  TError,
+  { data: BodyType<SuggestInitialsBody> },
+  TContext
+> => {
+  return useMutation(getSuggestInitialsMutationOptions(options));
+};
+
+/**
+ * @summary Verify user initials and PIN
+ */
+export const getVerifyPinUrl = () => {
+  return `/api/users/verify-pin`;
+};
+
+export const verifyPin = async (
+  verifyPinBody: VerifyPinBody,
+  options?: RequestInit,
+): Promise<VerifyPin200> => {
+  return customFetch<VerifyPin200>(getVerifyPinUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(verifyPinBody),
+  });
+};
+
+export const getVerifyPinMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof verifyPin>>,
+    TError,
+    { data: BodyType<VerifyPinBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof verifyPin>>,
+  TError,
+  { data: BodyType<VerifyPinBody> },
+  TContext
+> => {
+  const mutationKey = ["verifyPin"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof verifyPin>>,
+    { data: BodyType<VerifyPinBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return verifyPin(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type VerifyPinMutationResult = NonNullable<
+  Awaited<ReturnType<typeof verifyPin>>
+>;
+export type VerifyPinMutationBody = BodyType<VerifyPinBody>;
+export type VerifyPinMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Verify user initials and PIN
+ */
+export const useVerifyPin = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof verifyPin>>,
+    TError,
+    { data: BodyType<VerifyPinBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof verifyPin>>,
+  TError,
+  { data: BodyType<VerifyPinBody> },
+  TContext
+> => {
+  return useMutation(getVerifyPinMutationOptions(options));
+};
+
+/**
+ * @summary Admin resets user initials and PIN
+ */
+export const getResetUserCredentialsUrl = (userId: number) => {
+  return `/api/users/${userId}/reset`;
+};
+
+export const resetUserCredentials = async (
+  userId: number,
+  resetUserCredentialsBody: ResetUserCredentialsBody,
+  options?: RequestInit,
+): Promise<User> => {
+  return customFetch<User>(getResetUserCredentialsUrl(userId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(resetUserCredentialsBody),
+  });
+};
+
+export const getResetUserCredentialsMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resetUserCredentials>>,
+    TError,
+    { userId: number; data: BodyType<ResetUserCredentialsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof resetUserCredentials>>,
+  TError,
+  { userId: number; data: BodyType<ResetUserCredentialsBody> },
+  TContext
+> => {
+  const mutationKey = ["resetUserCredentials"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof resetUserCredentials>>,
+    { userId: number; data: BodyType<ResetUserCredentialsBody> }
+  > = (props) => {
+    const { userId, data } = props ?? {};
+
+    return resetUserCredentials(userId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ResetUserCredentialsMutationResult = NonNullable<
+  Awaited<ReturnType<typeof resetUserCredentials>>
+>;
+export type ResetUserCredentialsMutationBody =
+  BodyType<ResetUserCredentialsBody>;
+export type ResetUserCredentialsMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Admin resets user initials and PIN
+ */
+export const useResetUserCredentials = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof resetUserCredentials>>,
+    TError,
+    { userId: number; data: BodyType<ResetUserCredentialsBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof resetUserCredentials>>,
+  TError,
+  { userId: number; data: BodyType<ResetUserCredentialsBody> },
+  TContext
+> => {
+  return useMutation(getResetUserCredentialsMutationOptions(options));
+};
 
 /**
  * @summary List responsibilities for a market

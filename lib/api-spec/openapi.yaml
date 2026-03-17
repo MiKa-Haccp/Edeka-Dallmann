@@ -229,7 +229,7 @@ paths:
     get:
       operationId: listUsers
       tags: [users]
-      summary: List users
+      summary: List registered users
       parameters:
         - name: tenantId
           in: query
@@ -244,6 +244,150 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/User"
+
+  /users/register:
+    post:
+      operationId: registerUser
+      tags: [users]
+      summary: Register a new user with initials and PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterUser"
+      responses:
+        "201":
+          description: Registered user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "409":
+          description: Initials already taken
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                  - error
+
+  /users/suggest-initials:
+    post:
+      operationId: suggestInitials
+      tags: [users]
+      summary: Suggest unique initials for a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                tenantId:
+                  type: integer
+              required:
+                - firstName
+                - lastName
+                - tenantId
+      responses:
+        "200":
+          description: Suggested initials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  suggestion:
+                    type: string
+                  alternatives:
+                    type: array
+                    items:
+                      type: string
+                required:
+                  - suggestion
+                  - alternatives
+
+  /users/verify-pin:
+    post:
+      operationId: verifyPin
+      tags: [users]
+      summary: Verify user initials and PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                initials:
+                  type: string
+                pin:
+                  type: string
+                tenantId:
+                  type: integer
+              required:
+                - initials
+                - pin
+                - tenantId
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  userId:
+                    type: integer
+                    nullable: true
+                  userName:
+                    type: string
+                    nullable: true
+                required:
+                  - valid
+
+  /users/{userId}/reset:
+    put:
+      operationId: resetUserCredentials
+      tags: [users]
+      summary: Admin resets user initials and PIN
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                initials:
+                  type: string
+                pin:
+                  type: string
+              required:
+                - initials
+                - pin
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
 
   /markets/{marketId}/responsibilities:
     get:
@@ -603,10 +747,19 @@ components:
           type: integer
         tenantId:
           type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
         name:
           type: string
         email:
           type: string
+          nullable: true
+        birthDate:
+          type: string
+          format: date
+          nullable: true
         role:
           type: string
           enum: [SUPERADMIN, ADMIN, USER]
@@ -616,16 +769,44 @@ components:
         pin:
           type: string
           nullable: true
+        isRegistered:
+          type: boolean
         createdAt:
           type: string
           format: date-time
       required:
         - id
         - tenantId
+        - firstName
+        - lastName
         - name
-        - email
         - role
+        - isRegistered
         - createdAt
+
+    RegisterUser:
+      type: object
+      properties:
+        tenantId:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        birthDate:
+          type: string
+          format: date
+        initials:
+          type: string
+        pin:
+          type: string
+      required:
+        - tenantId
+        - firstName
+        - lastName
+        - birthDate
+        - initials
+        - pin
 
     Responsibility:
       type: object

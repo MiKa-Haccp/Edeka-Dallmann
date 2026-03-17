@@ -10,10 +10,14 @@ import type { UserRole } from "./userRole";
 export interface User {
   id: number;
   tenantId: number;
+  firstName: string;
+  lastName: string;
   name: string;
-  email: string;
+  email?: string | null;
+  birthDate?: Date | null;
   role: UserRole;
   initials?: string | null;
   pin?: string | null;
+  isRegistered: boolean;
   createdAt: Date;
 }

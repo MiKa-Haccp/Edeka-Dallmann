@@ -171,7 +171,7 @@ export const CreateFormEntryBody = zod.object({
 });
 
 /**
- * @summary List users
+ * @summary List registered users
  */
 export const ListUsersQueryParams = zod.object({
   tenantId: zod.coerce.number().optional(),
@@ -180,14 +180,86 @@ export const ListUsersQueryParams = zod.object({
 export const ListUsersResponseItem = zod.object({
   id: zod.number(),
   tenantId: zod.number(),
+  firstName: zod.string(),
+  lastName: zod.string(),
   name: zod.string(),
-  email: zod.string(),
+  email: zod.string().nullish(),
+  birthDate: zod.date().nullish(),
   role: zod.enum(["SUPERADMIN", "ADMIN", "USER"]),
   initials: zod.string().nullish(),
   pin: zod.string().nullish(),
+  isRegistered: zod.boolean(),
   createdAt: zod.date(),
 });
 export const ListUsersResponse = zod.array(ListUsersResponseItem);
+
+/**
+ * @summary Register a new user with initials and PIN
+ */
+export const RegisterUserBody = zod.object({
+  tenantId: zod.number(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  birthDate: zod.date(),
+  initials: zod.string(),
+  pin: zod.string(),
+});
+
+/**
+ * @summary Suggest unique initials for a new user
+ */
+export const SuggestInitialsBody = zod.object({
+  firstName: zod.string(),
+  lastName: zod.string(),
+  tenantId: zod.number(),
+});
+
+export const SuggestInitialsResponse = zod.object({
+  suggestion: zod.string(),
+  alternatives: zod.array(zod.string()),
+});
+
+/**
+ * @summary Verify user initials and PIN
+ */
+export const VerifyPinBody = zod.object({
+  initials: zod.string(),
+  pin: zod.string(),
+  tenantId: zod.number(),
+});
+
+export const VerifyPinResponse = zod.object({
+  valid: zod.boolean(),
+  userId: zod.number().nullish(),
+  userName: zod.string().nullish(),
+});
+
+/**
+ * @summary Admin resets user initials and PIN
+ */
+export const ResetUserCredentialsParams = zod.object({
+  userId: zod.coerce.number(),
+});
+
+export const ResetUserCredentialsBody = zod.object({
+  initials: zod.string(),
+  pin: zod.string(),
+});
+
+export const ResetUserCredentialsResponse = zod.object({
+  id: zod.number(),
+  tenantId: zod.number(),
+  firstName: zod.string(),
+  lastName: zod.string(),
+  name: zod.string(),
+  email: zod.string().nullish(),
+  birthDate: zod.date().nullish(),
+  role: zod.enum(["SUPERADMIN", "ADMIN", "USER"]),
+  initials: zod.string().nullish(),
+  pin: zod.string().nullish(),
+  isRegistered: zod.boolean(),
+  createdAt: zod.date(),
+});
 
 /**
  * @summary List responsibilities for a market

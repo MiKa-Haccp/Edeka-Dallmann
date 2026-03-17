@@ -124,12 +124,25 @@ export const UserRole = {
 export interface User {
   id: number;
   tenantId: number;
+  firstName: string;
+  lastName: string;
   name: string;
-  email: string;
+  email?: string | null;
+  birthDate?: string | null;
   role: UserRole;
   initials?: string | null;
   pin?: string | null;
+  isRegistered: boolean;
   createdAt: string;
+}
+
+export interface RegisterUser {
+  tenantId: number;
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+  initials: string;
+  pin: string;
 }
 
 export interface Responsibility {
@@ -191,6 +204,38 @@ export type ListFormInstancesParams = {
 
 export type ListUsersParams = {
   tenantId?: number;
+};
+
+export type RegisterUser409 = {
+  error: string;
+};
+
+export type SuggestInitialsBody = {
+  firstName: string;
+  lastName: string;
+  tenantId: number;
+};
+
+export type SuggestInitials200 = {
+  suggestion: string;
+  alternatives: string[];
+};
+
+export type VerifyPinBody = {
+  initials: string;
+  pin: string;
+  tenantId: number;
+};
+
+export type VerifyPin200 = {
+  valid: boolean;
+  userId?: number | null;
+  userName?: string | null;
+};
+
+export type ResetUserCredentialsBody = {
+  initials: string;
+  pin: string;
 };
 
 export type ListResponsibilitiesParams = {
