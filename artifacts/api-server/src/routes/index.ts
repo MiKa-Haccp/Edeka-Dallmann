@@ -9,6 +9,7 @@ import formInstancesRouter from "./formInstances";
 import formEntriesRouter from "./formEntries";
 import usersRouter from "./users";
 import seedRouter from "./seed";
+import responsibilitiesRouter from "./responsibilities";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(formInstancesRouter);
 router.use(formEntriesRouter);
 router.use(usersRouter);
 router.use(seedRouter);
+router.use(responsibilitiesRouter);
 
 export default router;

@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "./pages/Dashboard";
 import SectionDetail from "./pages/SectionDetail";
 import CategoryView from "./pages/CategoryView";
+import Responsibilities from "./pages/Responsibilities";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/category/:categoryId" component={CategoryView} />
       <Route path="/section/:sectionId" component={SectionDetail} />
+      <Route path="/responsibilities" component={Responsibilities} />
       <Route component={NotFound} />
     </Switch>
   );

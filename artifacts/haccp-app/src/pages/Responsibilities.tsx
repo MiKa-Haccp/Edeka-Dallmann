@@ -1,0 +1,428 @@
+import { AppLayout } from "@/components/layout/AppLayout";
+import { useAppStore } from "@/store/use-app-store";
+import { useListMarkets, useListResponsibilities, useGetMarketInfo, useUpsertResponsibilities, useUpsertMarketInfo } from "@workspace/api-client-react";
+import { useState, useEffect } from "react";
+import { Save, Pencil, X, Plus, Trash2, Building2 } from "lucide-react";
+import { clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+function cn(...inputs: (string | boolean | undefined | null)[]) {
+  return twMerge(clsx(inputs));
+}
+
+const DEFAULT_DEPARTMENTS = [
+  "Marktleitung / Betreiber",
+  "HACCP- bzw. Hygiene-Beauftragter",
+  "Fleisch und Wurst",
+  "Molkereiprodukte und Feinkost",
+  "(MSC) Fisch",
+  "Obst und Gemüse",
+  "Backshop",
+  "Kühl- und Tiefkühlware",
+  "Trockensortiment",
+  "Freiverkäufliche Arzneimittel",
+];
+
+interface ResponsibilityRow {
+  department: string;
+  responsibleName: string;
+  responsiblePhone: string;
+  deputyName: string;
+  deputyPhone: string;
+  sortOrder: number;
+}
+
+export default function Responsibilities() {
+  const { selectedMarketId, selectedYear } = useAppStore();
+  const { data: markets } = useListMarkets();
+  const selectedMarket = markets?.find((m) => m.id === selectedMarketId);
+
+  const { data: responsibilities, refetch: refetchResponsibilities } = useListResponsibilities(
+    selectedMarketId || 0,
+    { year: selectedYear },
+    { query: { enabled: !!selectedMarketId } }
+  );
+
+  const { data: marketInfo, refetch: refetchMarketInfo } = useGetMarketInfo(
+    selectedMarketId || 0,
+    { year: selectedYear },
+    { query: { enabled: !!selectedMarketId } }
+  );
+
+  const upsertResponsibilities = useUpsertResponsibilities();
+  const upsertMarketInfo = useUpsertMarketInfo();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [rows, setRows] = useState<ResponsibilityRow[]>([]);
+  const [marketNumber, setMarketNumber] = useState("");
+  const [street, setStreet] = useState("");
+  const [plzOrt, setPlzOrt] = useState("");
+
+  useEffect(() => {
+    if (responsibilities && responsibilities.length > 0) {
+      setRows(
+        responsibilities.map((r) => ({
+          department: r.department,
+          responsibleName: r.responsibleName || "",
+          responsiblePhone: r.responsiblePhone || "",
+          deputyName: r.deputyName || "",
+          deputyPhone: r.deputyPhone || "",
+          sortOrder: r.sortOrder,
+        }))
+      );
+    } else {
+      setRows(
+        DEFAULT_DEPARTMENTS.map((dept, idx) => ({
+          department: dept,
+          responsibleName: "",
+          responsiblePhone: "",
+          deputyName: "",
+          deputyPhone: "",
+          sortOrder: idx + 1,
+        }))
+      );
+    }
+  }, [responsibilities]);
+
+  useEffect(() => {
+    if (marketInfo) {
+      setMarketNumber(marketInfo.marketNumber || "");
+      setStreet(marketInfo.street || "");
+      setPlzOrt(marketInfo.plzOrt || "");
+    }
+  }, [marketInfo]);
+
+  const handleSave = async () => {
+    if (!selectedMarketId) return;
+
+    await upsertResponsibilities.mutateAsync({
+      marketId: selectedMarketId,
+      data: {
+        year: selectedYear,
+        items: rows.map((r) => ({
+          department: r.department,
+          responsibleName: r.responsibleName || null,
+          responsiblePhone: r.responsiblePhone || null,
+          deputyName: r.deputyName || null,
+          deputyPhone: r.deputyPhone || null,
+          sortOrder: r.sortOrder,
+        })),
+      },
+    });
+
+    await upsertMarketInfo.mutateAsync({
+      marketId: selectedMarketId,
+      data: {
+        year: selectedYear,
+        marketNumber: marketNumber || null,
+        street: street || null,
+        plzOrt: plzOrt || null,
+      },
+    });
+
+    await refetchResponsibilities();
+    await refetchMarketInfo();
+    setIsEditing(false);
+  };
+
+  const updateRow = (index: number, field: keyof ResponsibilityRow, value: string) => {
+    setRows((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const addRow = () => {
+    setRows((prev) => [
+      ...prev,
+      {
+        department: "",
+        responsibleName: "",
+        responsiblePhone: "",
+        deputyName: "",
+        deputyPhone: "",
+        sortOrder: prev.length + 1,
+      },
+    ]);
+  };
+
+  const removeRow = (index: number) => {
+    setRows((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  if (!selectedMarketId) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-96">
+          <p className="text-muted-foreground">Bitte wählen Sie eine Filiale aus.</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  return (
+    <AppLayout>
+      <div className="max-w-6xl mx-auto p-6">
+        {/* Document Header */}
+        <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
+          {/* Title Bar - blue like the original */}
+          <div className="bg-[#1a3a6b] text-white px-6 py-3 flex items-center justify-between">
+            <h1 className="text-lg font-bold">1.1 Verantwortlichkeiten im Markt</h1>
+            <div className="flex items-center gap-2">
+              {!isEditing ? (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                >
+                  <Pencil className="h-4 w-4" />
+                  Bearbeiten
+                </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      setIsEditing(false);
+                      refetchResponsibilities();
+                      refetchMarketInfo();
+                    }}
+                    className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                    Abbrechen
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={upsertResponsibilities.isPending}
+                    className="flex items-center gap-2 bg-white text-[#1a3a6b] hover:bg-white/90 px-4 py-1.5 rounded-lg text-sm font-bold transition-colors disabled:opacity-50"
+                  >
+                    <Save className="h-4 w-4" />
+                    Speichern
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Stand vom / Year */}
+          <div className="px-6 py-4 bg-gray-50 border-b border-border/60">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="font-semibold text-muted-foreground">Stand vom:</span>
+              <span className="font-bold text-xl text-foreground">{selectedYear}</span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2 max-w-3xl">
+              Die Verantwortlichkeiten müssen für jeden Bereich klar geregelt und schriftlich fixiert werden. 
+              Hierzu gehören neben dem Markt insgesamt und den einzelnen Abteilungen auch spezielle Tätigkeitsbereiche 
+              wie z.B. Wareneingangskontrolle, Lager- und Temperaturkontrolle oder Bearbeitung von Warenrückrufen.
+            </p>
+          </div>
+
+          {/* Market Info */}
+          <div className="px-6 py-4 border-b border-border/60">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-muted-foreground w-32 flex-shrink-0">Markt</span>
+                <div className="flex items-center gap-2 flex-1">
+                  <Building2 className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-bold text-foreground">{selectedMarket?.name || "—"}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-muted-foreground w-32 flex-shrink-0">Markt-Nummer</span>
+                {isEditing ? (
+                  <input
+                    value={marketNumber}
+                    onChange={(e) => setMarketNumber(e.target.value)}
+                    className="border border-border rounded-lg px-3 py-1.5 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    placeholder="z.B. 38107"
+                  />
+                ) : (
+                  <span className="text-sm text-foreground">{marketNumber || "—"}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-muted-foreground w-32 flex-shrink-0">Straße</span>
+                {isEditing ? (
+                  <input
+                    value={street}
+                    onChange={(e) => setStreet(e.target.value)}
+                    className="border border-border rounded-lg px-3 py-1.5 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    placeholder="z.B. Dammstraße 28"
+                  />
+                ) : (
+                  <span className="text-sm text-foreground">{street || "—"}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-muted-foreground w-32 flex-shrink-0">PLZ / Ort</span>
+                {isEditing ? (
+                  <input
+                    value={plzOrt}
+                    onChange={(e) => setPlzOrt(e.target.value)}
+                    className="border border-border rounded-lg px-3 py-1.5 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    placeholder="z.B. 86825 Leeder"
+                  />
+                ) : (
+                  <span className="text-sm text-foreground">{plzOrt || "—"}</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Responsibilities Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-[#1a3a6b] text-white">
+                  <th className="text-left px-4 py-3 text-sm font-semibold w-[250px]">Bereich / Abteilung</th>
+                  <th className="text-center px-2 py-3 text-xs font-medium w-[30px]"></th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold">
+                    Verantwortlicher (V) /<br />Stellvertretung (S)
+                  </th>
+                  <th className="text-left px-4 py-3 text-sm font-semibold">
+                    Telefon privat / Handy<br />(im Notfall)
+                  </th>
+                  {isEditing && <th className="w-10"></th>}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, index) => (
+                  <RowGroup
+                    key={index}
+                    row={row}
+                    index={index}
+                    isEditing={isEditing}
+                    updateRow={updateRow}
+                    removeRow={removeRow}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {isEditing && (
+            <div className="px-6 py-4 border-t border-border/60 bg-gray-50">
+              <button
+                onClick={addRow}
+                className="flex items-center gap-2 text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+                Bereich hinzufügen
+              </button>
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="px-6 py-3 bg-gray-50 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
+            <span>1.1</span>
+            <span>Qualitätssicherungs-Handbuch Einzelhandel</span>
+            <span>{String(selectedMonth()).padStart(2, "0")}/{selectedYear}</span>
+          </div>
+        </div>
+      </div>
+    </AppLayout>
+  );
+}
+
+function selectedMonth() {
+  return useAppStore.getState().selectedMonth;
+}
+
+function RowGroup({
+  row,
+  index,
+  isEditing,
+  updateRow,
+  removeRow,
+}: {
+  row: ResponsibilityRow;
+  index: number;
+  isEditing: boolean;
+  updateRow: (index: number, field: keyof ResponsibilityRow, value: string) => void;
+  removeRow: (index: number) => void;
+}) {
+  const isEven = index % 2 === 0;
+  const bgClass = isEven ? "bg-amber-50/60" : "bg-white";
+
+  return (
+    <>
+      {/* Verantwortlicher (V) row */}
+      <tr className={cn("border-b border-border/40", bgClass)}>
+        <td rowSpan={2} className={cn("px-4 py-2 text-sm font-medium text-foreground align-top border-r border-border/40", bgClass)}>
+          {isEditing ? (
+            <input
+              value={row.department}
+              onChange={(e) => updateRow(index, "department", e.target.value)}
+              className="w-full border border-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+          ) : (
+            row.department
+          )}
+        </td>
+        <td className="px-2 py-2 text-center text-xs font-bold text-muted-foreground border-r border-border/40">(V)</td>
+        <td className="px-4 py-2 border-r border-border/40">
+          {isEditing ? (
+            <input
+              value={row.responsibleName}
+              onChange={(e) => updateRow(index, "responsibleName", e.target.value)}
+              className="w-full border border-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              placeholder="Name eingeben..."
+            />
+          ) : (
+            <span className="text-sm">{row.responsibleName || "—"}</span>
+          )}
+        </td>
+        <td className="px-4 py-2">
+          {isEditing ? (
+            <input
+              value={row.responsiblePhone}
+              onChange={(e) => updateRow(index, "responsiblePhone", e.target.value)}
+              className="w-full border border-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              placeholder="Telefon eingeben..."
+            />
+          ) : (
+            <span className="text-sm">{row.responsiblePhone || "—"}</span>
+          )}
+        </td>
+        {isEditing && (
+          <td rowSpan={2} className="px-2 py-2 align-middle">
+            <button
+              onClick={() => removeRow(index)}
+              className="p-1.5 text-destructive/60 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </td>
+        )}
+      </tr>
+      {/* Stellvertretung (S) row */}
+      <tr className={cn("border-b border-border/60", bgClass)}>
+        <td className="px-2 py-2 text-center text-xs font-bold text-muted-foreground border-r border-border/40">(S)</td>
+        <td className="px-4 py-2 border-r border-border/40">
+          {isEditing ? (
+            <input
+              value={row.deputyName}
+              onChange={(e) => updateRow(index, "deputyName", e.target.value)}
+              className="w-full border border-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              placeholder="Name eingeben..."
+            />
+          ) : (
+            <span className="text-sm">{row.deputyName || "—"}</span>
+          )}
+        </td>
+        <td className="px-4 py-2">
+          {isEditing ? (
+            <input
+              value={row.deputyPhone}
+              onChange={(e) => updateRow(index, "deputyPhone", e.target.value)}
+              className="w-full border border-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              placeholder="Telefon eingeben..."
+            />
+          ) : (
+            <span className="text-sm">{row.deputyPhone || "—"}</span>
+          )}
+        </td>
+      </tr>
+    </>
+  );
+}

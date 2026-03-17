@@ -132,6 +132,52 @@ export interface User {
   createdAt: string;
 }
 
+export interface Responsibility {
+  id: number;
+  marketId: number;
+  department: string;
+  responsibleName?: string | null;
+  responsiblePhone?: string | null;
+  deputyName?: string | null;
+  deputyPhone?: string | null;
+  sortOrder: number;
+  year: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type UpsertResponsibilitiesItemsItem = {
+  department: string;
+  responsibleName?: string | null;
+  responsiblePhone?: string | null;
+  deputyName?: string | null;
+  deputyPhone?: string | null;
+  sortOrder: number;
+};
+
+export interface UpsertResponsibilities {
+  year: number;
+  items: UpsertResponsibilitiesItemsItem[];
+}
+
+export interface MarketInfoResponse {
+  id: number;
+  marketId: number;
+  marketNumber?: string | null;
+  street?: string | null;
+  plzOrt?: string | null;
+  year: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertMarketInfo {
+  year: number;
+  marketNumber?: string | null;
+  street?: string | null;
+  plzOrt?: string | null;
+}
+
 export type ListMarketsParams = {
   tenantId?: number;
 };
@@ -145,6 +191,14 @@ export type ListFormInstancesParams = {
 
 export type ListUsersParams = {
   tenantId?: number;
+};
+
+export type ListResponsibilitiesParams = {
+  year?: number;
+};
+
+export type GetMarketInfoParams = {
+  year?: number;
 };
 
 export type SeedData200 = {

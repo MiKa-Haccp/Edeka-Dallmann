@@ -23,14 +23,20 @@ import type {
   FormDefinition,
   FormEntry,
   FormInstance,
+  GetMarketInfoParams,
   HealthStatus,
   ListFormInstancesParams,
   ListMarketsParams,
+  ListResponsibilitiesParams,
   ListUsersParams,
   Market,
+  MarketInfoResponse,
+  Responsibility,
   Section,
   SeedData200,
   Tenant,
+  UpsertMarketInfo,
+  UpsertResponsibilities,
   User,
 } from "./api.schemas";
 
@@ -988,6 +994,416 @@ export function useListUsers<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List responsibilities for a market
+ */
+export const getListResponsibilitiesUrl = (
+  marketId: number,
+  params?: ListResponsibilitiesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/markets/${marketId}/responsibilities?${stringifiedParams}`
+    : `/api/markets/${marketId}/responsibilities`;
+};
+
+export const listResponsibilities = async (
+  marketId: number,
+  params?: ListResponsibilitiesParams,
+  options?: RequestInit,
+): Promise<Responsibility[]> => {
+  return customFetch<Responsibility[]>(
+    getListResponsibilitiesUrl(marketId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListResponsibilitiesQueryKey = (
+  marketId: number,
+  params?: ListResponsibilitiesParams,
+) => {
+  return [
+    `/api/markets/${marketId}/responsibilities`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getListResponsibilitiesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listResponsibilities>>,
+  TError = ErrorType<unknown>,
+>(
+  marketId: number,
+  params?: ListResponsibilitiesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listResponsibilities>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListResponsibilitiesQueryKey(marketId, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listResponsibilities>>
+  > = ({ signal }) =>
+    listResponsibilities(marketId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!marketId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listResponsibilities>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListResponsibilitiesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listResponsibilities>>
+>;
+export type ListResponsibilitiesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List responsibilities for a market
+ */
+
+export function useListResponsibilities<
+  TData = Awaited<ReturnType<typeof listResponsibilities>>,
+  TError = ErrorType<unknown>,
+>(
+  marketId: number,
+  params?: ListResponsibilitiesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listResponsibilities>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListResponsibilitiesQueryOptions(
+    marketId,
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create or update responsibilities for a market
+ */
+export const getUpsertResponsibilitiesUrl = (marketId: number) => {
+  return `/api/markets/${marketId}/responsibilities`;
+};
+
+export const upsertResponsibilities = async (
+  marketId: number,
+  upsertResponsibilities: UpsertResponsibilities,
+  options?: RequestInit,
+): Promise<Responsibility[]> => {
+  return customFetch<Responsibility[]>(getUpsertResponsibilitiesUrl(marketId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(upsertResponsibilities),
+  });
+};
+
+export const getUpsertResponsibilitiesMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upsertResponsibilities>>,
+    TError,
+    { marketId: number; data: BodyType<UpsertResponsibilities> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof upsertResponsibilities>>,
+  TError,
+  { marketId: number; data: BodyType<UpsertResponsibilities> },
+  TContext
+> => {
+  const mutationKey = ["upsertResponsibilities"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof upsertResponsibilities>>,
+    { marketId: number; data: BodyType<UpsertResponsibilities> }
+  > = (props) => {
+    const { marketId, data } = props ?? {};
+
+    return upsertResponsibilities(marketId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpsertResponsibilitiesMutationResult = NonNullable<
+  Awaited<ReturnType<typeof upsertResponsibilities>>
+>;
+export type UpsertResponsibilitiesMutationBody =
+  BodyType<UpsertResponsibilities>;
+export type UpsertResponsibilitiesMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create or update responsibilities for a market
+ */
+export const useUpsertResponsibilities = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upsertResponsibilities>>,
+    TError,
+    { marketId: number; data: BodyType<UpsertResponsibilities> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof upsertResponsibilities>>,
+  TError,
+  { marketId: number; data: BodyType<UpsertResponsibilities> },
+  TContext
+> => {
+  return useMutation(getUpsertResponsibilitiesMutationOptions(options));
+};
+
+/**
+ * @summary Get market info
+ */
+export const getGetMarketInfoUrl = (
+  marketId: number,
+  params?: GetMarketInfoParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/markets/${marketId}/info?${stringifiedParams}`
+    : `/api/markets/${marketId}/info`;
+};
+
+export const getMarketInfo = async (
+  marketId: number,
+  params?: GetMarketInfoParams,
+  options?: RequestInit,
+): Promise<MarketInfoResponse> => {
+  return customFetch<MarketInfoResponse>(
+    getGetMarketInfoUrl(marketId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetMarketInfoQueryKey = (
+  marketId: number,
+  params?: GetMarketInfoParams,
+) => {
+  return [
+    `/api/markets/${marketId}/info`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetMarketInfoQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMarketInfo>>,
+  TError = ErrorType<unknown>,
+>(
+  marketId: number,
+  params?: GetMarketInfoParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMarketInfo>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetMarketInfoQueryKey(marketId, params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMarketInfo>>> = ({
+    signal,
+  }) => getMarketInfo(marketId, params, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!marketId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getMarketInfo>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetMarketInfoQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMarketInfo>>
+>;
+export type GetMarketInfoQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get market info
+ */
+
+export function useGetMarketInfo<
+  TData = Awaited<ReturnType<typeof getMarketInfo>>,
+  TError = ErrorType<unknown>,
+>(
+  marketId: number,
+  params?: GetMarketInfoParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMarketInfo>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMarketInfoQueryOptions(marketId, params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create or update market info
+ */
+export const getUpsertMarketInfoUrl = (marketId: number) => {
+  return `/api/markets/${marketId}/info`;
+};
+
+export const upsertMarketInfo = async (
+  marketId: number,
+  upsertMarketInfo: UpsertMarketInfo,
+  options?: RequestInit,
+): Promise<MarketInfoResponse> => {
+  return customFetch<MarketInfoResponse>(getUpsertMarketInfoUrl(marketId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(upsertMarketInfo),
+  });
+};
+
+export const getUpsertMarketInfoMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upsertMarketInfo>>,
+    TError,
+    { marketId: number; data: BodyType<UpsertMarketInfo> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof upsertMarketInfo>>,
+  TError,
+  { marketId: number; data: BodyType<UpsertMarketInfo> },
+  TContext
+> => {
+  const mutationKey = ["upsertMarketInfo"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof upsertMarketInfo>>,
+    { marketId: number; data: BodyType<UpsertMarketInfo> }
+  > = (props) => {
+    const { marketId, data } = props ?? {};
+
+    return upsertMarketInfo(marketId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpsertMarketInfoMutationResult = NonNullable<
+  Awaited<ReturnType<typeof upsertMarketInfo>>
+>;
+export type UpsertMarketInfoMutationBody = BodyType<UpsertMarketInfo>;
+export type UpsertMarketInfoMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create or update market info
+ */
+export const useUpsertMarketInfo = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof upsertMarketInfo>>,
+    TError,
+    { marketId: number; data: BodyType<UpsertMarketInfo> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof upsertMarketInfo>>,
+  TError,
+  { marketId: number; data: BodyType<UpsertMarketInfo> },
+  TContext
+> => {
+  return useMutation(getUpsertMarketInfoMutationOptions(options));
+};
 
 /**
  * @summary Seed initial HACCP data

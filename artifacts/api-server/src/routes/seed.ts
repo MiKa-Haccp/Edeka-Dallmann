@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, tenantsTable, marketsTable, categoriesTable, sectionsTable, formDefinitionsTable, usersTable } from "@workspace/db";
+import { db, tenantsTable, marketsTable, categoriesTable, sectionsTable, formDefinitionsTable, usersTable, responsibilitiesTable, marketInfoTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -120,6 +120,36 @@ router.post("/seed", async (_req, res) => {
     { tenantId: tenant.id, name: "Anna Schmidt", email: "anna@edeka.de", role: "ADMIN", initials: "AS", pin: "5678" },
     { tenantId: tenant.id, name: "Thomas Weber", email: "thomas@edeka.de", role: "USER", initials: "TW", pin: "9012" },
   ]);
+
+  const allMarkets = await db.select().from(marketsTable);
+  const currentYear = new Date().getFullYear();
+
+  for (const market of allMarkets) {
+    await db.insert(marketInfoTable).values({
+      marketId: market.id,
+      marketNumber: market.code === "LEE" ? "38107" : market.code === "BUC" ? "38108" : "38109",
+      street: market.code === "LEE" ? "Dammstraße 28" : market.code === "BUC" ? "Hauptstraße 5" : "Bahnhofstraße 12",
+      plzOrt: market.code === "LEE" ? "86825 Leeder" : market.code === "BUC" ? "86983 Buching" : "86989 MOD",
+      year: currentYear,
+    });
+
+    const departments = [
+      { department: "Marktleitung / Betreiber", responsibleName: "Frau Leyer", responsiblePhone: "0176/61703866", deputyName: "Frau Landherr", deputyPhone: "0160/6392521", sortOrder: 1 },
+      { department: "HACCP- bzw. Hygiene-Beauftragter", responsibleName: "Frau Leyer", responsiblePhone: "s.o.", deputyName: "Frau Landherr", deputyPhone: "s.o.", sortOrder: 2 },
+      { department: "Fleisch und Wurst", responsibleName: "Herr Wurth", responsiblePhone: "0176/83800179", deputyName: "Fr. Glossner", deputyPhone: "0173/6420766", sortOrder: 3 },
+      { department: "Molkereiprodukte und Feinkost", responsibleName: "Fr. Schuster", responsiblePhone: "0162/5445376", deputyName: "Fr. Sarilenya", deputyPhone: "0160/87030 33", sortOrder: 4 },
+      { department: "(MSC) Fisch", responsibleName: "", responsiblePhone: "", deputyName: "", deputyPhone: "", sortOrder: 5 },
+      { department: "Obst und Gemüse", responsibleName: "Fr. Leyer", responsiblePhone: "s.o.", deputyName: "Fr. Landherr", deputyPhone: "s.o.", sortOrder: 6 },
+      { department: "Backshop", responsibleName: "", responsiblePhone: "", deputyName: "", deputyPhone: "", sortOrder: 7 },
+      { department: "Kühl- und Tiefkühlware", responsibleName: "Fr. Leyer", responsiblePhone: "s.o.", deputyName: "Fr. Landherr", deputyPhone: "s.o.", sortOrder: 8 },
+      { department: "Trockensortiment", responsibleName: "Fr. Leyer", responsiblePhone: "s.o.", deputyName: "Fr. Landherr", deputyPhone: "s.o.", sortOrder: 9 },
+      { department: "Freiverkäufliche Arzneimittel", responsibleName: "Fr. Leyer", responsiblePhone: "s.o.", deputyName: "Fr. Landherr", deputyPhone: "s.o.", sortOrder: 10 },
+    ];
+
+    await db.insert(responsibilitiesTable).values(
+      departments.map(d => ({ ...d, marketId: market.id, year: currentYear }))
+    );
+  }
 
   res.json({ message: "HACCP data seeded successfully" });
 });

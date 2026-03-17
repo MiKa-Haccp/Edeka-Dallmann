@@ -190,6 +190,119 @@ export const ListUsersResponseItem = zod.object({
 export const ListUsersResponse = zod.array(ListUsersResponseItem);
 
 /**
+ * @summary List responsibilities for a market
+ */
+export const ListResponsibilitiesParams = zod.object({
+  marketId: zod.coerce.number(),
+});
+
+export const ListResponsibilitiesQueryParams = zod.object({
+  year: zod.coerce.number().optional(),
+});
+
+export const ListResponsibilitiesResponseItem = zod.object({
+  id: zod.number(),
+  marketId: zod.number(),
+  department: zod.string(),
+  responsibleName: zod.string().nullish(),
+  responsiblePhone: zod.string().nullish(),
+  deputyName: zod.string().nullish(),
+  deputyPhone: zod.string().nullish(),
+  sortOrder: zod.number(),
+  year: zod.number(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+export const ListResponsibilitiesResponse = zod.array(
+  ListResponsibilitiesResponseItem,
+);
+
+/**
+ * @summary Create or update responsibilities for a market
+ */
+export const UpsertResponsibilitiesParams = zod.object({
+  marketId: zod.coerce.number(),
+});
+
+export const UpsertResponsibilitiesBody = zod.object({
+  year: zod.number(),
+  items: zod.array(
+    zod.object({
+      department: zod.string(),
+      responsibleName: zod.string().nullish(),
+      responsiblePhone: zod.string().nullish(),
+      deputyName: zod.string().nullish(),
+      deputyPhone: zod.string().nullish(),
+      sortOrder: zod.number(),
+    }),
+  ),
+});
+
+export const UpsertResponsibilitiesResponseItem = zod.object({
+  id: zod.number(),
+  marketId: zod.number(),
+  department: zod.string(),
+  responsibleName: zod.string().nullish(),
+  responsiblePhone: zod.string().nullish(),
+  deputyName: zod.string().nullish(),
+  deputyPhone: zod.string().nullish(),
+  sortOrder: zod.number(),
+  year: zod.number(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+export const UpsertResponsibilitiesResponse = zod.array(
+  UpsertResponsibilitiesResponseItem,
+);
+
+/**
+ * @summary Get market info
+ */
+export const GetMarketInfoParams = zod.object({
+  marketId: zod.coerce.number(),
+});
+
+export const GetMarketInfoQueryParams = zod.object({
+  year: zod.coerce.number().optional(),
+});
+
+export const GetMarketInfoResponse = zod.object({
+  id: zod.number(),
+  marketId: zod.number(),
+  marketNumber: zod.string().nullish(),
+  street: zod.string().nullish(),
+  plzOrt: zod.string().nullish(),
+  year: zod.number(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
+ * @summary Create or update market info
+ */
+export const UpsertMarketInfoParams = zod.object({
+  marketId: zod.coerce.number(),
+});
+
+export const UpsertMarketInfoBody = zod.object({
+  year: zod.number(),
+  marketNumber: zod.string().nullish(),
+  street: zod.string().nullish(),
+  plzOrt: zod.string().nullish(),
+});
+
+export const UpsertMarketInfoResponse = zod.object({
+  id: zod.number(),
+  marketId: zod.number(),
+  marketNumber: zod.string().nullish(),
+  street: zod.string().nullish(),
+  plzOrt: zod.string().nullish(),
+  year: zod.number(),
+  createdAt: zod.date(),
+  updatedAt: zod.date(),
+});
+
+/**
  * @summary Seed initial HACCP data
  */
 export const SeedDataResponse = zod.object({

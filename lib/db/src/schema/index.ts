@@ -6,3 +6,4 @@ export * from "./formDefinitions";
 export * from "./formInstances";
 export * from "./formEntries";
 export * from "./users";
+export * from "./responsibilities";

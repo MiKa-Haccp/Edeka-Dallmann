@@ -245,6 +245,102 @@ paths:
                 items:
                   $ref: "#/components/schemas/User"
 
+  /markets/{marketId}/responsibilities:
+    get:
+      operationId: listResponsibilities
+      tags: [responsibilities]
+      summary: List responsibilities for a market
+      parameters:
+        - name: marketId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of responsibilities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Responsibility"
+    put:
+      operationId: upsertResponsibilities
+      tags: [responsibilities]
+      summary: Create or update responsibilities for a market
+      parameters:
+        - name: marketId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertResponsibilities"
+      responses:
+        "200":
+          description: Updated responsibilities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Responsibility"
+
+  /markets/{marketId}/info:
+    get:
+      operationId: getMarketInfo
+      tags: [markets]
+      summary: Get market info
+      parameters:
+        - name: marketId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: year
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Market info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketInfoResponse"
+    put:
+      operationId: upsertMarketInfo
+      tags: [markets]
+      summary: Create or update market info
+      parameters:
+        - name: marketId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertMarketInfo"
+      responses:
+        "200":
+          description: Updated market info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketInfoResponse"
+
   /seed:
     post:
       operationId: seedData
@@ -530,3 +626,124 @@ components:
         - email
         - role
         - createdAt
+
+    Responsibility:
+      type: object
+      properties:
+        id:
+          type: integer
+        marketId:
+          type: integer
+        department:
+          type: string
+        responsibleName:
+          type: string
+          nullable: true
+        responsiblePhone:
+          type: string
+          nullable: true
+        deputyName:
+          type: string
+          nullable: true
+        deputyPhone:
+          type: string
+          nullable: true
+        sortOrder:
+          type: integer
+        year:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - marketId
+        - department
+        - sortOrder
+        - year
+        - createdAt
+        - updatedAt
+
+    UpsertResponsibilities:
+      type: object
+      properties:
+        year:
+          type: integer
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              department:
+                type: string
+              responsibleName:
+                type: string
+                nullable: true
+              responsiblePhone:
+                type: string
+                nullable: true
+              deputyName:
+                type: string
+                nullable: true
+              deputyPhone:
+                type: string
+                nullable: true
+              sortOrder:
+                type: integer
+            required:
+              - department
+              - sortOrder
+      required:
+        - year
+        - items
+
+    MarketInfoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        marketId:
+          type: integer
+        marketNumber:
+          type: string
+          nullable: true
+        street:
+          type: string
+          nullable: true
+        plzOrt:
+          type: string
+          nullable: true
+        year:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - marketId
+        - year
+        - createdAt
+        - updatedAt
+
+    UpsertMarketInfo:
+      type: object
+      properties:
+        year:
+          type: integer
+        marketNumber:
+          type: string
+          nullable: true
+        street:
+          type: string
+          nullable: true
+        plzOrt:
+          type: string
+          nullable: true
+      required:
+        - year
