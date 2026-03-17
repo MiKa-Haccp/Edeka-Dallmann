@@ -13,7 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { getDaysInMonth, format, isToday, isFuture } from "date-fns";
 import { de } from "date-fns/locale";
-import { Info, Plus, ChevronLeft, ChevronRight, AlertTriangle, Check, X, Thermometer, PenTool } from "lucide-react";
+import { Info, Plus, ChevronLeft, ChevronRight, AlertTriangle, Check, X, Thermometer, PenTool, FileText } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
