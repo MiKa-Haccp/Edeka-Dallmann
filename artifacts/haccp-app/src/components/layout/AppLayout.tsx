@@ -26,9 +26,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
       {showMarktwahlScreen && <MarktwahlScreen />}
       <Header onMenuToggle={() => setMobileMenuOpen(true)} />
       <MobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
-      <div className="flex flex-1 w-full">
+      <div className="flex flex-1 w-full min-h-0">
         <Sidebar />
-        <main className="flex-1 overflow-x-hidden relative min-w-0">
+        <main className="flex-1 min-w-0 relative">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
