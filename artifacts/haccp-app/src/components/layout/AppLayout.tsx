@@ -3,18 +3,26 @@ import { Header } from "./Header";
 import { Sidebar, MobileSidebar } from "./Sidebar";
 import { motion } from "framer-motion";
 import { MarktwahlScreen } from "@/components/MarktwahlScreen";
+import { GeraetSperrScreen } from "@/components/GeraetSperrScreen";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
+import { useAutoLogout } from "@/hooks/useAutoLogout";
+import { useBookingAutoReturn } from "@/hooks/useBookingAutoReturn";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { selectedMarketId } = useAppStore();
+  const { selectedMarketId, deviceAuthorized } = useAppStore();
   const { isLoading: marketsLoading } = useListMarkets();
 
-  const showMarktwahlScreen = !marketsLoading && !selectedMarketId;
+  useAutoLogout();
+  useBookingAutoReturn();
+
+  const showGeraetSperre = !deviceAuthorized;
+  const showMarktwahlScreen = deviceAuthorized && !marketsLoading && !selectedMarketId;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {showGeraetSperre && <GeraetSperrScreen />}
       {showMarktwahlScreen && <MarktwahlScreen />}
       <Header onMenuToggle={() => setMobileMenuOpen(true)} />
       <MobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />

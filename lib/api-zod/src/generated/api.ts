@@ -36,6 +36,10 @@ export const ListMarketsResponseItem = zod.object({
   tenantId: zod.number(),
   name: zod.string(),
   code: zod.string(),
+  address: zod.string().nullable().optional(),
+  lat: zod.string().nullable().optional(),
+  lng: zod.string().nullable().optional(),
+  geoRadiusKm: zod.number().nullable().optional(),
   createdAt: zod.date(),
 });
 export const ListMarketsResponse = zod.array(ListMarketsResponseItem);

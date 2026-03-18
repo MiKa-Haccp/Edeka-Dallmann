@@ -20,6 +20,10 @@ export interface Market {
   tenantId: number;
   name: string;
   code: string;
+  address?: string | null;
+  lat?: string | null;
+  lng?: string | null;
+  geoRadiusKm?: number | null;
   createdAt: string;
 }
 

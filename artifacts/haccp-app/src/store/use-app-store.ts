@@ -9,9 +9,13 @@ interface AdminSession {
   assignedMarketIds?: number[];
 }
 
+type MarketSelectionMode = 'gps' | 'manual';
+
 interface AppState {
   selectedMarketId: number | null;
   setSelectedMarketId: (id: number | null) => void;
+  marketSelectionMode: MarketSelectionMode | null;
+  setMarketSelectionMode: (mode: MarketSelectionMode | null) => void;
   selectedYear: number;
   selectedMonth: number;
   setDate: (year: number, month: number) => void;
@@ -19,6 +23,9 @@ interface AppState {
   setAdminSession: (session: AdminSession | null) => void;
   isAdmin: () => boolean;
   canAccessMarket: (marketId: number) => boolean;
+  isGpsLocked: () => boolean;
+  deviceAuthorized: boolean;
+  setDeviceAuthorized: (v: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -26,6 +33,8 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       selectedMarketId: null,
       setSelectedMarketId: (id) => set({ selectedMarketId: id }),
+      marketSelectionMode: null,
+      setMarketSelectionMode: (mode) => set({ marketSelectionMode: mode }),
       selectedYear: new Date().getFullYear(),
       selectedMonth: new Date().getMonth() + 1,
       setDate: (year, month) => set({ selectedYear: year, selectedMonth: month }),
@@ -44,6 +53,14 @@ export const useAppStore = create<AppState>()(
         }
         return true;
       },
+      isGpsLocked: () => {
+        const s = get().adminSession;
+        if (!s) return true;
+        if (s.role === 'SUPERADMIN' || s.role === 'ADMIN' || s.role === 'BEREICHSLEITUNG') return false;
+        return true;
+      },
+      deviceAuthorized: false,
+      setDeviceAuthorized: (v) => set({ deviceAuthorized: v }),
     }),
     {
       name: 'haccp-app-storage',
@@ -51,6 +68,7 @@ export const useAppStore = create<AppState>()(
         adminSession: state.adminSession,
         selectedYear: state.selectedYear,
         selectedMonth: state.selectedMonth,
+        deviceAuthorized: state.deviceAuthorized,
       }),
     }
   )

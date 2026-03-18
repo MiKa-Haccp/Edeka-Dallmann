@@ -40,7 +40,7 @@ artifacts-monorepo/
 ## Database Schema
 
 - **tenants** - Companies (multi-tenant)
-- **markets** - Branches/locations (Leeder, Buching, MOD)
+- **markets** - Branches/locations (Leeder, Buching, MOD) with GPS coordinates (lat/lng), address, geoRadiusKm (default 10km)
 - **categories** - HACCP categories (Allgemein, Markt, Metzgerei)
 - **sections** - Numbered sections within categories (e.g., 1.1, 2.5, 3.14)
 - **form_definitions** - Field definitions (temperature, boolean, text, photo, signature, pin)
@@ -74,7 +74,12 @@ artifacts-monorepo/
 - **Info Documentation (Section 1.3)**: Info Dokumentation und Ablagefristen — read-only information page showing retention periods for all HACCP-relevant documents, legal references (LMHV, VO (EG) 852/2004, IfSG, HGB/AO)
 - **Annual Cleaning Plan (Section 1.5)**: Reinigungsplan Jahr — interactive yearly cleaning schedule with 3 areas and 15 items. Employees confirm each month's cleaning by PIN. Active months are determined by frequency (monatlich=all, vierteljährlich=Jan/Apr/Jul/Okt, halbjährlich=Jan/Jul, jährlich=Jan). Confirmations stored in `cleaning_plan_confirmations` table. Admins can delete confirmations.
 - **Training Records (Section 1.4)**: Schulungsnachweise page — Admins/Marktleiter create training sessions, select topics from 13 EDEKA-standard topics (IfSG, Hygiene, Bio, Arzneimittel, etc.), assign a Schulungsleiter. Employees confirm attendance via PIN-only.
-- **Auto-Logout**: Admin sessions automatically expire after 5 minutes of inactivity (useAutoLogout hook in App.tsx)
+- **Auto-Logout**: Admin sessions automatically expire after 5 minutes of inactivity (useAutoLogout hook)
+- **Auto-Return**: After 60 seconds of inactivity on any non-admin page, app navigates back to dashboard (useBookingAutoReturn hook) — prevents employee accounts from staying open
+- **Device Whitelisting**: App shows full-screen lock on first access. Master password required (`DEVICE_MASTER_PASSWORD` env var, default `Dallmann2025!`). Authorization persisted in localStorage. Backend: `POST /api/device/verify`
+- **GPS Geofencing**: On MarktwahlScreen, GPS is requested automatically. Each market has lat/lng/geoRadiusKm (default 10km). Nearest market within radius is auto-detected.
+- **Role-based GPS Lock**: MARKTLEITER and users with no admin session are GPS-locked (cannot manually select a different market). ADMIN/SUPERADMIN/BEREICHSLEITUNG can override GPS and select manually.
+- **GPS Status Badge**: Header shows "GPS" or "manuell" badge next to selected market. GPS-locked users see static market name with lock icon (no dropdown).
 - Monthly form instances with daily entries
 - Sidebar section 1.1 → Responsibilities page, section 1.2 → User Registry page, section 1.3 → Info Documentation page, section 1.4 → Training Records page
 

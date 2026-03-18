@@ -8,6 +8,10 @@ export const marketsTable = pgTable("markets", {
   tenantId: integer("tenant_id").notNull().references(() => tenantsTable.id),
   name: text("name").notNull(),
   code: text("code").notNull(),
+  address: text("address"),
+  lat: text("lat"),
+  lng: text("lng"),
+  geoRadiusKm: integer("geo_radius_km").default(10),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
