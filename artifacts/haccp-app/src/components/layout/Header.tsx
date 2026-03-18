@@ -1,6 +1,6 @@
 import { useListMarkets } from "@workspace/api-client-react";
 import { useAppStore } from "@/store/use-app-store";
-import { MapPin, ShieldCheck, Bell, LogIn, LogOut, Shield, Settings, Menu } from "lucide-react";
+import { MapPin, Bell, LogIn, LogOut, Shield, Settings, Menu } from "lucide-react";
 import { useEffect } from "react";
 import { Link, useLocation } from "wouter";
 
@@ -27,18 +27,13 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
           <Menu className="h-5 w-5" />
         </button>
 
-        <Link href="/" className="flex items-center gap-2 group cursor-pointer mr-2 sm:mr-4 md:mr-8">
-          <div className="bg-primary/10 p-1.5 sm:p-2 rounded-xl text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
-            <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6" />
-          </div>
-          <div className="hidden sm:flex flex-col">
-            <span className="font-display font-bold text-lg leading-tight text-foreground tracking-tight">
-              HACCP
-            </span>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground leading-none">
-              Management
-            </span>
-          </div>
+        <Link href="/" className="flex items-center gap-2 group cursor-pointer mr-2 sm:mr-4 md:mr-8 hover:opacity-80 transition-opacity">
+          <img 
+            src={import.meta.env.BASE_URL + "dallmann-logo.png"} 
+            alt="DALLMANN EDEKA Logo" 
+            className="h-10 sm:h-12 w-auto object-contain"
+            title="DALLMANN EDEKA HACCP Management"
+          />
         </Link>
 
         <div className="h-6 w-px bg-border hidden md:block"></div>

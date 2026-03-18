@@ -82,13 +82,18 @@ export default function AdminLogin() {
 
   return (
     <AppLayout>
-      <div className="max-w-md mx-auto mt-20">
+      <div className="max-w-md mx-auto mt-12">
         <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
-          <div className="bg-[#1a3a6b] text-white px-6 py-4 flex items-center gap-3">
-            <Shield className="h-6 w-6" />
-            <div>
+          <div className="bg-[#1a3a6b] text-white px-6 py-5 flex flex-col items-center gap-3">
+            <img 
+              src={import.meta.env.BASE_URL + "dallmann-logo.png"} 
+              alt="DALLMANN EDEKA Logo" 
+              className="h-16 w-auto object-contain"
+              title="DALLMANN EDEKA HACCP Management"
+            />
+            <div className="text-center">
               <h2 className="text-lg font-bold">Admin Anmeldung</h2>
-              <p className="text-xs text-white/70">Nur für autorisierte Administratoren</p>
+              <p className="text-xs text-white/70 mt-1">Nur für autorisierte Administratoren</p>
             </div>
           </div>
 
