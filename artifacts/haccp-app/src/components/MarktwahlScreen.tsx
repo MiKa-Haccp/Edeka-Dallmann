@@ -197,7 +197,7 @@ export function MarktwahlScreen() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex flex-col bg-gradient-to-br from-[#0f2444] via-[#1a3a6b] to-[#2d5aa0] min-h-screen"
+        className="fixed inset-0 z-50 flex flex-col bg-gradient-to-br from-[#0f2444] via-[#1a3a6b] to-[#2d5aa0] overflow-y-auto"
       >
         <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
           <motion.div
