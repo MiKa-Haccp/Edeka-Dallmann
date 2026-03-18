@@ -3,7 +3,8 @@ import { useListMarkets } from "@workspace/api-client-react";
 import { useAppStore } from "@/store/use-app-store";
 import {
   MapPin, Lock, Store, ChevronRight, Navigation, AlertCircle,
-  CheckCircle2, Loader2, NavigationOff, Info
+  CheckCircle2, Loader2, NavigationOff, Info, Shield, Eye, EyeOff,
+  LogIn, LogOut, ChevronDown, ChevronUp
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -12,6 +13,8 @@ import {
   getDistanceKm,
   type MarketWithGeo,
 } from "@/hooks/useGeolocation";
+
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 const MARKET_COLORS: Record<string, { bg: string; border: string; text: string; icon: string; activeBorder: string }> = {
   LEE: { bg: "bg-blue-50", border: "border-blue-200 hover:border-blue-400", activeBorder: "border-blue-500 ring-2 ring-blue-300", text: "text-blue-700", icon: "bg-blue-100 text-blue-600" },
@@ -25,13 +28,58 @@ function getMarketColor(code: string) {
 
 export function MarktwahlScreen() {
   const { data: markets, isLoading: marketsLoading } = useListMarkets();
-  const { adminSession, setSelectedMarketId, setMarketSelectionMode, canAccessMarket, isGpsLocked } = useAppStore();
+  const { adminSession, setAdminSession, setSelectedMarketId, setMarketSelectionMode, canAccessMarket, isGpsLocked } = useAppStore();
   const { position, status: geoStatus, error: geoError, request: requestGeo } = useGeolocation();
 
   const [detectedMarketId, setDetectedMarketId] = useState<number | null>(null);
   const [detectedDistance, setDetectedDistance] = useState<number | null>(null);
   const [outsideAllMarkets, setOutsideAllMarkets] = useState(false);
   const [gpsInitialized, setGpsInitialized] = useState(false);
+
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginEmail || !loginPassword) return;
+    setLoginLoading(true);
+    setLoginError(null);
+    try {
+      const resp = await fetch(`${API_BASE}/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        setLoginError(data.error || "Anmeldung fehlgeschlagen.");
+      } else {
+        setAdminSession({
+          userId: data.userId,
+          name: data.name,
+          email: data.email,
+          role: data.role,
+          assignedMarketIds: data.assignedMarketIds,
+        });
+        setLoginSuccess(true);
+        setLoginEmail("");
+        setLoginPassword("");
+        setTimeout(() => {
+          setLoginSuccess(false);
+          setShowAdminLogin(false);
+        }, 1200);
+      }
+    } catch {
+      setLoginError("Verbindungsfehler. Bitte erneut versuchen.");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
 
   const gpsLocked = isGpsLocked();
   const isMarktleiter = adminSession?.role === "MARKTLEITER";
@@ -329,7 +377,7 @@ export function MarktwahlScreen() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="mt-8 text-blue-300 text-xs text-center max-w-xs"
+              className="mt-6 text-blue-300 text-xs text-center max-w-xs"
             >
               Mitarbeiter arbeiten immer in der GPS-erkannten Filiale. Für Aushilfen wenden Sie sich an den Marktleiter.
             </motion.p>
@@ -340,9 +388,123 @@ export function MarktwahlScreen() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="p-4 text-center"
+          className="px-4 pb-6 flex flex-col items-center gap-3"
         >
-          <div className="flex items-center justify-center gap-2 text-blue-400 text-xs">
+          {adminSession ? (
+            <div className="flex items-center gap-3 bg-white/10 border border-white/20 rounded-2xl px-5 py-3">
+              <Shield className="w-4 h-4 text-blue-300 shrink-0" />
+              <div className="text-left">
+                <p className="text-white text-sm font-semibold leading-none">{adminSession.name}</p>
+                <p className="text-blue-300 text-xs mt-0.5">{adminSession.role} · {adminSession.email}</p>
+              </div>
+              <button
+                onClick={() => setAdminSession(null)}
+                className="ml-2 p-1.5 text-blue-300 hover:text-white hover:bg-white/10 rounded-lg transition"
+                title="Abmelden"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="w-full max-w-sm">
+              <button
+                onClick={() => {
+                  setShowAdminLogin(!showAdminLogin);
+                  setLoginError(null);
+                }}
+                className="w-full flex items-center justify-center gap-2 text-blue-300 hover:text-white text-xs font-medium py-2 transition group"
+              >
+                <Shield className="w-3.5 h-3.5" />
+                Admin-Anmeldung
+                {showAdminLogin
+                  ? <ChevronUp className="w-3.5 h-3.5" />
+                  : <ChevronDown className="w-3.5 h-3.5" />
+                }
+              </button>
+
+              <AnimatePresence>
+                {showAdminLogin && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    {loginSuccess ? (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="mt-2 bg-green-500/20 border border-green-400/30 rounded-2xl p-4 flex items-center justify-center gap-2 text-green-200 text-sm font-medium"
+                      >
+                        <CheckCircle2 className="w-5 h-5 text-green-300" />
+                        Erfolgreich angemeldet
+                      </motion.div>
+                    ) : (
+                      <form
+                        onSubmit={handleAdminLogin}
+                        className="mt-2 bg-white/10 border border-white/20 rounded-2xl p-4 space-y-3"
+                      >
+                        <input
+                          type="email"
+                          value={loginEmail}
+                          onChange={(e) => { setLoginEmail(e.target.value); setLoginError(null); }}
+                          placeholder="E-Mail-Adresse"
+                          autoComplete="email"
+                          className="w-full bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                        />
+                        <div className="relative">
+                          <input
+                            type={showLoginPassword ? "text" : "password"}
+                            value={loginPassword}
+                            onChange={(e) => { setLoginPassword(e.target.value); setLoginError(null); }}
+                            placeholder="Passwort"
+                            autoComplete="current-password"
+                            className="w-full bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-2.5 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowLoginPassword(!showLoginPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition"
+                          >
+                            {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+
+                        {loginError && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center gap-2 text-red-300 text-xs bg-red-500/20 rounded-xl px-3 py-2"
+                          >
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            {loginError}
+                          </motion.div>
+                        )}
+
+                        <button
+                          type="submit"
+                          disabled={loginLoading || !loginEmail || !loginPassword}
+                          className="w-full bg-white text-[#1a3a6b] font-bold rounded-xl py-2.5 text-sm hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {loginLoading ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <LogIn className="w-4 h-4" />
+                              Anmelden
+                            </>
+                          )}
+                        </button>
+                      </form>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          <div className="flex items-center justify-center gap-2 text-blue-400/60 text-xs mt-1">
             <MapPin className="w-3 h-3" />
             EDEKA DALLMANN · Leeder · Buching · MOD
           </div>
