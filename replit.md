@@ -72,6 +72,7 @@ artifacts-monorepo/
 - **Granular Permissions**: Per-user permission checkboxes (users.view, users.manage, entries.create, entries.view_all, entries.edit, entries.delete, reports.view, reports.export, settings.manage) manageable by SUPERADMINs
 - **Market Assignments**: Marktleiter can be assigned to specific markets (Leeder, Buching, MOD)
 - **Info Documentation (Section 1.3)**: Info Dokumentation und Ablagefristen — read-only information page showing retention periods for all HACCP-relevant documents, legal references (LMHV, VO (EG) 852/2004, IfSG, HGB/AO)
+- **Annual Cleaning Plan (Section 1.5)**: Reinigungsplan Jahr — interactive yearly cleaning schedule with 3 areas and 15 items. Employees confirm each month's cleaning by PIN. Active months are determined by frequency (monatlich=all, vierteljährlich=Jan/Apr/Jul/Okt, halbjährlich=Jan/Jul, jährlich=Jan). Confirmations stored in `cleaning_plan_confirmations` table. Admins can delete confirmations.
 - **Training Records (Section 1.4)**: Schulungsnachweise page — Admins/Marktleiter create training sessions, select topics from 13 EDEKA-standard topics (IfSG, Hygiene, Bio, Arzneimittel, etc.), assign a Schulungsleiter. Employees confirm attendance via PIN-only.
 - **Auto-Logout**: Admin sessions automatically expire after 5 minutes of inactivity (useAutoLogout hook in App.tsx)
 - Monthly form instances with daily entries
@@ -83,6 +84,7 @@ artifacts-monorepo/
 - `/user-registry` — Section 1.2: Kürzelliste (user registration form + registered user list with admin reset + admin invite section)
 - `/info-documentation` — Section 1.3: Info Dokumentation und Ablagefristen (read-only info page with retention periods)
 - `/training-records` — Section 1.4: Schulungsnachweise (training protocols with topic checklists, attendance via PIN-only)
+- `/annual-cleaning-plan` — Section 1.5: Reinigungsplan Jahr (interactive yearly cleaning plan, PIN confirmation per month)
 - `/admin/login` — Admin login page (email + password)
 - `/admin/register` — Admin registration via invitation token
 - `/admin/users` — Benutzerverwaltung: Role management, permission checkboxes, market assignments (SUPERADMIN only)

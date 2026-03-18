@@ -13,6 +13,7 @@ import permissionsRouter from "./permissions";
 import seedRouter from "./seed";
 import responsibilitiesRouter from "./responsibilities";
 import trainingRouter from "./training";
+import cleaningPlanRouter from "./cleaningPlan";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(permissionsRouter);
 router.use(seedRouter);
 router.use(responsibilitiesRouter);
 router.use(trainingRouter);
+router.use(cleaningPlanRouter);
 
 export default router;

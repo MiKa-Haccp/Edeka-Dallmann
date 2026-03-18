@@ -28,7 +28,7 @@ router.post("/seed", async (_req, res) => {
     { number: "1.2", title: "Kürzellisten", sortOrder: 2 },
     { number: "1.3", title: "Info Dokumentation und Ablagefristen", sortOrder: 3 },
     { number: "1.4", title: "Schulungsnachweise", sortOrder: 4 },
-    { number: "1.5", title: "Lieferantenbewertung", sortOrder: 5 },
+    { number: "1.5", title: "Reinigungsplan Jahr", sortOrder: 5 },
     { number: "1.6", title: "Rückverfolgbarkeit", sortOrder: 6 },
     { number: "1.7", title: "Reklamationsmanagement", sortOrder: 7 },
     { number: "1.8", title: "Krisenmanagement", sortOrder: 8 },
