@@ -60,11 +60,11 @@ export function MarktwahlScreen() {
         setLoginError(data.error || "Anmeldung fehlgeschlagen.");
       } else {
         setAdminSession({
-          userId: data.userId,
-          name: data.name,
-          email: data.email,
-          role: data.role,
-          assignedMarketIds: data.assignedMarketIds,
+          userId: data.user.id,
+          name: data.user.name,
+          email: data.user.email,
+          role: data.user.role,
+          assignedMarketIds: data.assignedMarketIds || [],
         });
         setLoginSuccess(true);
         setLoginEmail("");

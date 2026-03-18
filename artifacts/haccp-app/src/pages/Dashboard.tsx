@@ -88,7 +88,7 @@ export default function Dashboard() {
               <Activity className="w-3.5 h-3.5" /> System Online
             </div>
             <h1 className="text-2xl sm:text-4xl font-bold mb-2 leading-tight">
-              {getGreeting()}{adminSession ? `, ${adminSession.name.split(" ")[0]}` : ""}!
+              {getGreeting()}{adminSession?.name ? `, ${adminSession.name.split(" ")[0]}` : ""}!
             </h1>
             <p className="text-blue-100 text-sm sm:text-base max-w-xl">
               Willkommen bei der EDEKA DALLMANN Plattform. Wählen Sie ein Modul, um fortzufahren.
