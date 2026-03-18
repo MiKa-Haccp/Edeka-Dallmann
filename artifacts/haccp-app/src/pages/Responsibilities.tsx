@@ -3,6 +3,7 @@ import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets, useListResponsibilities, useGetMarketInfo, useUpsertResponsibilities, useUpsertMarketInfo } from "@workspace/api-client-react";
 import { useState, useEffect } from "react";
 import { Save, Pencil, X, Plus, Trash2, Building2 } from "lucide-react";
+import { JaehrlicheErinnerung } from "@/components/JaehrlicheErinnerung";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -36,10 +37,17 @@ export default function Responsibilities() {
   const { selectedMarketId, selectedYear } = useAppStore();
   const { data: markets } = useListMarkets();
   const selectedMarket = markets?.find((m) => m.id === selectedMarketId);
+  const currentYear = new Date().getFullYear();
 
   const { data: responsibilities, refetch: refetchResponsibilities } = useListResponsibilities(
     selectedMarketId || 0,
     { year: selectedYear },
+    { query: { enabled: !!selectedMarketId } }
+  );
+
+  const { data: currentYearResponsibilities } = useListResponsibilities(
+    selectedMarketId || 0,
+    { year: currentYear },
     { query: { enabled: !!selectedMarketId } }
   );
 
@@ -161,9 +169,26 @@ export default function Responsibilities() {
     );
   }
 
+  const reminderYear = (currentYearResponsibilities && currentYearResponsibilities.length > 0)
+    ? currentYear
+    : null;
+  const reminderDate = (currentYearResponsibilities && currentYearResponsibilities.length > 0)
+    ? currentYearResponsibilities.reduce((latest, r) =>
+        r.updatedAt > latest ? r.updatedAt : latest,
+        currentYearResponsibilities[0].updatedAt
+      )
+    : null;
+
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-6xl mx-auto p-6 space-y-4">
+        <JaehrlicheErinnerung
+          lastUpdatedYear={reminderYear}
+          lastUpdatedDate={reminderDate}
+          sectionLabel="1.1 Verantwortlichkeiten"
+          renewalMonth={11}
+        />
+
         {/* Document Header */}
         <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
           {/* Title Bar - blue like the original */}
