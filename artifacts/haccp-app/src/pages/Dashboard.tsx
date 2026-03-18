@@ -5,6 +5,7 @@ import {
   RefreshCw, BarChart3, Lock, Clock, Users
 } from "lucide-react";
 import { Link } from "wouter";
+import { FaelligkeitenWidget } from "@/components/FaelligkeitenWidget";
 
 interface ModuleCard {
   id: string;
@@ -162,6 +163,8 @@ export default function Dashboard() {
             })}
           </div>
         </div>
+
+        <FaelligkeitenWidget />
 
         {adminSession && (
           <div className="bg-white rounded-2xl border border-border/60 shadow-sm p-5">
