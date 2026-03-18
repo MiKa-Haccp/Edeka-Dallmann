@@ -2,12 +2,20 @@ import { ReactNode, useState } from "react";
 import { Header } from "./Header";
 import { Sidebar, MobileSidebar } from "./Sidebar";
 import { motion } from "framer-motion";
+import { MarktwahlScreen } from "@/components/MarktwahlScreen";
+import { useAppStore } from "@/store/use-app-store";
+import { useListMarkets } from "@workspace/api-client-react";
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { selectedMarketId } = useAppStore();
+  const { isLoading: marketsLoading } = useListMarkets();
+
+  const showMarktwahlScreen = !marketsLoading && !selectedMarketId;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {showMarktwahlScreen && <MarktwahlScreen />}
       <Header onMenuToggle={() => setMobileMenuOpen(true)} />
       <MobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
       <div className="flex flex-1 w-full">

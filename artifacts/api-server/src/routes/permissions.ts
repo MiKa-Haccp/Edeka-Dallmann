@@ -4,7 +4,7 @@ import { eq, and, inArray } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-const VALID_ROLES = ["SUPERADMIN", "ADMIN", "MARKTLEITER", "USER"] as const;
+const VALID_ROLES = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER", "USER"] as const;
 
 const PERMISSION_AREAS = [
   { key: "users.view", label: "Mitarbeiterliste einsehen", group: "Benutzerverwaltung" },
@@ -24,6 +24,11 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
   ADMIN: [
     "users.view", "users.manage", "users.invite_admin",
     "entries.create", "entries.view_all", "entries.edit", "entries.delete",
+    "reports.view", "reports.export",
+  ],
+  BEREICHSLEITUNG: [
+    "users.view", "users.manage",
+    "entries.create", "entries.view_all", "entries.edit",
     "reports.view", "reports.export",
   ],
   MARKTLEITER: [

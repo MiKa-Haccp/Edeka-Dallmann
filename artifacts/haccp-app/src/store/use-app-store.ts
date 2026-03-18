@@ -6,6 +6,7 @@ interface AdminSession {
   name: string;
   email: string;
   role: string;
+  assignedMarketIds?: number[];
 }
 
 interface AppState {
@@ -17,6 +18,7 @@ interface AppState {
   adminSession: AdminSession | null;
   setAdminSession: (session: AdminSession | null) => void;
   isAdmin: () => boolean;
+  canAccessMarket: (marketId: number) => boolean;
 }
 
 export const useAppStore = create<AppState>()(
@@ -31,11 +33,25 @@ export const useAppStore = create<AppState>()(
       setAdminSession: (session) => set({ adminSession: session }),
       isAdmin: () => {
         const s = get().adminSession;
-        return s?.role === 'ADMIN' || s?.role === 'SUPERADMIN';
+        return s?.role === 'ADMIN' || s?.role === 'SUPERADMIN' || s?.role === 'BEREICHSLEITUNG';
+      },
+      canAccessMarket: (marketId: number) => {
+        const s = get().adminSession;
+        if (!s) return true;
+        if (s.role === 'SUPERADMIN' || s.role === 'ADMIN' || s.role === 'BEREICHSLEITUNG') return true;
+        if (s.role === 'MARKTLEITER') {
+          return s.assignedMarketIds?.includes(marketId) ?? false;
+        }
+        return true;
       },
     }),
     {
       name: 'haccp-app-storage',
+      partialize: (state) => ({
+        adminSession: state.adminSession,
+        selectedYear: state.selectedYear,
+        selectedMonth: state.selectedMonth,
+      }),
     }
   )
 );

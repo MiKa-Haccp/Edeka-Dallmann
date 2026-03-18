@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable, adminInvitationsTable } from "@workspace/db";
+import { db, usersTable, adminInvitationsTable, userMarketAssignmentsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { randomBytes, scryptSync } from "crypto";
 
@@ -201,9 +201,11 @@ router.post("/admin/login", async (req, res) => {
     .from(usersTable)
     .where(eq(usersTable.email, email.toLowerCase()));
 
+  const ADMIN_ROLES = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER"];
+
   const user = users.find(
     (u) =>
-      (u.role === "ADMIN" || u.role === "SUPERADMIN") &&
+      ADMIN_ROLES.includes(u.role) &&
       u.password &&
       verifyPassword(password, u.password)
   );
@@ -213,9 +215,17 @@ router.post("/admin/login", async (req, res) => {
     return;
   }
 
+  const marketAssignments = (user.role === "MARKTLEITER")
+    ? await db
+        .select()
+        .from(userMarketAssignmentsTable)
+        .where(eq(userMarketAssignmentsTable.userId, user.id))
+    : [];
+
   res.json({
     success: true,
     user: stripSensitive(user),
+    assignedMarketIds: marketAssignments.map((a) => a.marketId),
   });
 });
 

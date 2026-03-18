@@ -1,19 +1,12 @@
 import { useListMarkets } from "@workspace/api-client-react";
 import { useAppStore } from "@/store/use-app-store";
-import { MapPin, Bell, LogIn, LogOut, Shield, Settings, Menu } from "lucide-react";
-import { useEffect } from "react";
+import { MapPin, Bell, LogIn, LogOut, Shield, Settings, Menu, RefreshCw } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
 export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const { data: markets, isLoading } = useListMarkets();
-  const { selectedMarketId, setSelectedMarketId, adminSession, setAdminSession } = useAppStore();
+  const { selectedMarketId, setSelectedMarketId, adminSession, setAdminSession, canAccessMarket } = useAppStore();
   const [, navigate] = useLocation();
-
-  useEffect(() => {
-    if (markets?.length && !selectedMarketId) {
-      setSelectedMarketId(markets[0].id);
-    }
-  }, [markets, selectedMarketId, setSelectedMarketId]);
 
   const isLoggedIn = !!adminSession;
 
@@ -39,29 +32,47 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
         <div className="h-6 w-px bg-border hidden md:block"></div>
 
         <div className="flex-1 flex items-center gap-2">
-          <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-2.5 sm:pl-3 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors">
-              <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          {selectedMarketId ? (
+            <div className="flex items-center gap-2">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-2.5 sm:pl-3 flex items-center pointer-events-none text-muted-foreground group-focus-within:text-primary transition-colors">
+                  <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                </div>
+                <select
+                  value={selectedMarketId || ""}
+                  onChange={(e) => {
+                    const newId = Number(e.target.value);
+                    if (canAccessMarket(newId)) setSelectedMarketId(newId);
+                  }}
+                  disabled={isLoading || !markets?.length}
+                  className="appearance-none bg-secondary/50 hover:bg-secondary border border-border/50 text-foreground text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl pl-8 sm:pl-10 pr-8 sm:pr-10 py-2 sm:py-2.5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 cursor-pointer disabled:opacity-50 max-w-[160px] sm:max-w-none"
+                >
+                  {markets?.map((market) => (
+                    <option key={market.id} value={market.id} disabled={!canAccessMarket(market.id)}>
+                      {market.name} ({market.code}){!canAccessMarket(market.id) ? " 🔒" : ""}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-2.5 sm:pr-3 flex items-center pointer-events-none text-muted-foreground">
+                  <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedMarketId(null)}
+                className="p-1.5 sm:p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-full transition-colors hidden sm:flex"
+                title="Filiale wechseln"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </button>
             </div>
-            <select
-              value={selectedMarketId || ""}
-              onChange={(e) => setSelectedMarketId(Number(e.target.value))}
-              disabled={isLoading || !markets?.length}
-              className="appearance-none bg-secondary/50 hover:bg-secondary border border-border/50 text-foreground text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl pl-8 sm:pl-10 pr-8 sm:pr-10 py-2 sm:py-2.5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 cursor-pointer disabled:opacity-50 max-w-[160px] sm:max-w-none"
-            >
-              <option value="" disabled>Filiale...</option>
-              {markets?.map((market) => (
-                <option key={market.id} value={market.id}>
-                  {market.name} ({market.code})
-                </option>
-              ))}
-            </select>
-            <div className="absolute inset-y-0 right-0 pr-2.5 sm:pr-3 flex items-center pointer-events-none text-muted-foreground">
-              <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-              </svg>
+          ) : (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5" />
+              <span className="hidden sm:block">Filiale auswählen...</span>
             </div>
-          </div>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-3">
