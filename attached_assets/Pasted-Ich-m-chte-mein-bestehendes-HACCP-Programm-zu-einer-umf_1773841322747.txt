@@ -1,0 +1,41 @@
+Ich möchte mein bestehendes HACCP-Programm zu einer umfassenden, modularen Plattform für "EDEKA Dahlmann" erweitern. Bitte strukturiere das Projekt wie folgt um:
+
+1. Modulare Dashboard-Struktur:
+
+Erstelle eine zentrale Startseite (Dashboard) als Haupt-Container.
+
+Das bestehende HACCP-Programm soll als ein eigenständiges Modul in dieses Dashboard integriert werden.
+
+Das System muss so aufgebaut sein, dass weitere Module (z. B. To-Do-Listen, Revisionen) später einfach als Bausteine hinzugefügt werden können.
+
+2. Zentrales User-Management & PIN-Logik:
+
+Jeder Mitarbeiter wird einmalig mit Vorname, Nachname und Geburtsdatum registriert.
+
+Das System generiert daraus intern ein eindeutiges Kürzel.
+
+Authentifizierung: Der Mitarbeiter nutzt im Alltag keinen Benutzernamen, sondern nur einen 4-stelligen PIN.
+
+Sobald in einem Modul (HACCP, To-Do etc.) eine Eingabe erfolgt, wird der 4-stellige PIN abgefragt. Das Programm ordnet die Aktion automatisch dem Namen/Kürzel des Nutzers zu.
+
+3. Status-Verwaltung (Personio-Ready):
+Implementiere für jeden Nutzer ein Status-Feld, um die spätere API-Anbindung vorzubereiten:
+
+Onboarding: Mitarbeiter ist angelegt, hat aber noch eingeschränkte Sichtbarkeit.
+
+Aktiv: Voller Zugriff gemäß seiner Rolle.
+
+Inaktiv: Der Zugriff wird sofort gesperrt. Der Nutzer ist für andere Mitarbeiter nicht mehr sichtbar, die Daten bleiben aber für die Dokumentationspflicht (z.B. im HACCP) im System erhalten.
+
+4. Rollen- und Rechtesystem (Admin-Panel):
+Erstelle eine Steuerungs-Oberfläche, die nur für Admins zugänglich ist. Dort müssen wir folgende 4 Ebenen für alle Module zuweisen können:
+
+Ebene 1: Admin (Ich & Kai): Volle Kontrolle über alle Module, Nutzer und Berechtigungen.
+
+Ebene 2: Bereichsleitung: Erweitere Rechte, kann Daten einsehen und teilweise ändern.
+
+Ebene 3: Marktleiter: Kann Aufgaben in Modulen (z.B. To-Dos) erstellen und verwalten.
+
+Ebene 4: User (Mitarbeiter): Kann nur Einträge vornehmen und bestätigen (via PIN).
+
+Ziel: Ich möchte eine saubere Trennung zwischen der "Verwaltungsebene" (wer darf was) und der "Arbeitsebene" (HACCP-Listen ausfüllen). Bitte beginne mit der Anpassung der Datenbank und dem Entwurf des neuen Dashboards.

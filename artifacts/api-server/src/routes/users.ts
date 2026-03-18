@@ -169,7 +169,45 @@ router.post("/users/verify-pin", async (req, res) => {
     }
   }
 
-  res.json({ valid: true, userId: users[0].id, userName: users[0].name, initials: users[0].initials });
+  const user = users[0];
+  if (user.status === "inaktiv") {
+    res.json({ valid: false, userId: null, userName: null, initials: null, reason: "inaktiv" });
+    return;
+  }
+
+  res.json({ valid: true, userId: user.id, userName: user.name, initials: user.initials, status: user.status });
+});
+
+router.put("/users/:userId/status", async (req, res) => {
+  const userId = Number(req.params.userId);
+  const { status } = req.body as { status: string };
+  const allowed = ["onboarding", "aktiv", "inaktiv"];
+  if (!allowed.includes(status)) {
+    res.status(400).json({ error: "Ungültiger Status." });
+    return;
+  }
+  const [updated] = await db
+    .update(usersTable)
+    .set({ status })
+    .where(eq(usersTable.id, userId))
+    .returning();
+  res.json(stripSensitive(updated));
+});
+
+router.put("/users/:userId/role", async (req, res) => {
+  const userId = Number(req.params.userId);
+  const { role } = req.body as { role: string };
+  const allowed = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER", "USER"];
+  if (!allowed.includes(role)) {
+    res.status(400).json({ error: "Ungültige Rolle." });
+    return;
+  }
+  const [updated] = await db
+    .update(usersTable)
+    .set({ role })
+    .where(eq(usersTable.id, userId))
+    .returning();
+  res.json(stripSensitive(updated));
 });
 
 router.put("/users/:userId/reset", async (req, res) => {

@@ -15,6 +15,7 @@ import {
   Lock,
   Settings,
   Store,
+  Activity,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -41,6 +42,7 @@ interface PermissionsConfig {
 const ROLE_LABELS: Record<string, string> = {
   SUPERADMIN: "Superadmin",
   ADMIN: "Administrator",
+  BEREICHSLEITUNG: "Bereichsleitung",
   MARKTLEITER: "Marktleiter",
   USER: "Mitarbeiter",
 };
@@ -48,6 +50,7 @@ const ROLE_LABELS: Record<string, string> = {
 const ROLE_COLORS: Record<string, string> = {
   SUPERADMIN: "bg-purple-100 text-purple-700 border-purple-200",
   ADMIN: "bg-blue-100 text-blue-700 border-blue-200",
+  BEREICHSLEITUNG: "bg-indigo-100 text-indigo-700 border-indigo-200",
   MARKTLEITER: "bg-emerald-100 text-emerald-700 border-emerald-200",
   USER: "bg-gray-100 text-gray-700 border-gray-200",
 };
@@ -55,8 +58,21 @@ const ROLE_COLORS: Record<string, string> = {
 const ROLE_ICONS: Record<string, typeof Shield> = {
   SUPERADMIN: ShieldCheck,
   ADMIN: Shield,
+  BEREICHSLEITUNG: ShieldCheck,
   MARKTLEITER: Store,
   USER: Users,
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  onboarding: "Onboarding",
+  aktiv: "Aktiv",
+  inaktiv: "Inaktiv",
+};
+
+const STATUS_COLORS: Record<string, string> = {
+  onboarding: "bg-amber-50 text-amber-700 border-amber-200",
+  aktiv: "bg-green-50 text-green-700 border-green-200",
+  inaktiv: "bg-red-50 text-red-600 border-red-200",
 };
 
 export default function AdminUserManagement() {
@@ -109,13 +125,14 @@ export default function AdminUserManagement() {
 }
 
 function RoleOverview() {
-  const roles = ["SUPERADMIN", "ADMIN", "MARKTLEITER", "USER"];
+  const roles = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER", "USER"];
 
   const roleDescriptions: Record<string, string> = {
-    SUPERADMIN: "Voller Zugriff auf alle Funktionen, alle Märkte, Systemeinstellungen. Michael Dallmann & Kai Martin.",
-    ADMIN: "Übergreifender Zugriff auf alle Märkte, Mitarbeiterverwaltung, Berichte. Z.B. Sonja Wörishofer, Marina Kienle.",
-    MARKTLEITER: "Zugriff auf zugewiesene Märkte, Einträge aller Mitarbeiter einsehen, Kontrolle der Checklisten.",
-    USER: "Eigene HACCP-Einträge erstellen mit Kürzel + PIN. Standardrolle für alle Mitarbeiter.",
+    SUPERADMIN: "Voller Zugriff auf alle Funktionen, alle Märkte und Systemeinstellungen. Ebene 1.",
+    ADMIN: "Übergreifender Zugriff auf alle Märkte, Mitarbeiterverwaltung und Berichte. Ebene 2.",
+    BEREICHSLEITUNG: "Erweiterte Rechte: Daten einsehen und teilweise ändern. Abteilungsübergreifend. Ebene 3.",
+    MARKTLEITER: "Zugriff auf zugewiesene Märkte, Aufgaben erstellen und Checklisten verwalten. Ebene 4.",
+    USER: "Einträge per PIN bestätigen. Standardrolle für alle Mitarbeiter. Ebene 5.",
   };
 
   return (
@@ -124,22 +141,16 @@ function RoleOverview() {
         <Shield className="h-5 w-5" />
         <h2 className="text-lg font-bold">Rollenübersicht</h2>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 p-5">
         {roles.map((role) => {
           const Icon = ROLE_ICONS[role];
           return (
-            <div
-              key={role}
-              className={cn(
-                "rounded-xl border-2 p-4 space-y-2",
-                ROLE_COLORS[role]
-              )}
-            >
+            <div key={role} className={cn("rounded-xl border-2 p-3 space-y-1.5", ROLE_COLORS[role])}>
               <div className="flex items-center gap-2">
-                <Icon className="h-5 w-5" />
-                <span className="font-bold text-sm">{ROLE_LABELS[role]}</span>
+                <Icon className="h-4 w-4" />
+                <span className="font-bold text-xs">{ROLE_LABELS[role]}</span>
               </div>
-              <p className="text-xs opacity-80 leading-relaxed">{roleDescriptions[role]}</p>
+              <p className="text-xs opacity-75 leading-relaxed">{roleDescriptions[role]}</p>
             </div>
           );
         })}
@@ -217,11 +228,13 @@ function UserPermissionRow({
   onSaved: () => void;
 }) {
   const [role, setRole] = useState(user.role);
+  const [status, setStatus] = useState<string>(user.status || "aktiv");
   const [permissions, setPermissions] = useState<string[]>([]);
   const [assignedMarkets, setAssignedMarkets] = useState<number[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [statusSaving, setStatusSaving] = useState(false);
 
   useEffect(() => {
     if (isExpanded && !loaded) {
@@ -263,6 +276,24 @@ function UserPermissionRow({
       setSaveMsg("Fehler beim Speichern");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    setStatusSaving(true);
+    try {
+      const resp = await fetch(`${API_BASE}/users/${user.id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (resp.ok) {
+        setStatus(newStatus);
+        onSaved();
+      }
+    } catch {
+    } finally {
+      setStatusSaving(false);
     }
   };
 
@@ -332,7 +363,15 @@ function UserPermissionRow({
         <span
           className={cn(
             "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border",
-            ROLE_COLORS[role]
+            STATUS_COLORS[status] || STATUS_COLORS["aktiv"]
+          )}
+        >
+          {STATUS_LABELS[status] || status}
+        </span>
+        <span
+          className={cn(
+            "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border",
+            ROLE_COLORS[role] || ROLE_COLORS["USER"]
           )}
         >
           <Icon className="h-3.5 w-3.5" />
@@ -369,13 +408,38 @@ function UserPermissionRow({
           ) : (
             <>
               <div>
+                <label className="block text-sm font-bold text-foreground mb-2 flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-muted-foreground" />
+                  Mitarbeiterstatus
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {(["onboarding", "aktiv", "inaktiv"] as const).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => handleStatusChange(s)}
+                      disabled={statusSaving}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all",
+                        status === s
+                          ? STATUS_COLORS[s] + " ring-2 ring-offset-1"
+                          : "bg-white text-muted-foreground border-border hover:border-primary/50"
+                      )}
+                    >
+                      {STATUS_LABELS[s]}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Inaktive Mitarbeiter können sich nicht mehr per PIN einloggen. Ihre Daten bleiben erhalten.
+                </p>
+              </div>
+
+              <div>
                 <label className="block text-sm font-bold text-foreground mb-2">
                   Rolle ändern
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {(config?.roles || [])
-                    .filter((r) => r !== "SUPERADMIN")
-                    .map((r) => {
+                  {(["ADMIN", "BEREICHSLEITUNG", "MARKTLEITER", "USER"] as const).map((r) => {
                       const RIcon = ROLE_ICONS[r] || Users;
                       return (
                         <button

@@ -3,6 +3,12 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
 
+export const USER_ROLES = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER", "USER"] as const;
+export type UserRole = typeof USER_ROLES[number];
+
+export const USER_STATUSES = ["onboarding", "aktiv", "inaktiv"] as const;
+export type UserStatus = typeof USER_STATUSES[number];
+
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull().references(() => tenantsTable.id),
@@ -13,6 +19,7 @@ export const usersTable = pgTable("users", {
   password: text("password"),
   birthDate: date("birth_date"),
   role: text("role").notNull().default("USER"),
+  status: text("status").notNull().default("aktiv"),
   initials: text("initials"),
   pin: text("pin"),
   isRegistered: boolean("is_registered").notNull().default(false),
