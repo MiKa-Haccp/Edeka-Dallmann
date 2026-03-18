@@ -15,6 +15,7 @@ import AdminUserManagement from "./pages/AdminUserManagement";
 import TrainingRecords from "./pages/TrainingRecords";
 import InfoDocumentation from "./pages/InfoDocumentation";
 import AnnualCleaningPlan from "./pages/AnnualCleaningPlan";
+import Betriebsbegehung from "./pages/Betriebsbegehung";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/user-registry" component={UserRegistry} />
       <Route path="/info-documentation" component={InfoDocumentation} />
       <Route path="/annual-cleaning-plan" component={AnnualCleaningPlan} />
+      <Route path="/betriebsbegehung" component={Betriebsbegehung} />
       <Route path="/training-records" component={TrainingRecords} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/register" component={AdminRegister} />

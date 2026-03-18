@@ -14,6 +14,7 @@ import seedRouter from "./seed";
 import responsibilitiesRouter from "./responsibilities";
 import trainingRouter from "./training";
 import cleaningPlanRouter from "./cleaningPlan";
+import betriebsbegehungRouter from "./betriebsbegehung";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(seedRouter);
 router.use(responsibilitiesRouter);
 router.use(trainingRouter);
 router.use(cleaningPlanRouter);
+router.use(betriebsbegehungRouter);
 
 export default router;

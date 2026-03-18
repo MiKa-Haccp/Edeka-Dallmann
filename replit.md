@@ -85,6 +85,7 @@ artifacts-monorepo/
 - `/info-documentation` — Section 1.3: Info Dokumentation und Ablagefristen (read-only info page with retention periods)
 - `/training-records` — Section 1.4: Schulungsnachweise (training protocols with topic checklists, attendance via PIN-only)
 - `/annual-cleaning-plan` — Section 1.5: Reinigungsplan Jahr (interactive yearly cleaning plan, PIN confirmation per month)
+- `/betriebsbegehung` — Section 1.6: Betriebsbegehung (Eigenkontroll-Prüfliste, 13 Bereiche, 111 Prüfpunkte, Quartal/Jahr Navigation, OK/Mangel/N/A Bewertung, Aktionsplan bei Mängeln, gespeichert in `betriebsbegehung` DB-Tabelle)
 - `/admin/login` — Admin login page (email + password)
 - `/admin/register` — Admin registration via invitation token
 - `/admin/users` — Benutzerverwaltung: Role management, permission checkboxes, market assignments (SUPERADMIN only)
