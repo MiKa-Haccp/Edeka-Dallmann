@@ -229,9 +229,6 @@ export default function AnnualCleaningPlan() {
               <p className="text-xs text-blue-200 font-medium tracking-wide uppercase">Sektion 1.5</p>
               <h1 className="text-xl md:text-2xl font-bold">Reinigungsplan Jahr</h1>
             </div>
-            <div className="ml-auto flex-shrink-0">
-              <div className="bg-yellow-400 text-[#1a3a6b] font-extrabold text-xl px-3 py-1 rounded-lg tracking-widest">EDEKA</div>
-            </div>
           </div>
           <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-blue-100">
             <div className="flex items-center gap-2">
