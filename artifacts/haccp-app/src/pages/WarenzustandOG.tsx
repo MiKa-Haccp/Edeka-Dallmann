@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   Salad, ChevronLeft, ChevronRight, Loader2, Check,
   X, Printer, Lock, TrendingUp,
 } from "lucide-react";
+import { getBavarianHolidays, getHolidayName } from "@/utils/holidays";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -172,6 +173,12 @@ export default function WarenzustandOG() {
 
   const totalDays = daysInMonth(year, month);
 
+  const holidays = useMemo(() => getBavarianHolidays(year), [year]);
+
+  const dateStr = (day: number) => `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const isDayHoliday = (day: number) => holidays.has(dateStr(day));
+  const holidayLabel = (day: number) => getHolidayName(dateStr(day), year);
+
   const load = useCallback(async () => {
     if (!selectedMarketId) return;
     setLoading(true);
@@ -236,11 +243,11 @@ export default function WarenzustandOG() {
 
   const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 
-  const sundaysInMonth = Array.from({ length: totalDays }, (_, i) => i + 1)
-    .filter(d => getWeekday(year, month, d) === "So").length;
-  const openDays = totalDays - sundaysInMonth;
+  const closedDays = Array.from({ length: totalDays }, (_, i) => i + 1)
+    .filter(d => getWeekday(year, month, d) === "So" || isDayHoliday(d)).length;
+  const openDays = totalDays - closedDays;
   const totalSlots = openDays * SLOTS.length;
-  const filledSlots = entries.filter(e => getWeekday(year, month, e.day) !== "So").length;
+  const filledSlots = entries.filter(e => getWeekday(year, month, e.day) !== "So" && !isDayHoliday(e.day)).length;
   const pct = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
 
   const todayCheckedCount = entries.filter(e => e.day === now.getDate() && month === now.getMonth() + 1 && year === now.getFullYear()).length;
@@ -337,37 +344,41 @@ export default function WarenzustandOG() {
                     const wd = getWeekday(year, month, day);
                     const isSunday = wd === "So";
                     const isSaturday = wd === "Sa";
+                    const isHoliday = isDayHoliday(day);
+                    const isClosed = isSunday || isHoliday;
+                    const holidayName = isHoliday ? holidayLabel(day) : null;
                     const dayEntries = entries.filter(e => e.day === day);
-                    const complete = !isSunday && dayEntries.length === SLOTS.length;
-                    const partial = !isSunday && dayEntries.length > 0 && !complete;
+                    const complete = !isClosed && dayEntries.length === SLOTS.length;
+                    const partial = !isClosed && dayEntries.length > 0 && !complete;
 
                     return (
                       <tr
                         key={day}
                         className={[
                           "border-t border-border/40 transition-colors",
-                          isSunday ? "bg-slate-100/80 opacity-60" : "",
-                          !isSunday && today ? "bg-green-50/70 border-l-4 border-l-green-500" : "",
-                          !isSunday && !today && past && !complete && partial ? "bg-amber-50/30" : "",
-                          !isSunday && !today && past && !complete && !partial && day < now.getDate() - 1 ? "bg-red-50/20" : "",
-                          !isSunday && !today && !past ? "bg-white" : "",
-                          isSaturday && !today ? "bg-slate-50/60" : "",
+                          isClosed ? "bg-slate-100/80 opacity-60" : "",
+                          !isClosed && today ? "bg-green-50/70 border-l-4 border-l-green-500" : "",
+                          !isClosed && !today && past && !complete && partial ? "bg-amber-50/30" : "",
+                          !isClosed && !today && past && !complete && !partial && day < now.getDate() - 1 ? "bg-red-50/20" : "",
+                          !isClosed && !today && !past ? "bg-white" : "",
+                          isSaturday && !today && !isHoliday ? "bg-slate-50/60" : "",
                         ].filter(Boolean).join(" ")}
                       >
                         <td className="px-3 py-2 sticky left-0 bg-inherit z-10">
                           <div className="flex items-center gap-1.5">
-                            <span className={`text-sm font-bold tabular-nums ${today ? "text-green-700" : isSunday ? "text-slate-400" : "text-foreground"}`}>
+                            <span className={`text-sm font-bold tabular-nums ${today ? "text-green-700" : isClosed ? "text-slate-400" : "text-foreground"}`}>
                               {String(day).padStart(2, "0")}
                             </span>
                             {today && <span className="text-[9px] font-bold bg-green-500 text-white px-1 rounded-full">HEUTE</span>}
+                            {isHoliday && !isSunday && <span className="text-[9px] font-bold bg-amber-400 text-white px-1 rounded-full">FT</span>}
                           </div>
                         </td>
-                        <td className={`px-2 py-2 text-center text-xs font-medium ${isSunday ? "text-slate-400" : isSaturday ? "text-blue-500" : "text-muted-foreground"}`}>
+                        <td className={`px-2 py-2 text-center text-xs font-medium ${isClosed ? "text-slate-400" : isSaturday ? "text-blue-500" : "text-muted-foreground"}`}>
                           {wd}
                         </td>
-                        {isSunday ? (
+                        {isClosed ? (
                           <td colSpan={SLOTS.length + 1} className="px-3 py-2 text-center text-xs text-slate-400 italic">
-                            Geschlossen
+                            {isSunday && !isHoliday ? "Geschlossen" : holidayName ?? "Feiertag"}
                           </td>
                         ) : (
                           <>
