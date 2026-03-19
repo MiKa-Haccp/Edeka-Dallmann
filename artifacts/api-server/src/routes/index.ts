@@ -25,6 +25,7 @@ import bescheinigungenRouter from "./bescheinigungen";
 import kontrollberichteRouter from "./kontrollberichte";
 import warenzustandOGRouter from "./warenzustandOG";
 import reinigungTaeglichRouter from "./reinigungTaeglich";
+import wareneingangOGRouter from "./wareneingangOG";
 import deviceRouter from "./device";
 
 const router: IRouter = Router();
@@ -55,6 +56,7 @@ router.use(bescheinigungenRouter);
 router.use(kontrollberichteRouter);
 router.use(warenzustandOGRouter);
 router.use(reinigungTaeglichRouter);
+router.use(wareneingangOGRouter);
 router.use(deviceRouter);
 
 export default router;
