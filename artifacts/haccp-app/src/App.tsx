@@ -52,6 +52,7 @@ import ArzneimittelSachkunde from "./pages/ArzneimittelSachkunde";
 import Bescheinigungen from "./pages/Bescheinigungen";
 import Kontrollberichte from "./pages/Kontrollberichte";
 import Mitarbeiterverwaltung from "./pages/Mitarbeiterverwaltung";
+import MitarbeiterListe from "./pages/MitarbeiterListe";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
@@ -85,6 +86,7 @@ function Router() {
       <Route path="/bescheinigungen" component={Bescheinigungen} />
       <Route path="/kontrollberichte" component={Kontrollberichte} />
       <Route path="/mitarbeiterverwaltung" component={Mitarbeiterverwaltung} />
+      <Route path="/mitarbeiter-liste" component={MitarbeiterListe} />
       <Route path="/training-records" component={TrainingRecords} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/register" component={AdminRegister} />
