@@ -16,3 +16,4 @@ export * from "./produktfehlermeldung";
 export * from "./probeentnahme";
 export * from "./besprechungsprotokoll";
 export * from "./antiVektor";
+export * from "./gesundheitszeugnisse";
