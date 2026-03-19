@@ -25,7 +25,7 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
   return (
     <div className="flex flex-col gap-0.5 py-1">
       {sections.map((section) => {
-        const href = section.number === "1.1" ? "/responsibilities" : section.number === "1.2" ? "/user-registry" : section.number === "1.3" ? "/info-documentation" : section.number === "1.4" ? "/training-records" : section.number === "1.5" ? "/annual-cleaning-plan" : section.number === "1.6" ? "/betriebsbegehung" : section.number === "1.7" ? "/hinweisschild-gesperrte-ware" : section.number === "1.8" ? "/produktfehlermeldung" : section.number === "1.9" ? "/probeentnahme" : section.number === "1.10" ? "/besprechungsprotokoll" : section.number === "1.11" ? "/anti-vektor-zugang" : section.number === "1.12" ? "/gesundheitszeugnisse" : `/section/${section.id}`;
+        const href = section.number === "1.1" ? "/responsibilities" : section.number === "1.2" ? "/user-registry" : section.number === "1.3" ? "/info-documentation" : section.number === "1.4" ? "/training-records" : section.number === "1.5" ? "/annual-cleaning-plan" : section.number === "1.6" ? "/betriebsbegehung" : section.number === "1.7" ? "/hinweisschild-gesperrte-ware" : section.number === "1.8" ? "/produktfehlermeldung" : section.number === "1.9" ? "/probeentnahme" : section.number === "1.10" ? "/besprechungsprotokoll" : section.number === "1.11" ? "/anti-vektor-zugang" : section.number === "1.12" ? "/gesundheitszeugnisse" : section.number === "1.13" ? "/arzneimittel-sachkunde" : `/section/${section.id}`;
         const isActive = location === href;
         return (
           <Link
