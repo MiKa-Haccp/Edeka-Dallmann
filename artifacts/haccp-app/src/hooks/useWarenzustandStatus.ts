@@ -38,7 +38,12 @@ export function useWarenzustandOGStatus(): TrafficLight {
 
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 5 * 60 * 1000);
-    return () => clearInterval(id);
+    const onUpdate = () => setTick(t => t + 1);
+    window.addEventListener("warenzustand-og-updated", onUpdate);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("warenzustand-og-updated", onUpdate);
+    };
   }, []);
 
   useEffect(() => {

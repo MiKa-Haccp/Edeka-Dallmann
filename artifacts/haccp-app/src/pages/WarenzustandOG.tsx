@@ -216,6 +216,7 @@ export default function WarenzustandOG() {
       if (res.ok) {
         setActiveCell(null);
         await load();
+        window.dispatchEvent(new CustomEvent("warenzustand-og-updated"));
       }
     } finally {
       setSaving(false);
@@ -227,6 +228,7 @@ export default function WarenzustandOG() {
     try {
       await fetch(`${BASE}/warencheck-og/${id}`, { method: "DELETE" });
       await load();
+      window.dispatchEvent(new CustomEvent("warenzustand-og-updated"));
     } finally {
       setDeletingId(null);
     }
