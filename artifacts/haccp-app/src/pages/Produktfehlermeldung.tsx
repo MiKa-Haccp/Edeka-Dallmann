@@ -137,6 +137,8 @@ function SectionCard({ title, children }: { title: string; children: React.React
   );
 }
 
+const DRAFT_KEY = "haccp-pfm-draft-v1";
+
 export default function Produktfehlermeldung() {
   const { adminSession } = useAppStore();
   const isAdmin = !!adminSession;
@@ -153,6 +155,11 @@ export default function Produktfehlermeldung() {
   const [showDruck, setShowDruck] = useState(false);
   const fotoInputRef = useRef<HTMLInputElement>(null);
 
+  // Entwurf-Verwaltung
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+  const [pendingDraft, setPendingDraft] = useState<{ form: FormData; page: 1 | 2 } | null>(null);
+
   const loadReports = useCallback(async () => {
     setLoading(true);
     try {
@@ -166,10 +173,48 @@ export default function Produktfehlermeldung() {
 
   useEffect(() => { loadReports(); }, [loadReports]);
 
+  // Auto-Speichern in localStorage (nur bei neuen, noch nicht gespeicherten Meldungen)
+  useEffect(() => {
+    if (view === "form" && !currentReport) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, page }));
+    }
+  }, [form, page, view, currentReport]);
+
   const set = (key: keyof FormData) => (val: string | boolean | null) =>
     setForm((prev) => ({ ...prev, [key]: val }));
 
   const handleNew = () => {
+    const draftRaw = localStorage.getItem(DRAFT_KEY);
+    if (draftRaw) {
+      try {
+        const draft = JSON.parse(draftRaw) as { form: FormData; page: 1 | 2 };
+        setPendingDraft(draft);
+        setShowDraftPrompt(true);
+        return;
+      } catch {}
+    }
+    setCurrentReport(null);
+    setForm({ ...emptyForm(), datumUnterschrift: new Date().toLocaleDateString("de-DE") });
+    setPage(1);
+    setView("form");
+    setSaved(false);
+  };
+
+  const handleRestoreDraft = () => {
+    if (!pendingDraft) return;
+    setCurrentReport(null);
+    setForm(pendingDraft.form);
+    setPage(pendingDraft.page);
+    setView("form");
+    setShowDraftPrompt(false);
+    setDraftRestored(true);
+    setSaved(false);
+  };
+
+  const handleNewFresh = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setPendingDraft(null);
+    setShowDraftPrompt(false);
     setCurrentReport(null);
     setForm({ ...emptyForm(), datumUnterschrift: new Date().toLocaleDateString("de-DE") });
     setPage(1);
@@ -184,6 +229,7 @@ export default function Produktfehlermeldung() {
     setPage(1);
     setView("form");
     setSaved(false);
+    setDraftRestored(false);
   };
 
   const handleSave = async () => {
@@ -206,8 +252,10 @@ export default function Produktfehlermeldung() {
       }
       const data = await res.json();
       setCurrentReport(data);
+      localStorage.removeItem(DRAFT_KEY); // Entwurf nach erfolgreichem Speichern löschen
       await loadReports();
       setSaved(true);
+      setDraftRestored(false);
       setTimeout(() => setSaved(false), 3000);
     } finally {
       setSaving(false);
@@ -322,6 +370,23 @@ export default function Produktfehlermeldung() {
         {/* Form view */}
         {view === "form" && (
           <>
+            {/* Entwurf-Wiederherstellungs-Banner */}
+            {draftRestored && (
+              <div className="flex items-center gap-3 bg-amber-50 border border-amber-300 rounded-2xl px-4 py-3 text-sm text-amber-800">
+                <span className="text-lg">📋</span>
+                <div className="flex-1">
+                  <span className="font-bold">Entwurf wiederhergestellt.</span>{" "}
+                  Ihre zuletzt eingegebenen Daten wurden automatisch geladen. Bitte prüfen und speichern.
+                </div>
+                <button
+                  onClick={() => setDraftRestored(false)}
+                  className="text-amber-600 hover:text-amber-800"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             {/* Navigation */}
             <div className="flex items-center justify-between">
               <button
@@ -722,6 +787,56 @@ export default function Produktfehlermeldung() {
 
       {showDruck && (
         <DruckformularPFM form={form} onClose={() => setShowDruck(false)} />
+      )}
+
+      {/* Entwurf-Abfrage-Modal */}
+      {showDraftPrompt && pendingDraft && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="text-3xl">📋</div>
+              <div>
+                <h2 className="text-base font-bold text-foreground mb-1">
+                  Nicht gespeicherter Entwurf gefunden
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Sie haben eine angefangene Meldung, die nicht gespeichert wurde — z.B. weil die Sitzung unterbrochen wurde. Möchten Sie dort weitermachen?
+                </p>
+              </div>
+            </div>
+
+            {/* Vorschau was im Entwurf steht */}
+            {(pendingDraft.form.markenname || pendingDraft.form.markt) && (
+              <div className="bg-muted/40 rounded-xl p-3 text-xs text-muted-foreground space-y-1">
+                {pendingDraft.form.markt && <div><span className="font-semibold">Markt:</span> {pendingDraft.form.markt}</div>}
+                {pendingDraft.form.markenname && <div><span className="font-semibold">Artikel:</span> {pendingDraft.form.markenname}</div>}
+                {pendingDraft.form.fehlerbeschreibung && (
+                  <div className="line-clamp-2">
+                    <span className="font-semibold">Fehler:</span> {pendingDraft.form.fehlerbeschreibung}
+                  </div>
+                )}
+                <div className="text-[10px] text-muted-foreground/60 pt-1">
+                  Seite {pendingDraft.page} von 2 ausgefüllt
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleRestoreDraft}
+                className="w-full px-4 py-3 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors"
+              >
+                📋 Entwurf wiederherstellen
+              </button>
+              <button
+                onClick={handleNewFresh}
+                className="w-full px-4 py-2.5 border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Neu beginnen (Entwurf verwerfen)
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </AppLayout>
