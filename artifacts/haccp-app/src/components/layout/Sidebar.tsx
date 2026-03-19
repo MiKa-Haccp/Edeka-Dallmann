@@ -5,7 +5,7 @@ import { ChevronDown, Folder, FileText, ClipboardList, GripVertical, X } from "l
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useWarenzustandOGStatus, type TrafficLight } from "@/hooks/useWarenzustandStatus";
+import { useWarenzustandOGStatus, useReinigungTaeglichStatus, type TrafficLight } from "@/hooks/useWarenzustandStatus";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -43,7 +43,8 @@ function TrafficDot({ status }: { status: TrafficLight }) {
 function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNavigate?: () => void }) {
   const { data: sections, isLoading } = useListSections(categoryId);
   const [location] = useLocation();
-  const ogStatus = useWarenzustandOGStatus();
+  const ogStatus         = useWarenzustandOGStatus();
+  const reinigungStatus  = useReinigungTaeglichStatus();
 
   if (isLoading) return <div className="p-4 text-xs text-muted-foreground">Lade Bereiche...</div>;
   if (!sections?.length) return <div className="p-4 text-xs text-muted-foreground">Keine Bereiche gefunden.</div>;
@@ -51,9 +52,9 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
   return (
     <div className="flex flex-col gap-0.5 py-1">
       {sections.filter((s) => !s.number.includes("_")).map((section) => {
-        const href = section.number === "1.1" ? "/responsibilities" : section.number === "1.2" ? "/mitarbeiter-liste" : section.number === "1.3" ? "/info-documentation" : section.number === "1.4" ? "/training-records" : section.number === "1.5" ? "/annual-cleaning-plan" : section.number === "1.6" ? "/betriebsbegehung" : section.number === "1.7" ? "/hinweisschild-gesperrte-ware" : section.number === "1.8" ? "/produktfehlermeldung" : section.number === "1.9" ? "/probeentnahme" : section.number === "1.10" ? "/anti-vektor-zugang" : section.number === "1.11" ? "/bescheinigungen" : section.number === "1.12" ? "/kontrollberichte" : section.number === "2.1" ? "/warencheck-og" : `/section/${section.id}`;
+        const href = section.number === "1.1" ? "/responsibilities" : section.number === "1.2" ? "/mitarbeiter-liste" : section.number === "1.3" ? "/info-documentation" : section.number === "1.4" ? "/training-records" : section.number === "1.5" ? "/annual-cleaning-plan" : section.number === "1.6" ? "/betriebsbegehung" : section.number === "1.7" ? "/hinweisschild-gesperrte-ware" : section.number === "1.8" ? "/produktfehlermeldung" : section.number === "1.9" ? "/probeentnahme" : section.number === "1.10" ? "/anti-vektor-zugang" : section.number === "1.11" ? "/bescheinigungen" : section.number === "1.12" ? "/kontrollberichte" : section.number === "2.1" ? "/warencheck-og" : section.number === "2.2" ? "/reinigung-taeglich" : `/section/${section.id}`;
         const isActive = location === href;
-        const trafficStatus: TrafficLight = section.number === "2.1" ? ogStatus : "none";
+        const trafficStatus: TrafficLight = section.number === "2.1" ? ogStatus : section.number === "2.2" ? reinigungStatus : "none";
         return (
           <Link
             key={section.id}

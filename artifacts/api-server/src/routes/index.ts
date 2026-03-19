@@ -24,6 +24,7 @@ import arzneimittelSachkundeRouter from "./arzneimittelSachkunde";
 import bescheinigungenRouter from "./bescheinigungen";
 import kontrollberichteRouter from "./kontrollberichte";
 import warenzustandOGRouter from "./warenzustandOG";
+import reinigungTaeglichRouter from "./reinigungTaeglich";
 import deviceRouter from "./device";
 
 const router: IRouter = Router();
@@ -53,6 +54,7 @@ router.use(arzneimittelSachkundeRouter);
 router.use(bescheinigungenRouter);
 router.use(kontrollberichteRouter);
 router.use(warenzustandOGRouter);
+router.use(reinigungTaeglichRouter);
 router.use(deviceRouter);
 
 export default router;

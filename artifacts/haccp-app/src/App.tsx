@@ -40,6 +40,7 @@ import AdminRegister from "./pages/AdminRegister";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import TrainingBesprechung from "./pages/TrainingBesprechung";
 import WarenzustandOG from "./pages/WarenzustandOG";
+import ReinigungTaeglich from "./pages/ReinigungTaeglich";
 import InfoDocumentation from "./pages/InfoDocumentation";
 import AnnualCleaningPlan from "./pages/AnnualCleaningPlan";
 import Betriebsbegehung from "./pages/Betriebsbegehung";
@@ -80,6 +81,7 @@ function Router() {
       <Route path="/hinweisschild-gesperrte-ware" component={HinweisschildGesperrteWare} />
       <Route path="/probeentnahme" component={Probeentnahme} />
       <Route path="/warencheck-og" component={WarenzustandOG} />
+      <Route path="/reinigung-taeglich" component={ReinigungTaeglich} />
       <Route path="/besprechungsprotokoll" component={TrainingBesprechung} />
       <Route path="/anti-vektor-zugang" component={AntiVektorZugang} />
       <Route path="/gesundheitszeugnisse" component={Gesundheitszeugnisse} />

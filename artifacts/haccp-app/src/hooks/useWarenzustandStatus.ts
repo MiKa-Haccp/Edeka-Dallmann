@@ -127,3 +127,68 @@ export function useWarenzustandOGStatus(): TrafficLight {
 
   return status;
 }
+
+// ===== 2.2 Reinigungsdokumentation täglich =====
+const REINIGUNG_AREA_COUNT = 12;
+
+export function useReinigungTaeglichStatus(): TrafficLight {
+  const { selectedMarketId } = useAppStore();
+  const [status, setStatus] = useState<TrafficLight>("none");
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 5 * 60 * 1000);
+    const onUpdate = () => setTick(t => t + 1);
+    window.addEventListener("reinigung-taeglich-updated", onUpdate);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("reinigung-taeglich-updated", onUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedMarketId) { setStatus("none"); return; }
+
+    const now   = new Date();
+    const year  = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const today = now.getDate();
+    const hour  = now.getHours();
+
+    const holidays = getBavarianHolidays(year);
+
+    if (isClosed(now, holidays)) { setStatus("none"); return; }
+
+    let cancelled = false;
+
+    fetch(`${BASE}/reinigung-taeglich?marketId=${selectedMarketId}&year=${year}&month=${month}`)
+      .then(r => r.json())
+      .then((entries: { day: number; area: string }[]) => {
+        if (cancelled) return;
+
+        const monday    = getMondayOfWeek(now);
+        const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+
+        for (let d = new Date(monday); d < todayStart; d.setDate(d.getDate() + 1)) {
+          if (isClosed(d, holidays)) continue;
+          if (d.getMonth() + 1 !== month) continue;
+          const dayNum = d.getDate();
+          const count  = entries.filter(e => e.day === dayNum).length;
+          if (count < REINIGUNG_AREA_COUNT) {
+            setStatus("red");
+            return;
+          }
+        }
+
+        const todayCount = entries.filter(e => e.day === today).length;
+        if (todayCount >= REINIGUNG_AREA_COUNT) { setStatus("green"); return; }
+        if (todayCount > 0)                     { setStatus("yellow"); return; }
+        setStatus(hour >= 8 ? "yellow" : "none");
+      })
+      .catch(() => { if (!cancelled) setStatus("none"); });
+
+    return () => { cancelled = true; };
+  }, [selectedMarketId, tick]);
+
+  return status;
+}
