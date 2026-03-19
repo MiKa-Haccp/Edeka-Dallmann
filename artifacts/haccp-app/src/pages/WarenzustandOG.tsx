@@ -55,7 +55,6 @@ function PinModal({
   day: number;
   slot: { key: string; label: string };
 }) {
-  const [kuerzel, setKuerzel] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -68,13 +67,13 @@ function PinModal({
       const res = await fetch(`${BASE}/users/verify-pin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initials: kuerzel || undefined, pin, tenantId: 1 }),
+        body: JSON.stringify({ pin, tenantId: 1 }),
       });
       const data = await res.json();
       if (data.valid) {
-        setIdentified({ name: data.userName, userId: data.userId, kuerzel: data.initials || kuerzel });
+        setIdentified({ name: data.userName, userId: data.userId, kuerzel: data.initials });
       } else {
-        setError("Kuerzel oder PIN ungueltig.");
+        setError("PIN ungueltig.");
       }
     } catch {
       setError("Verbindungsfehler.");
@@ -86,8 +85,6 @@ function PinModal({
   const handleConfirm = () => {
     if (identified) {
       onConfirm(identified.kuerzel, identified.userId);
-    } else if (kuerzel.trim()) {
-      onConfirm(kuerzel.trim().toUpperCase(), null);
     }
   };
 
@@ -106,31 +103,19 @@ function PinModal({
 
         {!identified ? (
           <>
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Kuerzel</label>
-                <input
-                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-mono uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  placeholder="z.B. MM"
-                  value={kuerzel}
-                  onChange={e => setKuerzel(e.target.value.toUpperCase().slice(0, 5))}
-                  maxLength={5}
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">PIN</label>
-                <input
-                  type="password"
-                  inputMode="numeric"
-                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  placeholder="****"
-                  value={pin}
-                  maxLength={6}
-                  onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
-                  onKeyDown={e => e.key === "Enter" && handleVerify()}
-                />
-              </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">PIN eingeben</label>
+              <input
+                type="password"
+                inputMode="numeric"
+                className="w-full border border-border rounded-lg px-3 py-3 text-center text-lg tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/30"
+                placeholder="&#9679;&#9679;&#9679;&#9679;"
+                value={pin}
+                maxLength={6}
+                autoFocus
+                onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={e => e.key === "Enter" && pin.length >= 4 && handleVerify()}
+              />
             </div>
             {error && (
               <p className="text-xs text-red-500 flex items-center gap-1.5">
@@ -139,7 +124,7 @@ function PinModal({
             )}
             <button
               onClick={handleVerify}
-              disabled={loading || (!kuerzel && !pin) || pin.length < 4}
+              disabled={loading || pin.length < 4}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0] transition-colors"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
@@ -251,9 +236,12 @@ export default function WarenzustandOG() {
 
   const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 
-  const totalSlots = totalDays * SLOTS.length;
-  const filledSlots = entries.length;
-  const pct = Math.round((filledSlots / totalSlots) * 100);
+  const sundaysInMonth = Array.from({ length: totalDays }, (_, i) => i + 1)
+    .filter(d => getWeekday(year, month, d) === "So").length;
+  const openDays = totalDays - sundaysInMonth;
+  const totalSlots = openDays * SLOTS.length;
+  const filledSlots = entries.filter(e => getWeekday(year, month, e.day) !== "So").length;
+  const pct = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
 
   const todayCheckedCount = entries.filter(e => e.day === now.getDate() && month === now.getMonth() + 1 && year === now.getFullYear()).length;
 
@@ -347,87 +335,97 @@ export default function WarenzustandOG() {
                     const today = isToday(year, month, day);
                     const past = isPast(year, month, day);
                     const wd = getWeekday(year, month, day);
-                    const isWeekend = wd === "Sa" || wd === "So";
+                    const isSunday = wd === "So";
+                    const isSaturday = wd === "Sa";
                     const dayEntries = entries.filter(e => e.day === day);
-                    const complete = dayEntries.length === SLOTS.length;
-                    const partial = dayEntries.length > 0 && !complete;
+                    const complete = !isSunday && dayEntries.length === SLOTS.length;
+                    const partial = !isSunday && dayEntries.length > 0 && !complete;
 
                     return (
                       <tr
                         key={day}
                         className={[
                           "border-t border-border/40 transition-colors",
-                          today ? "bg-green-50/70 border-l-4 border-l-green-500" : "",
-                          !today && past && !complete && partial ? "bg-amber-50/30" : "",
-                          !today && past && !complete && !partial && day < now.getDate() - 1 ? "bg-red-50/20" : "",
-                          !today && !past ? "bg-white" : "",
-                          isWeekend && !today ? "bg-slate-50/60" : "",
+                          isSunday ? "bg-slate-100/80 opacity-60" : "",
+                          !isSunday && today ? "bg-green-50/70 border-l-4 border-l-green-500" : "",
+                          !isSunday && !today && past && !complete && partial ? "bg-amber-50/30" : "",
+                          !isSunday && !today && past && !complete && !partial && day < now.getDate() - 1 ? "bg-red-50/20" : "",
+                          !isSunday && !today && !past ? "bg-white" : "",
+                          isSaturday && !today ? "bg-slate-50/60" : "",
                         ].filter(Boolean).join(" ")}
                       >
                         <td className="px-3 py-2 sticky left-0 bg-inherit z-10">
                           <div className="flex items-center gap-1.5">
-                            <span className={`text-sm font-bold tabular-nums ${today ? "text-green-700" : "text-foreground"}`}>
+                            <span className={`text-sm font-bold tabular-nums ${today ? "text-green-700" : isSunday ? "text-slate-400" : "text-foreground"}`}>
                               {String(day).padStart(2, "0")}
                             </span>
                             {today && <span className="text-[9px] font-bold bg-green-500 text-white px-1 rounded-full">HEUTE</span>}
                           </div>
                         </td>
-                        <td className={`px-2 py-2 text-center text-xs font-medium ${isWeekend ? "text-blue-500" : "text-muted-foreground"}`}>
+                        <td className={`px-2 py-2 text-center text-xs font-medium ${isSunday ? "text-slate-400" : isSaturday ? "text-blue-500" : "text-muted-foreground"}`}>
                           {wd}
                         </td>
-                        {SLOTS.map(slot => {
-                          const entry = getEntry(day, slot.key);
-                          return (
-                            <td key={slot.key} className="px-1.5 py-1.5 text-center">
-                              {entry ? (
-                                <div className="relative group inline-flex">
-                                  <div className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-100 border border-green-300 text-green-800 text-xs font-mono font-bold">
-                                    <Check className="w-3 h-3 text-green-600 shrink-0" />
-                                    {entry.kuerzel}
-                                  </div>
-                                  {isAdmin && (
-                                    <button
-                                      onClick={() => handleDelete(entry.id)}
-                                      disabled={deletingId === entry.id}
-                                      className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600"
-                                    >
-                                      {deletingId === entry.id ? (
-                                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                                      ) : (
-                                        <X className="w-2.5 h-2.5" />
+                        {isSunday ? (
+                          <td colSpan={SLOTS.length + 1} className="px-3 py-2 text-center text-xs text-slate-400 italic">
+                            Geschlossen
+                          </td>
+                        ) : (
+                          <>
+                            {SLOTS.map(slot => {
+                              const entry = getEntry(day, slot.key);
+                              return (
+                                <td key={slot.key} className="px-1.5 py-1.5 text-center">
+                                  {entry ? (
+                                    <div className="relative group inline-flex">
+                                      <div className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-100 border border-green-300 text-green-800 text-xs font-mono font-bold">
+                                        <Check className="w-3 h-3 text-green-600 shrink-0" />
+                                        {entry.kuerzel}
+                                      </div>
+                                      {isAdmin && (
+                                        <button
+                                          onClick={() => handleDelete(entry.id)}
+                                          disabled={deletingId === entry.id}
+                                          className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center hover:bg-red-600"
+                                        >
+                                          {deletingId === entry.id ? (
+                                            <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                                          ) : (
+                                            <X className="w-2.5 h-2.5" />
+                                          )}
+                                        </button>
                                       )}
+                                    </div>
+                                  ) : (
+                                    <button
+                                      onClick={() => setActiveCell({ day, slot })}
+                                      className={[
+                                        "w-full min-w-[70px] py-1.5 rounded-lg border text-xs font-medium transition-all",
+                                        today
+                                          ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
+                                          : past
+                                          ? "border-dashed border-red-200 bg-red-50/40 text-red-400 hover:bg-red-50"
+                                          : "border-dashed border-border/50 text-muted-foreground/40 hover:border-primary/40 hover:text-primary hover:bg-primary/5",
+                                      ].join(" ")}
+                                    >
+                                      +
                                     </button>
                                   )}
-                                </div>
+                                </td>
+                              );
+                            })}
+                            <td className="px-2 py-2 text-center">
+                              {complete ? (
+                                <span className="inline-flex w-6 h-6 rounded-full bg-green-500 items-center justify-center">
+                                  <Check className="w-3.5 h-3.5 text-white" />
+                                </span>
+                              ) : dayEntries.length > 0 ? (
+                                <span className="text-xs font-bold text-amber-600">{dayEntries.length}/{SLOTS.length}</span>
                               ) : (
-                                <button
-                                  onClick={() => setActiveCell({ day, slot })}
-                                  className={[
-                                    "w-full min-w-[70px] py-1.5 rounded-lg border text-xs font-medium transition-all",
-                                    today
-                                      ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
-                                      : past
-                                      ? "border-dashed border-red-200 bg-red-50/40 text-red-400 hover:bg-red-50"
-                                      : "border-dashed border-border/50 text-muted-foreground/40 hover:border-primary/40 hover:text-primary hover:bg-primary/5",
-                                  ].join(" ")}
-                                >
-                                  +
-                                </button>
+                                <span className="text-xs text-muted-foreground/30">—</span>
                               )}
                             </td>
-                          );
-                        })}
-                        <td className="px-2 py-2 text-center">
-                          {complete ? (
-                            <span className="inline-flex w-6 h-6 rounded-full bg-green-500 items-center justify-center">
-                              <Check className="w-3.5 h-3.5 text-white" />
-                            </span>
-                          ) : dayEntries.length > 0 ? (
-                            <span className="text-xs font-bold text-amber-600">{dayEntries.length}/{SLOTS.length}</span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground/30">—</span>
-                          )}
-                        </td>
+                          </>
+                        )}
                       </tr>
                     );
                   })}
