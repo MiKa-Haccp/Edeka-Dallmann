@@ -532,7 +532,7 @@ export default function AntiVektorZugang() {
                   ? "Noch keine Nachweise hinterlegt"
                   : `${zertifikate.length} Nachweis${zertifikate.length !== 1 ? "e" : ""} gespeichert`}
               </p>
-              {isAdmin && !showForm && (
+              {!showForm && (
                 <button
                   onClick={() => setShowForm(true)}
                   className="flex items-center gap-2 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors shadow-sm"
@@ -557,9 +557,7 @@ export default function AntiVektorZugang() {
               <div className="text-center py-16">
                 <Award className="w-12 h-12 text-muted-foreground/20 mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground font-medium">Keine Sachkundenachweise hinterlegt</p>
-                {isAdmin && (
-                  <p className="text-xs text-muted-foreground mt-1">Klicken Sie auf "Nachweis hinzufügen"</p>
-                )}
+                <p className="text-xs text-muted-foreground mt-1">Klicken Sie auf "Nachweis hinzufügen"</p>
               </div>
             ) : (
               <div className="space-y-3">
