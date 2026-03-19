@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
@@ -275,9 +275,10 @@ function PinModal({
 }
 
 // ===== HAUPTSEITE =====
-export default function Besprechungsprotokoll() {
+export default function Besprechungsprotokoll({ noLayout }: { noLayout?: boolean } = {}) {
   const { adminSession } = useAppStore();
   const isAdmin = !!adminSession;
+  const Wrap = noLayout ? ({ children }: { children: ReactNode }) => <>{children}</> : AppLayout;
 
   const [view, setView] = useState<"list" | "form">("list");
   const [protokolle, setProtokolle] = useState<Protokoll[]>([]);
@@ -427,7 +428,7 @@ export default function Besprechungsprotokoll() {
   const confirmedCount = teilnehmer.filter((t) => t.bestaetigt).length;
 
   return (
-    <AppLayout>
+    <Wrap>
       <div className="max-w-3xl mx-auto space-y-4 pb-10">
 
         {/* Header */}
@@ -726,6 +727,6 @@ export default function Besprechungsprotokoll() {
           @page { margin: 10mm; size: A4 portrait; }
         }
       `}</style>
-    </AppLayout>
+    </Wrap>
   );
 }

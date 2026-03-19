@@ -38,8 +38,7 @@ import UserRegistry from "./pages/UserRegistry";
 import AdminLogin from "./pages/AdminLogin";
 import AdminRegister from "./pages/AdminRegister";
 import AdminUserManagement from "./pages/AdminUserManagement";
-import TrainingRecords from "./pages/TrainingRecords";
-import Besprechungsprotokoll from "./pages/Besprechungsprotokoll";
+import TrainingBesprechung from "./pages/TrainingBesprechung";
 import InfoDocumentation from "./pages/InfoDocumentation";
 import AnnualCleaningPlan from "./pages/AnnualCleaningPlan";
 import Betriebsbegehung from "./pages/Betriebsbegehung";
@@ -79,7 +78,7 @@ function Router() {
       <Route path="/produktfehlermeldung" component={Produktfehlermeldung} />
       <Route path="/hinweisschild-gesperrte-ware" component={HinweisschildGesperrteWare} />
       <Route path="/probeentnahme" component={Probeentnahme} />
-      <Route path="/besprechungsprotokoll" component={Besprechungsprotokoll} />
+      <Route path="/besprechungsprotokoll" component={TrainingBesprechung} />
       <Route path="/anti-vektor-zugang" component={AntiVektorZugang} />
       <Route path="/gesundheitszeugnisse" component={Gesundheitszeugnisse} />
       <Route path="/arzneimittel-sachkunde" component={ArzneimittelSachkunde} />
@@ -87,7 +86,7 @@ function Router() {
       <Route path="/kontrollberichte" component={Kontrollberichte} />
       <Route path="/mitarbeiterverwaltung" component={Mitarbeiterverwaltung} />
       <Route path="/mitarbeiter-liste" component={MitarbeiterListe} />
-      <Route path="/training-records" component={TrainingRecords} />
+      <Route path="/training-records" component={TrainingBesprechung} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/register" component={AdminRegister} />
       <Route path="/admin/users" component={AdminUserManagement} />

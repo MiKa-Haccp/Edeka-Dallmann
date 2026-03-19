@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
@@ -632,7 +633,7 @@ function SessionDetailView({
   );
 }
 
-export default function TrainingRecords() {
+export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {}) {
   const selectedMarketId = useAppStore((s) => s.selectedMarketId);
   const selectedYear = useAppStore((s) => s.selectedYear);
   const adminSession = useAppStore((s) => s.adminSession);
@@ -640,6 +641,7 @@ export default function TrainingRecords() {
     adminSession?.role === "SUPERADMIN" ||
     adminSession?.role === "ADMIN" ||
     adminSession?.role === "MARKTLEITER";
+  const Wrap = noLayout ? ({ children }: { children: ReactNode }) => <>{children}</> : AppLayout;
 
   const { data: sessions, isLoading } = useListTrainingSessions(
     selectedMarketId!,
@@ -654,29 +656,29 @@ export default function TrainingRecords() {
 
   if (!selectedMarketId) {
     return (
-      <AppLayout>
+      <Wrap>
         <div className="flex items-center justify-center h-64">
           <p className="text-muted-foreground">Bitte wählen Sie einen Markt aus.</p>
         </div>
-      </AppLayout>
+      </Wrap>
     );
   }
 
   if (selectedSessionId) {
     return (
-      <AppLayout>
+      <Wrap>
         <div className="max-w-5xl mx-auto">
           <SessionDetailView
             sessionId={selectedSessionId}
             onBack={() => setSelectedSessionId(null)}
           />
         </div>
-      </AppLayout>
+      </Wrap>
     );
   }
 
   return (
-    <AppLayout>
+    <Wrap>
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="bg-white rounded-xl border border-border p-5 sm:p-6">
           <div className="flex items-start justify-between gap-4 mb-1">
@@ -783,6 +785,6 @@ export default function TrainingRecords() {
           tenantId={1}
         />
       </div>
-    </AppLayout>
+    </Wrap>
   );
 }
