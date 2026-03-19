@@ -20,3 +20,5 @@ export * from "./gesundheitszeugnisse";
 export * from "./arzneimittelSachkunde";
 export * from "./bescheinigungen";
 export * from "./kontrollberichte";
+export * from "./schulungsnachweise";
+export * from "./besprechungsdokumente";

@@ -38,14 +38,14 @@ import UserRegistry from "./pages/UserRegistry";
 import AdminLogin from "./pages/AdminLogin";
 import AdminRegister from "./pages/AdminRegister";
 import AdminUserManagement from "./pages/AdminUserManagement";
-import TrainingRecords from "./pages/TrainingRecords";
+import Schulungsnachweise from "./pages/Schulungsnachweise";
+import BesprechungsDokumente from "./pages/BesprechungsDokumente";
 import InfoDocumentation from "./pages/InfoDocumentation";
 import AnnualCleaningPlan from "./pages/AnnualCleaningPlan";
 import Betriebsbegehung from "./pages/Betriebsbegehung";
 import Produktfehlermeldung from "./pages/Produktfehlermeldung";
 import HinweisschildGesperrteWare from "./pages/HinweisschildGesperrteWare";
 import Probeentnahme from "./pages/Probeentnahme";
-import Besprechungsprotokoll from "./pages/Besprechungsprotokoll";
 import AntiVektorZugang from "./pages/AntiVektorZugang";
 import Gesundheitszeugnisse from "./pages/Gesundheitszeugnisse";
 import ArzneimittelSachkunde from "./pages/ArzneimittelSachkunde";
@@ -79,7 +79,7 @@ function Router() {
       <Route path="/produktfehlermeldung" component={Produktfehlermeldung} />
       <Route path="/hinweisschild-gesperrte-ware" component={HinweisschildGesperrteWare} />
       <Route path="/probeentnahme" component={Probeentnahme} />
-      <Route path="/besprechungsprotokoll" component={Besprechungsprotokoll} />
+      <Route path="/besprechungsprotokoll" component={BesprechungsDokumente} />
       <Route path="/anti-vektor-zugang" component={AntiVektorZugang} />
       <Route path="/gesundheitszeugnisse" component={Gesundheitszeugnisse} />
       <Route path="/arzneimittel-sachkunde" component={ArzneimittelSachkunde} />
@@ -87,7 +87,7 @@ function Router() {
       <Route path="/kontrollberichte" component={Kontrollberichte} />
       <Route path="/mitarbeiterverwaltung" component={Mitarbeiterverwaltung} />
       <Route path="/mitarbeiter-liste" component={MitarbeiterListe} />
-      <Route path="/training-records" component={TrainingRecords} />
+      <Route path="/training-records" component={Schulungsnachweise} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/register" component={AdminRegister} />
       <Route path="/admin/users" component={AdminUserManagement} />

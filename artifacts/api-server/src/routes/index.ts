@@ -23,6 +23,8 @@ import gesundheitszeugnisseRouter from "./gesundheitszeugnisse";
 import arzneimittelSachkundeRouter from "./arzneimittelSachkunde";
 import bescheinigungenRouter from "./bescheinigungen";
 import kontrollberichteRouter from "./kontrollberichte";
+import schulungsnachweiseRouter from "./schulungsnachweise";
+import besprechungsdokumenteRouter from "./besprechungsdokumente";
 import deviceRouter from "./device";
 
 const router: IRouter = Router();
@@ -51,6 +53,8 @@ router.use(gesundheitszeugnisseRouter);
 router.use(arzneimittelSachkundeRouter);
 router.use(bescheinigungenRouter);
 router.use(kontrollberichteRouter);
+router.use(schulungsnachweiseRouter);
+router.use(besprechungsdokumenteRouter);
 router.use(deviceRouter);
 
 export default router;
