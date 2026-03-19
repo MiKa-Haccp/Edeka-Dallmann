@@ -22,6 +22,7 @@ import antiVektorRouter from "./antiVektor";
 import gesundheitszeugnisseRouter from "./gesundheitszeugnisse";
 import arzneimittelSachkundeRouter from "./arzneimittelSachkunde";
 import bescheinigungenRouter from "./bescheinigungen";
+import kontrollberichteRouter from "./kontrollberichte";
 import deviceRouter from "./device";
 
 const router: IRouter = Router();
@@ -49,6 +50,7 @@ router.use(antiVektorRouter);
 router.use(gesundheitszeugnisseRouter);
 router.use(arzneimittelSachkundeRouter);
 router.use(bescheinigungenRouter);
+router.use(kontrollberichteRouter);
 router.use(deviceRouter);
 
 export default router;

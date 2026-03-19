@@ -19,3 +19,4 @@ export * from "./antiVektor";
 export * from "./gesundheitszeugnisse";
 export * from "./arzneimittelSachkunde";
 export * from "./bescheinigungen";
+export * from "./kontrollberichte";
