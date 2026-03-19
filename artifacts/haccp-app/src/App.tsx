@@ -18,6 +18,7 @@ import AnnualCleaningPlan from "./pages/AnnualCleaningPlan";
 import Betriebsbegehung from "./pages/Betriebsbegehung";
 import Produktfehlermeldung from "./pages/Produktfehlermeldung";
 import HinweisschildGesperrteWare from "./pages/HinweisschildGesperrteWare";
+import Probeentnahme from "./pages/Probeentnahme";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/betriebsbegehung" component={Betriebsbegehung} />
       <Route path="/produktfehlermeldung" component={Produktfehlermeldung} />
       <Route path="/hinweisschild-gesperrte-ware" component={HinweisschildGesperrteWare} />
+      <Route path="/probeentnahme" component={Probeentnahme} />
       <Route path="/training-records" component={TrainingRecords} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/register" component={AdminRegister} />
