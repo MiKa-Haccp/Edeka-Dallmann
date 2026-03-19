@@ -340,7 +340,6 @@ export default function Responsibilities() {
           {/* Footer */}
           <div className="px-6 py-3 bg-gray-50 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
             <span>1.1</span>
-            <span>Qualitätssicherungs-Handbuch Einzelhandel</span>
             <span>{String(selectedMonth()).padStart(2, "0")}/{selectedYear}</span>
           </div>
         </div>
@@ -367,7 +366,7 @@ function RowGroup({
   removeRow: (index: number) => void;
 }) {
   const isEven = index % 2 === 0;
-  const bgClass = isEven ? "bg-amber-50/60" : "bg-white";
+  const bgClass = isEven ? "bg-blue-50/40" : "bg-white";
 
   return (
     <>
