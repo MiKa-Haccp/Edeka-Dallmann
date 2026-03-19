@@ -88,14 +88,15 @@ artifacts-monorepo/
 - `/responsibilities` — Section 1.1: Verantwortlichkeiten (market info, department responsibilities)
 - `/user-registry` — Section 1.2: Kürzelliste (user registration form + registered user list with admin reset + admin invite section)
 - `/info-documentation` — Section 1.3: Info Dokumentation und Ablagefristen (read-only info page with retention periods)
-- `/training-records` — Section 1.4: Schulungsnachweise (training protocols with topic checklists, attendance via PIN-only)
+- `/training-records` — Section 1.4: Schulungsnachweise + 1.10 Besprechungsprotokoll (combined page with tabs; Besprechungsprotokoll: EDEKA Formblatt 2.5; digitale Leiter-Unterschrift; PIN-Bestätigung Teilnehmer; Druck)
 - `/annual-cleaning-plan` — Section 1.5: Reinigungsplan Jahr (interactive yearly cleaning plan, PIN confirmation per month)
 - `/betriebsbegehung` — Section 1.6: Betriebsbegehung (Eigenkontroll-Prüfliste, 13 Bereiche, 111 Prüfpunkte, Quartal/Jahr Navigation, OK/Mangel/N/A Bewertung, Aktionsplan bei Mängeln, gespeichert in `betriebsbegehung` DB-Tabelle)
 - `/hinweisschild-gesperrte-ware` — Section 1.7: Hinweisschild gesperrte Ware
 - `/produktfehlermeldung` — Section 1.8: Produktfehlermeldung (Formblatt mit Fotos, digitale Unterschriften Marktleiter + Kunde, Auto-Entwurf, PDF-Druck via Portal)
 - `/probeentnahme` — Section 1.9: Probeentnahme (Probenahmebogen 3.22-1, Probenübergabeprotokoll 3.22-2 mit Signaturen, Foto-Upload Behördendokument, Auto-Entwurf)
-- `/besprechungsprotokoll` — Section 1.10: Besprechungsprotokoll (EDEKA Formblatt 2.5; digitale Leiter-Unterschrift; PIN-Bestätigung Teilnehmer; Druck)
-- `/anti-vektor-zugang` — Section 1.11: Anti-Vektor Zugang (Tab 1: AV-ODS Portal-Link + Login-Daten editierbar durch Admins; Tab 2: Sachkundenachweise der Schädlingsbekämpfer mit Foto, Gültigkeitsdatum, Ablauf-Warnung; gespeichert in `anti_vektor_zugangsdaten` + `anti_vektor_zertifikate`)
+- `/anti-vektor-zugang` — Section 1.10: Anti-Vektor Zugang (Tab 1: AV-ODS Portal-Link + Login-Daten editierbar durch Admins; Tab 2: Sachkundenachweise der Schädlingsbekämpfer mit Foto, Gültigkeitsdatum, Ablauf-Warnung; gespeichert in `anti_vektor_zugangsdaten` + `anti_vektor_zertifikate`)
+- `/bescheinigungen` — Section 1.11: Bescheinigungen & Nachweise
+- `/kontrollberichte` — Section 1.12: Kontrollberichte
 - `/admin/login` — Admin login page (email + password)
 - `/admin/register` — Admin registration via invitation token
 - `/admin/users` — Benutzerverwaltung: Role management, permission checkboxes, market assignments (SUPERADMIN only)

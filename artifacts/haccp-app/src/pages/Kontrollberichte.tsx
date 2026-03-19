@@ -505,7 +505,7 @@ export default function Kontrollberichte() {
               <ClipboardCheck className="w-5 h-5 text-[#1a3a6b]" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">1.13 Kontrollberichte</h1>
+              <h1 className="text-xl font-bold text-foreground">1.12 Kontrollberichte</h1>
               <p className="text-xs text-muted-foreground">Behoerdliche Kontrollen, Zertifikate & Audits</p>
             </div>
           </div>
