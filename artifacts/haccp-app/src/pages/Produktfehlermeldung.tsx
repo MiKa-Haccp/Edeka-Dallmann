@@ -7,6 +7,7 @@ import {
   Mail, Send, ImagePlus, XCircle,
 } from "lucide-react";
 import { DruckformularPFM } from "@/components/DruckformularPFM";
+import { UnterschriftPad } from "@/components/UnterschriftPad";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -41,6 +42,8 @@ interface FormData {
   datumUnterschrift: string;
   unterschriftMarktleiter: string;
   unterschriftFoto: string;
+  unterschriftPersonalDigital: string;
+  unterschriftKundeDigital: string;
   // Seite 2
   verbraucherName: string;
   verbraucherAdresse: string;
@@ -73,6 +76,7 @@ function emptyForm(): FormData {
     produktVorhanden: null, fremdkoerperVorhanden: null,
     gleichesMhdImMarkt: null, gleicherFehlerImBestand: null, wareAusRegalGenommen: null,
     datumUnterschrift: "", unterschriftMarktleiter: "", unterschriftFoto: "",
+    unterschriftPersonalDigital: "", unterschriftKundeDigital: "",
     verbraucherName: "", verbraucherAdresse: "", verbraucherTelefon: "", verbraucherEmail: "",
     einwilligungUnterschriftOrt: "", einwilligungDatum: "",
   };
@@ -585,10 +589,15 @@ export default function Produktfehlermeldung() {
                   </div>
                 </SectionCard>
 
-                <SectionCard title="Abschluss">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormInput label="Datum" value={form.datumUnterschrift} onChange={set("datumUnterschrift")} />
-                    <FormInput label="Unterschrift Marktleiter / Vertreter" value={form.unterschriftMarktleiter} onChange={set("unterschriftMarktleiter")} />
+                <SectionCard title="Abschluss & Unterschrift">
+                  <FormInput label="Datum" value={form.datumUnterschrift} onChange={set("datumUnterschrift")} />
+                  <div className="mt-3">
+                    <UnterschriftPad
+                      label="Digitale Unterschrift – Marktleiter / Vertreter"
+                      value={form.unterschriftPersonalDigital}
+                      onChange={(v) => set("unterschriftPersonalDigital")(v)}
+                      height={150}
+                    />
                   </div>
                   <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-4">
                     <p className="text-xs text-amber-800 font-medium">
@@ -634,9 +643,14 @@ export default function Produktfehlermeldung() {
                       Mir ist bewusst, dass diese Einwilligung freiwillig und jederzeit widerrufbar ist.
                     </p>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormInput label="Ort, Datum" value={form.einwilligungUnterschriftOrt} onChange={set("einwilligungUnterschriftOrt")} />
-                    <FormInput label="Unterschrift des Kunden" value={form.einwilligungDatum} onChange={set("einwilligungDatum")} />
+                  <FormInput label="Ort, Datum" value={form.einwilligungUnterschriftOrt} onChange={set("einwilligungUnterschriftOrt")} />
+                  <div className="mt-3">
+                    <UnterschriftPad
+                      label="Digitale Unterschrift – Kunde"
+                      value={form.unterschriftKundeDigital}
+                      onChange={(v) => set("unterschriftKundeDigital")(v)}
+                      height={150}
+                    />
                   </div>
                 </SectionCard>
 

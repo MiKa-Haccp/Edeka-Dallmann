@@ -31,6 +31,8 @@ interface FormData {
   wareAusRegalGenommen: JaNein;
   datumUnterschrift: string;
   unterschriftMarktleiter: string;
+  unterschriftPersonalDigital: string;
+  unterschriftKundeDigital: string;
   verbraucherName: string;
   verbraucherAdresse: string;
   verbraucherTelefon: string;
@@ -191,7 +193,14 @@ function PrintDocument({ form }: { form: FormData }) {
 
         <div style={{ marginTop: 12 }}>
           <Field label="Datum" value={form.datumUnterschrift} width="40%" />
-          <Field label="Unterschrift Marktleiter / Vertreter" value={"                                                        "} width="60%" />
+          {form.unterschriftPersonalDigital ? (
+            <div style={{ width: "60%", display: "inline-block", verticalAlign: "top", paddingRight: 8, boxSizing: "border-box" }}>
+              <div style={{ fontSize: 8, color: "#666", marginBottom: 1, textTransform: "uppercase" }}>Unterschrift Marktleiter / Vertreter</div>
+              <img src={form.unterschriftPersonalDigital} alt="Unterschrift Personal" style={{ height: 48, maxWidth: "100%", border: "1px solid #ccc", borderRadius: 4 }} />
+            </div>
+          ) : (
+            <Field label="Unterschrift Marktleiter / Vertreter" value={"                                                        "} width="60%" />
+          )}
         </div>
 
         <div style={{ marginTop: 14, border: "1px solid #ccc", padding: 6, fontSize: 9, textAlign: "center" }}>
@@ -242,7 +251,14 @@ function PrintDocument({ form }: { form: FormData }) {
 
         <div style={{ marginTop: 20 }}>
           <Field label="Ort, Datum" value={form.einwilligungUnterschriftOrt || "                                    "} width="48%" />
-          <Field label="Unterschrift des Kunden" value={"                                    "} width="48%" />
+          {form.unterschriftKundeDigital ? (
+            <div style={{ width: "48%", display: "inline-block", verticalAlign: "top", boxSizing: "border-box" }}>
+              <div style={{ fontSize: 8, color: "#666", marginBottom: 1, textTransform: "uppercase" }}>Unterschrift des Kunden</div>
+              <img src={form.unterschriftKundeDigital} alt="Unterschrift Kunde" style={{ height: 48, maxWidth: "100%", border: "1px solid #ccc", borderRadius: 4 }} />
+            </div>
+          ) : (
+            <Field label="Unterschrift des Kunden" value={"                                    "} width="48%" />
+          )}
         </div>
 
         <div style={{ marginTop: 20, border: "1px solid #ccc", padding: 6, fontSize: 9, textAlign: "center" }}>

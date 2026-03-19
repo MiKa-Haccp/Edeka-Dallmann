@@ -47,8 +47,12 @@ export const produktfehlermeldungTable = pgTable("produktfehlermeldung", {
   datumUnterschrift: text("datum_unterschrift"),
   unterschriftMarktleiter: text("unterschrift_marktleiter"),
 
-  // Foto der Unterschriften (base64)
+  // Foto der Unterschriften (base64) — Kamera-Upload
   unterschriftFoto: text("unterschrift_foto"),
+
+  // Digitale Unterschriften (base64 PNG) — Stift / Touch auf Tablet
+  unterschriftPersonalDigital: text("unterschrift_personal_digital"),
+  unterschriftKundeDigital: text("unterschrift_kunde_digital"),
 
   // Verbraucherdaten (Seite 2)
   verbraucherName: text("verbraucher_name"),
