@@ -14,6 +14,23 @@ const SLOT_WINDOWS = [
 
 export type TrafficLight = "green" | "yellow" | "red" | "none";
 
+/** Gibt den Montag der laufenden Woche als Date zurück (00:00 Uhr) */
+function getMondayOfWeek(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const dow = d.getDay(); // 0=So, 1=Mo ... 6=Sa
+  const diff = dow === 0 ? -6 : 1 - dow; // Montag der Woche
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function isClosed(date: Date, holidays: Set<string>): boolean {
+  const dow = date.getDay();
+  if (dow === 0) return true; // Sonntag
+  const s = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return holidays.has(s);
+}
+
 export function useWarenzustandOGStatus(): TrafficLight {
   const { selectedMarketId } = useAppStore();
   const [status, setStatus] = useState<TrafficLight>("none");
@@ -27,18 +44,18 @@ export function useWarenzustandOGStatus(): TrafficLight {
   useEffect(() => {
     if (!selectedMarketId) { setStatus("none"); return; }
 
-    const now = new Date();
+    const now   = new Date();
     const year  = now.getFullYear();
     const month = now.getMonth() + 1;
-    const day   = now.getDate();
+    const today = now.getDate();
     const hour  = now.getHours() + now.getMinutes() / 60;
 
-    if (now.getDay() === 0) { setStatus("none"); return; }
-
     const holidays = getBavarianHolidays(year);
-    const todayStr = `${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-    if (holidays.has(todayStr)) { setStatus("none"); return; }
 
+    // Heute Feiertag oder Sonntag → kein Indikator
+    if (isClosed(now, holidays)) { setStatus("none"); return; }
+
+    // Vor Ladenöffnung → alles in Ordnung
     if (hour < 6) { setStatus("green"); return; }
 
     let cancelled = false;
@@ -48,8 +65,31 @@ export function useWarenzustandOGStatus(): TrafficLight {
       .then((entries: { day: number; slot: string }[]) => {
         if (cancelled) return;
 
-        const checked = new Set(
-          entries.filter(e => e.day === day).map(e => e.slot)
+        // --- Vergangene Wochentage (Mo bis gestern) prüfen ---
+        const monday = getMondayOfWeek(now);
+        const todayStart = new Date(now);
+        todayStart.setHours(0, 0, 0, 0);
+
+        for (let d = new Date(monday); d < todayStart; d.setDate(d.getDate() + 1)) {
+          if (isClosed(d, holidays)) continue; // Sonntag / Feiertag überspringen
+
+          const dayNum = d.getDate();
+          // Nur relevant wenn der Tag im selben Monat liegt
+          if (d.getMonth() + 1 !== month) continue;
+
+          const dayChecked = new Set(
+            entries.filter(e => e.day === dayNum).map(e => e.slot)
+          );
+          const missing = SLOT_WINDOWS.filter(w => !dayChecked.has(w.key));
+          if (missing.length > 0) {
+            setStatus("red");
+            return;
+          }
+        }
+
+        // --- Heutige Slots prüfen ---
+        const todayChecked = new Set(
+          entries.filter(e => e.day === today).map(e => e.slot)
         );
 
         const pastSlots: string[] = [];
@@ -64,16 +104,16 @@ export function useWarenzustandOGStatus(): TrafficLight {
           }
         }
 
-        const pastMissing = pastSlots.filter(s => !checked.has(s));
-        if (pastMissing.length > 0) { setStatus("red"); return; }
+        const todayPastMissing = pastSlots.filter(s => !todayChecked.has(s));
+        if (todayPastMissing.length > 0) { setStatus("red"); return; }
 
         if (!currentSlot) {
-          const allDone = SLOT_WINDOWS.every(w => checked.has(w.key));
-          setStatus(allDone ? "green" : "red");
+          // Nach 18 Uhr — alle 5 Slots müssen erledigt sein
+          setStatus(SLOT_WINDOWS.every(w => todayChecked.has(w.key)) ? "green" : "red");
           return;
         }
 
-        setStatus(checked.has(currentSlot) ? "green" : "yellow");
+        setStatus(todayChecked.has(currentSlot) ? "green" : "yellow");
       })
       .catch(() => { if (!cancelled) setStatus("none"); });
 
