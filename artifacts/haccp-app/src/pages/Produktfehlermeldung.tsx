@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   AlertTriangle, ChevronLeft, ChevronRight, Save, Plus, Trash2,
-  Loader2, Check, X, PackageX, FileText, ListFilter,
+  Loader2, Check, X, PackageX, ListFilter, Printer, Camera,
+  Mail, Send, ImagePlus, XCircle,
 } from "lucide-react";
+import { DruckformularPFM } from "@/components/DruckformularPFM";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -38,6 +40,7 @@ interface FormData {
   wareAusRegalGenommen: JaNein;
   datumUnterschrift: string;
   unterschriftMarktleiter: string;
+  unterschriftFoto: string;
   // Seite 2
   verbraucherName: string;
   verbraucherAdresse: string;
@@ -69,7 +72,7 @@ function emptyForm(): FormData {
     kassenbonVorhanden: null, kundeEntschaedigt: null,
     produktVorhanden: null, fremdkoerperVorhanden: null,
     gleichesMhdImMarkt: null, gleicherFehlerImBestand: null, wareAusRegalGenommen: null,
-    datumUnterschrift: "", unterschriftMarktleiter: "",
+    datumUnterschrift: "", unterschriftMarktleiter: "", unterschriftFoto: "",
     verbraucherName: "", verbraucherAdresse: "", verbraucherTelefon: "", verbraucherEmail: "",
     einwilligungUnterschriftOrt: "", einwilligungDatum: "",
   };
@@ -147,6 +150,8 @@ export default function Produktfehlermeldung() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [showDruck, setShowDruck] = useState(false);
+  const fotoInputRef = useRef<HTMLInputElement>(null);
 
   const loadReports = useCallback(async () => {
     setLoading(true);
@@ -207,6 +212,16 @@ export default function Produktfehlermeldung() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      set("unterschriftFoto")(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleDelete = async () => {
@@ -545,8 +560,97 @@ export default function Produktfehlermeldung() {
               </div>
             )}
 
+            {/* Foto-Upload & Weiterleitung (immer sichtbar) */}
+            <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
+              <div className="px-5 py-3 border-b border-border/40 bg-muted/20">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-muted-foreground" /> Unterschriftsfoto &amp; Weiterleitung
+                </h3>
+              </div>
+              <div className="p-5 space-y-4">
+
+                {/* Schritt-Anleitung */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { nr: "1", icon: "🖨️", title: "Drucken & unterschreiben", text: "Formular vorausgefüllt drucken, Marktleiter und Kunde unterschreiben lassen" },
+                    { nr: "2", icon: "📸", title: "Unterschrift fotografieren", text: "Nur die Unterschriftsseite fotografieren und hier hochladen" },
+                    { nr: "3", icon: "📧", title: "An EDEKA weiterleiten", text: "Per E-Mail oder Fax an die QM-Abteilung senden" },
+                  ].map((s) => (
+                    <div key={s.nr} className="flex gap-3 p-3 bg-[#1a3a6b]/5 rounded-xl">
+                      <div className="w-7 h-7 rounded-full bg-[#1a3a6b] text-white text-xs font-bold flex items-center justify-center shrink-0">{s.nr}</div>
+                      <div>
+                        <div className="text-xs font-bold text-foreground mb-0.5">{s.title}</div>
+                        <div className="text-xs text-muted-foreground">{s.text}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Foto Upload */}
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Unterschriftsfoto hochladen</p>
+                  {form.unterschriftFoto ? (
+                    <div className="relative inline-block">
+                      <img
+                        src={form.unterschriftFoto}
+                        alt="Unterschriftsfoto"
+                        className="max-h-48 rounded-xl border border-border/60 object-contain"
+                      />
+                      <button
+                        onClick={() => set("unterschriftFoto")("")}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                        title="Foto entfernen"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                      <p className="text-xs text-green-600 font-medium mt-2 flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> Foto gespeichert
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => fotoInputRef.current?.click()}
+                      className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border/60 rounded-xl text-sm text-muted-foreground hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b] hover:bg-[#1a3a6b]/5 transition-all w-full justify-center"
+                    >
+                      <ImagePlus className="w-4 h-4" />
+                      Foto aufnehmen oder aus Galerie wählen
+                    </button>
+                  )}
+                  <input
+                    ref={fotoInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFotoUpload}
+                    className="hidden"
+                  />
+                </div>
+
+                {/* Weiterleitungsinfo */}
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <p className="text-xs font-bold text-amber-800 mb-2 flex items-center gap-1.5">
+                    <Send className="w-3.5 h-3.5" /> Weiterleitung an EDEKA QM-Abteilung
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <a
+                      href="mailto:qm.suedbayern@edeka.de?subject=Produktfehlermeldung 3.14"
+                      className="flex items-center gap-1.5 text-xs font-bold text-amber-800 underline hover:text-amber-900"
+                    >
+                      <Mail className="w-3.5 h-3.5" /> qm.suedbayern@edeka.de
+                    </a>
+                    <span className="text-xs text-amber-700">|</span>
+                    <span className="text-xs font-bold text-amber-800">📠 Fax: 08458/62-510</span>
+                  </div>
+                  <p className="text-xs text-amber-700 mt-1.5">
+                    Formblatt muss 3 Jahre von der Marktleitung archiviert werden.
+                  </p>
+                </div>
+
+              </div>
+            </div>
+
             {/* Save / Delete bar */}
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-3 pt-2">
               {page === 1 ? (
                 <button
                   onClick={() => setPage(2)}
@@ -564,6 +668,13 @@ export default function Produktfehlermeldung() {
               )}
 
               <div className="flex-1" />
+
+              <button
+                onClick={() => setShowDruck(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-[#1a3a6b]/30 text-[#1a3a6b] rounded-xl text-sm font-semibold hover:bg-[#1a3a6b]/5 transition-colors"
+              >
+                <Printer className="w-4 h-4" /> Formular drucken
+              </button>
 
               {isAdmin && currentReport && !deleteConfirm && (
                 <button
@@ -608,6 +719,11 @@ export default function Produktfehlermeldung() {
         )}
 
       </div>
+
+      {showDruck && (
+        <DruckformularPFM form={form} onClose={() => setShowDruck(false)} />
+      )}
+
     </AppLayout>
   );
 }
