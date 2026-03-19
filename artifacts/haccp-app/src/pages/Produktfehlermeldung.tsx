@@ -139,6 +139,26 @@ function SectionCard({ title, children }: { title: string; children: React.React
 
 const DRAFT_KEY = "haccp-pfm-draft-v1";
 
+function compressImage(file: File, maxPx = 1400, quality = 0.75): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const ratio = Math.min(1, maxPx / Math.max(img.width, img.height));
+      const w = Math.round(img.width * ratio);
+      const h = Math.round(img.height * ratio);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 export default function Produktfehlermeldung() {
   const { adminSession } = useAppStore();
   const isAdmin = !!adminSession;
@@ -262,14 +282,18 @@ export default function Produktfehlermeldung() {
     }
   };
 
-  const handleFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      set("unterschriftFoto")(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImage(file);
+      set("unterschriftFoto")(compressed);
+    } catch {
+      // Fallback: unkomprimiert laden
+      const reader = new FileReader();
+      reader.onload = () => set("unterschriftFoto")(reader.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleDelete = async () => {
