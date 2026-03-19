@@ -12,3 +12,4 @@ export * from "./userPermissions";
 export * from "./trainingRecords";
 export * from "./cleaningPlan";
 export * from "./betriebsbegehung";
+export * from "./produktfehlermeldung";

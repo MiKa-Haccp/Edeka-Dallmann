@@ -15,6 +15,7 @@ import responsibilitiesRouter from "./responsibilities";
 import trainingRouter from "./training";
 import cleaningPlanRouter from "./cleaningPlan";
 import betriebsbegehungRouter from "./betriebsbegehung";
+import produktfehlermeldungRouter from "./produktfehlermeldung";
 import deviceRouter from "./device";
 
 const router: IRouter = Router();
@@ -35,6 +36,7 @@ router.use(responsibilitiesRouter);
 router.use(trainingRouter);
 router.use(cleaningPlanRouter);
 router.use(betriebsbegehungRouter);
+router.use(produktfehlermeldungRouter);
 router.use(deviceRouter);
 
 export default router;

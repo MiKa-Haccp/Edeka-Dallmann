@@ -88,7 +88,7 @@ export function FaelligkeitenWidget() {
           : respStatus === "ueberfaellig"
           ? `Für ${currentYear} noch kein Eintrag — bitte baldmöglich ausfüllen`
           : "Wird geprüft …",
-      href: "/category/1/responsibilities",
+      href: "/responsibilities",
     },
     {
       label: "Betriebsbegehung",
@@ -99,7 +99,7 @@ export function FaelligkeitenWidget() {
           : bbStatus === "ueberfaellig"
           ? `Q${currentQ}/${currentYear} überfällig — bitte nachholen`
           : `Q${currentQ}/${currentYear} noch offen`,
-      href: "/category/1/betriebsbegehung",
+      href: "/betriebsbegehung",
     },
   ];
 
