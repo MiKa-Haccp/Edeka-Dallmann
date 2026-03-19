@@ -23,6 +23,7 @@ import Besprechungsprotokoll from "./pages/Besprechungsprotokoll";
 import AntiVektorZugang from "./pages/AntiVektorZugang";
 import Gesundheitszeugnisse from "./pages/Gesundheitszeugnisse";
 import ArzneimittelSachkunde from "./pages/ArzneimittelSachkunde";
+import Bescheinigungen from "./pages/Bescheinigungen";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
@@ -53,6 +54,7 @@ function Router() {
       <Route path="/anti-vektor-zugang" component={AntiVektorZugang} />
       <Route path="/gesundheitszeugnisse" component={Gesundheitszeugnisse} />
       <Route path="/arzneimittel-sachkunde" component={ArzneimittelSachkunde} />
+      <Route path="/bescheinigungen" component={Bescheinigungen} />
       <Route path="/training-records" component={TrainingRecords} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/register" component={AdminRegister} />

@@ -21,6 +21,7 @@ import besprechungsprotokollRouter from "./besprechungsprotokoll";
 import antiVektorRouter from "./antiVektor";
 import gesundheitszeugnisseRouter from "./gesundheitszeugnisse";
 import arzneimittelSachkundeRouter from "./arzneimittelSachkunde";
+import bescheinigungenRouter from "./bescheinigungen";
 import deviceRouter from "./device";
 
 const router: IRouter = Router();
@@ -47,6 +48,7 @@ router.use(besprechungsprotokollRouter);
 router.use(antiVektorRouter);
 router.use(gesundheitszeugnisseRouter);
 router.use(arzneimittelSachkundeRouter);
+router.use(bescheinigungenRouter);
 router.use(deviceRouter);
 
 export default router;

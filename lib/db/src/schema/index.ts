@@ -18,3 +18,4 @@ export * from "./besprechungsprotokoll";
 export * from "./antiVektor";
 export * from "./gesundheitszeugnisse";
 export * from "./arzneimittelSachkunde";
+export * from "./bescheinigungen";
