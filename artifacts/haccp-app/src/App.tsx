@@ -3,6 +3,32 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
+import { useEffect } from "react";
+
+// Bereinigt localStorage-Entwürfe die Bild-Daten enthalten (verhindert Screenshot-Flash beim Start)
+function cleanupImageDrafts() {
+  const DRAFT_KEYS = ["haccp-pfm-draft-v1", "haccp-probe-draft-v1"];
+  for (const key of DRAFT_KEYS) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      if (raw.includes("data:image") || raw.includes("data:application/pdf") || raw.length > 100_000) {
+        const parsed = JSON.parse(raw);
+        const form = parsed?.form || parsed;
+        const cleaned = JSON.parse(JSON.stringify(form, (_, v) =>
+          typeof v === "string" && (v.startsWith("data:image") || v.startsWith("data:application/pdf")) ? null : v
+        ));
+        if (parsed?.form !== undefined) {
+          localStorage.setItem(key, JSON.stringify({ ...parsed, form: cleaned }));
+        } else {
+          localStorage.setItem(key, JSON.stringify(cleaned));
+        }
+      }
+    } catch {
+      localStorage.removeItem(key);
+    }
+  }
+}
 
 import Dashboard from "./pages/Dashboard";
 import SectionDetail from "./pages/SectionDetail";
@@ -74,6 +100,8 @@ function AutoLogoutWrapper({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  useEffect(() => { cleanupImageDrafts(); }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
