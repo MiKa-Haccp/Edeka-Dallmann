@@ -25,11 +25,37 @@ router.get("/warencheck-og", async (req, res) => {
   res.json(rows);
 });
 
+const SLOT_START_HOURS: Record<string, number> = {
+  s1: 6, s2: 9, s3: 12, s4: 15, s5: 18,
+};
+
 router.post("/warencheck-og", async (req, res) => {
   const { tenantId = 1, marketId, year, month, day, slot, kuerzel, userId } = req.body;
   if (!marketId || !year || !month || !day || !slot || !kuerzel) {
     res.status(400).json({ error: "Pflichtfelder fehlen" });
     return;
+  }
+
+  const now = new Date();
+  const nowYear  = now.getFullYear();
+  const nowMonth = now.getMonth() + 1;
+  const nowDay   = now.getDate();
+  const nowHour  = now.getHours();
+
+  const entryDate = new Date(year, month - 1, day);
+  const today     = new Date(nowYear, nowMonth - 1, nowDay);
+
+  if (entryDate > today) {
+    res.status(400).json({ error: "Eintragungen fuer zukuenftige Tage sind nicht erlaubt" });
+    return;
+  }
+
+  if (year === nowYear && month === nowMonth && day === nowDay) {
+    const startHour = SLOT_START_HOURS[slot];
+    if (startHour !== undefined && nowHour < startHour) {
+      res.status(400).json({ error: "Diese Zeitphase hat noch nicht begonnen" });
+      return;
+    }
   }
   const existing = await db
     .select()

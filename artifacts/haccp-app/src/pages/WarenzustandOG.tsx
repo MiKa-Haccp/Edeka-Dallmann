@@ -10,11 +10,11 @@ import { getBavarianHolidays, getHolidayName } from "@/utils/holidays";
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 const SLOTS = [
-  { key: "s1", label: "06:00 – 09:00" },
-  { key: "s2", label: "09:00 – 12:00" },
-  { key: "s3", label: "12:00 – 15:00" },
-  { key: "s4", label: "15:00 – 18:00" },
-  { key: "s5", label: "18:00 – Ladenschluss" },
+  { key: "s1", label: "06:00 – 09:00", startHour: 6  },
+  { key: "s2", label: "09:00 – 12:00", startHour: 9  },
+  { key: "s3", label: "12:00 – 15:00", startHour: 12 },
+  { key: "s4", label: "15:00 – 18:00", startHour: 15 },
+  { key: "s5", label: "18:00 – Ladenschluss", startHour: 18 },
 ];
 
 const WOCHENTAGE = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
@@ -386,6 +386,9 @@ export default function WarenzustandOG() {
                           <>
                             {SLOTS.map(slot => {
                               const entry = getEntry(day, slot.key);
+                              const isFutureDay = !today && !past;
+                              const isSlotFuture = today && slot.startHour > now.getHours();
+                              const isLocked = isFutureDay || isSlotFuture;
                               return (
                                 <td key={slot.key} className="px-1.5 py-1.5 text-center">
                                   {entry ? (
@@ -408,6 +411,10 @@ export default function WarenzustandOG() {
                                         </button>
                                       )}
                                     </div>
+                                  ) : isLocked ? (
+                                    <div className="w-full min-w-[70px] py-1.5 flex items-center justify-center">
+                                      <Lock className="w-3 h-3 text-slate-300" />
+                                    </div>
                                   ) : (
                                     <button
                                       onClick={() => setActiveCell({ day, slot })}
@@ -415,9 +422,7 @@ export default function WarenzustandOG() {
                                         "w-full min-w-[70px] py-1.5 rounded-lg border text-xs font-medium transition-all",
                                         today
                                           ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
-                                          : past
-                                          ? "border-dashed border-red-200 bg-red-50/40 text-red-400 hover:bg-red-50"
-                                          : "border-dashed border-border/50 text-muted-foreground/40 hover:border-primary/40 hover:text-primary hover:bg-primary/5",
+                                          : "border-dashed border-red-200 bg-red-50/40 text-red-400 hover:bg-red-50",
                                       ].join(" ")}
                                     >
                                       +
