@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ClipboardCheck, ChevronLeft, ChevronRight, Loader2, Check,
-  X, Printer, Lock, TrendingUp,
+  X, Printer, Lock, TrendingUp, ListChecks,
 } from "lucide-react";
 import { getBavarianHolidays, getHolidayName } from "@/utils/holidays";
 
@@ -152,6 +152,177 @@ function PinModal({
   );
 }
 
+// ===== BULK-MODAL: mehrere Bereiche auf einmal abzeichnen =====
+function BulkSignModal({
+  day, openAreas, onConfirm, onClose,
+}: {
+  day: number;
+  openAreas: typeof AREAS;
+  onConfirm: (kuerzel: string, userId: number | null, areaKeys: string[]) => void;
+  onClose: () => void;
+}) {
+  const [pin, setPin]           = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+  const [identified, setIdentified] = useState<{ name: string; userId: number; kuerzel: string } | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(openAreas.map(a => a.key)));
+
+  const handleVerify = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const res  = await fetch(`${BASE}/users/verify-pin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin, tenantId: 1 }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setIdentified({ name: data.userName, userId: data.userId, kuerzel: data.initials });
+      } else {
+        setError("PIN ungueltig.");
+      }
+    } catch {
+      setError("Verbindungsfehler.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggle = (key: string) => setSelected(prev => {
+    const next = new Set(prev);
+    next.has(key) ? next.delete(key) : next.add(key);
+    return next;
+  });
+
+  const allSelected  = selected.size === openAreas.length;
+  const noneSelected = selected.size === 0;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+              <ListChecks className="w-4 h-4 text-[#1a3a6b]" />
+              Tag {day} &mdash; Sammeleintrag
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{openAreas.length} offene Bereiche</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {!identified ? (
+          <>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">PIN eingeben</label>
+              <input
+                type="password"
+                inputMode="numeric"
+                className="w-full border border-border rounded-lg px-3 py-3 text-center text-lg tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/30"
+                placeholder="&#9679;&#9679;&#9679;&#9679;"
+                value={pin}
+                maxLength={6}
+                autoFocus
+                onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={e => e.key === "Enter" && pin.length >= 4 && handleVerify()}
+              />
+            </div>
+            {error && (
+              <p className="text-xs text-red-500 flex items-center gap-1.5">
+                <X className="w-3 h-3" />{error}
+              </p>
+            )}
+            <button
+              onClick={handleVerify}
+              disabled={loading || pin.length < 4}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0] transition-colors"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+              PIN pruefen
+            </button>
+          </>
+        ) : (
+          <div className="space-y-4">
+            {/* Mitarbeiter-Badge */}
+            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl border border-green-200">
+              <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+                <Check className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-green-800">{identified.name}</p>
+                <p className="text-xs text-green-600">Kuerzel: <span className="font-mono font-bold">{identified.kuerzel}</span></p>
+              </div>
+            </div>
+
+            {/* Alle / Keine */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">Bereiche auswählen:</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSelected(new Set(openAreas.map(a => a.key)))}
+                  disabled={allSelected}
+                  className="text-xs px-2 py-1 rounded-lg bg-primary/10 text-primary font-medium disabled:opacity-40 hover:bg-primary/20 transition-colors"
+                >
+                  Alle
+                </button>
+                <button
+                  onClick={() => setSelected(new Set())}
+                  disabled={noneSelected}
+                  className="text-xs px-2 py-1 rounded-lg bg-muted text-muted-foreground font-medium disabled:opacity-40 hover:bg-muted/80 transition-colors"
+                >
+                  Keine
+                </button>
+              </div>
+            </div>
+
+            {/* Bereichsliste */}
+            <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
+              {openAreas.map(area => (
+                <label
+                  key={area.key}
+                  className={[
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-colors border",
+                    selected.has(area.key)
+                      ? "bg-green-50 border-green-300 text-green-800"
+                      : "bg-muted/30 border-transparent text-muted-foreground hover:bg-muted/50",
+                  ].join(" ")}
+                >
+                  <div className={[
+                    "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+                    selected.has(area.key) ? "bg-green-500 border-green-500" : "border-muted-foreground/40 bg-white",
+                  ].join(" ")}>
+                    {selected.has(area.key) && <Check className="w-2.5 h-2.5 text-white" />}
+                  </div>
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    checked={selected.has(area.key)}
+                    onChange={() => toggle(area.key)}
+                  />
+                  <span className="text-sm">{area.label}</span>
+                </label>
+              ))}
+            </div>
+
+            {/* Bestätigen */}
+            <button
+              onClick={() => identified && onConfirm(identified.kuerzel, identified.userId, Array.from(selected))}
+              disabled={selected.size === 0}
+              className="w-full py-2.5 rounded-xl bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <ListChecks className="w-4 h-4" />
+              {selected.size} {selected.size === 1 ? "Bereich" : "Bereiche"} abzeichnen
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ===== HAUPTSEITE =====
 export default function ReinigungTaeglich() {
   const { selectedMarketId, selectedMarketName, adminSession } = useAppStore();
@@ -164,6 +335,7 @@ export default function ReinigungTaeglich() {
   const [entries, setEntries]     = useState<CheckEntry[]>([]);
   const [loading, setLoading]     = useState(false);
   const [activeCell, setActiveCell] = useState<{ day: number; area: typeof AREAS[0] } | null>(null);
+  const [activeBulkDay, setActiveBulkDay] = useState<number | null>(null);
   const [saving, setSaving]       = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
@@ -212,6 +384,30 @@ export default function ReinigungTaeglich() {
         await load();
         window.dispatchEvent(new CustomEvent("reinigung-taeglich-updated"));
       }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleBulkSign = async (kuerzel: string, userId: number | null, areaKeys: string[]) => {
+    if (!selectedMarketId || areaKeys.length === 0) return;
+    setSaving(true);
+    try {
+      await Promise.all(
+        areaKeys.map(area =>
+          fetch(`${BASE}/reinigung-taeglich`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              marketId: selectedMarketId, year, month,
+              day: activeBulkDay, area, kuerzel, userId,
+            }),
+          })
+        )
+      );
+      setActiveBulkDay(null);
+      await load();
+      window.dispatchEvent(new CustomEvent("reinigung-taeglich-updated"));
     } finally {
       setSaving(false);
     }
@@ -419,8 +615,19 @@ export default function ReinigungTaeglich() {
                                 <span className="inline-flex w-5 h-5 rounded-full bg-green-500 items-center justify-center">
                                   <Check className="w-3 h-3 text-white" />
                                 </span>
-                              ) : dayEntries.length > 0 ? (
-                                <span className="text-[10px] font-bold text-amber-600">{dayEntries.length}/{AREAS.length}</span>
+                              ) : !isFuture ? (
+                                <div className="flex flex-col items-center gap-1">
+                                  {dayEntries.length > 0 && (
+                                    <span className="text-[10px] font-bold text-amber-600">{dayEntries.length}/{AREAS.length}</span>
+                                  )}
+                                  <button
+                                    onClick={() => setActiveBulkDay(day)}
+                                    title="Mehrere Bereiche auf einmal abzeichnen"
+                                    className="p-1 rounded-lg bg-[#1a3a6b]/10 text-[#1a3a6b] hover:bg-[#1a3a6b]/20 transition-colors"
+                                  >
+                                    <ListChecks className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               ) : (
                                 <span className="text-xs text-muted-foreground/30">—</span>
                               )}
@@ -449,7 +656,7 @@ export default function ReinigungTaeglich() {
         </p>
       </div>
 
-      {/* PIN MODAL */}
+      {/* EINZELNER BEREICH: PIN MODAL */}
       {activeCell && (
         <PinModal
           day={activeCell.day}
@@ -458,9 +665,27 @@ export default function ReinigungTaeglich() {
           onClose={() => setActiveCell(null)}
         />
       )}
+
+      {/* MEHRERE BEREICHE: BULK MODAL */}
+      {activeBulkDay !== null && (() => {
+        const signed = new Set(entries.filter(e => e.day === activeBulkDay).map(e => e.area));
+        const openAreas = AREAS.filter(a => !signed.has(a.key));
+        return openAreas.length > 0 ? (
+          <BulkSignModal
+            day={activeBulkDay}
+            openAreas={openAreas}
+            onConfirm={handleBulkSign}
+            onClose={() => setActiveBulkDay(null)}
+          />
+        ) : null;
+      })()}
+
       {saving && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
-          <Loader2 className="w-8 h-8 animate-spin text-white" />
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-xl p-4 flex items-center gap-3 shadow-xl">
+            <Loader2 className="w-5 h-5 animate-spin text-[#1a3a6b]" />
+            <span className="text-sm font-medium">Wird gespeichert...</span>
+          </div>
         </div>
       )}
     </AppLayout>
