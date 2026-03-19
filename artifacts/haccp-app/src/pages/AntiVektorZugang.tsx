@@ -4,6 +4,7 @@ import { useAppStore } from "@/store/use-app-store";
 import {
   ExternalLink, Shield, Award, Loader2, Save, Check,
   Plus, Trash2, Eye, EyeOff, Camera, X, ChevronDown, ChevronUp, Pencil,
+  FileText,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -89,19 +90,37 @@ function ZertifikatForm({ onSave, onCancel }: { onSave: (z: Partial<Zertifikat>)
   const [prueferName, setPrueferName] = useState("");
   const [bezeichnung, setBezeichnung] = useState("");
   const [gueltigBis, setGueltigBis] = useState("");
-  const [foto, setFoto] = useState("");
+  const [datei, setDatei] = useState("");          // base64 (Bild oder PDF)
+  const [dateiName, setDateiName] = useState("");  // Dateiname für PDF-Anzeige
   const [notizen, setNotizen] = useState("");
   const [saving, setSaving] = useState(false);
-  const [compressing, setCompressing] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const fotoRef = useRef<HTMLInputElement>(null);
 
-  const handleFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setCompressing(true);
-    try { setFoto(await compressImage(file)); }
-    finally { setCompressing(false); }
+    setProcessing(true);
+    try {
+      if (file.type === "application/pdf") {
+        // PDF direkt als base64 einlesen
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          setDatei(ev.target!.result as string);
+          setDateiName(file.name);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Bild komprimieren
+        setDatei(await compressImage(file));
+        setDateiName(file.name);
+      }
+    } finally { setProcessing(false); }
+    e.target.value = "";
   };
+
+  const isPdf = datei.startsWith("data:application/pdf");
 
   const handleSubmit = async () => {
     if (!prueferName.trim()) return;
@@ -111,7 +130,7 @@ function ZertifikatForm({ onSave, onCancel }: { onSave: (z: Partial<Zertifikat>)
         prueferName: prueferName.trim(),
         zertifikatBezeichnung: bezeichnung.trim(),
         gueltigBis: gueltigBis.trim(),
-        fotoBase64: foto,
+        fotoBase64: datei,
         notizen: notizen.trim(),
       });
     } finally { setSaving(false); }
@@ -134,32 +153,68 @@ function ZertifikatForm({ onSave, onCancel }: { onSave: (z: Partial<Zertifikat>)
         </div>
       </div>
 
-      {/* Foto Upload */}
+      {/* Dokument Upload */}
       <div className="flex flex-col gap-2">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Foto des Nachweisdokuments
+          Dokument (Foto, Screenshot oder PDF)
         </label>
-        {foto ? (
-          <div className="relative inline-block">
-            <img src={foto} alt="Nachweis" className="w-full max-h-64 object-contain rounded-xl border border-border/60" />
-            <button
-              onClick={() => setFoto("")}
-              className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+
+        {datei ? (
+          <div className="relative">
+            {isPdf ? (
+              <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
+                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
+                  <FileText className="w-5 h-5 text-red-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-red-700 truncate">{dateiName || "Dokument.pdf"}</p>
+                  <p className="text-xs text-red-500">PDF-Datei</p>
+                </div>
+                <button
+                  onClick={() => { setDatei(""); setDateiName(""); }}
+                  className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shrink-0"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <img src={datei} alt="Nachweis" className="w-full max-h-64 object-contain rounded-xl border border-border/60" />
+                <button
+                  onClick={() => { setDatei(""); setDateiName(""); }}
+                  className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         ) : (
-          <button
-            onClick={() => fileRef.current?.click()}
-            disabled={compressing}
-            className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-[#1a3a6b]/30 rounded-xl text-sm font-semibold text-[#1a3a6b] hover:bg-[#1a3a6b]/5 transition-colors disabled:opacity-50"
-          >
-            {compressing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
-            {compressing ? "Wird komprimiert..." : "Foto aufnehmen oder hochladen"}
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            {/* Foto / Screenshot (Galerie + Kamera) */}
+            <button
+              onClick={() => fotoRef.current?.click()}
+              disabled={processing}
+              className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-sm font-semibold text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50"
+            >
+              {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+              <span className="text-xs text-center leading-tight">Foto /<br />Screenshot</span>
+            </button>
+            {/* PDF-Datei */}
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={processing}
+              className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-red-200 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50"
+            >
+              <FileText className="w-5 h-5" />
+              <span className="text-xs text-center leading-tight">PDF-<br />Datei</span>
+            </button>
+          </div>
         )}
-        <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFoto} />
+
+        {/* Versteckte Inputs */}
+        <input ref={fotoRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+        <input ref={fileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={handleFile} />
       </div>
 
       <div className="flex gap-3 pt-1">
@@ -223,8 +278,26 @@ function ZertifikatKarte({ z, onDelete, isAdmin }: { z: Zertifikat; onDelete: ()
         <div className="px-5 pb-5 space-y-4 border-t border-border/30">
           {z.fotoBase64 && (
             <div className="pt-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dokument-Foto</p>
-              <img src={z.fotoBase64} alt="Nachweis" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dokument</p>
+              {z.fotoBase64.startsWith("data:application/pdf") ? (
+                <a
+                  href={z.fotoBase64}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors"
+                >
+                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
+                    <FileText className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-red-700">PDF-Dokument anzeigen</p>
+                    <p className="text-xs text-red-500">Klicken zum Öffnen</p>
+                  </div>
+                  <ExternalLink className="w-4 h-4 text-red-400 ml-auto" />
+                </a>
+              ) : (
+                <img src={z.fotoBase64} alt="Nachweis" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
+              )}
             </div>
           )}
           {z.notizen && (
