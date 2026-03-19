@@ -18,6 +18,7 @@ import betriebsbegehungRouter from "./betriebsbegehung";
 import produktfehlermeldungRouter from "./produktfehlermeldung";
 import probeentnahmeRouter from "./probeentnahme";
 import besprechungsprotokollRouter from "./besprechungsprotokoll";
+import antiVektorRouter from "./antiVektor";
 import deviceRouter from "./device";
 
 const router: IRouter = Router();
@@ -41,6 +42,7 @@ router.use(betriebsbegehungRouter);
 router.use(produktfehlermeldungRouter);
 router.use(probeentnahmeRouter);
 router.use(besprechungsprotokollRouter);
+router.use(antiVektorRouter);
 router.use(deviceRouter);
 
 export default router;

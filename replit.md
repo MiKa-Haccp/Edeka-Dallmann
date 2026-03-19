@@ -94,7 +94,8 @@ artifacts-monorepo/
 - `/hinweisschild-gesperrte-ware` — Section 1.7: Hinweisschild gesperrte Ware
 - `/produktfehlermeldung` — Section 1.8: Produktfehlermeldung (Formblatt mit Fotos, digitale Unterschriften Marktleiter + Kunde, Auto-Entwurf, PDF-Druck via Portal)
 - `/probeentnahme` — Section 1.9: Probeentnahme (Probenahmebogen 3.22-1, Probenübergabeprotokoll 3.22-2 mit Signaturen, Foto-Upload Behördendokument, Auto-Entwurf)
-- `/besprechungsprotokoll` — Section 1.10: Besprechungsprotokoll (EDEKA Formblatt 2.5; Marktleiter-Unterschrift digital; Teilnehmer bestätigen Anwesenheit per persönlichem PIN; gespeichert in `besprechungsprotokoll` + `besprechung_teilnehmer` DB-Tabellen)
+- `/besprechungsprotokoll` — Section 1.10: Besprechungsprotokoll (EDEKA Formblatt 2.5; digitale Leiter-Unterschrift; PIN-Bestätigung Teilnehmer; Druck)
+- `/anti-vektor-zugang` — Section 1.11: Anti-Vektor Zugang (Tab 1: AV-ODS Portal-Link + Login-Daten editierbar durch Admins; Tab 2: Sachkundenachweise der Schädlingsbekämpfer mit Foto, Gültigkeitsdatum, Ablauf-Warnung; gespeichert in `anti_vektor_zugangsdaten` + `anti_vektor_zertifikate`)
 - `/admin/login` — Admin login page (email + password)
 - `/admin/register` — Admin registration via invitation token
 - `/admin/users` — Benutzerverwaltung: Role management, permission checkboxes, market assignments (SUPERADMIN only)

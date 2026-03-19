@@ -15,3 +15,4 @@ export * from "./betriebsbegehung";
 export * from "./produktfehlermeldung";
 export * from "./probeentnahme";
 export * from "./besprechungsprotokoll";
+export * from "./antiVektor";

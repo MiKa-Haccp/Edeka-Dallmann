@@ -20,6 +20,7 @@ import Produktfehlermeldung from "./pages/Produktfehlermeldung";
 import HinweisschildGesperrteWare from "./pages/HinweisschildGesperrteWare";
 import Probeentnahme from "./pages/Probeentnahme";
 import Besprechungsprotokoll from "./pages/Besprechungsprotokoll";
+import AntiVektorZugang from "./pages/AntiVektorZugang";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
@@ -47,6 +48,7 @@ function Router() {
       <Route path="/hinweisschild-gesperrte-ware" component={HinweisschildGesperrteWare} />
       <Route path="/probeentnahme" component={Probeentnahme} />
       <Route path="/besprechungsprotokoll" component={Besprechungsprotokoll} />
+      <Route path="/anti-vektor-zugang" component={AntiVektorZugang} />
       <Route path="/training-records" component={TrainingRecords} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/register" component={AdminRegister} />
