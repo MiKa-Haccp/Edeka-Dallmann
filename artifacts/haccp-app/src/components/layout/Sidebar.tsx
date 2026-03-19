@@ -48,8 +48,32 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
   );
 }
 
+const ACCORDION_STORAGE_KEY = "haccp-sidebar-open-categories";
+
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { data: categories, isLoading } = useListCategories();
+
+  const [openCategories, setOpenCategories] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(ACCORDION_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (!isLoading && categories?.length && openCategories.length === 0) {
+      const allIds = categories.map((c) => c.id.toString());
+      setOpenCategories(allIds);
+      localStorage.setItem(ACCORDION_STORAGE_KEY, JSON.stringify(allIds));
+    }
+  }, [isLoading, categories]);
+
+  const handleValueChange = (values: string[]) => {
+    setOpenCategories(values);
+    localStorage.setItem(ACCORDION_STORAGE_KEY, JSON.stringify(values));
+  };
 
   return (
     <>
@@ -68,7 +92,12 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             ))}
           </div>
         ) : (
-          <Accordion.Root type="multiple" className="space-y-2">
+          <Accordion.Root
+            type="multiple"
+            value={openCategories}
+            onValueChange={handleValueChange}
+            className="space-y-2"
+          >
             {categories?.map((category) => (
               <Accordion.Item 
                 key={category.id} 
