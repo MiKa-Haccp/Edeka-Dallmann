@@ -91,6 +91,10 @@ artifacts-monorepo/
 - `/training-records` — Section 1.4: Schulungsnachweise (training protocols with topic checklists, attendance via PIN-only)
 - `/annual-cleaning-plan` — Section 1.5: Reinigungsplan Jahr (interactive yearly cleaning plan, PIN confirmation per month)
 - `/betriebsbegehung` — Section 1.6: Betriebsbegehung (Eigenkontroll-Prüfliste, 13 Bereiche, 111 Prüfpunkte, Quartal/Jahr Navigation, OK/Mangel/N/A Bewertung, Aktionsplan bei Mängeln, gespeichert in `betriebsbegehung` DB-Tabelle)
+- `/hinweisschild-gesperrte-ware` — Section 1.7: Hinweisschild gesperrte Ware
+- `/produktfehlermeldung` — Section 1.8: Produktfehlermeldung (Formblatt mit Fotos, digitale Unterschriften Marktleiter + Kunde, Auto-Entwurf, PDF-Druck via Portal)
+- `/probeentnahme` — Section 1.9: Probeentnahme (Probenahmebogen 3.22-1, Probenübergabeprotokoll 3.22-2 mit Signaturen, Foto-Upload Behördendokument, Auto-Entwurf)
+- `/besprechungsprotokoll` — Section 1.10: Besprechungsprotokoll (EDEKA Formblatt 2.5; Marktleiter-Unterschrift digital; Teilnehmer bestätigen Anwesenheit per persönlichem PIN; gespeichert in `besprechungsprotokoll` + `besprechung_teilnehmer` DB-Tabellen)
 - `/admin/login` — Admin login page (email + password)
 - `/admin/register` — Admin registration via invitation token
 - `/admin/users` — Benutzerverwaltung: Role management, permission checkboxes, market assignments (SUPERADMIN only)
