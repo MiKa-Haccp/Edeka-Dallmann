@@ -41,6 +41,7 @@ import AdminUserManagement from "./pages/AdminUserManagement";
 import TrainingBesprechung from "./pages/TrainingBesprechung";
 import WarenzustandOG from "./pages/WarenzustandOG";
 import ReinigungTaeglich from "./pages/ReinigungTaeglich";
+import CarrierPortal from "./pages/CarrierPortal";
 import InfoDocumentation from "./pages/InfoDocumentation";
 import AnnualCleaningPlan from "./pages/AnnualCleaningPlan";
 import Betriebsbegehung from "./pages/Betriebsbegehung";
@@ -82,6 +83,7 @@ function Router() {
       <Route path="/probeentnahme" component={Probeentnahme} />
       <Route path="/warencheck-og" component={WarenzustandOG} />
       <Route path="/reinigung-taeglich" component={ReinigungTaeglich} />
+      <Route path="/carrier-portal" component={CarrierPortal} />
       <Route path="/besprechungsprotokoll" component={TrainingBesprechung} />
       <Route path="/anti-vektor-zugang" component={AntiVektorZugang} />
       <Route path="/gesundheitszeugnisse" component={Gesundheitszeugnisse} />
