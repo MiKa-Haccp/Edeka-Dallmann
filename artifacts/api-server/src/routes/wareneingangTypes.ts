@@ -139,6 +139,26 @@ router.delete("/wareneingang-entries/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── TODAY SUMMARY ─────────────────────────────────────────
+router.get("/wareneingang-today-summary", async (req, res) => {
+  const marketId = Number(req.query.marketId);
+  if (!marketId) { res.status(400).json({ error: "marketId required" }); return; }
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth() + 1, day = now.getDate();
+  const rows = await db.execute(sql`
+    SELECT t.id as type_id, t.liefertage, t.liefertage_ausnahmen,
+           e.criteria_values, e.kuerzel
+    FROM wareneingang_types t
+    LEFT JOIN wareneingang_entries e ON (
+      e.market_id = ${marketId} AND e.type_id = t.id AND
+      e.year = ${year} AND e.month = ${month} AND e.day = ${day}
+    )
+    WHERE t.market_id = ${marketId} AND t.aktiv = true
+    ORDER BY t.sort_order
+  `);
+  res.json(rows.rows);
+});
+
 // ── JAHRESARCHIV ───────────────────────────────────────────
 router.get("/wareneingang-archiv", async (req, res) => {
   const marketId = Number(req.query.marketId);
