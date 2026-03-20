@@ -78,10 +78,11 @@ function buildDefaultVals(type:WEType):Record<string,string>{
   return v;
 }
 
-type EntryStatus="full"|"abweichung"|"partial"|"none";
+type EntryStatus="full"|"abweichung"|"partial"|"none"|"ausgefallen";
 function entryStatus(e:WEEntry|undefined,enabled:CritDef[]):EntryStatus{
   if(!e||Object.keys(e.criteriaValues).length===0)return"none";
   const v=e.criteriaValues;
+  if(v._ausgefallen==="ja")return"ausgefallen";
   const badTemp=enabled.filter(c=>c.type==="temp").some(c=>v[c.key]&&!isTempOk(c,v[c.key]));
   const hasAbw=enabled.some(c=>v[c.key]==="abweichung");
   if(hasAbw||badTemp)return"abweichung";
@@ -103,9 +104,11 @@ function getLieferstatus(type:WEType,y:number,m:number,d:number,holidays:Set<str
 type TrafficColor="green"|"yellow"|"red"|"gray"|"future"|"neutral";
 function getTrafficColor(e:WEEntry|undefined,type:WEType,y:number,m:number,d:number,holidays:Set<string>):TrafficColor{
   if(isFuture(y,m,d))return"future";
-  const ls=getLieferstatus(type,y,m,d,holidays);
   const enabled=getEnabled(type);
   const st=entryStatus(e,enabled);
+  // Ausgefallen = immer grün, unabhängig von Liefertag-Konfiguration
+  if(st==="ausgefallen")return"green";
+  const ls=getLieferstatus(type,y,m,d,holidays);
   if(ls==="erwartet"){if(st==="none")return"red";if(st==="abweichung"||st==="partial")return"yellow";return"green";}
   if(ls==="kein_liefertag")return"gray";
   if(st==="none")return"neutral";if(st==="abweichung")return"yellow";if(st==="full")return"green";return"neutral";
@@ -208,8 +211,8 @@ function DayDetailModal({ day, year, month, type, entry, onClose, onEdit }: {
           <div>
             <p className="font-bold text-base">{wd}, {String(day).padStart(2,"0")}.{String(month).padStart(2,"0")}.{year}</p>
             <p className="text-xs text-muted-foreground">{type.name}</p>
-            <span className={`text-xs font-semibold mt-0.5 inline-block ${st==="full"?"text-green-600":st==="abweichung"?"text-red-600":"text-amber-600"}`}>
-              {st==="full"?"Vollstaendig":st==="abweichung"?"Abweichung":st==="partial"?"Teilweise":"Kein Eintrag"}
+            <span className={`text-xs font-semibold mt-0.5 inline-block ${st==="full"?"text-green-600":st==="ausgefallen"?"text-gray-500":st==="abweichung"?"text-red-600":"text-amber-600"}`}>
+              {st==="full"?"Vollstaendig":st==="ausgefallen"?"Lieferung ausgefallen":st==="abweichung"?"Abweichung":st==="partial"?"Teilweise":"Kein Eintrag"}
             </span>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted"><X className="w-4 h-4"/></button>
@@ -247,6 +250,12 @@ function DayDetailModal({ day, year, month, type, entry, onClose, onEdit }: {
               );})}
             </div>
           )}
+          {v._ausgefallen==="ja"&&(
+            <div className="bg-gray-100 border border-gray-200 rounded-xl p-3 flex items-center gap-2">
+              <CircleMinus className="w-4 h-4 text-gray-500 shrink-0"/>
+              <p className="text-sm font-semibold text-gray-700">Lieferung ausgefallen / verschoben</p>
+            </div>
+          )}
           {entry.notizen&&(
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
               <p className="text-[10px] font-bold text-amber-700 uppercase mb-1">Massnahmen / Notizen</p>
@@ -272,29 +281,35 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
 }) {
   const { selectedMarketId } = useAppStore();
   const enabled = useMemo(()=>getEnabled(type),[type]);
-  const [vals, setVals]     = useState<Record<string,string>>(existingEntry?.criteriaValues ?? buildDefaultVals(type));
-  const [notizen, setNotizen] = useState(existingEntry?.notizen??"");
-  const [saving, setSaving]   = useState(false);
+  const initAusgefallen = existingEntry?.criteriaValues?._ausgefallen==="ja";
+  const [vals, setVals]       = useState<Record<string,string>>(existingEntry?.criteriaValues ?? buildDefaultVals(type));
+  const [notizen, setNotizen]   = useState(existingEntry?.notizen??"");
+  const [ausgefallen, setAusgefallen] = useState(initAusgefallen);
+  const [saving, setSaving]     = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
-  const [showPin, setShowPin] = useState(false);
+  const [showPin, setShowPin]   = useState(false);
 
   useEffect(()=>{
+    const isAusf = existingEntry?.criteriaValues?._ausgefallen==="ja";
     setVals(existingEntry?.criteriaValues ?? buildDefaultVals(type));
     setNotizen(existingEntry?.notizen??"");
+    setAusgefallen(isAusf);
     setConfirmDel(false);
   },[existingEntry,type.id,day]);
 
   const toggle=(k:string,v:string)=>setVals(p=>({...p,[k]:p[k]===v?"":v}));
   const setVal=(k:string,v:string)=>setVals(p=>({...p,[k]:v}));
-  const hasAbw=enabled.some(c=>vals[c.key]==="abweichung");
-  const badTemp=enabled.filter(c=>c.type==="temp").some(c=>vals[c.key]&&!isTempOk(c,vals[c.key]));
+  const hasAbw=!ausgefallen&&enabled.some(c=>vals[c.key]==="abweichung");
+  const badTemp=!ausgefallen&&enabled.filter(c=>c.type==="temp").some(c=>vals[c.key]&&!isTempOk(c,vals[c.key]));
   const grouped=CRIT_GROUPS.map(g=>({group:g,items:enabled.filter(c=>c.group===g)})).filter(g=>g.items.length>0);
 
   const doSave = async (id:{name:string;userId:number;kuerzel:string}) => {
     if(!selectedMarketId)return;
     setSaving(true); setShowPin(false);
+    // Wenn ausgefallen: nur _ausgefallen Flag speichern, keine Kriterien
+    const finalVals = ausgefallen ? {_ausgefallen:"ja"} : vals;
     try {
-      await fetch(`${BASE}/wareneingang-entries`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marketId:selectedMarketId,typeId:type.id,year,month,day,criteriaValues:vals,kuerzel:id.kuerzel,userId:id.userId,notizen})});
+      await fetch(`${BASE}/wareneingang-entries`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marketId:selectedMarketId,typeId:type.id,year,month,day,criteriaValues:finalVals,kuerzel:id.kuerzel,userId:id.userId,notizen:ausgefallen?"":notizen})});
       window.dispatchEvent(new Event("wareneingaenge-updated"));
       onSaved();
     } finally{setSaving(false);}
@@ -315,7 +330,7 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
         </button>
       </div>
 
-      <div className="bg-white rounded-xl border border-border/60 p-5 space-y-5">
+      <div className={`bg-white rounded-xl border border-border/60 p-5 space-y-5 ${ausgefallen?"opacity-50 pointer-events-none":""}`}>
         {grouped.map(({group,items})=>(
           <div key={group} className="space-y-3">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider border-b border-border/40 pb-1">{group}</p>
@@ -362,27 +377,41 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
               placeholder="Massnahmen, Termin und Verantwortlicher..." value={notizen} onChange={e=>setNotizen(e.target.value)}/>
           </div>
         )}
+      </div>
 
-        <div className="flex gap-2 pt-2 border-t border-border/40">
-          <button onClick={onMonthView} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border text-sm text-muted-foreground hover:bg-muted">
-            <CalendarDays className="w-4 h-4"/> Monatsansicht
-          </button>
-          {existingEntry&&onDelete&&!confirmDel&&(
-            <button onClick={()=>setConfirmDel(true)} className="p-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50">
-              <Trash2 className="w-4 h-4"/>
-            </button>
-          )}
-          {confirmDel&&(
-            <button onClick={async()=>{setSaving(true);await onDelete!();setSaving(false);}} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-600 text-white text-sm font-bold">
-              {saving?<Loader2 className="w-4 h-4 animate-spin"/>:<><Trash2 className="w-4 h-4"/>Loeschen</>}
-            </button>
-          )}
-          <button onClick={()=>setShowPin(true)} disabled={saving}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0]">
-            {saving?<Loader2 className="w-4 h-4 animate-spin"/>:<Check className="w-4 h-4"/>}
-            {existingEntry?"Aktualisieren":"Eintrag speichern"}
-          </button>
+      {/* Lieferung ausgefallen - ganz unten, optionale Auswahl */}
+      <div
+        onClick={()=>setAusgefallen(a=>!a)}
+        className={`cursor-pointer rounded-xl border-2 px-4 py-3.5 flex items-center gap-3 transition-all select-none ${ausgefallen?"bg-gray-100 border-gray-400":"bg-white border-dashed border-gray-300 hover:border-gray-400"}`}>
+        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${ausgefallen?"bg-gray-500 border-gray-500":"border-gray-400 bg-white"}`}>
+          {ausgefallen&&<Check className="w-3.5 h-3.5 text-white"/>}
         </div>
+        <div className="flex-1">
+          <p className={`text-sm font-bold ${ausgefallen?"text-gray-700":"text-gray-500"}`}>Lieferung ausgefallen / verschoben</p>
+          <p className="text-xs text-gray-400">Kein Liefertag wegen Ausfall, Verschiebung oder Sonderregelung. Eintrag wird trotzdem als erledigt markiert.</p>
+        </div>
+        {ausgefallen&&<span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600 shrink-0">aktiv</span>}
+      </div>
+
+      <div className="flex gap-2">
+        <button onClick={onMonthView} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border text-sm text-muted-foreground hover:bg-muted">
+          <CalendarDays className="w-4 h-4"/> Monatsansicht
+        </button>
+        {existingEntry&&onDelete&&!confirmDel&&(
+          <button onClick={()=>setConfirmDel(true)} className="p-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50">
+            <Trash2 className="w-4 h-4"/>
+          </button>
+        )}
+        {confirmDel&&(
+          <button onClick={async()=>{setSaving(true);await onDelete!();setSaving(false);}} className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-600 text-white text-sm font-bold">
+            {saving?<Loader2 className="w-4 h-4 animate-spin"/>:<><Trash2 className="w-4 h-4"/>Loeschen</>}
+          </button>
+        )}
+        <button onClick={()=>setShowPin(true)} disabled={saving}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0]">
+          {saving?<Loader2 className="w-4 h-4 animate-spin"/>:<Check className="w-4 h-4"/>}
+          {existingEntry?"Aktualisieren":"Eintrag speichern"}
+        </button>
       </div>
     </div>
   );
@@ -419,6 +448,7 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
     if(ls==="kein_liefertag")return<span className="text-muted-foreground/50 text-xs">kein Liefertag</span>;
     if(!e)return<span className="text-red-500 text-xs font-semibold flex items-center gap-1"><TriangleAlert className="w-3 h-3"/>Eintrag fehlt</span>;
     const st=entryStatus(e,enabled);
+    if(st==="ausgefallen")return<span className="text-gray-500 text-xs font-semibold flex items-center gap-1"><CircleMinus className="w-3 h-3"/>Lieferung ausgefallen</span>;
     const total=checkCrit.length;
     const ok=checkCrit.filter(c=>e.criteriaValues[c.key]==="io").length;
     const abw=checkCrit.filter(c=>e.criteriaValues[c.key]==="abweichung").length;
@@ -550,7 +580,12 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
 }
 
 // ── ADMIN VIEW ────────────────────────────────────────────────
-function AdminView({ marketId, types, onRefresh }: { marketId:number; types:WEType[]; onRefresh:()=>void }) {
+function AdminView({ marketId, types, onRefresh, onDirtyChange }: {
+  marketId:number; types:WEType[]; onRefresh:()=>void; onDirtyChange:(dirty:boolean)=>void;
+}) {
+  // Lokaler State: Kopie aller Typen, wird erst beim Klick auf "Speichern" an die API gesendet
+  const [local, setLocal] = useState<Record<number,WEType>>(()=>Object.fromEntries(types.map(t=>[t.id,{...t,liefertage:[...t.liefertage],liefertageAusnahmen:{...t.liefertageAusnahmen},criteriaConfig:{...t.criteriaConfig}}])));
+  const [dirtyIds, setDirtyIds] = useState<Set<number>>(new Set());
   const [expandedId,setExpandedId]=useState<number|null>(null);
   const [saving,setSaving]=useState(false);
   const [newName,setNewName]=useState("");
@@ -561,28 +596,79 @@ function AdminView({ marketId, types, onRefresh }: { marketId:number; types:WETy
   const [ausnDate,setAusnDate]=useState<Record<number,string>>({});
   const [ausnVal,setAusnVal]=useState<Record<number,string>>({});
 
-  const savePatch=async(type:WEType,patch:Record<string,unknown>)=>{
-    setSaving(true);
-    await fetch(`${BASE}/wareneingang-types/${type.id}`,{method:"PUT",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({name:type.name,wareArt:type.wareArt,criteriaConfig:type.criteriaConfig,liefertage:type.liefertage,liefertageAusnahmen:type.liefertageAusnahmen,...patch})});
-    onRefresh();setSaving(false);
+  // Sync local state when types prop changes (after refresh)
+  useEffect(()=>{
+    setLocal(Object.fromEntries(types.map(t=>[t.id,{...t,liefertage:[...t.liefertage],liefertageAusnahmen:{...t.liefertageAusnahmen},criteriaConfig:{...t.criteriaConfig}}])));
+    setDirtyIds(new Set());
+    onDirtyChange(false);
+  },[types]);
+
+  const markDirty=(id:number)=>{
+    setDirtyIds(prev=>{const s=new Set(prev);s.add(id);onDirtyChange(true);return s;});
   };
-  const toggleCrit=(type:WEType,key:string)=>{const c={...type.criteriaConfig};if(c[key])delete c[key];else c[key]=true;savePatch(type,{criteriaConfig:c});};
-  const toggleLiefertag=(type:WEType,wd:number)=>{const lt=[...(type.liefertage??[])];const idx=lt.indexOf(wd);if(idx>-1)lt.splice(idx,1);else lt.push(wd);lt.sort((a,b)=>a-b);savePatch(type,{liefertage:lt});};
-  const addAusnahme=(type:WEType,dateVal:string,val:string)=>{if(!dateVal)return;const aus={...(type.liefertageAusnahmen??{}),[dateVal]:val};savePatch(type,{liefertageAusnahmen:aus});};
-  const removeAusnahme=(type:WEType,dateVal:string)=>{const aus={...(type.liefertageAusnahmen??{})};delete aus[dateVal];savePatch(type,{liefertageAusnahmen:aus});};
+  const updateLocal=(id:number,patch:Partial<WEType>)=>{
+    setLocal(p=>({...p,[id]:{...p[id],...patch}}));
+    markDirty(id);
+  };
+
+  const toggleCrit=(type:WEType,key:string)=>{const c={...local[type.id].criteriaConfig};if(c[key])delete c[key];else c[key]=true;updateLocal(type.id,{criteriaConfig:c});};
+  const toggleLiefertag=(id:number,wd:number)=>{const lt=[...(local[id].liefertage??[])];const idx=lt.indexOf(wd);if(idx>-1)lt.splice(idx,1);else lt.push(wd);lt.sort((a,b)=>a-b);updateLocal(id,{liefertage:lt});};
+  const addAusnahme=(id:number,dateVal:string,val:string)=>{if(!dateVal)return;const aus={...(local[id].liefertageAusnahmen??{}),[dateVal]:val};updateLocal(id,{liefertageAusnahmen:aus});};
+  const removeAusnahme=(id:number,dateVal:string)=>{const aus={...(local[id].liefertageAusnahmen??{})};delete aus[dateVal];updateLocal(id,{liefertageAusnahmen:aus});};
+
+  const handleSaveAll=async()=>{
+    if(dirtyIds.size===0)return;
+    setSaving(true);
+    for(const id of Array.from(dirtyIds)){
+      const t=local[id];
+      await fetch(`${BASE}/wareneingang-types/${id}`,{method:"PUT",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({name:t.name,wareArt:t.wareArt,criteriaConfig:t.criteriaConfig,liefertage:t.liefertage,liefertageAusnahmen:t.liefertageAusnahmen})});
+    }
+    setSaving(false);
+    onRefresh();
+  };
+
+  const handleDiscard=()=>{
+    setLocal(Object.fromEntries(types.map(t=>[t.id,{...t,liefertage:[...t.liefertage],liefertageAusnahmen:{...t.liefertageAusnahmen},criteriaConfig:{...t.criteriaConfig}}])));
+    setDirtyIds(new Set());
+    onDirtyChange(false);
+  };
+
   const handleDelete=async(id:number)=>{if(!confirm("Diesen Lieferanten loeschen?"))return;await fetch(`${BASE}/wareneingang-types/${id}`,{method:"DELETE"});onRefresh();};
   const handleAdd=async()=>{if(!newName.trim())return;setSaving(true);await fetch(`${BASE}/wareneingang-types`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:newName.trim(),wareArt:newWareArt,marketId,criteriaConfig:{hygiene:true,etikettierung:true,qualitaet:true,mhd:true},liefertage:[],liefertageAusnahmen:{}})});setNewName("");setShowAdd(false);onRefresh();setSaving(false);};
   const handleArchive=async()=>{setArchiving(true);for(const t of types){await fetch(`${BASE}/wareneingang-archiv`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marketId,typeId:t.id,year:archiveYear})});}setArchiving(false);alert(`Jahresarchiv ${archiveYear} erstellt.`);};
 
+  const isDirty=dirtyIds.size>0;
+
   return(
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div><p className="text-sm font-bold">Lieferanten fuer diesen Markt</p><p className="text-xs text-muted-foreground">Aenderungen gelten nur fuer diesen Markt.</p></div>
-        <button onClick={()=>setShowAdd(s=>!s)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1a3a6b] text-white text-xs font-bold">
-          <Plus className="w-3.5 h-3.5"/> Neuer Lieferant
-        </button>
+      {/* Header mit Speichern/Verwerfen */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div><p className="text-sm font-bold">Lieferanten fuer diesen Markt</p><p className="text-xs text-muted-foreground">Aenderungen werden erst nach "Speichern" uebernommen.</p></div>
+        <div className="flex items-center gap-2">
+          {isDirty&&(
+            <button onClick={handleDiscard} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs hover:bg-muted text-muted-foreground">
+              <X className="w-3.5 h-3.5"/> Verwerfen
+            </button>
+          )}
+          <button onClick={handleSaveAll} disabled={!isDirty||saving}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isDirty?"bg-green-600 text-white hover:bg-green-700":"bg-muted text-muted-foreground cursor-not-allowed"}`}>
+            {saving?<Loader2 className="w-3.5 h-3.5 animate-spin"/>:<Check className="w-3.5 h-3.5"/>}
+            Speichern {isDirty&&`(${dirtyIds.size} Aenderung${dirtyIds.size>1?"en":""})`}
+          </button>
+          <button onClick={()=>setShowAdd(s=>!s)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1a3a6b] text-white text-xs font-bold">
+            <Plus className="w-3.5 h-3.5"/> Neuer Lieferant
+          </button>
+        </div>
       </div>
+
+      {/* Ungespeicherte Aenderungen Banner */}
+      {isDirty&&(
+        <div className="flex items-center gap-2 bg-amber-50 border border-amber-300 rounded-xl px-4 py-2.5">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0"/>
+          <p className="text-xs text-amber-800 font-medium">Es gibt ungespeicherte Aenderungen. Bitte auf "Speichern" klicken.</p>
+        </div>
+      )}
 
       {showAdd&&(
         <div className="bg-white rounded-xl border border-border/60 p-4 space-y-3">
@@ -602,14 +688,19 @@ function AdminView({ marketId, types, onRefresh }: { marketId:number; types:WETy
         </div>
       )}
 
-      {types.map(type=>{
+      {types.map(origType=>{
+        const type=local[origType.id]??origType;
         const expanded=expandedId===type.id;
+        const dirty=dirtyIds.has(type.id);
         return(
-          <div key={type.id} className="bg-white rounded-xl border border-border/60 overflow-hidden">
+          <div key={type.id} className={`bg-white rounded-xl border overflow-hidden transition-all ${dirty?"border-amber-300 ring-1 ring-amber-200":"border-border/60"}`}>
             <div className="flex items-center gap-3 px-4 py-3">
               <span className="text-muted-foreground">{wareIcon(type.wareArt)}</span>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm">{type.name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-sm">{type.name}</p>
+                  {dirty&&<span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">geaendert</span>}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {type.liefertage?.length>0?type.liefertage.map(d=>WD_SHORT[d]).join(", "):"Liefertage: nicht konfiguriert"}
                   &nbsp;&middot;&nbsp;{Object.keys(type.criteriaConfig).filter(k=>type.criteriaConfig[k]).length} Kriterien
@@ -622,13 +713,12 @@ function AdminView({ marketId, types, onRefresh }: { marketId:number; types:WETy
             </div>
             {expanded&&(
               <div className="border-t border-border/60 bg-muted/10 p-4 space-y-5">
-                {saving&&<p className="text-xs text-muted-foreground flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin"/>Speichern...</p>}
                 {/* Liefertage */}
                 <div className="space-y-2">
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Liefertage (Wochentage)</p>
                   <div className="flex gap-2 flex-wrap">
                     {[1,2,3,4,5,6].map(wd=>(
-                      <button key={wd} onClick={()=>toggleLiefertag(type,wd)}
+                      <button key={wd} onClick={()=>toggleLiefertag(type.id,wd)}
                         className={`px-3 py-1.5 rounded-lg text-xs font-bold border-2 transition-all ${(type.liefertage??[]).includes(wd)?"bg-[#1a3a6b] text-white border-[#1a3a6b]":"bg-white border-border text-muted-foreground hover:border-[#1a3a6b]/40"}`}>
                         {WD_SHORT[wd]}
                       </button>
@@ -644,7 +734,7 @@ function AdminView({ marketId, types, onRefresh }: { marketId:number; types:WETy
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${val==="liefertag"?"bg-green-100 text-green-700":"bg-red-100 text-red-700"}`}>
                         {val==="liefertag"?"Liefertag (Ausnahme)":"Kein Liefertag"}
                       </span>
-                      <button onClick={()=>removeAusnahme(type,ds)} className="ml-auto p-1 rounded hover:bg-red-50 text-red-400"><X className="w-3 h-3"/></button>
+                      <button onClick={()=>removeAusnahme(type.id,ds)} className="ml-auto p-1 rounded hover:bg-red-50 text-red-400"><X className="w-3 h-3"/></button>
                     </div>
                   ))}
                   <div className="flex gap-2 items-center mt-1">
@@ -654,7 +744,7 @@ function AdminView({ marketId, types, onRefresh }: { marketId:number; types:WETy
                       value={ausnVal[type.id]??"kein_liefertag"} onChange={e=>setAusnVal(p=>({...p,[type.id]:e.target.value}))}>
                       <option value="kein_liefertag">Kein Liefertag</option><option value="liefertag">Liefertag (Ausnahme)</option>
                     </select>
-                    <button onClick={()=>{addAusnahme(type,ausnDate[type.id]??"",ausnVal[type.id]??"kein_liefertag");setAusnDate(p=>({...p,[type.id]:""}));}} disabled={!ausnDate[type.id]}
+                    <button onClick={()=>{addAusnahme(type.id,ausnDate[type.id]??"",ausnVal[type.id]??"kein_liefertag");setAusnDate(p=>({...p,[type.id]:""}));}} disabled={!ausnDate[type.id]}
                       className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#1a3a6b] text-white text-xs font-bold disabled:opacity-40">
                       <Plus className="w-3 h-3"/> Hinzufuegen
                     </button>
@@ -697,6 +787,20 @@ function AdminView({ marketId, types, onRefresh }: { marketId:number; types:WETy
           </button>
         </div>
       </div>
+
+      {/* Floating Speichern-Bar bei Aenderungen */}
+      {isDirty&&(
+        <div className="sticky bottom-4 flex gap-2 justify-end">
+          <div className="bg-white border border-amber-300 shadow-lg rounded-xl px-4 py-2.5 flex items-center gap-3">
+            <span className="text-xs font-medium text-amber-700">{dirtyIds.size} Lieferant{dirtyIds.size>1?"en":""} geaendert</span>
+            <button onClick={handleDiscard} className="px-3 py-1.5 rounded-lg border border-border text-xs hover:bg-muted">Verwerfen</button>
+            <button onClick={handleSaveAll} disabled={saving}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-green-600 text-white text-xs font-bold hover:bg-green-700 disabled:opacity-50">
+              {saving?<Loader2 className="w-3.5 h-3.5 animate-spin"/>:<Check className="w-3.5 h-3.5"/>} Jetzt speichern
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -714,6 +818,7 @@ function tabTrafficColor(row:TodaySummaryRow|undefined,holidays:Set<string>):Tra
   const isLiefertag=aus[ds]==="liefertag"?true:aus[ds]==="kein_liefertag"?false:lt.includes(wd);
   if(!isLiefertag||lt.length===0)return null;
   if(!row.criteria_values||Object.keys(row.criteria_values).length===0)return"red";
+  if(row.criteria_values._ausgefallen==="ja")return"green";
   return"green";
 }
 
@@ -732,6 +837,7 @@ export default function Wareneingaenge() {
   const [viewMode,setViewMode]=useState<"form"|"month">("form");
   const [selectedDay,setSelectedDay]=useState<number>(now.getDate());
   const [todaySummary,setTodaySummary]=useState<TodaySummaryRow[]>([]);
+  const [adminIsDirty,setAdminIsDirty]=useState(false);
   const holidays=useMemo(()=>getBavarianHolidays(year),[year]);
 
   // Load today summary for tab dots
@@ -778,6 +884,11 @@ export default function Wareneingaenge() {
 
   const handleTabClick=async(type:WEType)=>{
     if(!selectedMarketId)return;
+    // Warnung wenn Admin-Tab ungespeicherte Aenderungen hat
+    if(activeTypeId==="admin"&&adminIsDirty){
+      if(!confirm("Es gibt ungespeicherte Aenderungen in der Verwaltung. Trotzdem wechseln?"))return;
+      setAdminIsDirty(false);
+    }
     setEntries([]);
     await activateTypeInternal(type,year,month,selectedMarketId);
     await loadEntries(type.id,year,month);
@@ -850,15 +961,20 @@ export default function Wareneingaenge() {
                 );
               })}
               {isAdmin&&(
-                <button onClick={()=>setActiveTypeId("admin")}
+                <button onClick={()=>{
+                  // Wenn man von einem anderen Tab kommt und auf Admin-Tab klickt - kein Problem
+                  // Wenn man schon auf Admin ist und nochmal klickt - auch kein Problem
+                  setActiveTypeId("admin");
+                }}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ml-1 ${activeTypeId==="admin"?"bg-amber-500 text-white shadow-md":"bg-white border border-dashed border-amber-400 text-amber-600 hover:bg-amber-50"}`}>
                   <Settings2 className="w-3.5 h-3.5"/> Verwaltung
+                  {adminIsDirty&&activeTypeId!=="admin"&&<span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"/>}
                 </button>
               )}
             </div>
 
             {activeTypeId==="admin"&&isAdmin&&selectedMarketId?(
-              <AdminView marketId={selectedMarketId} types={types} onRefresh={loadTypes}/>
+              <AdminView marketId={selectedMarketId} types={types} onRefresh={loadTypes} onDirtyChange={setAdminIsDirty}/>
             ):activeType?(
               viewMode==="form"?(
                 <DayFormView key={`${activeType.id}-${selectedDay}`}
