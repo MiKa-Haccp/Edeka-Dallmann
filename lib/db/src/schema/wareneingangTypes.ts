@@ -12,6 +12,7 @@ export const wareneingangTypesTable = pgTable("wareneingang_types", {
   aktiv: boolean("aktiv").default(true),
   liefertage: jsonb("liefertage").default([]),
   liefertageAusnahmen: jsonb("liefertage_ausnahmen").default({}),
+  section: varchar("section", { length: 30 }).notNull().default("wareneingaenge"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -8,34 +8,35 @@ const router: IRouter = Router();
 // ── TYPES ──────────────────────────────────────────────────
 router.get("/wareneingang-types", async (req, res) => {
   const marketId = req.query.marketId ? Number(req.query.marketId) : null;
+  const section = req.query.section as string | undefined;
+  const conditions: any[] = [
+    eq(wareneingangTypesTable.aktiv, true),
+    marketId
+      ? eq(wareneingangTypesTable.marketId, marketId)
+      : isNull(wareneingangTypesTable.marketId),
+  ];
+  if (section) conditions.push(eq(wareneingangTypesTable.section, section));
   const rows = await db
     .select()
     .from(wareneingangTypesTable)
-    .where(
-      and(
-        eq(wareneingangTypesTable.aktiv, true),
-        marketId
-          ? eq(wareneingangTypesTable.marketId, marketId)
-          : isNull(wareneingangTypesTable.marketId)
-      )
-    )
+    .where(and(...conditions))
     .orderBy(asc(wareneingangTypesTable.sortOrder));
   res.json(rows);
 });
 
 router.post("/wareneingang-types", async (req, res) => {
-  const { name, beschreibung, wareArt = "ungekuehlt", criteriaConfig = {}, sortOrder = 99, marketId, liefertage = [], liefertageAusnahmen = {} } = req.body;
+  const { name, beschreibung, wareArt = "ungekuehlt", criteriaConfig = {}, sortOrder = 99, marketId, liefertage = [], liefertageAusnahmen = {}, section = "wareneingaenge" } = req.body;
   if (!name) { res.status(400).json({ error: "Name erforderlich" }); return; }
   const [row] = await db
     .insert(wareneingangTypesTable)
-    .values({ name, beschreibung, wareArt, criteriaConfig, sortOrder, marketId: marketId || null, liefertage, liefertageAusnahmen })
+    .values({ name, beschreibung, wareArt, criteriaConfig, sortOrder, marketId: marketId || null, liefertage, liefertageAusnahmen, section })
     .returning();
   res.json(row);
 });
 
 router.put("/wareneingang-types/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const { name, beschreibung, wareArt, criteriaConfig, sortOrder, aktiv, liefertage, liefertageAusnahmen } = req.body;
+  const { name, beschreibung, wareArt, criteriaConfig, sortOrder, aktiv, liefertage, liefertageAusnahmen, section } = req.body;
   const patch: Record<string, unknown> = {};
   if (name !== undefined) patch.name = name;
   if (beschreibung !== undefined) patch.beschreibung = beschreibung;
@@ -45,6 +46,7 @@ router.put("/wareneingang-types/:id", async (req, res) => {
   if (aktiv !== undefined) patch.aktiv = aktiv;
   if (liefertage !== undefined) patch.liefertage = liefertage;
   if (liefertageAusnahmen !== undefined) patch.liefertageAusnahmen = liefertageAusnahmen;
+  if (section !== undefined) patch.section = section;
   const [row] = await db
     .update(wareneingangTypesTable)
     .set(patch as any)
@@ -142,6 +144,7 @@ router.delete("/wareneingang-entries/:id", async (req, res) => {
 // ── TODAY SUMMARY ─────────────────────────────────────────
 router.get("/wareneingang-today-summary", async (req, res) => {
   const marketId = Number(req.query.marketId);
+  const section = (req.query.section as string) || "wareneingaenge";
   if (!marketId) { res.status(400).json({ error: "marketId required" }); return; }
   const now = new Date();
   const year = now.getFullYear(), month = now.getMonth() + 1, day = now.getDate();
@@ -153,7 +156,7 @@ router.get("/wareneingang-today-summary", async (req, res) => {
       e.market_id = ${marketId} AND e.type_id = t.id AND
       e.year = ${year} AND e.month = ${month} AND e.day = ${day}
     )
-    WHERE t.market_id = ${marketId} AND t.aktiv = true
+    WHERE t.market_id = ${marketId} AND t.aktiv = true AND t.section = ${section}
     ORDER BY t.sort_order
   `);
   res.json(rows.rows);
@@ -173,13 +176,11 @@ router.get("/wareneingang-archiv", async (req, res) => {
 router.post("/wareneingang-archiv", async (req, res) => {
   const { marketId, typeId, year } = req.body;
   if (!marketId || !typeId || !year) { res.status(400).json({ error: "marketId, typeId, year erforderlich" }); return; }
-  // Collect all entries for this type+market+year
   const entries = await db.execute(
     sql`SELECT * FROM wareneingang_entries WHERE market_id = ${marketId} AND type_id = ${typeId} AND year = ${year} ORDER BY month, day`
   );
   const typeRows = await db.execute(sql`SELECT * FROM wareneingang_types WHERE id = ${typeId}`);
   const archivJson = { type: typeRows.rows[0], entries: entries.rows, archivedAt: new Date().toISOString() };
-  // Upsert
   await db.execute(sql`
     INSERT INTO wareneingang_jahresarchiv (market_id, type_id, year, archiv_json)
     VALUES (${marketId}, ${typeId}, ${year}, ${JSON.stringify(archivJson)}::jsonb)

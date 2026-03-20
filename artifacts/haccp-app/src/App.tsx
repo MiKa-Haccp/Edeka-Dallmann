@@ -44,6 +44,7 @@ import ReinigungTaeglich from "./pages/ReinigungTaeglich";
 import CarrierPortal from "./pages/CarrierPortal";
 import WEObstGemuese from "./pages/WEObstGemuese";
 import Wareneingaenge from "./pages/Wareneingaenge";
+import MetzgereiWareneingaenge from "./pages/MetzgereiWareneingaenge";
 import InfoDocumentation from "./pages/InfoDocumentation";
 import AnnualCleaningPlan from "./pages/AnnualCleaningPlan";
 import Betriebsbegehung from "./pages/Betriebsbegehung";
@@ -88,6 +89,7 @@ function Router() {
       <Route path="/carrier-portal" component={CarrierPortal} />
       <Route path="/we-obst-gemuese" component={WEObstGemuese} />
       <Route path="/wareneingaenge" component={Wareneingaenge} />
+      <Route path="/metzgerei-wareneingaenge" component={MetzgereiWareneingaenge} />
       <Route path="/besprechungsprotokoll" component={TrainingBesprechung} />
       <Route path="/anti-vektor-zugang" component={AntiVektorZugang} />
       <Route path="/gesundheitszeugnisse" component={Gesundheitszeugnisse} />
