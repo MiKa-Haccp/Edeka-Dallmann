@@ -7,6 +7,7 @@ export const wareneingangTypesTable = pgTable("wareneingang_types", {
   beschreibung: text("beschreibung"),
   wareArt: varchar("ware_art", { length: 20 }).default("ungekuehlt"),
   criteriaConfig: jsonb("criteria_config").default({}),
+  marketId: integer("market_id"),
   sortOrder: integer("sort_order").default(0),
   aktiv: boolean("aktiv").default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),

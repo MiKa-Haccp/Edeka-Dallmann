@@ -1,25 +1,33 @@
 import { Router, type IRouter } from "express";
 import { db, wareneingangTypesTable, wareneingangEntriesTable } from "@workspace/db";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, or, isNull } from "drizzle-orm";
 
 const router: IRouter = Router();
 
 // --- TYPES ---
 router.get("/wareneingang-types", async (req, res) => {
+  const marketId = req.query.marketId ? Number(req.query.marketId) : null;
   const rows = await db
     .select()
     .from(wareneingangTypesTable)
-    .where(eq(wareneingangTypesTable.aktiv, true))
+    .where(
+      and(
+        eq(wareneingangTypesTable.aktiv, true),
+        marketId
+          ? eq(wareneingangTypesTable.marketId, marketId)
+          : isNull(wareneingangTypesTable.marketId)
+      )
+    )
     .orderBy(asc(wareneingangTypesTable.sortOrder));
   res.json(rows);
 });
 
 router.post("/wareneingang-types", async (req, res) => {
-  const { name, beschreibung, wareArt = "ungekuehlt", criteriaConfig = {}, sortOrder = 99 } = req.body;
+  const { name, beschreibung, wareArt = "ungekuehlt", criteriaConfig = {}, sortOrder = 99, marketId } = req.body;
   if (!name) { res.status(400).json({ error: "Name erforderlich" }); return; }
   const [row] = await db
     .insert(wareneingangTypesTable)
-    .values({ name, beschreibung, wareArt, criteriaConfig, sortOrder })
+    .values({ name, beschreibung, wareArt, criteriaConfig, sortOrder, marketId: marketId || null })
     .returning();
   res.json(row);
 });
@@ -68,18 +76,40 @@ router.get("/wareneingang-entries", async (req, res) => {
   res.json(rows);
 });
 
+router.get("/wareneingang-entries/day", async (req, res) => {
+  const marketId = Number(req.query.marketId);
+  const typeId = Number(req.query.typeId);
+  const year = Number(req.query.year);
+  const month = Number(req.query.month);
+  const day = Number(req.query.day);
+  if (!marketId || !typeId || !year || !month || !day) {
+    res.status(400).json({ error: "Params required" }); return;
+  }
+  const rows = await db
+    .select()
+    .from(wareneingangEntriesTable)
+    .where(
+      and(
+        eq(wareneingangEntriesTable.marketId, marketId),
+        eq(wareneingangEntriesTable.typeId, typeId),
+        eq(wareneingangEntriesTable.year, year),
+        eq(wareneingangEntriesTable.month, month),
+        eq(wareneingangEntriesTable.day, day)
+      )
+    );
+  res.json(rows[0] ?? null);
+});
+
 router.post("/wareneingang-entries", async (req, res) => {
   const { tenantId = 1, marketId, typeId, year, month, day, criteriaValues = {}, kuerzel, userId, notizen } = req.body;
   if (!marketId || !typeId || !year || !month || !day || !kuerzel) {
-    res.status(400).json({ error: "Pflichtfelder fehlen" });
-    return;
+    res.status(400).json({ error: "Pflichtfelder fehlen" }); return;
   }
   const now = new Date();
   const entryDate = new Date(year, month - 1, day);
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   if (entryDate > today) {
-    res.status(400).json({ error: "Zukuenftige Tage sind nicht erlaubt" });
-    return;
+    res.status(400).json({ error: "Zukuenftige Tage sind nicht erlaubt" }); return;
   }
   const existing = await db
     .select()
