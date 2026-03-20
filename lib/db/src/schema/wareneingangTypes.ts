@@ -10,6 +10,8 @@ export const wareneingangTypesTable = pgTable("wareneingang_types", {
   marketId: integer("market_id"),
   sortOrder: integer("sort_order").default(0),
   aktiv: boolean("aktiv").default(true),
+  liefertage: jsonb("liefertage").default([]),
+  liefertageAusnahmen: jsonb("liefertage_ausnahmen").default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -28,5 +30,15 @@ export const wareneingangEntriesTable = pgTable("wareneingang_entries", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const wareneingangJahresarchivTable = pgTable("wareneingang_jahresarchiv", {
+  id: serial("id").primaryKey(),
+  marketId: integer("market_id").notNull(),
+  typeId: integer("type_id").notNull(),
+  year: integer("year").notNull(),
+  archivJson: jsonb("archiv_json").notNull(),
+  erstelltAm: timestamp("erstellt_am").defaultNow().notNull(),
+});
+
 export type WareneingangType = typeof wareneingangTypesTable.$inferSelect;
 export type WareneingangEntry = typeof wareneingangEntriesTable.$inferSelect;
+export type WareneingangJahresarchiv = typeof wareneingangJahresarchivTable.$inferSelect;
