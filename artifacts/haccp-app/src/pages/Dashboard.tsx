@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ShieldCheck, ArrowRight, Activity, ClipboardList, CheckSquare,
-  RefreshCw, BarChart3, Lock, Clock, Users, UserCog, KeyRound,
+  RefreshCw, BarChart3, Lock, Clock, Users, UserCog, KeyRound, Package,
 } from "lucide-react";
 import { Link } from "wouter";
 import { FaelligkeitenWidget } from "@/components/FaelligkeitenWidget";
@@ -29,6 +29,17 @@ const MODULES: ModuleCard[] = [
     href: "/category/1",
     color: "text-[#1a3a6b]",
     bgColor: "bg-[#1a3a6b]/10",
+    available: true,
+    badge: "Aktiv",
+  },
+  {
+    id: "ware",
+    icon: Package,
+    title: "Ware",
+    description: "Wareneingangskontrolle fur Markt und Metzgerei. Temperatur, Qualitat, MSC-Prufung und Lieferantenbewertung.",
+    href: "/ware",
+    color: "text-orange-600",
+    bgColor: "bg-orange-50",
     available: true,
     badge: "Aktiv",
   },
@@ -114,7 +125,7 @@ export default function Dashboard() {
                 <div className="text-xs text-blue-200">Filialen</div>
               </div>
               <div className="bg-white/10 rounded-xl px-4 py-2 text-center">
-                <div className="text-xl font-bold">1</div>
+                <div className="text-xl font-bold">2</div>
                 <div className="text-xs text-blue-200">Aktive Module</div>
               </div>
               <div className="bg-white/10 rounded-xl px-4 py-2 text-center">
