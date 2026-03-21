@@ -29,6 +29,9 @@ import wareneingangOGRouter from "./wareneingangOG";
 import wareneingangTypesRouter from "./wareneingangTypes";
 import deviceRouter from "./device";
 import mhdKontrolleRouter from "./mhdKontrolle";
+import wareBestellungenRouter from "./wareBestellungen";
+import wareEinraeumserviceRouter from "./wareEinraeumservice";
+import wareMhdRouter from "./wareMhd";
 
 const router: IRouter = Router();
 
@@ -62,5 +65,8 @@ router.use(wareneingangOGRouter);
 router.use(wareneingangTypesRouter);
 router.use(deviceRouter);
 router.use(mhdKontrolleRouter);
+router.use(wareBestellungenRouter);
+router.use(wareEinraeumserviceRouter);
+router.use(wareMhdRouter);
 
 export default router;

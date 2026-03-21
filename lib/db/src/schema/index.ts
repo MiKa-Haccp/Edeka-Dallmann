@@ -25,3 +25,6 @@ export * from "./reinigungTaeglich";
 export * from "./wareneingangOG";
 export * from "./wareneingangTypes";
 export * from "./mhdKontrolle";
+export * from "./wareBestellungen";
+export * from "./wareEinraeumservice";
+export * from "./wareMhd";

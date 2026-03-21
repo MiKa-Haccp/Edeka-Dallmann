@@ -47,6 +47,9 @@ import Wareneingaenge from "./pages/Wareneingaenge";
 import MetzgereiWareneingaenge from "./pages/MetzgereiWareneingaenge";
 import Ware from "./pages/Ware";
 import MHDKontrolle from "./pages/MHDKontrolle";
+import WareBestellungen from "./pages/WareBestellungen";
+import WareEinraeumservice from "./pages/WareEinraeumservice";
+import WareMHD from "./pages/WareMHD";
 import InfoDocumentation from "./pages/InfoDocumentation";
 import AnnualCleaningPlan from "./pages/AnnualCleaningPlan";
 import Betriebsbegehung from "./pages/Betriebsbegehung";
@@ -92,6 +95,9 @@ function Router() {
       <Route path="/we-obst-gemuese" component={WEObstGemuese} />
       <Route path="/ware" component={Ware} />
       <Route path="/mhd-kontrolle" component={MHDKontrolle} />
+      <Route path="/ware-bestellungen" component={WareBestellungen} />
+      <Route path="/ware-einraeumservice" component={WareEinraeumservice} />
+      <Route path="/ware-mhd" component={WareMHD} />
       <Route path="/wareneingaenge" component={Wareneingaenge} />
       <Route path="/metzgerei-wareneingaenge" component={MetzgereiWareneingaenge} />
       <Route path="/besprechungsprotokoll" component={TrainingBesprechung} />
