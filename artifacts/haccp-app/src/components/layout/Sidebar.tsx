@@ -81,7 +81,8 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
 
 const ACCORDION_STORAGE_KEY = "haccp-sidebar-open-categories";
 
-const HACCP_PATHS = [
+const SIDEBAR_OPEN_PATHS = [
+  "/",
   "/responsibilities", "/mitarbeiter-liste", "/info-documentation",
   "/training-records", "/annual-cleaning-plan", "/betriebsbegehung",
   "/hinweisschild-gesperrte-ware", "/produktfehlermeldung", "/probeentnahme",
@@ -89,7 +90,7 @@ const HACCP_PATHS = [
   "/warencheck-og", "/reinigung-taeglich", "/carrier-portal",
   "/wareneingaenge", "/metzgerei-wareneingaenge",
   "/section/", "/category/", "/we-", "/besprechungsprotokoll",
-  "/gesundheitszeugnisse",
+  "/gesundheitszeugnisse", "/mitarbeiterverwaltung", "/admin/",
 ];
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -97,7 +98,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const [location] = useLocation();
 
   const isHaccpPage = useMemo(
-    () => HACCP_PATHS.some((p) => location.startsWith(p)),
+    () => location === "/" || SIDEBAR_OPEN_PATHS.some((p) => p !== "/" && location.startsWith(p)),
     [location]
   );
 

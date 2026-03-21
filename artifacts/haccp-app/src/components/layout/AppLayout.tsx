@@ -8,11 +8,33 @@ import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
 import { useAutoLogout } from "@/hooks/useAutoLogout";
 import { useBookingAutoReturn } from "@/hooks/useBookingAutoReturn";
+import { useLocation } from "wouter";
+
+// Pfade auf denen die HACCP-Seitenleiste sichtbar sein soll
+// (Dashboard + alle HACCP-Seiten)
+const SIDEBAR_PATHS = [
+  "/",
+  "/responsibilities", "/mitarbeiter-liste", "/mitarbeiterverwaltung",
+  "/info-documentation", "/training-records", "/annual-cleaning-plan",
+  "/betriebsbegehung", "/hinweisschild-gesperrte-ware", "/produktfehlermeldung",
+  "/probeentnahme", "/anti-vektor-zugang", "/bescheinigungen", "/kontrollberichte",
+  "/warencheck-og", "/reinigung-taeglich", "/carrier-portal",
+  "/wareneingaenge", "/metzgerei-wareneingaenge",
+  "/section/", "/category/", "/we-", "/besprechungsprotokoll",
+  "/gesundheitszeugnisse", "/admin/",
+];
+
+function useSidebarVisible() {
+  const [location] = useLocation();
+  if (location === "/") return true;
+  return SIDEBAR_PATHS.some((p) => p !== "/" && location.startsWith(p));
+}
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { selectedMarketId, deviceAuthorized } = useAppStore();
   const { isLoading: marketsLoading } = useListMarkets();
+  const showSidebar = useSidebarVisible();
 
   useAutoLogout();
   useBookingAutoReturn();
@@ -25,9 +47,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
       {showGeraetSperre && <GeraetSperrScreen />}
       {showMarktwahlScreen && <MarktwahlScreen />}
       <Header onMenuToggle={() => setMobileMenuOpen(true)} />
-      <MobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
+      {showSidebar && (
+        <MobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
+      )}
       <div className="flex flex-1 w-full min-h-0">
-        <Sidebar />
+        {showSidebar && <Sidebar />}
         <main className="flex-1 min-w-0 relative">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
