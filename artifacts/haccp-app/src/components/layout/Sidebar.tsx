@@ -4,7 +4,7 @@ import * as Accordion from "@radix-ui/react-accordion";
 import { ChevronDown, Folder, FileText, ClipboardList, GripVertical, X } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useWarenzustandOGStatus, useReinigungTaeglichStatus, useWareneingaengeStatus, useMetzgereiWareneingaengeStatus, type TrafficLight } from "@/hooks/useWarenzustandStatus";
 
 function cn(...inputs: ClassValue[]) {
@@ -81,8 +81,25 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
 
 const ACCORDION_STORAGE_KEY = "haccp-sidebar-open-categories";
 
+const HACCP_PATHS = [
+  "/responsibilities", "/mitarbeiter-liste", "/info-documentation",
+  "/training-records", "/annual-cleaning-plan", "/betriebsbegehung",
+  "/hinweisschild-gesperrte-ware", "/produktfehlermeldung", "/probeentnahme",
+  "/anti-vektor-zugang", "/bescheinigungen", "/kontrollberichte",
+  "/warencheck-og", "/reinigung-taeglich", "/carrier-portal",
+  "/wareneingaenge", "/metzgerei-wareneingaenge",
+  "/section/", "/category/", "/we-", "/besprechungsprotokoll",
+  "/gesundheitszeugnisse",
+];
+
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { data: categories, isLoading } = useListCategories();
+  const [location] = useLocation();
+
+  const isHaccpPage = useMemo(
+    () => HACCP_PATHS.some((p) => location.startsWith(p)),
+    [location]
+  );
 
   const [openCategories, setOpenCategories] = useState<string[]>(() => {
     try {
@@ -125,7 +142,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         ) : (
           <Accordion.Root
             type="multiple"
-            value={openCategories}
+            value={isHaccpPage ? openCategories : []}
             onValueChange={handleValueChange}
             className="space-y-2"
           >
