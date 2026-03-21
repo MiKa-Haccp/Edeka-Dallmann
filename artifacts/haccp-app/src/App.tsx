@@ -46,6 +46,7 @@ import WEObstGemuese from "./pages/WEObstGemuese";
 import Wareneingaenge from "./pages/Wareneingaenge";
 import MetzgereiWareneingaenge from "./pages/MetzgereiWareneingaenge";
 import Ware from "./pages/Ware";
+import MHDKontrolle from "./pages/MHDKontrolle";
 import InfoDocumentation from "./pages/InfoDocumentation";
 import AnnualCleaningPlan from "./pages/AnnualCleaningPlan";
 import Betriebsbegehung from "./pages/Betriebsbegehung";
@@ -90,6 +91,7 @@ function Router() {
       <Route path="/carrier-portal" component={CarrierPortal} />
       <Route path="/we-obst-gemuese" component={WEObstGemuese} />
       <Route path="/ware" component={Ware} />
+      <Route path="/mhd-kontrolle" component={MHDKontrolle} />
       <Route path="/wareneingaenge" component={Wareneingaenge} />
       <Route path="/metzgerei-wareneingaenge" component={MetzgereiWareneingaenge} />
       <Route path="/besprechungsprotokoll" component={TrainingBesprechung} />

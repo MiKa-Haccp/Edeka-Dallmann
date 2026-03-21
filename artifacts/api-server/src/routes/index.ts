@@ -28,6 +28,7 @@ import reinigungTaeglichRouter from "./reinigungTaeglich";
 import wareneingangOGRouter from "./wareneingangOG";
 import wareneingangTypesRouter from "./wareneingangTypes";
 import deviceRouter from "./device";
+import mhdKontrolleRouter from "./mhdKontrolle";
 
 const router: IRouter = Router();
 
@@ -60,5 +61,6 @@ router.use(reinigungTaeglichRouter);
 router.use(wareneingangOGRouter);
 router.use(wareneingangTypesRouter);
 router.use(deviceRouter);
+router.use(mhdKontrolleRouter);
 
 export default router;

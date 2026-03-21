@@ -24,3 +24,4 @@ export * from "./warenzustandOG";
 export * from "./reinigungTaeglich";
 export * from "./wareneingangOG";
 export * from "./wareneingangTypes";
+export * from "./mhdKontrolle";
