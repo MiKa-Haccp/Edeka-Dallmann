@@ -501,17 +501,11 @@ export default function MetzgereiReinigung() {
                             const entry  = entryMap.get(`${item.key}__${iso}`);
                             const fut    = isFuture(d);
                             const isToday = iso===todayStr;
-                            // Für wöchentliche Items: wenn Woche schon abgezeichnet, alle Zellen grün zeigen
-                            const wDone  = isWonly && weekSigned;
-
-                            // Wöchentliche Items: nur Anzeige, kein Abzeichnen
+                            // Wöchentliche Items: nicht abzeichenbar — nur Statusanzeige im Label
                             if(isWonly) return (
                               <td key={di} className="px-1 py-1.5 text-center align-middle">
-                                <div className={`w-12 h-9 rounded-lg flex items-center justify-center mx-auto
-                                  ${wDone ? "bg-green-50 border border-green-100" : fut ? "opacity-20" : "bg-gray-50 border border-dashed border-gray-200"}`}>
-                                  {wDone
-                                    ? <Check className="w-3.5 h-3.5 text-green-500"/>
-                                    : <span className="text-gray-300 text-[10px]">—</span>}
+                                <div className="w-12 h-9 rounded-lg flex items-center justify-center mx-auto bg-gray-50 border border-dashed border-gray-200 opacity-40">
+                                  <span className="text-gray-400 text-[10px]">—</span>
                                 </div>
                               </td>
                             );
