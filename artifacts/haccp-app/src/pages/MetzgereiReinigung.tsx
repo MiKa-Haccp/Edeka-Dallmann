@@ -333,12 +333,10 @@ export default function MetzgereiReinigung() {
     if(!bulkDate||!selectedMarketId) return;
     setBulkL(true);
     const toPost: {itemKey:string; datum:string}[] = [];
-    for(const sec of SECTIONS) {
-      for(const item of sec.items) {
-        // Nur tägliche Items abzeichnen
-        if(item.tTyp && !entryMap.has(`${item.key}__${bulkDate}`)) {
-          toPost.push({itemKey:item.key, datum:bulkDate});
-        }
+    // Nur aktiver Bereich
+    for(const item of SECTIONS[activeSection].items) {
+      if(item.tTyp && !entryMap.has(`${item.key}__${bulkDate}`)) {
+        toPost.push({itemKey:item.key, datum:bulkDate});
       }
     }
     await Promise.all(toPost.map(p=>
@@ -351,19 +349,18 @@ export default function MetzgereiReinigung() {
     loadWeek();
   };
 
-  // Offene tägliche Items pro Tag (alle Bereiche) — für die Schnell-Abzeichen-Leiste
+  // Offene tägliche Items pro Tag — nur aktiver Bereich
   const dayOpenCounts = useMemo(()=>{
     const map: Record<string,number> = {};
     for(const d of dates) {
       const iso = toIso(d);
       let n = 0;
-      for(const sec of SECTIONS)
-        for(const item of sec.items)
-          if(item.tTyp && !entryMap.has(`${item.key}__${iso}`)) n++;
+      for(const item of SECTIONS[activeSection].items)
+        if(item.tTyp && !entryMap.has(`${item.key}__${iso}`)) n++;
       map[iso] = n;
     }
     return map;
-  },[dates, entryMap]);
+  },[dates, entryMap, activeSection]);
 
   const section = SECTIONS[activeSection];
 
@@ -804,7 +801,7 @@ export default function MetzgereiReinigung() {
         {/* PIN Modal — Tag abzeichnen */}
         {bulkDate&&(
           <PinModal
-            label={`Alle ${dayOpenCounts[bulkDate]??0} offenen Positionen — alle Bereiche — ${new Date(bulkDate+"T12:00").toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"2-digit"})}`}
+            label={`${dayOpenCounts[bulkDate]??0} offene Positionen — ${SECTIONS[activeSection].short} — ${new Date(bulkDate+"T12:00").toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"2-digit"})}`}
             onClose={()=>setBulkDate(null)}
             onConfirm={handleBulkSign}
           />
