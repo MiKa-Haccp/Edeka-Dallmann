@@ -356,21 +356,26 @@ export default function MetzgereiReinigung() {
     loadWeek();
   };
 
-  // Anzahl noch offener Items für heute (alle Bereiche)
-  const bulkOpenCount = useMemo(()=>{
-    if(!dates.some(d=>toIso(d)===todayStr)) return 0;
-    let count = 0;
-    for(const sec of SECTIONS) {
-      for(const item of sec.items) {
-        if(item.tTyp && !entryMap.has(`${item.key}__${todayStr}`)) count++;
-        if(!item.tTyp && item.wTyp) {
-          const weekSigned = dates.some(d=>entryMap.has(`${item.key}__${toIso(d)}`));
-          if(!weekSigned) count++;
+  // Offene Items pro Tag (alle Bereiche) — für die Schnell-Abzeichen-Leiste
+  const dayOpenCounts = useMemo(()=>{
+    const map: Record<string,number> = {};
+    const weekSigned: Record<string,boolean> = {};
+    for(const sec of SECTIONS)
+      for(const item of sec.items)
+        if(!item.tTyp && item.wTyp)
+          weekSigned[item.key] = dates.some(d=>entryMap.has(`${item.key}__${toIso(d)}`));
+    for(const d of dates) {
+      const iso = toIso(d);
+      let n = 0;
+      for(const sec of SECTIONS)
+        for(const item of sec.items) {
+          if(item.tTyp && !entryMap.has(`${item.key}__${iso}`)) n++;
+          if(!item.tTyp && item.wTyp && !weekSigned[item.key]) n++;
         }
-      }
+      map[iso] = n;
     }
-    return count;
-  },[dates, entryMap, todayStr]);
+    return map;
+  },[dates, entryMap]);
 
   const section = SECTIONS[activeSection];
 
@@ -426,33 +431,10 @@ export default function MetzgereiReinigung() {
               <button onClick={nextWeek} disabled={vonDate>todayStr} className="p-2 rounded-xl hover:bg-secondary text-muted-foreground disabled:opacity-30 print:hidden">
                 <ChevronRight className="w-4 h-4"/>
               </button>
-              {/* Status + Alle abzeichnen */}
-              <div className="flex items-center gap-2 pl-3 border-l border-border/60">
-                <div className="hidden sm:flex flex-col items-end">
-                  <span className="text-sm font-bold text-foreground">{stats.done}/{stats.total}</span>
-                  <span className="text-[10px] text-muted-foreground">aktiver Bereich heute</span>
-                </div>
-                {dates.some(d=>toIso(d)===todayStr) && (
-                  <button
-                    onClick={()=>setBulkDate(todayStr)}
-                    disabled={bulkOpenCount===0||bulkLoading}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all
-                      ${bulkOpenCount===0
-                        ?"bg-green-100 text-green-700 border border-green-200 cursor-default"
-                        :"bg-[#1a3a6b] text-white hover:bg-[#1a3a6b]/90 active:scale-95"}`}>
-                    {bulkLoading
-                      ? <Loader2 className="w-3.5 h-3.5 animate-spin"/>
-                      : bulkOpenCount===0
-                        ? <Check className="w-3.5 h-3.5"/>
-                        : <CheckCheck className="w-3.5 h-3.5"/>}
-                    {bulkOpenCount===0
-                      ? "Alle erledigt"
-                      : <><span className="hidden sm:inline">Alle abzeichnen</span><span className="sm:hidden">Alle</span></>}
-                    {bulkOpenCount>0&&(
-                      <span className="bg-white/20 rounded-md px-1.5 py-0.5 text-[10px]">{bulkOpenCount}</span>
-                    )}
-                  </button>
-                )}
+              {/* Status */}
+              <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-border/60">
+                <span className="text-sm font-bold text-foreground">{stats.done}/{stats.total}</span>
+                <span className="text-xs text-muted-foreground">heute</span>
               </div>
             </div>
 
@@ -577,6 +559,42 @@ export default function MetzgereiReinigung() {
 
               <div className="px-4 py-2.5 bg-secondary/30 border-t border-border/60 text-xs text-muted-foreground">
                 T = täglich · W = wöchentlich · Zelle anklicken zum Abzeichnen mit PIN
+              </div>
+
+              {/* Schnell-Abzeichen pro Tag */}
+              <div className="px-4 py-3 border-t border-border/60 print:hidden">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                  Alle Bereiche — Tag abzeichnen
+                </p>
+                <div className="flex gap-2 flex-wrap">
+                  {dates.map((d)=>{
+                    const iso  = toIso(d);
+                    const fut  = iso > todayStr;
+                    const open = dayOpenCounts[iso] ?? 0;
+                    const done = open === 0;
+                    const DAY  = ["Mo","Di","Mi","Do","Fr","Sa"][d.getDay()-1] ?? "";
+                    return (
+                      <button
+                        key={iso}
+                        disabled={fut || done}
+                        onClick={()=>setBulkDate(iso)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all active:scale-95
+                          ${fut
+                            ? "border-border/30 text-muted-foreground/30 bg-transparent cursor-not-allowed"
+                            : done
+                              ? "border-green-200 bg-green-50 text-green-700 cursor-default"
+                              : "border-[#1a3a6b]/30 bg-[#1a3a6b]/5 text-[#1a3a6b] hover:bg-[#1a3a6b]/10"}`}>
+                        {done
+                          ? <Check className="w-3 h-3"/>
+                          : <CheckCheck className="w-3 h-3"/>}
+                        {DAY}
+                        {!fut && !done && (
+                          <span className="bg-[#1a3a6b]/15 rounded px-1 text-[10px]">{open}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </>
@@ -773,10 +791,10 @@ export default function MetzgereiReinigung() {
         {/* PIN Modal — Einzeln */}
         {signing&&<PinModal label={signing.label} onClose={()=>setSigning(null)} onConfirm={handleSign}/>}
 
-        {/* PIN Modal — Alle abzeichnen */}
+        {/* PIN Modal — Tag abzeichnen */}
         {bulkDate&&(
           <PinModal
-            label={`Alle ${bulkOpenCount} offenen Positionen — alle Bereiche — ${new Date(bulkDate+"T12:00").toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"})}`}
+            label={`Alle ${dayOpenCounts[bulkDate]??0} offenen Positionen — alle Bereiche — ${new Date(bulkDate+"T12:00").toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"2-digit"})}`}
             onClose={()=>setBulkDate(null)}
             onConfirm={handleBulkSign}
           />
