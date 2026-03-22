@@ -6,6 +6,11 @@ import {
   ClipboardList, Printer, CalendarDays, ListChecks, Trash2,
 } from "lucide-react";
 import { Link } from "wouter";
+import {
+  useMetzgereiReinigungWocheStatus,
+  useMetzgereiReinigungJahrStatus,
+  type TrafficLight,
+} from "@/hooks/useWarenzustandStatus";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -214,11 +219,23 @@ function PinModal({onConfirm,onClose,label}:{
   );
 }
 
+// ─── Ampel-Dot ───────────────────────────────────────────────────────────────
+function StatusDot({status, active}:{status:TrafficLight; active:boolean}) {
+  if(status==="none") return null;
+  const col = status==="green"  ? (active?"bg-green-400":"bg-green-500")
+            : status==="yellow" ? (active?"bg-amber-300":"bg-amber-400")
+            :                     (active?"bg-red-400 animate-pulse":"bg-red-500 animate-pulse");
+  return <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${col}`}/>;
+}
+
 // ─── Hauptkomponente ──────────────────────────────────────────────────────────
 export default function MetzgereiReinigung() {
   const { selectedMarketId, adminSession } = useAppStore();
   const isAdmin = !!adminSession;
   const now     = new Date();
+
+  const wocheStatus = useMetzgereiReinigungWocheStatus();
+  const jahrStatus  = useMetzgereiReinigungJahrStatus();
 
   const [tab, setTab]           = useState<"woche"|"jahr">("woche");
   const [activeSection, setAS]  = useState(0);
@@ -291,17 +308,21 @@ export default function MetzgereiReinigung() {
   };
   const isFuture = (d:Date) => toIso(d) > todayStr;
 
+  const dispatch = () => window.dispatchEvent(new Event("metz-reinigung-updated"));
+
   const handleSign = async(kuerzel:string, userId:number|null) => {
     if(!signing||!selectedMarketId) return;
     await fetch(`${BASE}/metz-reinigung`,{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({marketId:selectedMarketId,itemKey:signing.itemKey,datum:signing.datum,kuerzel,userId})});
     setSigning(null);
+    dispatch();
     tab==="woche" ? loadWeek() : loadYear();
   };
 
   const handleDelete = async(id:number) => {
     await fetch(`${BASE}/metz-reinigung/${id}`,{method:"DELETE"});
     setDelId(null);
+    dispatch();
     tab==="woche" ? loadWeek() : loadYear();
   };
 
@@ -327,10 +348,15 @@ export default function MetzgereiReinigung() {
 
         {/* ── Tabs ─────────────────────────────────────────────────────────── */}
         <div className="flex gap-2 print:hidden">
-          {([["woche","Wochenplan","CalendarDays"],["jahr","Jahresplan","ListChecks"]] as [string,string,string][]).map(([t,l])=>(
-            <button key={t} onClick={()=>setTab(t as any)}
+          {([
+            {t:"woche", l:"Wochenplan",  status:wocheStatus},
+            {t:"jahr",  l:"Jahresplan",  status:jahrStatus},
+          ] as {t:"woche"|"jahr"; l:string; status:TrafficLight}[]).map(({t,l,status})=>(
+            <button key={t} onClick={()=>setTab(t)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${tab===t?"bg-[#1a3a6b] text-white":"bg-white border border-border text-muted-foreground hover:bg-secondary"}`}>
-              {t==="woche"?<CalendarDays className="w-4 h-4"/>:<ListChecks className="w-4 h-4"/>}{l}
+              {t==="woche"?<CalendarDays className="w-4 h-4"/>:<ListChecks className="w-4 h-4"/>}
+              {l}
+              <StatusDot status={status} active={tab===t}/>
             </button>
           ))}
         </div>
