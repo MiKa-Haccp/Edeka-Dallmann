@@ -18,16 +18,14 @@ router.get("/ware-mhd-bereiche", async (req, res) => {
 });
 
 router.post("/ware-mhd-bereiche", async (req, res) => {
-  const { marketId, name, beschreibung, intervallTage, reduzierungTage, entnahmeTage, sortOrder } = req.body;
+  const { marketId, zone, farbe, name, beschreibung, intervallTage, reduzierungTage, entnahmeTage, sortOrder } = req.body;
   if (!name?.trim()) { res.status(400).json({ error: "Name erforderlich" }); return; }
   const [row] = await db.insert(wareMhdBereicheTable)
     .values({
-      marketId: marketId || null, name: name.trim(),
-      beschreibung: beschreibung || null,
-      intervallTage: intervallTage ?? 1,
-      reduzierungTage: reduzierungTage ?? 3,
-      entnahmeTage: entnahmeTage ?? 1,
-      sortOrder: sortOrder ?? 99,
+      marketId: marketId || null, zone: zone || null, farbe: farbe || null,
+      name: name.trim(), beschreibung: beschreibung || null,
+      intervallTage: intervallTage ?? 1, reduzierungTage: reduzierungTage ?? 3,
+      entnahmeTage: entnahmeTage ?? 1, sortOrder: sortOrder ?? 99,
     })
     .returning();
   res.status(201).json(row);
@@ -35,10 +33,12 @@ router.post("/ware-mhd-bereiche", async (req, res) => {
 
 router.patch("/ware-mhd-bereiche/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const { name, beschreibung, intervallTage, reduzierungTage, entnahmeTage, sortOrder, aktiv } = req.body;
+  const { name, beschreibung, zone, farbe, intervallTage, reduzierungTage, entnahmeTage, sortOrder, aktiv } = req.body;
   const patch: Record<string, unknown> = {};
   if (name !== undefined)            patch.name = name.trim();
   if (beschreibung !== undefined)     patch.beschreibung = beschreibung || null;
+  if (zone !== undefined)             patch.zone = zone || null;
+  if (farbe !== undefined)            patch.farbe = farbe || null;
   if (intervallTage !== undefined)    patch.intervallTage = intervallTage;
   if (reduzierungTage !== undefined)  patch.reduzierungTage = reduzierungTage;
   if (entnahmeTage !== undefined)     patch.entnahmeTage = entnahmeTage;

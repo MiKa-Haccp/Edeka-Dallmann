@@ -3,6 +3,8 @@ import { pgTable, serial, integer, varchar, text, boolean, date, timestamp } fro
 export const wareMhdBereicheTable = pgTable("ware_mhd_bereiche", {
   id:              serial("id").primaryKey(),
   marketId:        integer("market_id"),
+  zone:            varchar("zone", { length: 100 }),
+  farbe:           varchar("farbe", { length: 20 }),
   name:            varchar("name", { length: 100 }).notNull(),
   beschreibung:    text("beschreibung"),
   intervallTage:   integer("intervall_tage").notNull().default(1),
