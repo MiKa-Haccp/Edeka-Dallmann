@@ -498,17 +498,39 @@ export default function MetzgereiReinigung() {
                             const entry  = entryMap.get(`${item.key}__${iso}`);
                             const fut    = isFuture(d);
                             const isToday = iso===todayStr;
-                            // Wöchentliche Items: eine einzige breite Zelle für alle 6 Tage
+                            // Wöchentliche Items: eine breite Zelle, anklickbar + löschbar
                             if(isWonly) {
                               if(di > 0) return null;
+                              const weekEntry = dates.map(d=>entryMap.get(`${item.key}__${toIso(d)}`)).find(e=>!!e);
+                              const allFut   = toIso(dates[0]) > todayStr;
+                              const lastDay  = [...dates].reverse().find(d=>toIso(d)<=todayStr);
+                              const signDatum = lastDay ? toIso(lastDay) : toIso(dates[0]);
                               return (
                                 <td key="wonly" colSpan={6} className="px-3 py-1.5 align-middle">
-                                  <div className={`h-9 rounded-lg flex items-center justify-center border border-dashed
-                                    ${weekSigned ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200 opacity-50"}`}>
-                                    {weekSigned
-                                      ? <span className="text-xs font-semibold text-green-700 flex items-center gap-1.5"><Check className="w-3.5 h-3.5"/>Diese Woche erledigt</span>
-                                      : <span className="text-xs text-gray-400">Noch nicht erledigt diese Woche</span>}
-                                  </div>
+                                  <button
+                                    disabled={allFut || !!weekEntry}
+                                    onClick={()=>!allFut&&!weekEntry&&setSigning({itemKey:item.key,datum:signDatum,label:item.label})}
+                                    className={`w-full h-9 rounded-lg flex items-center justify-center border border-dashed transition-all
+                                      ${weekEntry
+                                        ? "bg-green-50 border-green-200 cursor-default"
+                                        : allFut
+                                          ? "bg-gray-50 border-gray-200 opacity-40 cursor-not-allowed"
+                                          : "bg-red-50 border-red-200 hover:bg-red-100 active:scale-[0.99] cursor-pointer"}`}>
+                                    {weekEntry ? (
+                                      <span className="flex items-center gap-2 text-xs font-semibold text-green-700">
+                                        <Check className="w-3.5 h-3.5"/>
+                                        Diese Woche erledigt &middot; {weekEntry.kuerzel}
+                                        {isAdmin&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(weekEntry.id);}}
+                                          className="ml-1 text-[10px] text-red-400 hover:text-red-600 cursor-pointer">✕</span>}
+                                      </span>
+                                    ) : allFut ? (
+                                      <span className="text-xs text-gray-400">Noch nicht freigegeben</span>
+                                    ) : (
+                                      <span className="text-xs text-gray-400 flex items-center gap-1.5">
+                                        <span className="text-gray-300">+</span> Woche abzeichnen
+                                      </span>
+                                    )}
+                                  </button>
                                 </td>
                               );
                             }
