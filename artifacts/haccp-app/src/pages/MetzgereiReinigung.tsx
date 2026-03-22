@@ -77,13 +77,19 @@ const SECTIONS: Section[] = [
 ];
 
 // ─── Jahresplan-Aufgaben ───────────────────────────────────────────────────────
-interface JahresItem { key: string; label: string; monate: number[]; typ: string; }
+interface JahresItem { key: string; label: string; monate: number[]; typ: string; quartal?: boolean; }
+const QUARTALE = [
+  { label:"Q1", monate:[1,2,3], color:"bg-sky-50 text-sky-700 border-sky-200" },
+  { label:"Q2", monate:[4,5,6], color:"bg-emerald-50 text-emerald-700 border-emerald-200" },
+  { label:"Q3", monate:[7,8,9], color:"bg-amber-50 text-amber-700 border-amber-200" },
+  { label:"Q4", monate:[10,11,12], color:"bg-rose-50 text-rose-700 border-rose-200" },
+];
 const JAHRES_ITEMS: JahresItem[] = [
   { key:"j_grundrein_kuehl",    label:"Grundreinigung Kühlräume (komplett)",         monate:[3,9],    typ:"R+D" },
-  { key:"j_grundrein_prod",     label:"Grundreinigung Produktionsraum (komplett)",   monate:[3,6,9,12], typ:"R+D" },
-  { key:"j_grundrein_theke",    label:"Grundreinigung Theke / Thekenbereich",        monate:[3,6,9,12], typ:"R+D" },
-  { key:"j_schaedling",         label:"Schädlingsbekämpfung / Insektenschutz prüfen",monate:[1,4,7,10], typ:"Kontrolle" },
-  { key:"j_fettabscheider",     label:"Fettabscheider reinigen / entleeren",         monate:[1,4,7,10], typ:"R" },
+  { key:"j_grundrein_prod",     label:"Grundreinigung Produktionsraum (komplett)",   monate:[3,6,9,12], typ:"R+D", quartal:true },
+  { key:"j_grundrein_theke",    label:"Grundreinigung Theke / Thekenbereich",        monate:[3,6,9,12], typ:"R+D", quartal:true },
+  { key:"j_schaedling",         label:"Schädlingsbekämpfung / Insektenschutz prüfen",monate:[1,4,7,10], typ:"Kontrolle", quartal:true },
+  { key:"j_fettabscheider",     label:"Fettabscheider reinigen / entleeren",         monate:[1,4,7,10], typ:"R", quartal:true },
   { key:"j_kanalisation",       label:"Kanalisation / Abflüsse Hochdruckreinigung",  monate:[4,10],     typ:"R" },
   { key:"j_maschinen_wartung",  label:"Maschinenwartung / Sicherheitsprüfung",       monate:[1,7],      typ:"Wartung" },
   { key:"j_kuehl_wartung",      label:"Kühlaggregate prüfen / warten lassen",        monate:[5,11],     typ:"Wartung" },
@@ -501,52 +507,109 @@ export default function MetzgereiReinigung() {
                 <p className="font-bold text-sm text-[#1a3a6b]">Reinigungsplan Jahr {jwYear} — Metzgerei</p>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[800px]">
+                <table className="w-full text-sm min-w-[860px]">
                   <thead>
-                    <tr className="border-b border-border/60 bg-secondary/50">
-                      <th className="text-left px-4 py-2.5 text-xs font-bold text-muted-foreground w-72">Aufgabe</th>
-                      <th className="text-center px-2 py-2.5 text-xs font-bold text-muted-foreground w-16">Art</th>
-                      {MONATE.map(m=>(
-                        <th key={m} className="text-center px-1 py-2.5 text-xs font-bold text-muted-foreground w-14">{m}</th>
+                    {/* Quartal-Zeile */}
+                    <tr className="bg-secondary/30">
+                      <th rowSpan={2} className="text-left px-4 py-2 text-xs font-bold text-muted-foreground w-72 border-b border-border/60 align-bottom">Aufgabe</th>
+                      <th rowSpan={2} className="text-center px-2 py-2 text-xs font-bold text-muted-foreground w-16 border-b border-border/60 align-bottom">Art</th>
+                      {QUARTALE.map((q,qi)=>(
+                        <th key={q.label} colSpan={3}
+                          className={`text-center px-1 py-1.5 text-xs font-extrabold border-b border-border/40 ${qi>0?"border-l border-border/40":""} ${q.color}`}>
+                          {q.label}
+                        </th>
+                      ))}
+                    </tr>
+                    {/* Monats-Zeile */}
+                    <tr className="bg-secondary/50 border-b border-border/60">
+                      {MONATE.map((m,mi)=>(
+                        <th key={m}
+                          className={`text-center px-1 py-1.5 text-[10px] font-bold text-muted-foreground w-[52px] ${mi%3===0&&mi>0?"border-l border-border/40":""}`}>
+                          {m}
+                        </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
                     {JAHRES_ITEMS.map(item=>(
-                      <tr key={item.key} className="hover:bg-secondary/20">
+                      <tr key={item.key} className="hover:bg-secondary/20 group">
                         <td className="px-4 py-2.5">
                           <p className="font-semibold text-xs leading-tight">{item.label}</p>
                         </td>
                         <td className="px-2 py-2.5 text-center">
                           <Badge typ={item.typ} prefix=""/>
                         </td>
-                        {MONATE.map((m,mi)=>{
-                          const monthNum = mi+1;
-                          const isRequired = item.monate.includes(monthNum);
-                          const monthKey = `${jwYear}-${String(monthNum).padStart(2,"0")}`;
+
+                        {/* ── Quartal-Rendering (4 × colspan=3) ── */}
+                        {item.quartal ? QUARTALE.map((q,qi)=>{
+                          const reqMonth = item.monate.find(m=>q.monate.includes(m));
+                          if(!reqMonth) return (
+                            <td key={qi} colSpan={3} className={`px-2 py-1.5 text-center ${qi>0?"border-l border-border/20":""}`}>
+                              <span className="text-border text-xs">—</span>
+                            </td>
+                          );
+                          const monthKey = `${jwYear}-${String(reqMonth).padStart(2,"0")}`;
                           const entry = jEntryMap.get(`${item.key}__${monthKey}`);
-                          const isFut = jwYear > now.getFullYear() || (jwYear===now.getFullYear() && monthNum > now.getMonth()+1);
+                          const isFut = jwYear > now.getFullYear() || (jwYear===now.getFullYear()&&reqMonth>now.getMonth()+1);
+                          const reqLabel = `${MONATE[reqMonth-1]} ${jwYear}`;
                           return (
-                            <td key={mi} className="px-1 py-1.5 text-center">
-                              {isRequired ? (
+                            <td key={qi} colSpan={3}
+                              className={`px-2 py-1.5 ${qi>0?"border-l border-border/20":""}`}>
+                              <button
+                                disabled={isFut||!!entry}
+                                onClick={()=>!isFut&&!entry&&setSigning({itemKey:item.key,datum:`${jwYear}-${String(reqMonth).padStart(2,"0")}-01`,label:`${item.label} — ${q.label} (${reqLabel})`})}
+                                className={`w-full h-10 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 border
+                                  ${entry
+                                    ?"bg-green-100 border-green-300 cursor-default"
+                                    :isFut
+                                      ?"bg-gray-50 border-dashed border-gray-200 opacity-40 cursor-not-allowed"
+                                      :"bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer active:scale-[0.98]"}`}>
+                                {entry ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 text-green-600"/>
+                                    <span className="text-[9px] text-green-700 font-mono">{entry.kuerzel}</span>
+                                  </>
+                                ) : isFut ? (
+                                  <span className="text-[9px] text-gray-400">{q.label}</span>
+                                ) : (
+                                  <>
+                                    <span className="text-red-500 font-black text-sm">!</span>
+                                    <span className="text-[9px] text-red-400">{reqLabel}</span>
+                                  </>
+                                )}
+                              </button>
+                            </td>
+                          );
+                        })
+
+                        /* ── Monats-Rendering (12 × Einzelzellen) ── */
+                        : MONATE.map((m,mi)=>{
+                          const monthNum  = mi+1;
+                          const isReq     = item.monate.includes(monthNum);
+                          const monthKey  = `${jwYear}-${String(monthNum).padStart(2,"0")}`;
+                          const entry     = jEntryMap.get(`${item.key}__${monthKey}`);
+                          const isFut     = jwYear>now.getFullYear()||(jwYear===now.getFullYear()&&monthNum>now.getMonth()+1);
+                          return (
+                            <td key={mi} className={`px-0.5 py-1.5 text-center ${mi%3===0&&mi>0?"border-l border-border/20":""}`}>
+                              {isReq ? (
                                 <button
                                   disabled={isFut||!!entry}
                                   onClick={()=>!isFut&&!entry&&setSigning({itemKey:item.key,datum:`${jwYear}-${String(monthNum).padStart(2,"0")}-01`,label:`${item.label} — ${m} ${jwYear}`})}
-                                  className={`w-11 h-8 rounded-lg text-xs font-bold transition-all
-                                    ${entry?"bg-green-100 border border-green-300 cursor-default":
-                                      isFut?"bg-gray-50 border border-dashed border-gray-200 opacity-40 cursor-not-allowed":
-                                      "bg-red-50 border border-red-200 hover:bg-red-100 cursor-pointer active:scale-95"}`}>
+                                  className={`w-11 h-8 rounded-lg text-xs font-bold transition-all mx-auto flex flex-col items-center justify-center border
+                                    ${entry?"bg-green-100 border-green-300 cursor-default":
+                                      isFut?"bg-gray-50 border-dashed border-gray-200 opacity-40 cursor-not-allowed":
+                                      "bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer active:scale-95"}`}>
                                   {entry ? (
-                                    <span className="flex flex-col items-center leading-tight">
-                                      <Check className="w-3 h-3 text-green-600 mx-auto"/>
+                                    <>
+                                      <Check className="w-3 h-3 text-green-600"/>
                                       <span className="text-[8px] text-green-700 font-mono">{entry.kuerzel}</span>
-                                    </span>
+                                    </>
                                   ) : isFut ? null : (
                                     <span className="text-red-400">!</span>
                                   )}
                                 </button>
                               ) : (
-                                <span className="text-border text-xs">—</span>
+                                <span className="text-border/60 text-xs">·</span>
                               )}
                             </td>
                           );
@@ -556,8 +619,10 @@ export default function MetzgereiReinigung() {
                   </tbody>
                 </table>
               </div>
-              <div className="px-4 py-2.5 bg-secondary/30 border-t border-border/60 text-xs text-muted-foreground">
-                Pflichtmonate mit Kürzel abzeichnen · Rot = noch nicht erledigt · Grün = abgezeichnet
+              <div className="px-4 py-2.5 bg-secondary/30 border-t border-border/60 text-xs text-muted-foreground flex items-center gap-4">
+                <span><span className="font-bold text-sky-600">Q1</span>=Jan–Mär &nbsp;<span className="font-bold text-emerald-600">Q2</span>=Apr–Jun &nbsp;<span className="font-bold text-amber-600">Q3</span>=Jul–Sep &nbsp;<span className="font-bold text-rose-600">Q4</span>=Okt–Dez</span>
+                <span>·</span>
+                <span>Pflichttermine mit PIN abzeichnen · Rot = offen · Grün = erledigt</span>
               </div>
             </div>
           </>
