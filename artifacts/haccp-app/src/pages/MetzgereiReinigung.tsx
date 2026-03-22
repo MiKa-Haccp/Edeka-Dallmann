@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ChevronLeft, ChevronRight, Check, X, Lock, Loader2,
-  ClipboardList, Printer, CalendarDays, ListChecks, Trash2,
+  ClipboardList, Printer, CalendarDays, ListChecks, Trash2, CheckCheck,
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -247,6 +247,8 @@ export default function MetzgereiReinigung() {
   const [loading, setLoading]   = useState(false);
   const [signing, setSigning]   = useState<{itemKey:string;datum:string;label:string}|null>(null);
   const [delId, setDelId]       = useState<number|null>(null);
+  const [bulkDate, setBulkDate] = useState<string|null>(null);
+  const [bulkLoading, setBulkL] = useState(false);
 
   const dates    = useMemo(()=>weekDates(kw, kwYear),[kw,kwYear]);
   const vonDate  = useMemo(()=>toIso(dates[0]),[dates]);
@@ -326,6 +328,50 @@ export default function MetzgereiReinigung() {
     tab==="woche" ? loadWeek() : loadYear();
   };
 
+  // Alle offenen Positionen aller 3 Bereiche für ein Datum auf einmal abzeichnen
+  const handleBulkSign = async(kuerzel:string, userId:number|null) => {
+    if(!bulkDate||!selectedMarketId) return;
+    setBulkL(true);
+    const toPost: {itemKey:string; datum:string}[] = [];
+    for(const sec of SECTIONS) {
+      for(const item of sec.items) {
+        // Tägliche Items: nur wenn dieses Datum noch nicht abgezeichnet
+        if(item.tTyp && !entryMap.has(`${item.key}__${bulkDate}`)) {
+          toPost.push({itemKey:item.key, datum:bulkDate});
+        }
+        // Nur-wöchentliche Items: nur wenn diese Woche noch kein Eintrag
+        if(!item.tTyp && item.wTyp) {
+          const weekSigned = dates.some(d=>entryMap.has(`${item.key}__${toIso(d)}`));
+          if(!weekSigned) toPost.push({itemKey:item.key, datum:bulkDate});
+        }
+      }
+    }
+    await Promise.all(toPost.map(p=>
+      fetch(`${BASE}/metz-reinigung`,{method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({marketId:selectedMarketId,...p,kuerzel,userId})})
+    ));
+    setBulkDate(null);
+    setBulkL(false);
+    dispatch();
+    loadWeek();
+  };
+
+  // Anzahl noch offener Items für heute (alle Bereiche)
+  const bulkOpenCount = useMemo(()=>{
+    if(!dates.some(d=>toIso(d)===todayStr)) return 0;
+    let count = 0;
+    for(const sec of SECTIONS) {
+      for(const item of sec.items) {
+        if(item.tTyp && !entryMap.has(`${item.key}__${todayStr}`)) count++;
+        if(!item.tTyp && item.wTyp) {
+          const weekSigned = dates.some(d=>entryMap.has(`${item.key}__${toIso(d)}`));
+          if(!weekSigned) count++;
+        }
+      }
+    }
+    return count;
+  },[dates, entryMap, todayStr]);
+
   const section = SECTIONS[activeSection];
 
   return (
@@ -380,10 +426,33 @@ export default function MetzgereiReinigung() {
               <button onClick={nextWeek} disabled={vonDate>todayStr} className="p-2 rounded-xl hover:bg-secondary text-muted-foreground disabled:opacity-30 print:hidden">
                 <ChevronRight className="w-4 h-4"/>
               </button>
-              {/* Status */}
-              <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-border/60">
-                <span className="text-sm font-bold text-foreground">{stats.done}/{stats.total}</span>
-                <span className="text-xs text-muted-foreground">heute</span>
+              {/* Status + Alle abzeichnen */}
+              <div className="flex items-center gap-2 pl-3 border-l border-border/60">
+                <div className="hidden sm:flex flex-col items-end">
+                  <span className="text-sm font-bold text-foreground">{stats.done}/{stats.total}</span>
+                  <span className="text-[10px] text-muted-foreground">aktiver Bereich heute</span>
+                </div>
+                {dates.some(d=>toIso(d)===todayStr) && (
+                  <button
+                    onClick={()=>setBulkDate(todayStr)}
+                    disabled={bulkOpenCount===0||bulkLoading}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all
+                      ${bulkOpenCount===0
+                        ?"bg-green-100 text-green-700 border border-green-200 cursor-default"
+                        :"bg-[#1a3a6b] text-white hover:bg-[#1a3a6b]/90 active:scale-95"}`}>
+                    {bulkLoading
+                      ? <Loader2 className="w-3.5 h-3.5 animate-spin"/>
+                      : bulkOpenCount===0
+                        ? <Check className="w-3.5 h-3.5"/>
+                        : <CheckCheck className="w-3.5 h-3.5"/>}
+                    {bulkOpenCount===0
+                      ? "Alle erledigt"
+                      : <><span className="hidden sm:inline">Alle abzeichnen</span><span className="sm:hidden">Alle</span></>}
+                    {bulkOpenCount>0&&(
+                      <span className="bg-white/20 rounded-md px-1.5 py-0.5 text-[10px]">{bulkOpenCount}</span>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -487,8 +556,8 @@ export default function MetzgereiReinigung() {
                                     <span className="flex flex-col items-center leading-tight">
                                       <Check className="w-3 h-3 text-green-600"/>
                                       <span className="text-[9px] text-green-700 font-mono">{entry.kuerzel}</span>
-                                      {isAdmin&&<button onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}}
-                                        className="text-[8px] text-red-400 hover:text-red-600 hidden group-hover:block">✕</button>}
+                                      {isAdmin&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}}
+                                        className="text-[8px] text-red-400 hover:text-red-600 hidden group-hover:block cursor-pointer">✕</span>}
                                     </span>
                                   ) : wDone ? (
                                     <span className="text-green-400 text-[10px]">✓W</span>
@@ -701,8 +770,17 @@ export default function MetzgereiReinigung() {
           </>
         )}
 
-        {/* PIN Modal */}
+        {/* PIN Modal — Einzeln */}
         {signing&&<PinModal label={signing.label} onClose={()=>setSigning(null)} onConfirm={handleSign}/>}
+
+        {/* PIN Modal — Alle abzeichnen */}
+        {bulkDate&&(
+          <PinModal
+            label={`Alle ${bulkOpenCount} offenen Positionen — alle Bereiche — ${new Date(bulkDate+"T12:00").toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"2-digit",year:"numeric"})}`}
+            onClose={()=>setBulkDate(null)}
+            onConfirm={handleBulkSign}
+          />
+        )}
 
         {/* Confirm Delete */}
         {delId&&(
