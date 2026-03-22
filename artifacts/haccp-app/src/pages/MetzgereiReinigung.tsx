@@ -490,9 +490,6 @@ export default function MetzgereiReinigung() {
                             <div className="flex flex-col gap-0.5">
                               {item.tTyp&&<Badge typ={item.tTyp} prefix="T"/>}
                               {item.wTyp&&<Badge typ={item.wTyp} prefix="W"/>}
-                              {isWonly&&weekSigned&&(
-                                <span className="text-[9px] text-green-600 font-bold">Diese Woche erledigt</span>
-                              )}
                             </div>
                           </td>
                           {/* Tageszellen */}
@@ -501,14 +498,20 @@ export default function MetzgereiReinigung() {
                             const entry  = entryMap.get(`${item.key}__${iso}`);
                             const fut    = isFuture(d);
                             const isToday = iso===todayStr;
-                            // Wöchentliche Items: nicht abzeichenbar — nur Statusanzeige im Label
-                            if(isWonly) return (
-                              <td key={di} className="px-1 py-1.5 text-center align-middle">
-                                <div className="w-12 h-9 rounded-lg flex items-center justify-center mx-auto bg-gray-50 border border-dashed border-gray-200 opacity-40">
-                                  <span className="text-gray-400 text-[10px]">—</span>
-                                </div>
-                              </td>
-                            );
+                            // Wöchentliche Items: eine einzige breite Zelle für alle 6 Tage
+                            if(isWonly) {
+                              if(di > 0) return null;
+                              return (
+                                <td key="wonly" colSpan={6} className="px-3 py-1.5 align-middle">
+                                  <div className={`h-9 rounded-lg flex items-center justify-center border border-dashed
+                                    ${weekSigned ? "bg-green-50 border-green-200" : "bg-gray-50 border-gray-200 opacity-50"}`}>
+                                    {weekSigned
+                                      ? <span className="text-xs font-semibold text-green-700 flex items-center gap-1.5"><Check className="w-3.5 h-3.5"/>Diese Woche erledigt</span>
+                                      : <span className="text-xs text-gray-400">Noch nicht erledigt diese Woche</span>}
+                                  </div>
+                                </td>
+                              );
+                            }
 
                             const cellBg = entry
                               ? "bg-green-100 border border-green-300"
