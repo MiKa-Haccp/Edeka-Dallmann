@@ -561,57 +561,34 @@ export default function MetzgereiReinigung() {
                 T = täglich · W = wöchentlich · Zelle anklicken zum Abzeichnen mit PIN
               </div>
 
-              {/* Schnell-Abzeichen pro Tag — vertikal wie 2.2 */}
-              <div className="px-4 py-3 border-t border-border/60 print:hidden">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">
-                  Alle Bereiche — Tag abzeichnen
-                </p>
-                <div className="flex flex-col gap-1.5">
-                  {dates.map((d)=>{
-                    const iso  = toIso(d);
-                    const fut  = iso > todayStr;
-                    const open = dayOpenCounts[iso] ?? 0;
-                    const done = open === 0;
-                    const DAY  = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"][d.getDay()-1] ?? "";
-                    return (
-                      <div key={iso} className={`flex items-center gap-2.5 ${fut?"opacity-30":""}`}>
-                        {/* Pille links */}
-                        <div className={`flex-1 flex items-center justify-between px-4 py-2 rounded-full border
-                          ${done
-                            ? "border-green-200 bg-green-50"
-                            : fut
-                              ? "border-border/30 bg-transparent"
-                              : "border-red-300 border-dashed bg-transparent"}`}>
-                          <span className={`text-sm font-semibold ${done?"text-green-700":"text-foreground"}`}>
-                            {DAY}
-                          </span>
-                          {!fut && !done && (
-                            <span className="text-xs font-bold text-red-500">{open} offen</span>
-                          )}
-                          {!fut && done && (
-                            <Check className="w-4 h-4 text-green-600"/>
-                          )}
+              {/* Schnell-Abzeichen pro Tag */}
+              <div className="px-4 py-3 border-t border-border/60 print:hidden flex gap-3">
+                {dates.map((d)=>{
+                  const iso  = toIso(d);
+                  const fut  = iso > todayStr;
+                  const done = (dayOpenCounts[iso] ?? 0) === 0;
+                  const DAY  = ["Mo","Di","Mi","Do","Fr","Sa"][d.getDay()-1] ?? "";
+                  return (
+                    <div key={iso} className="flex flex-col items-center gap-1">
+                      {done ? (
+                        <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center">
+                          <Check className="w-4 h-4 text-white"/>
                         </div>
-                        {/* Runder Button rechts */}
-                        {!fut && !done ? (
-                          <button
-                            onClick={()=>setBulkDate(iso)}
-                            className="w-9 h-9 rounded-full bg-[#1a3a6b]/10 text-[#1a3a6b] hover:bg-[#1a3a6b]/20 flex items-center justify-center shrink-0 transition-colors active:scale-95">
-                            <ListChecks className="w-4 h-4"/>
-                          </button>
-                        ) : !fut && done ? (
-                          <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-                            <Check className="w-4 h-4 text-white"/>
-                          </div>
-                        ) : (
-                          <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                            <Lock className="w-3.5 h-3.5 text-muted-foreground"/>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                      ) : fut ? (
+                        <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center opacity-30">
+                          <Lock className="w-3.5 h-3.5 text-muted-foreground"/>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={()=>setBulkDate(iso)}
+                          className="w-9 h-9 rounded-full bg-[#1a3a6b]/10 text-[#1a3a6b] hover:bg-[#1a3a6b]/20 flex items-center justify-center transition-colors active:scale-95">
+                          <ListChecks className="w-4 h-4"/>
+                        </button>
+                      )}
+                      <span className="text-[10px] text-muted-foreground font-medium">{DAY}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </>
