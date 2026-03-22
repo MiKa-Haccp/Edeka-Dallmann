@@ -554,41 +554,42 @@ export default function MetzgereiReinigung() {
                       );
                     })}
                   </tbody>
+                  <tfoot className="print:hidden">
+                    <tr className="border-t-2 border-border/60 bg-secondary/20">
+                      <td colSpan={2} className="px-4 py-2 text-[10px] text-muted-foreground">
+                        T = täglich · W = wöchentlich
+                      </td>
+                      {dates.map((d)=>{
+                        const iso  = toIso(d);
+                        const fut  = iso > todayStr;
+                        const done = (dayOpenCounts[iso] ?? 0) === 0;
+                        return (
+                          <td key={iso} className="px-1 py-2 text-center">
+                            {done ? (
+                              <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center mx-auto">
+                                <Check className="w-3.5 h-3.5 text-white"/>
+                              </div>
+                            ) : fut ? (
+                              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center mx-auto opacity-30">
+                                <Lock className="w-3 h-3 text-muted-foreground"/>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={()=>setBulkDate(iso)}
+                                className="w-8 h-8 rounded-full bg-[#1a3a6b]/10 text-[#1a3a6b] hover:bg-[#1a3a6b]/20 flex items-center justify-center mx-auto transition-colors active:scale-95">
+                                <ListChecks className="w-3.5 h-3.5"/>
+                              </button>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
 
-              <div className="px-4 py-2.5 bg-secondary/30 border-t border-border/60 text-xs text-muted-foreground">
-                T = täglich · W = wöchentlich · Zelle anklicken zum Abzeichnen mit PIN
-              </div>
-
-              {/* Schnell-Abzeichen pro Tag */}
-              <div className="px-4 py-3 border-t border-border/60 print:hidden flex gap-3">
-                {dates.map((d)=>{
-                  const iso  = toIso(d);
-                  const fut  = iso > todayStr;
-                  const done = (dayOpenCounts[iso] ?? 0) === 0;
-                  const DAY  = ["Mo","Di","Mi","Do","Fr","Sa"][d.getDay()-1] ?? "";
-                  return (
-                    <div key={iso} className="flex flex-col items-center gap-1">
-                      {done ? (
-                        <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center">
-                          <Check className="w-4 h-4 text-white"/>
-                        </div>
-                      ) : fut ? (
-                        <div className="w-9 h-9 rounded-full bg-secondary flex items-center justify-center opacity-30">
-                          <Lock className="w-3.5 h-3.5 text-muted-foreground"/>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={()=>setBulkDate(iso)}
-                          className="w-9 h-9 rounded-full bg-[#1a3a6b]/10 text-[#1a3a6b] hover:bg-[#1a3a6b]/20 flex items-center justify-center transition-colors active:scale-95">
-                          <ListChecks className="w-4 h-4"/>
-                        </button>
-                      )}
-                      <span className="text-[10px] text-muted-foreground font-medium">{DAY}</span>
-                    </div>
-                  );
-                })}
+              <div className="px-4 py-2 bg-secondary/30 border-t border-border/60 text-[10px] text-muted-foreground">
+                Zelle anklicken zum Abzeichnen mit PIN · Spalten-Icon = alle Positionen dieses Tages abzeichnen
               </div>
             </div>
           </>
