@@ -77,24 +77,28 @@ const SECTIONS: Section[] = [
 ];
 
 // ─── Jahresplan-Aufgaben ───────────────────────────────────────────────────────
-interface JahresItem { key: string; label: string; monate: number[]; typ: string; quartal?: boolean; }
+interface JahresItem { key: string; label: string; monate: number[]; typ: string; quartal?: boolean; halbjahr?: boolean; }
 const QUARTALE = [
-  { label:"Q1", monate:[1,2,3], color:"bg-sky-50 text-sky-700 border-sky-200" },
-  { label:"Q2", monate:[4,5,6], color:"bg-emerald-50 text-emerald-700 border-emerald-200" },
-  { label:"Q3", monate:[7,8,9], color:"bg-amber-50 text-amber-700 border-amber-200" },
-  { label:"Q4", monate:[10,11,12], color:"bg-rose-50 text-rose-700 border-rose-200" },
+  { label:"Q1", monate:[1,2,3],   color:"bg-sky-50 text-sky-700 border-sky-200" },
+  { label:"Q2", monate:[4,5,6],   color:"bg-emerald-50 text-emerald-700 border-emerald-200" },
+  { label:"Q3", monate:[7,8,9],   color:"bg-amber-50 text-amber-700 border-amber-200" },
+  { label:"Q4", monate:[10,11,12],color:"bg-rose-50 text-rose-700 border-rose-200" },
+];
+const HALBJAHRE = [
+  { label:"H1", short:"1. Halbjahr", monate:[1,2,3,4,5,6],   color:"bg-indigo-50 text-indigo-700 border-indigo-200" },
+  { label:"H2", short:"2. Halbjahr", monate:[7,8,9,10,11,12], color:"bg-purple-50 text-purple-700 border-purple-200" },
 ];
 const JAHRES_ITEMS: JahresItem[] = [
-  { key:"j_grundrein_kuehl",    label:"Grundreinigung Kühlräume (komplett)",         monate:[3,9],    typ:"R+D" },
+  { key:"j_grundrein_kuehl",    label:"Grundreinigung Kühlräume (komplett)",         monate:[3,9],    typ:"R+D", halbjahr:true },
   { key:"j_grundrein_prod",     label:"Grundreinigung Produktionsraum (komplett)",   monate:[3,6,9,12], typ:"R+D", quartal:true },
   { key:"j_grundrein_theke",    label:"Grundreinigung Theke / Thekenbereich",        monate:[3,6,9,12], typ:"R+D", quartal:true },
   { key:"j_schaedling",         label:"Schädlingsbekämpfung / Insektenschutz prüfen",monate:[1,4,7,10], typ:"Kontrolle", quartal:true },
   { key:"j_fettabscheider",     label:"Fettabscheider reinigen / entleeren",         monate:[1,4,7,10], typ:"R", quartal:true },
-  { key:"j_kanalisation",       label:"Kanalisation / Abflüsse Hochdruckreinigung",  monate:[4,10],     typ:"R" },
-  { key:"j_maschinen_wartung",  label:"Maschinenwartung / Sicherheitsprüfung",       monate:[1,7],      typ:"Wartung" },
-  { key:"j_kuehl_wartung",      label:"Kühlaggregate prüfen / warten lassen",        monate:[5,11],     typ:"Wartung" },
+  { key:"j_kanalisation",       label:"Kanalisation / Abflüsse Hochdruckreinigung",  monate:[4,10],     typ:"R", halbjahr:true },
+  { key:"j_maschinen_wartung",  label:"Maschinenwartung / Sicherheitsprüfung",       monate:[1,7],      typ:"Wartung", halbjahr:true },
+  { key:"j_kuehl_wartung",      label:"Kühlaggregate prüfen / warten lassen",        monate:[5,11],     typ:"Wartung", halbjahr:true },
   { key:"j_desinfmittel",       label:"Desinfektionsmittel-Konzentration prüfen",    monate:[1,2,3,4,5,6,7,8,9,10,11,12], typ:"Kontrolle" },
-  { key:"j_abluft",             label:"Abluftanlage / Filter reinigen",               monate:[1,7],      typ:"R" },
+  { key:"j_abluft",             label:"Abluftanlage / Filter reinigen",               monate:[1,7],      typ:"R", halbjahr:true },
 ];
 const MONATE = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 
@@ -571,6 +575,49 @@ export default function MetzgereiReinigung() {
                                   </>
                                 ) : isFut ? (
                                   <span className="text-[9px] text-gray-400">{q.label}</span>
+                                ) : (
+                                  <>
+                                    <span className="text-red-500 font-black text-sm">!</span>
+                                    <span className="text-[9px] text-red-400">{reqLabel}</span>
+                                  </>
+                                )}
+                              </button>
+                            </td>
+                          );
+                        })
+
+                        /* ── Halbjahr-Rendering (2 × colspan=6) ── */
+                        : item.halbjahr ? HALBJAHRE.map((h,hi)=>{
+                          const reqMonth = item.monate.find(m=>h.monate.includes(m));
+                          if(!reqMonth) return (
+                            <td key={hi} colSpan={6} className={`px-2 py-1.5 text-center ${hi>0?"border-l border-border/20":""}`}>
+                              <span className="text-border text-xs">—</span>
+                            </td>
+                          );
+                          const monthKey = `${jwYear}-${String(reqMonth).padStart(2,"0")}`;
+                          const entry = jEntryMap.get(`${item.key}__${monthKey}`);
+                          const isFut = jwYear>now.getFullYear()||(jwYear===now.getFullYear()&&reqMonth>now.getMonth()+1);
+                          const reqLabel = `${MONATE[reqMonth-1]} ${jwYear}`;
+                          return (
+                            <td key={hi} colSpan={6}
+                              className={`px-2 py-1.5 ${hi>0?"border-l border-border/20":""}`}>
+                              <button
+                                disabled={isFut||!!entry}
+                                onClick={()=>!isFut&&!entry&&setSigning({itemKey:item.key,datum:`${jwYear}-${String(reqMonth).padStart(2,"0")}-01`,label:`${item.label} — ${h.short} (${reqLabel})`})}
+                                className={`w-full h-10 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 border
+                                  ${entry
+                                    ?"bg-green-100 border-green-300 cursor-default"
+                                    :isFut
+                                      ?"bg-gray-50 border-dashed border-gray-200 opacity-40 cursor-not-allowed"
+                                      :"bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer active:scale-[0.98]"}`}>
+                                {entry ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 text-green-600"/>
+                                    <span className="text-[9px] text-green-700 font-mono">{entry.kuerzel}</span>
+                                    <span className="text-[8px] text-green-600">{h.label}</span>
+                                  </>
+                                ) : isFut ? (
+                                  <span className="text-[10px] text-gray-400 font-semibold">{h.label}</span>
                                 ) : (
                                   <>
                                     <span className="text-red-500 font-black text-sm">!</span>
