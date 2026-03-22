@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
-  CalendarCheck, ChevronLeft, CheckCircle2, X, Info, Pencil, Plus, Trash2, LayoutGrid, List,
+  CalendarCheck, ChevronLeft, CheckCircle2, X, Info, Pencil, Plus, Trash2, LayoutGrid, List, PenLine,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -150,6 +150,10 @@ export default function WareMHD() {
             <p className="text-sm text-muted-foreground">Jeden Regalmeter einzeln anklicken</p>
           </div>
           <div className="flex gap-1.5">
+            <Link href="/ladenplan-builder"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-bold border border-amber-300 transition-colors">
+              <PenLine className="w-4 h-4"/> Plan bearbeiten
+            </Link>
             <button onClick={()=>setView("plan")} className={`p-2 rounded-xl ${view==="plan"?"bg-[#1a3a6b] text-white":"bg-secondary text-muted-foreground"}`}><LayoutGrid className="w-4 h-4"/></button>
             <button onClick={()=>setView("liste")} className={`p-2 rounded-xl ${view==="liste"?"bg-[#1a3a6b] text-white":"bg-secondary text-muted-foreground"}`}><List className="w-4 h-4"/></button>
           </div>

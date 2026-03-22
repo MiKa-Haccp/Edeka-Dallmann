@@ -50,6 +50,7 @@ import MHDKontrolle from "./pages/MHDKontrolle";
 import WareBestellungen from "./pages/WareBestellungen";
 import WareEinraeumservice from "./pages/WareEinraeumservice";
 import WareMHD from "./pages/WareMHD";
+import LadenplanBuilder from "./pages/LadenplanBuilder";
 import InfoDocumentation from "./pages/InfoDocumentation";
 import AnnualCleaningPlan from "./pages/AnnualCleaningPlan";
 import Betriebsbegehung from "./pages/Betriebsbegehung";
@@ -98,6 +99,7 @@ function Router() {
       <Route path="/ware-bestellungen" component={WareBestellungen} />
       <Route path="/ware-einraeumservice" component={WareEinraeumservice} />
       <Route path="/ware-mhd" component={WareMHD} />
+      <Route path="/ladenplan-builder" component={LadenplanBuilder} />
       <Route path="/wareneingaenge" component={Wareneingaenge} />
       <Route path="/metzgerei-wareneingaenge" component={MetzgereiWareneingaenge} />
       <Route path="/besprechungsprotokoll" component={TrainingBesprechung} />
