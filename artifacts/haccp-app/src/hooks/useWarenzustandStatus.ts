@@ -271,38 +271,54 @@ export function useMetzgereiReinigungWocheStatus(): TrafficLight {
 
   useEffect(() => {
     if (!selectedMarketId) { setStatus("none"); return; }
+
     const now      = new Date();
     const holidays = getBavarianHolidays(now.getFullYear());
-    if (isClosed(now, holidays)) { setStatus("none"); return; }
-    const hour = now.getHours();
-    if (hour < 6) { setStatus("green"); return; }
+    const pad      = (n: number) => String(n).padStart(2, "0");
+    const toStr    = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    // Letzten Arbeitstag finden (heute wenn Werktag, sonst zurückgehen)
+    const ref = new Date(now);
+    for (let i = 0; i < 7; i++) {
+      if (!isClosed(ref, holidays)) break;
+      ref.setDate(ref.getDate() - 1);
+    }
+    const refStr = toStr(ref);
+
+    // Montag der Woche des Referenztags
+    const monday  = getMondayOfWeek(ref);
+    const monStr  = toStr(monday);
+    const satDate = new Date(monday); satDate.setDate(monday.getDate() + 5);
+    const satStr  = toStr(satDate);
 
     let cancelled = false;
-    fetch(`${BASE}/metz-reinigung?marketId=${selectedMarketId}&von=${todayStr}&bis=${todayStr}`)
+    // Ganze Woche laden um vergangene Tage prüfen zu können
+    fetch(`${BASE}/metz-reinigung?marketId=${selectedMarketId}&von=${monStr}&bis=${satStr}`)
       .then(r => r.json())
-      .then((entries: { itemKey: string }[]) => {
+      .then((entries: { itemKey: string; datum: string }[]) => {
         if (cancelled) return;
-        const done = new Set(entries.map(e => e.itemKey));
-        const doneDaily = METZ_DAILY_KEYS.filter(k => done.has(k)).length;
 
-        // Vergangene Wochentage auf Lücken prüfen
-        const monday = getMondayOfWeek(now);
-        const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
-        let missedPast = false;
-        for (let d = new Date(monday); d < todayStart; d.setDate(d.getDate()+1)) {
+        // Prüfe vergangene Werktage dieser Woche (Mo bis ref-Tag) auf Lücken
+        const refStart = new Date(ref); refStart.setHours(0,0,0,0);
+        let hasMissed = false;
+
+        for (let d = new Date(monday); d <= refStart; d.setDate(d.getDate()+1)) {
           if (isClosed(d, holidays)) continue;
-          const ds = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-          // fetch per day wäre zu viele requests → prüfe nur via heutige Daten nicht möglich
-          // hier vereinfacht: wenn heutige Daten 0 → kein Indikator für Vergangenheit
-          void ds; void missedPast;
+          const ds = toStr(d);
+          const dayDone = new Set(entries.filter(e => e.datum === ds).map(e => e.itemKey));
+          const doneCount = METZ_DAILY_KEYS.filter(k => dayDone.has(k)).length;
+          if (doneCount < METZ_TOTAL_DAILY) { hasMissed = true; break; }
         }
 
-        if (doneDaily >= METZ_TOTAL_DAILY) { setStatus("green"); return; }
-        if (doneDaily > 0)                 { setStatus("yellow"); return; }
-        setStatus(hour >= 8 ? "yellow" : "none");
+        if (!hasMissed) { setStatus("green"); return; }
+
+        // Referenztag selbst geprüft
+        const refDone = new Set(entries.filter(e => e.datum === refStr).map(e => e.itemKey));
+        const refCount = METZ_DAILY_KEYS.filter(k => refDone.has(k)).length;
+
+        if (refCount >= METZ_TOTAL_DAILY) { setStatus("yellow"); return; } // vergangene Tage lückig
+        if (refCount > 0)                 { setStatus("yellow"); return; }
+        setStatus("red");
       })
       .catch(() => { if (!cancelled) setStatus("none"); });
     return () => { cancelled = true; };
