@@ -335,14 +335,9 @@ export default function MetzgereiReinigung() {
     const toPost: {itemKey:string; datum:string}[] = [];
     for(const sec of SECTIONS) {
       for(const item of sec.items) {
-        // Tägliche Items: nur wenn dieses Datum noch nicht abgezeichnet
+        // Nur tägliche Items abzeichnen
         if(item.tTyp && !entryMap.has(`${item.key}__${bulkDate}`)) {
           toPost.push({itemKey:item.key, datum:bulkDate});
-        }
-        // Nur-wöchentliche Items: nur wenn diese Woche noch kein Eintrag
-        if(!item.tTyp && item.wTyp) {
-          const weekSigned = dates.some(d=>entryMap.has(`${item.key}__${toIso(d)}`));
-          if(!weekSigned) toPost.push({itemKey:item.key, datum:bulkDate});
         }
       }
     }
@@ -356,22 +351,15 @@ export default function MetzgereiReinigung() {
     loadWeek();
   };
 
-  // Offene Items pro Tag (alle Bereiche) — für die Schnell-Abzeichen-Leiste
+  // Offene tägliche Items pro Tag (alle Bereiche) — für die Schnell-Abzeichen-Leiste
   const dayOpenCounts = useMemo(()=>{
     const map: Record<string,number> = {};
-    const weekSigned: Record<string,boolean> = {};
-    for(const sec of SECTIONS)
-      for(const item of sec.items)
-        if(!item.tTyp && item.wTyp)
-          weekSigned[item.key] = dates.some(d=>entryMap.has(`${item.key}__${toIso(d)}`));
     for(const d of dates) {
       const iso = toIso(d);
       let n = 0;
       for(const sec of SECTIONS)
-        for(const item of sec.items) {
+        for(const item of sec.items)
           if(item.tTyp && !entryMap.has(`${item.key}__${iso}`)) n++;
-          if(!item.tTyp && item.wTyp && !weekSigned[item.key]) n++;
-        }
       map[iso] = n;
     }
     return map;
@@ -516,22 +504,32 @@ export default function MetzgereiReinigung() {
                             // Für wöchentliche Items: wenn Woche schon abgezeichnet, alle Zellen grün zeigen
                             const wDone  = isWonly && weekSigned;
 
+                            // Wöchentliche Items: nur Anzeige, kein Abzeichnen
+                            if(isWonly) return (
+                              <td key={di} className="px-1 py-1.5 text-center align-middle">
+                                <div className={`w-12 h-9 rounded-lg flex items-center justify-center mx-auto
+                                  ${wDone ? "bg-green-50 border border-green-100" : fut ? "opacity-20" : "bg-gray-50 border border-dashed border-gray-200"}`}>
+                                  {wDone
+                                    ? <Check className="w-3.5 h-3.5 text-green-500"/>
+                                    : <span className="text-gray-300 text-[10px]">—</span>}
+                                </div>
+                              </td>
+                            );
+
                             const cellBg = entry
                               ? "bg-green-100 border border-green-300"
-                              : wDone
-                                ? "bg-green-50 border border-green-100"
-                                : isToday
-                                  ? "bg-blue-50 border border-blue-200 hover:bg-blue-100 cursor-pointer"
-                                  : fut
-                                    ? "bg-gray-50 border border-dashed border-gray-200 opacity-40"
-                                    : "bg-red-50 border border-red-200 hover:bg-red-100 cursor-pointer";
+                              : isToday
+                                ? "bg-blue-50 border border-blue-200 hover:bg-blue-100 cursor-pointer"
+                                : fut
+                                  ? "bg-gray-50 border border-dashed border-gray-200 opacity-40"
+                                  : "bg-red-50 border border-red-200 hover:bg-red-100 cursor-pointer";
 
                             return (
                               <td key={di} className="px-1 py-1.5 text-center align-middle">
                                 <button
                                   disabled={fut||!!entry}
                                   onClick={()=>!fut&&!entry&&setSigning({itemKey:item.key,datum:iso,label:item.label})}
-                                  className={`w-12 h-9 rounded-lg text-xs font-bold transition-all ${cellBg} ${entry||wDone?"cursor-default":fut?"cursor-not-allowed":"active:scale-95"}`}
+                                  className={`w-12 h-9 rounded-lg text-xs font-bold transition-all ${cellBg} ${entry?"cursor-default":fut?"cursor-not-allowed":"active:scale-95"}`}
                                   title={entry?`${entry.kuerzel} · ${entry.datum}`:undefined}
                                 >
                                   {entry ? (
@@ -541,8 +539,6 @@ export default function MetzgereiReinigung() {
                                       {isAdmin&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}}
                                         className="text-[8px] text-red-400 hover:text-red-600 hidden group-hover:block cursor-pointer">✕</span>}
                                     </span>
-                                  ) : wDone ? (
-                                    <span className="text-green-400 text-[10px]">✓W</span>
                                   ) : fut ? null : (
                                     <span className="text-gray-300">+</span>
                                   )}
