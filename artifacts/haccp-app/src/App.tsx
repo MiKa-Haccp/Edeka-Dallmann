@@ -51,6 +51,7 @@ import WareBestellungen from "./pages/WareBestellungen";
 import WareEinraeumservice from "./pages/WareEinraeumservice";
 import WareMHD from "./pages/WareMHD";
 import LadenplanBuilder from "./pages/LadenplanBuilder";
+import MetzgereiReinigung from "./pages/MetzgereiReinigung";
 import InfoDocumentation from "./pages/InfoDocumentation";
 import AnnualCleaningPlan from "./pages/AnnualCleaningPlan";
 import Betriebsbegehung from "./pages/Betriebsbegehung";
@@ -102,6 +103,7 @@ function Router() {
       <Route path="/ladenplan-builder" component={LadenplanBuilder} />
       <Route path="/wareneingaenge" component={Wareneingaenge} />
       <Route path="/metzgerei-wareneingaenge" component={MetzgereiWareneingaenge} />
+      <Route path="/reinigungsplan-metzgerei" component={MetzgereiReinigung} />
       <Route path="/besprechungsprotokoll" component={TrainingBesprechung} />
       <Route path="/anti-vektor-zugang" component={AntiVektorZugang} />
       <Route path="/gesundheitszeugnisse" component={Gesundheitszeugnisse} />

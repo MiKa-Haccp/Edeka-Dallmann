@@ -32,6 +32,7 @@ import mhdKontrolleRouter from "./mhdKontrolle";
 import wareBestellungenRouter from "./wareBestellungen";
 import wareEinraeumserviceRouter from "./wareEinraeumservice";
 import wareMhdRouter from "./wareMhd";
+import metzReinigungRouter from "./metzReinigung";
 
 const router: IRouter = Router();
 
@@ -68,5 +69,6 @@ router.use(mhdKontrolleRouter);
 router.use(wareBestellungenRouter);
 router.use(wareEinraeumserviceRouter);
 router.use(wareMhdRouter);
+router.use(metzReinigungRouter);
 
 export default router;

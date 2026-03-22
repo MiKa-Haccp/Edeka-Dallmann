@@ -28,3 +28,4 @@ export * from "./mhdKontrolle";
 export * from "./wareBestellungen";
 export * from "./wareEinraeumservice";
 export * from "./wareMhd";
+export * from "./metzReinigung";

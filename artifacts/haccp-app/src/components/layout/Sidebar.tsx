@@ -54,7 +54,7 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
   return (
     <div className="flex flex-col gap-0.5 py-1">
       {sections.filter((s) => !s.number.includes("_")).map((section) => {
-        const href = section.number === "1.1" ? "/responsibilities" : section.number === "1.2" ? "/mitarbeiter-liste" : section.number === "1.3" ? "/info-documentation" : section.number === "1.4" ? "/training-records" : section.number === "1.5" ? "/annual-cleaning-plan" : section.number === "1.6" ? "/betriebsbegehung" : section.number === "1.7" ? "/hinweisschild-gesperrte-ware" : section.number === "1.8" ? "/produktfehlermeldung" : section.number === "1.9" ? "/probeentnahme" : section.number === "1.10" ? "/anti-vektor-zugang" : section.number === "1.11" ? "/bescheinigungen" : section.number === "1.12" ? "/kontrollberichte" : section.number === "2.1" ? "/warencheck-og" : section.number === "2.2" ? "/reinigung-taeglich" : section.number === "2.3" ? "/carrier-portal" : section.number === "2.5" ? "/wareneingaenge" : section.number === "3.1" ? "/metzgerei-wareneingaenge" : `/section/${section.id}`;
+        const href = section.number === "1.1" ? "/responsibilities" : section.number === "1.2" ? "/mitarbeiter-liste" : section.number === "1.3" ? "/info-documentation" : section.number === "1.4" ? "/training-records" : section.number === "1.5" ? "/annual-cleaning-plan" : section.number === "1.6" ? "/betriebsbegehung" : section.number === "1.7" ? "/hinweisschild-gesperrte-ware" : section.number === "1.8" ? "/produktfehlermeldung" : section.number === "1.9" ? "/probeentnahme" : section.number === "1.10" ? "/anti-vektor-zugang" : section.number === "1.11" ? "/bescheinigungen" : section.number === "1.12" ? "/kontrollberichte" : section.number === "2.1" ? "/warencheck-og" : section.number === "2.2" ? "/reinigung-taeglich" : section.number === "2.3" ? "/carrier-portal" : section.number === "2.5" ? "/wareneingaenge" : section.number === "3.1" ? "/metzgerei-wareneingaenge" : section.number === "3.2" ? "/reinigungsplan-metzgerei" : `/section/${section.id}`;
         const isActive = location === href;
         const trafficStatus: TrafficLight = section.number === "2.1" ? ogStatus : section.number === "2.2" ? reinigungStatus : section.number === "2.5" ? wareneingaengeStatus : section.number === "3.1" ? metzgereiStatus : "none";
         return (
@@ -88,7 +88,7 @@ const SIDEBAR_OPEN_PATHS = [
   "/hinweisschild-gesperrte-ware", "/produktfehlermeldung", "/probeentnahme",
   "/anti-vektor-zugang", "/bescheinigungen", "/kontrollberichte",
   "/warencheck-og", "/reinigung-taeglich", "/carrier-portal",
-  "/wareneingaenge", "/metzgerei-wareneingaenge",
+  "/wareneingaenge", "/metzgerei-wareneingaenge", "/reinigungsplan-metzgerei",
   "/section/", "/category/", "/we-", "/besprechungsprotokoll",
   "/gesundheitszeugnisse", "/mitarbeiterverwaltung", "/admin/",
 ];
