@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, varchar, text, numeric, date, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, varchar, text, numeric, date, timestamp, boolean } from "drizzle-orm/pg-core";
 
 export const shelfMarkersTable = pgTable("shelf_markers", {
   id:                serial("id").primaryKey(),
@@ -6,6 +6,8 @@ export const shelfMarkersTable = pgTable("shelf_markers", {
   label:             varchar("label", { length: 100 }).notNull(),
   x:                 numeric("x", { precision: 7, scale: 3 }).notNull(),
   y:                 numeric("y", { precision: 7, scale: 3 }).notNull(),
+  size:              varchar("size", { length: 10 }).default("md"),
+  rotated:           boolean("rotated").default(false),
   sortiment:         text("sortiment"),
   reduzierungsRegel: text("reduzierungs_regel"),
   aktionsHinweis:    text("aktions_hinweis"),

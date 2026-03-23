@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Link } from "wouter";
 import {
   ChevronLeft, ZoomIn, ZoomOut, Maximize2, MapPin,
-  Move, Plus, X, Trash2, Save, Info, Pencil,
+  Move, Plus, X, Trash2, Save, Info, Pencil, RotateCcw, MoveIcon,
 } from "lucide-react";
 import { useAppStore } from "@/store/use-app-store";
 
@@ -17,6 +17,8 @@ interface Marker {
   label: string;
   x: string;
   y: string;
+  size: string | null;
+  rotated: boolean | null;
   sortiment: string | null;
   reduzierungsRegel: string | null;
   aktionsHinweis: string | null;
@@ -32,24 +34,37 @@ const EMPTY_FORM = {
   aktionsHinweis: "",
   kontrollIntervall: 7,
   naechsteKontrolle: "",
+  size: "md",
+  rotated: false,
 };
 
-// ─── Status-Ampel ────────────────────────────────────────────────────────────
-function markerStatus(m: Marker): "neu" | "ok" | "bald" | "faellig" {
+// ─── Status-Ampel ─────────────────────────────────────────────────────────────
+type St = "neu" | "ok" | "bald" | "faellig";
+function markerStatus(m: Marker): St {
   if (!m.naechsteKontrolle) return "neu";
-  const today = new Date(); today.setHours(0,0,0,0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   const next  = new Date(m.naechsteKontrolle + "T00:00:00");
-  const diffD = Math.round((next.getTime() - today.getTime()) / 86400000);
-  if (diffD < 0)  return "faellig";
-  if (diffD <= 2) return "bald";
+  const d     = Math.round((next.getTime() - today.getTime()) / 86400000);
+  if (d < 0)  return "faellig";
+  if (d <= 2) return "bald";
   return "ok";
 }
+const ST: Record<St, { dot: string; btn: string; ring: string; label: string }> = {
+  neu:     { dot: "bg-gray-400",  btn: "border-gray-300 bg-white/95 text-gray-700",       ring: "ring-gray-200",  label: "Neu" },
+  ok:      { dot: "bg-green-500", btn: "border-green-300 bg-green-50/95 text-green-800",  ring: "ring-green-200", label: "OK" },
+  bald:    { dot: "bg-amber-400", btn: "border-amber-300 bg-amber-50/95 text-amber-800",  ring: "ring-amber-200", label: "Bald" },
+  faellig: { dot: "bg-red-500",   btn: "border-red-300 bg-red-50/95 text-red-800",        ring: "ring-red-200",   label: "Ueberfaellig" },
+};
 
-const STATUS_STYLE = {
-  neu:     { dot: "bg-gray-400",  ring: "ring-gray-300",   btn: "border-gray-300 bg-white text-gray-700",       label: "Neu" },
-  ok:      { dot: "bg-green-500", ring: "ring-green-300",  btn: "border-green-300 bg-green-50 text-green-800",  label: "OK" },
-  bald:    { dot: "bg-amber-400", ring: "ring-amber-300",  btn: "border-amber-300 bg-amber-50 text-amber-800",  label: "Bald" },
-  faellig: { dot: "bg-red-500",   ring: "ring-red-300",    btn: "border-red-300 bg-red-50 text-red-800",        label: "Ueberfaellig" },
+const SIZE_CLASSES: Record<string, string> = {
+  sm: "px-1.5 py-0.5 text-[9px] gap-0.5 rounded-md",
+  md: "px-2 py-1 text-xs gap-1 rounded-lg",
+  lg: "px-3 py-1.5 text-sm gap-1.5 rounded-xl",
+};
+const DOT_CLASSES: Record<string, string> = {
+  sm: "w-1.5 h-1.5",
+  md: "w-2 h-2",
+  lg: "w-2.5 h-2.5",
 };
 
 const INTERVALL_OPTIONS = [
@@ -64,11 +79,11 @@ const INTERVALL_OPTIONS = [
 function ZoomControls() {
   const { zoomIn, zoomOut, resetTransform } = useControls();
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-col gap-1">
       {[
-        { icon: ZoomIn,    fn: () => zoomIn(0.35),        title: "Vergrossern" },
-        { icon: ZoomOut,   fn: () => zoomOut(0.35),       title: "Verkleinern" },
-        { icon: Maximize2, fn: () => resetTransform(),    title: "Zurucksetzen" },
+        { icon: ZoomIn,    fn: () => zoomIn(0.4),     title: "Vergrossern" },
+        { icon: ZoomOut,   fn: () => zoomOut(0.4),    title: "Verkleinern" },
+        { icon: Maximize2, fn: () => resetTransform(), title: "Zurucksetzen" },
       ].map(({ icon: Icon, fn, title }) => (
         <button key={title} onClick={fn} title={title}
           className="w-8 h-8 rounded-lg bg-white border border-border/60 hover:bg-secondary flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shadow-sm">
@@ -80,38 +95,55 @@ function ZoomControls() {
 }
 
 // ─── Marker-Button auf dem Plan ───────────────────────────────────────────────
-function MarkerPin({ marker, onEdit, isAdmin }: {
+function MarkerPin({
+  marker, onEdit, moveMode,
+  onPointerDown, onPointerMove, onPointerUp,
+  isDragging,
+}: {
   marker: Marker;
   onEdit: (m: Marker) => void;
-  isAdmin: boolean;
+  moveMode: boolean;
+  onPointerDown: (e: React.PointerEvent, m: Marker) => void;
+  onPointerMove: (e: React.PointerEvent, m: Marker) => void;
+  onPointerUp:   (e: React.PointerEvent, m: Marker) => void;
+  isDragging: boolean;
 }) {
-  const st = markerStatus(marker);
-  const s  = STATUS_STYLE[st];
+  const st  = markerStatus(marker);
+  const s   = ST[st];
+  const sz  = marker.size || "md";
+  const rot = marker.rotated ?? false;
+
   return (
-    <button
-      onClick={(e) => { e.stopPropagation(); onEdit(marker); }}
-      title={`${marker.label}${marker.sortiment ? " — " + marker.sortiment : ""}`}
+    <div
+      onPointerDown={e => onPointerDown(e, marker)}
+      onPointerMove={e => onPointerMove(e, marker)}
+      onPointerUp={e => onPointerUp(e, marker)}
+      onClick={e => { if (!moveMode) { e.stopPropagation(); onEdit(marker); } }}
+      title={moveMode ? "Ziehen zum Verschieben" : marker.label}
       style={{
         position: "absolute",
         left: `${marker.x}%`,
         top:  `${marker.y}%`,
         transform: "translate(-50%, -50%)",
-        zIndex: 10,
+        zIndex: isDragging ? 50 : 10,
         pointerEvents: "auto",
+        cursor: moveMode ? (isDragging ? "grabbing" : "grab") : "pointer",
+        touchAction: "none",
       }}
-      className={`
-        group flex items-center gap-1 px-2 py-1 rounded-lg border-2 shadow-md
-        text-xs font-bold whitespace-nowrap transition-all duration-150
-        hover:scale-110 hover:shadow-lg active:scale-95
-        ${s.btn} ring-2 ${s.ring}
-      `}
     >
-      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot} ${st === "faellig" ? "animate-pulse" : ""}`} />
-      <span className="max-w-[100px] truncate">{marker.label}</span>
-      {isAdmin && (
-        <Pencil className="w-2.5 h-2.5 opacity-0 group-hover:opacity-60 flex-shrink-0 transition-opacity" />
-      )}
-    </button>
+      <div className={`
+        flex items-center font-bold border-2 shadow-md transition-shadow whitespace-nowrap select-none
+        ring-2 ${s.ring} ${s.btn} ${SIZE_CLASSES[sz] ?? SIZE_CLASSES.md}
+        ${isDragging ? "shadow-xl scale-110 opacity-90" : "hover:shadow-lg hover:scale-105"}
+        ${rot ? "" : ""}
+      `}
+        style={rot ? { writingMode: "vertical-rl", textOrientation: "mixed" } : {}}
+      >
+        <span className={`rounded-full flex-shrink-0 ${DOT_CLASSES[sz] ?? DOT_CLASSES.md} ${s.dot} ${st === "faellig" ? "animate-pulse" : ""}`} />
+        <span>{marker.label}</span>
+        {moveMode && <MoveIcon className="w-2.5 h-2.5 opacity-40 flex-shrink-0" />}
+      </div>
+    </div>
   );
 }
 
@@ -132,7 +164,6 @@ function MarkerModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-border/60 overflow-hidden">
 
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 bg-[#1a3a6b]/5">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-[#1a3a6b]" />
@@ -145,106 +176,112 @@ function MarkerModal({
           </button>
         </div>
 
-        {/* Felder */}
-        <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
+        <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
 
           {/* Bezeichnung */}
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
               Bezeichnung <span className="text-red-500">*</span>
             </label>
-            <input
-              autoFocus
-              value={form.label}
+            <input autoFocus value={form.label}
               onChange={e => setForm({ ...form, label: e.target.value })}
               placeholder='z.B. "Chips-Regal Mitte"'
-              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
-            />
+              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+          </div>
+
+          {/* Darstellung */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Größe */}
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Groesse</label>
+              <div className="flex gap-1">
+                {(["sm","md","lg"] as const).map(sz => (
+                  <button key={sz} onClick={() => setForm({ ...form, size: sz })}
+                    className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors
+                      ${form.size === sz ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border text-muted-foreground hover:bg-secondary"}`}>
+                    {sz === "sm" ? "S" : sz === "md" ? "M" : "L"}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Ausrichtung */}
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Ausrichtung</label>
+              <div className="flex gap-1">
+                <button onClick={() => setForm({ ...form, rotated: false })}
+                  className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors flex items-center justify-center gap-1
+                    ${!form.rotated ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border text-muted-foreground hover:bg-secondary"}`}>
+                  <span>ABC</span>
+                </button>
+                <button onClick={() => setForm({ ...form, rotated: true })}
+                  className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors flex items-center justify-center
+                    ${form.rotated ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border text-muted-foreground hover:bg-secondary"}`}>
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Vorschau */}
+          <div className="flex items-center gap-3 py-2">
+            <span className="text-xs text-muted-foreground">Vorschau:</span>
+            <div className={`
+              inline-flex items-center font-bold border-2 border-gray-300 bg-white shadow-sm
+              ${SIZE_CLASSES[form.size] ?? SIZE_CLASSES.md}
+            `}
+              style={form.rotated ? { writingMode: "vertical-rl", textOrientation: "mixed" } : {}}
+            >
+              <span className={`rounded-full bg-gray-400 flex-shrink-0 ${DOT_CLASSES[form.size] ?? DOT_CLASSES.md}`} />
+              <span className="text-gray-700">{form.label || "Bezeichnung"}</span>
+            </div>
           </div>
 
           {/* Sortiment */}
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Sortiment</label>
-            <input
-              value={form.sortiment}
+            <input value={form.sortiment}
               onChange={e => setForm({ ...form, sortiment: e.target.value })}
               placeholder='z.B. "Chips, Nuesse, Snacks"'
-              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
-            />
+              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
           </div>
 
           {/* Reduzierungsregel */}
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Reduzierungsregel</label>
-            <input
-              value={form.reduzierungsRegel}
+            <input value={form.reduzierungsRegel}
               onChange={e => setForm({ ...form, reduzierungsRegel: e.target.value })}
-              placeholder='z.B. "2 Wochen vor Ablauf reduzieren"'
-              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
-            />
+              placeholder='z.B. "2 Wochen vor Ablauf"'
+              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
           </div>
 
           {/* Aktionshinweis */}
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Aktionshinweis</label>
-            <input
-              value={form.aktionsHinweis}
+            <input value={form.aktionsHinweis}
               onChange={e => setForm({ ...form, aktionsHinweis: e.target.value })}
               placeholder='z.B. "Knick ins Etikett"'
-              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
-            />
+              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {/* Kontrollintervall */}
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Kontrollintervall</label>
-              <select
-                value={form.kontrollIntervall}
+              <select value={form.kontrollIntervall}
                 onChange={e => setForm({ ...form, kontrollIntervall: Number(e.target.value) })}
-                className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
-              >
-                {INTERVALL_OPTIONS.map(o => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
+                className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
+                {INTERVALL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
-
-            {/* Nächste Kontrolle */}
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Naechste Kontrolle</label>
-              <input
-                type="date"
-                value={form.naechsteKontrolle}
+              <input type="date" value={form.naechsteKontrolle}
                 onChange={e => setForm({ ...form, naechsteKontrolle: e.target.value })}
-                className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
-              />
+                className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
             </div>
           </div>
-
-          {/* Status-Vorschau */}
-          {form.naechsteKontrolle && (() => {
-            const preview: Marker = {
-              ...(marker ?? {} as Marker),
-              ...form,
-              x: "0", y: "0",
-              naechsteKontrolle: form.naechsteKontrolle || null,
-              sortiment: form.sortiment || null,
-              reduzierungsRegel: form.reduzierungsRegel || null,
-              aktionsHinweis: form.aktionsHinweis || null,
-            };
-            const st = markerStatus(preview);
-            const s  = STATUS_STYLE[st];
-            return (
-              <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold ${s.btn}`}>
-                <span className={`w-2.5 h-2.5 rounded-full ${s.dot}`} />
-                Status: {s.label}
-              </div>
-            );
-          })()}
         </div>
 
-        {/* Footer */}
         <div className="flex items-center gap-3 px-5 py-4 border-t border-border/60 bg-secondary/20">
           {mode === "edit" && onDelete && (
             <button onClick={onDelete}
@@ -273,11 +310,17 @@ export default function MarktPlan() {
   const { adminSession, selectedMarketId } = useAppStore();
   const isAdmin = !!adminSession;
 
-  const [markers, setMarkers] = useState<Marker[]>([]);
+  const [markers, setMarkers]     = useState<Marker[]>([]);
   const [hotspotMode, setHotspotMode] = useState(false);
-  const [modal, setModal] = useState<null | { mode: "new" | "edit"; marker?: Marker; x?: number; y?: number }>(null);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
+  const [moveMode, setMoveMode]   = useState(false);
+  const [modal, setModal]         = useState<null | { mode: "new" | "edit"; marker?: Marker; x?: number; y?: number }>(null);
+  const [form, setForm]           = useState(EMPTY_FORM);
+  const [saving, setSaving]       = useState(false);
+
+  // Drag-State
+  const dragId  = useRef<number | null>(null);
+  const imgRef  = useRef<HTMLDivElement>(null);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
 
   // Marker laden
   const load = useCallback(async () => {
@@ -290,17 +333,55 @@ export default function MarktPlan() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Klick auf Bild im Hotspot-Modus → neuen Marker platzieren
+  // Nur eines der Modi aktiv
+  const activateHotspot = () => { setHotspotMode(true);  setMoveMode(false); };
+  const activateMove    = () => { setMoveMode(true);    setHotspotMode(false); };
+  const deactivateModes = () => { setHotspotMode(false); setMoveMode(false); };
+
+  // Klick auf Bild (im Hotspot-Modus) → neuen Marker
   const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!hotspotMode || !isAdmin) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const y = ((e.clientY - rect.top)  / rect.height) * 100;
     setForm(EMPTY_FORM);
     setModal({ mode: "new", x, y });
   }, [hotspotMode, isAdmin]);
 
-  // Marker speichern (neu oder aktualisieren)
+  // ── Drag-Handlers ────────────────────────────────────────────────────────
+  const handlePointerDown = useCallback((e: React.PointerEvent, m: Marker) => {
+    if (!moveMode || !isAdmin) return;
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    dragId.current = m.id;
+    setDraggingId(m.id);
+  }, [moveMode, isAdmin]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent, m: Marker) => {
+    if (!moveMode || dragId.current !== m.id || !imgRef.current) return;
+    e.stopPropagation();
+    const rect = imgRef.current.getBoundingClientRect();
+    const x = Math.max(0.5, Math.min(99.5, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(0.5, Math.min(99.5, ((e.clientY - rect.top)  / rect.height) * 100));
+    setMarkers(prev => prev.map(mk =>
+      mk.id === m.id ? { ...mk, x: x.toFixed(3), y: y.toFixed(3) } : mk
+    ));
+  }, [moveMode]);
+
+  const handlePointerUp = useCallback(async (e: React.PointerEvent, m: Marker) => {
+    if (dragId.current !== m.id) return;
+    dragId.current = null;
+    setDraggingId(null);
+    const updated = markers.find(mk => mk.id === m.id);
+    if (!updated) return;
+    await fetch(`${BASE}/shelf-markers/${m.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ x: updated.x, y: updated.y }),
+    });
+  }, [markers]);
+
+  // Speichern (neu / edit)
   const handleSave = async () => {
     if (!form.label.trim() || !selectedMarketId) return;
     setSaving(true);
@@ -312,8 +393,8 @@ export default function MarktPlan() {
           body: JSON.stringify({
             marketId: selectedMarketId,
             label: form.label.trim(),
-            x: modal.x?.toFixed(3),
-            y: modal.y?.toFixed(3),
+            x: modal.x?.toFixed(3), y: modal.y?.toFixed(3),
+            size: form.size, rotated: form.rotated,
             sortiment: form.sortiment || null,
             reduzierungsRegel: form.reduzierungsRegel || null,
             aktionsHinweis: form.aktionsHinweis || null,
@@ -327,6 +408,7 @@ export default function MarktPlan() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             label: form.label.trim(),
+            size: form.size, rotated: form.rotated,
             sortiment: form.sortiment || null,
             reduzierungsRegel: form.reduzierungsRegel || null,
             aktionsHinweis: form.aktionsHinweis || null,
@@ -337,21 +419,16 @@ export default function MarktPlan() {
       }
       await load();
       setModal(null);
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
-  // Marker löschen
   const handleDelete = async () => {
-    if (!modal?.marker) return;
-    if (!confirm(`"${modal.marker.label}" wirklich loeschen?`)) return;
+    if (!modal?.marker || !confirm(`"${modal.marker.label}" wirklich loeschen?`)) return;
     await fetch(`${BASE}/shelf-markers/${modal.marker.id}`, { method: "DELETE" });
     await load();
     setModal(null);
   };
 
-  // Edit öffnen
   const openEdit = (m: Marker) => {
     setForm({
       label: m.label,
@@ -360,9 +437,13 @@ export default function MarktPlan() {
       aktionsHinweis: m.aktionsHinweis ?? "",
       kontrollIntervall: m.kontrollIntervall ?? 7,
       naechsteKontrolle: m.naechsteKontrolle ?? "",
+      size: m.size ?? "md",
+      rotated: m.rotated ?? false,
     });
     setModal({ mode: "edit", marker: m });
   };
+
+  const panningDisabled = hotspotMode || moveMode;
 
   // Legende
   const counts = { ok: 0, bald: 0, faellig: 0, neu: 0 };
@@ -370,7 +451,7 @@ export default function MarktPlan() {
 
   return (
     <AppLayout>
-      <div className="space-y-4">
+      <div className="space-y-3">
 
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -381,12 +462,10 @@ export default function MarktPlan() {
             <h1 className="text-2xl font-bold">Interaktiver Marktplan</h1>
             <p className="text-sm text-muted-foreground">MHD-Kontroll-Regalmeter · EDEKA DALLMANN Leeder</p>
           </div>
-          {/* Legende */}
           <div className="hidden sm:flex items-center gap-3 text-xs font-bold">
             {counts.faellig > 0 && <span className="flex items-center gap-1 text-red-700"><span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"/>{counts.faellig} Ueberfaellig</span>}
             {counts.bald    > 0 && <span className="flex items-center gap-1 text-amber-700"><span className="w-2 h-2 rounded-full bg-amber-400"/>{counts.bald} Bald</span>}
             {counts.ok      > 0 && <span className="flex items-center gap-1 text-green-700"><span className="w-2 h-2 rounded-full bg-green-500"/>{counts.ok} OK</span>}
-            {counts.neu     > 0 && <span className="flex items-center gap-1 text-gray-500"><span className="w-2 h-2 rounded-full bg-gray-400"/>{counts.neu} Neu</span>}
           </div>
         </div>
 
@@ -394,30 +473,59 @@ export default function MarktPlan() {
         <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
 
           {/* Toolbar */}
-          <div className="flex items-center gap-3 px-4 py-2.5 border-b border-border/60 bg-secondary/30 flex-wrap">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Move className="w-3.5 h-3.5" />
-              <span>Ziehen / Pinch / Scroll zum Navigieren</span>
-            </div>
-            <div className="flex-1" />
-            {isAdmin && (
-              <button
-                onClick={() => setHotspotMode(v => !v)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all
-                  ${hotspotMode
-                    ? "bg-[#1a3a6b] text-white border-[#1a3a6b] shadow-md"
-                    : "bg-white text-[#1a3a6b] border-[#1a3a6b]/30 hover:bg-[#1a3a6b]/5"}`}>
-                <Plus className="w-3.5 h-3.5" />
-                {hotspotMode ? "Auf Karte klicken zum Platzieren" : "Marker hinzufuegen"}
-              </button>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/60 bg-secondary/30 flex-wrap">
+
+            {!isAdmin && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Move className="w-3.5 h-3.5" />
+                <span>Ziehen / Scroll zum Navigieren</span>
+              </div>
             )}
+
+            {isAdmin && (
+              <>
+                {/* Modus-Buttons */}
+                <button
+                  onClick={panningDisabled && !moveMode && !hotspotMode ? deactivateModes : deactivateModes}
+                  title="Karte frei navigieren"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all
+                    ${!hotspotMode && !moveMode
+                      ? "bg-[#1a3a6b] text-white border-[#1a3a6b]"
+                      : "bg-white text-muted-foreground border-border hover:bg-secondary"}`}>
+                  <Move className="w-3.5 h-3.5" /> Navigieren
+                </button>
+
+                <button
+                  onClick={hotspotMode ? deactivateModes : activateHotspot}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all
+                    ${hotspotMode
+                      ? "bg-amber-500 text-white border-amber-500 shadow-md"
+                      : "bg-white text-amber-700 border-amber-300 hover:bg-amber-50"}`}>
+                  <Plus className="w-3.5 h-3.5" />
+                  {hotspotMode ? "Auf Plan klicken..." : "Marker setzen"}
+                </button>
+
+                <button
+                  onClick={moveMode ? deactivateModes : activateMove}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all
+                    ${moveMode
+                      ? "bg-violet-600 text-white border-violet-600 shadow-md"
+                      : "bg-white text-violet-700 border-violet-300 hover:bg-violet-50"}`}>
+                  <MoveIcon className="w-3.5 h-3.5" />
+                  {moveMode ? "Marker ziehen..." : "Marker verschieben"}
+                </button>
+              </>
+            )}
+
+            <div className="flex-1" />
+            <span className="text-xs text-muted-foreground">{markers.length} Marker</span>
           </div>
 
           {/* Zoom/Pan */}
           <TransformWrapper
-            initialScale={1} minScale={0.3} maxScale={8}
+            initialScale={1} minScale={0.2} maxScale={10}
             limitToBounds={false}
-            panning={{ disabled: hotspotMode }}
+            panning={{ disabled: panningDisabled }}
             wheel={{ step: 0.08 }}
             doubleClick={{ disabled: false, step: 0.7 }}
           >
@@ -428,13 +536,14 @@ export default function MarktPlan() {
                 </div>
                 <div
                   className={`bg-[#f0f0eb] overflow-hidden select-none
-                    ${hotspotMode ? "cursor-crosshair" : "cursor-grab active:cursor-grabbing"}`}
-                  style={{ height: "calc(100vh - 230px)", minHeight: 400 }}>
+                    ${hotspotMode ? "cursor-crosshair" : moveMode ? "cursor-default" : "cursor-grab active:cursor-grabbing"}`}
+                  style={{ height: "calc(100vh - 220px)", minHeight: 420 }}>
                   <TransformComponent
                     wrapperStyle={{ width: "100%", height: "100%" }}
                     contentStyle={{ width: "100%", height: "100%" }}>
-                    {/* Wrapper relativ zum Bild — Marker werden darin positioniert */}
+                    {/* Bild-Container — Marker werden relativ dazu positioniert */}
                     <div
+                      ref={imgRef}
                       style={{ position: "relative", display: "inline-block", width: "100%", lineHeight: 0 }}
                       onClick={handleImageClick}
                     >
@@ -444,9 +553,17 @@ export default function MarktPlan() {
                         draggable={false}
                         style={{ display: "block", width: "100%", height: "auto", userSelect: "none" }}
                       />
-                      {/* Marker-Buttons */}
                       {markers.map(m => (
-                        <MarkerPin key={m.id} marker={m} onEdit={openEdit} isAdmin={isAdmin} />
+                        <MarkerPin
+                          key={m.id}
+                          marker={m}
+                          onEdit={openEdit}
+                          moveMode={moveMode}
+                          onPointerDown={handlePointerDown}
+                          onPointerMove={handlePointerMove}
+                          onPointerUp={handlePointerUp}
+                          isDragging={draggingId === m.id}
+                        />
                       ))}
                     </div>
                   </TransformComponent>
@@ -456,22 +573,13 @@ export default function MarktPlan() {
           </TransformWrapper>
         </div>
 
-        {/* Info wenn keine Marker vorhanden */}
+        {/* Hinweis-Banner */}
         {markers.length === 0 && isAdmin && (
           <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-2xl text-sm text-blue-800">
             <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold mb-0.5">Noch keine Marker gesetzt</p>
-              <p className="text-xs text-blue-700">
-                Klicke auf "Marker hinzufuegen" oben rechts und dann auf eine Stelle im Plan um einen Regalmeter zu markieren.
-              </p>
-            </div>
-          </div>
-        )}
-        {markers.length === 0 && !isAdmin && (
-          <div className="flex items-start gap-3 p-4 bg-secondary/50 border border-border/60 rounded-2xl text-sm text-muted-foreground">
-            <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <p>Noch keine Regalmeter-Marker vorhanden. Ein Admin kann diese im Hotspot-Modus setzen.</p>
+            <p className="text-xs">
+              Noch keine Marker. Klicke auf <strong>Marker setzen</strong> und dann auf eine Stelle im Plan.
+            </p>
           </div>
         )}
       </div>
@@ -479,10 +587,8 @@ export default function MarktPlan() {
       {/* Modal */}
       {modal && (
         <MarkerModal
-          mode={modal.mode}
-          marker={modal.marker}
-          form={form}
-          setForm={setForm}
+          mode={modal.mode} marker={modal.marker}
+          form={form} setForm={setForm}
           onSave={handleSave}
           onDelete={modal.mode === "edit" ? handleDelete : undefined}
           onClose={() => setModal(null)}
