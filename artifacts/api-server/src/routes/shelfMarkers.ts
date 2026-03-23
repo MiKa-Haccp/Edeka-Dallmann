@@ -24,16 +24,19 @@ router.post("/shelf-markers", async (req, res) => {
     res.status(400).json({ error: "marketId, label, x, y erforderlich" }); return;
   }
   const [row] = await db.insert(shelfMarkersTable).values({
-    marketId, label, x: String(x), y: String(y),
+    marketId,
+    label,
+    x: String(x),
+    y: String(y),
     size: size || "md",
     rotated: rotated ?? false,
-    sortiment: sortiment || null,
-    reduzierungsRegel: reduzierungsRegel || null,
-    reduzierungsDatum: reduzierungsDatum || null,
-    aktionsHinweis: aktionsHinweis || null,
-    knickDatum: knickDatum || null,
-    kontrollIntervall: kontrollIntervall ?? 7,
-    naechsteKontrolle: naechsteKontrolle || null,
+    sortiment:          sortiment          || null,
+    reduzierungsRegel:  reduzierungsRegel  || null,
+    reduzierungsDatum:  reduzierungsDatum  || null,
+    aktionsHinweis:     aktionsHinweis     || null,
+    knickDatum:         knickDatum         || null,
+    kontrollIntervall:  kontrollIntervall  ?? 7,
+    naechsteKontrolle:  naechsteKontrolle  || null,
   }).returning();
   res.status(201).json(row);
 });
@@ -42,31 +45,26 @@ router.patch("/shelf-markers/:id", async (req, res) => {
   const id = Number(req.params.id);
   if (!id) { res.status(400).json({ error: "Ungueltige ID" }); return; }
 
-  const allowed = [
-    "label","x","y","size","rotated","sortiment",
-    "reduzierungsRegel","reduzierungsDatum",
-    "aktionsHinweis","knickDatum",
-    "kontrollIntervall","naechsteKontrolle",
-    "letzteKontrolleAt","letzteKontrolleVon",
-  ];
-  const dbMap: Record<string, string> = {
-    reduzierungsRegel:  "reduzierungs_regel",
-    reduzierungsDatum:  "reduzierungs_datum",
-    aktionsHinweis:     "aktions_hinweis",
-    knickDatum:         "knick_datum",
-    kontrollIntervall:  "kontroll_intervall",
-    naechsteKontrolle:  "naechste_kontrolle",
-    letzteKontrolleAt:  "letzte_kontrolle_at",
-    letzteKontrolleVon: "letzte_kontrolle_von",
-  };
+  const b = req.body;
+  const updates: Partial<typeof shelfMarkersTable.$inferInsert> = {};
 
-  const updates: Record<string, unknown> = {};
-  for (const key of allowed) {
-    if (req.body[key] !== undefined) {
-      const dbKey = dbMap[key] ?? key;
-      updates[dbKey] = req.body[key] === "" ? null : req.body[key];
-      if (key === "x" || key === "y") updates[dbKey] = String(req.body[key]);
-    }
+  if (b.label              !== undefined) updates.label             = b.label             || null;
+  if (b.x                  !== undefined) updates.x                 = String(b.x);
+  if (b.y                  !== undefined) updates.y                 = String(b.y);
+  if (b.size               !== undefined) updates.size              = b.size              || null;
+  if (b.rotated            !== undefined) updates.rotated           = b.rotated;
+  if (b.sortiment          !== undefined) updates.sortiment         = b.sortiment         || null;
+  if (b.reduzierungsRegel  !== undefined) updates.reduzierungsRegel = b.reduzierungsRegel || null;
+  if (b.reduzierungsDatum  !== undefined) updates.reduzierungsDatum = b.reduzierungsDatum || null;
+  if (b.aktionsHinweis     !== undefined) updates.aktionsHinweis    = b.aktionsHinweis    || null;
+  if (b.knickDatum         !== undefined) updates.knickDatum        = b.knickDatum        || null;
+  if (b.kontrollIntervall  !== undefined) updates.kontrollIntervall = b.kontrollIntervall;
+  if (b.naechsteKontrolle  !== undefined) updates.naechsteKontrolle = b.naechsteKontrolle || null;
+  if (b.letzteKontrolleAt  !== undefined) updates.letzteKontrolleAt = b.letzteKontrolleAt ? new Date(b.letzteKontrolleAt) : null;
+  if (b.letzteKontrolleVon !== undefined) updates.letzteKontrolleVon = b.letzteKontrolleVon || null;
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "Keine Felder zum Aktualisieren" }); return;
   }
 
   const [row] = await db.update(shelfMarkersTable).set(updates)
