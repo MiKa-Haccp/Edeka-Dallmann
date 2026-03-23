@@ -7,6 +7,7 @@ import {
   Move, Plus, X, Trash2, Save, Info, Pencil, RotateCcw, MoveIcon, RotateCw,
 } from "lucide-react";
 import { useAppStore } from "@/store/use-app-store";
+import { PinVerification } from "@/components/PinVerification";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -48,10 +49,14 @@ interface Marker {
   size: string | null;
   rotated: boolean | null;
   sortiment: string | null;
-  reduzierungsRegel: string | null;
-  aktionsHinweis: string | null;
-  kontrollIntervall: number | null;
-  naechsteKontrolle: string | null;
+  reduzierungsRegel:  string | null;
+  reduzierungsDatum:  string | null;
+  aktionsHinweis:     string | null;
+  knickDatum:         string | null;
+  kontrollIntervall:  number | null;
+  naechsteKontrolle:  string | null;
+  letzteKontrolleAt:  string | null;
+  letzteKontrolleVon: string | null;
   createdAt: string;
 }
 
@@ -65,6 +70,29 @@ const EMPTY_FORM = {
   size: "xs",
   rotated: false,
 };
+
+function isoToDE(iso: string | null | undefined): string {
+  if (!iso) return "";
+  const d = new Date(iso + (iso.includes("T") ? "" : "T00:00:00"));
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
+function calcIsoDate(wert: string, type: "reduzieren" | "knick"): string | null {
+  const d = new Date();
+  if (type === "reduzieren") {
+    const tage = REDUZIEREN_TAGE[wert];
+    if (!tage) return null;
+    d.setDate(d.getDate() + tage);
+  } else {
+    if (wert === "8 Tage") { d.setDate(d.getDate() + 8); }
+    else if (wert === "2 Monate") { d.setMonth(d.getMonth() + 2); }
+    else if (wert === "4 Monate") { d.setMonth(d.getMonth() + 4); }
+    else if (wert === "5 Monate") { d.setMonth(d.getMonth() + 5); }
+    else return null;
+  }
+  return d.toISOString().split("T")[0];
+}
 
 // ─── Status-Ampel ─────────────────────────────────────────────────────────────
 type St = "neu" | "ok" | "bald" | "faellig";
@@ -181,7 +209,7 @@ function MarkerPin({
 
 // ─── Modal ───────────────────────────────────────────────────────────────────
 function MarkerModal({
-  mode, marker, form, setForm, onSave, onDelete, onClose, saving,
+  mode, marker, form, setForm, onSave, onDelete, onClose, saving, canEditSettings, onKontrolliert,
 }: {
   mode: "new" | "edit";
   marker?: Marker;
@@ -191,7 +219,11 @@ function MarkerModal({
   onDelete?: () => void;
   onClose: () => void;
   saving: boolean;
+  canEditSettings: boolean;
+  onKontrolliert: (userId: number, userName: string) => void;
 }) {
+  const [pinOpen, setPinOpen] = useState(false);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-border/60 overflow-hidden">
@@ -200,7 +232,9 @@ function MarkerModal({
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-[#1a3a6b]" />
             <span className="font-bold text-[#1a3a6b]">
-              {mode === "new" ? "Neuer Regalmeter-Marker" : "Marker bearbeiten"}
+              {mode === "new" ? "Neuer Regalmeter-Marker"
+                : canEditSettings ? "Marker bearbeiten"
+                : marker?.label ?? "Regalmeter-Info"}
             </span>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground">
@@ -208,138 +242,179 @@ function MarkerModal({
           </button>
         </div>
 
-        <div className="p-5 space-y-4 max-h-[65vh] overflow-y-auto">
+        <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
 
-          {/* Bezeichnung */}
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-              Bezeichnung <span className="text-red-500">*</span>
-            </label>
-            <input autoFocus value={form.label}
-              onChange={e => setForm({ ...form, label: e.target.value })}
-              placeholder='z.B. "Chips-Regal Mitte"'
-              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
-          </div>
+          {/* ── ADMIN / BEREICHSLEITUNG / MARKTLEITUNG: Vollbearbeitung ── */}
+          {canEditSettings ? (<>
 
-          {/* Darstellung */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Größe */}
+            {/* Bezeichnung */}
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Groesse</label>
-              <div className="flex gap-1">
-                {(["xs","sm"] as const).map(sz => (
-                  <button key={sz} onClick={() => setForm({ ...form, size: sz })}
-                    className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors
-                      ${form.size === sz ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border text-muted-foreground hover:bg-secondary"}`}>
-                    {sz === "xs" ? "XS" : "S"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Ausrichtung */}
-            <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Ausrichtung</label>
-              <div className="flex gap-1">
-                <button onClick={() => setForm({ ...form, rotated: false })}
-                  className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors flex items-center justify-center gap-1
-                    ${!form.rotated ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border text-muted-foreground hover:bg-secondary"}`}>
-                  <span>ABC</span>
-                </button>
-                <button onClick={() => setForm({ ...form, rotated: true })}
-                  className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors flex items-center justify-center
-                    ${form.rotated ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border text-muted-foreground hover:bg-secondary"}`}>
-                  <RotateCcw className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Vorschau */}
-          <div className="flex items-center gap-3 py-2">
-            <span className="text-xs text-muted-foreground">Vorschau:</span>
-            <div className={`
-              inline-flex items-center font-bold border-gray-300 bg-white shadow-sm ring-gray-200
-              ${SIZE_CLASSES[form.size] ?? SIZE_CLASSES.xs}
-            `}
-              style={form.rotated ? { writingMode: "vertical-rl", textOrientation: "mixed" } : {}}
-            >
-              <span className={`rounded-full bg-gray-400 flex-shrink-0 ${DOT_CLASSES[form.size] ?? DOT_CLASSES.md}`} />
-              <span className="text-gray-700">{form.label || "Bezeichnung"}</span>
-            </div>
-          </div>
-
-          {/* Sortiment */}
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Sortiment</label>
-            <input value={form.sortiment}
-              onChange={e => setForm({ ...form, sortiment: e.target.value })}
-              placeholder='z.B. "Chips, Nuesse, Snacks"'
-              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
-          </div>
-
-          {/* Reduzieren bis */}
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Reduzieren bis</label>
-              {calcReduzierenDatum(form.reduzierungsRegel) && (
-                <span className="text-xs font-bold text-white bg-amber-500 rounded-md px-2 py-0.5">
-                  {calcReduzierenDatum(form.reduzierungsRegel)}
-                </span>
-              )}
-            </div>
-            <select value={form.reduzierungsRegel}
-              onChange={e => setForm({ ...form, reduzierungsRegel: e.target.value })}
-              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
-              <option value="">— keine Angabe —</option>
-              <option value="4 Tage">4 Tage</option>
-              <option value="1 Woche">1 Woche</option>
-              <option value="2 Wochen">2 Wochen</option>
-              <option value="4 Wochen">4 Wochen</option>
-            </select>
-          </div>
-
-          {/* Knick bis */}
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Knick bis</label>
-              {calcKnickDatum(form.aktionsHinweis) && (
-                <span className="text-xs font-bold text-white bg-amber-500 rounded-md px-2 py-0.5">
-                  {calcKnickDatum(form.aktionsHinweis)}
-                </span>
-              )}
-            </div>
-            <select value={form.aktionsHinweis}
-              onChange={e => setForm({ ...form, aktionsHinweis: e.target.value })}
-              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
-              <option value="">— keine Angabe —</option>
-              <option value="8 Tage">8 Tage</option>
-              <option value="2 Monate">2 Monate</option>
-              <option value="4 Monate">4 Monate</option>
-              <option value="5 Monate">5 Monate</option>
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Kontrollintervall</label>
-              <select value={form.kontrollIntervall}
-                onChange={e => setForm({ ...form, kontrollIntervall: Number(e.target.value) })}
-                className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
-                {INTERVALL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Naechste Kontrolle</label>
-              <input type="date" value={form.naechsteKontrolle}
-                onChange={e => setForm({ ...form, naechsteKontrolle: e.target.value })}
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+                Bezeichnung <span className="text-red-500">*</span>
+              </label>
+              <input autoFocus value={form.label}
+                onChange={e => setForm({ ...form, label: e.target.value })}
+                placeholder='z.B. "Chips-Regal Mitte"'
                 className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
             </div>
-          </div>
+
+            {/* Darstellung */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Groesse</label>
+                <div className="flex gap-1">
+                  {(["xs","sm"] as const).map(sz => (
+                    <button key={sz} onClick={() => setForm({ ...form, size: sz })}
+                      className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors
+                        ${form.size === sz ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border text-muted-foreground hover:bg-secondary"}`}>
+                      {sz === "xs" ? "XS" : "S"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Ausrichtung</label>
+                <div className="flex gap-1">
+                  <button onClick={() => setForm({ ...form, rotated: false })}
+                    className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors flex items-center justify-center gap-1
+                      ${!form.rotated ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border text-muted-foreground hover:bg-secondary"}`}>
+                    <span>ABC</span>
+                  </button>
+                  <button onClick={() => setForm({ ...form, rotated: true })}
+                    className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors flex items-center justify-center
+                      ${form.rotated ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border text-muted-foreground hover:bg-secondary"}`}>
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Vorschau */}
+            <div className="flex items-center gap-3 py-2">
+              <span className="text-xs text-muted-foreground">Vorschau:</span>
+              <div className={`inline-flex items-center font-bold border-gray-300 bg-white shadow-sm ring-gray-200 ${SIZE_CLASSES[form.size] ?? SIZE_CLASSES.xs}`}
+                style={form.rotated ? { writingMode: "vertical-rl", textOrientation: "mixed" } : {}}>
+                <span className={`rounded-full bg-gray-400 flex-shrink-0 ${DOT_CLASSES[form.size] ?? DOT_CLASSES.md}`} />
+                <span className="text-gray-700">{form.label || "Bezeichnung"}</span>
+              </div>
+            </div>
+
+            {/* Sortiment */}
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Sortiment</label>
+              <input value={form.sortiment}
+                onChange={e => setForm({ ...form, sortiment: e.target.value })}
+                placeholder='z.B. "Chips, Nuesse, Snacks"'
+                className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+            </div>
+
+            {/* Reduzieren bis */}
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <label className="text-xs font-semibold text-muted-foreground">Reduzieren bis</label>
+                {calcReduzierenDatum(form.reduzierungsRegel) && (
+                  <span className="text-xs font-bold text-white bg-amber-500 rounded-md px-2 py-0.5">
+                    {calcReduzierenDatum(form.reduzierungsRegel)}
+                  </span>
+                )}
+              </div>
+              <select value={form.reduzierungsRegel}
+                onChange={e => setForm({ ...form, reduzierungsRegel: e.target.value })}
+                className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
+                <option value="">— keine Angabe —</option>
+                <option value="4 Tage">4 Tage</option>
+                <option value="1 Woche">1 Woche</option>
+                <option value="2 Wochen">2 Wochen</option>
+                <option value="4 Wochen">4 Wochen</option>
+              </select>
+            </div>
+
+            {/* Knick bis */}
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <label className="text-xs font-semibold text-muted-foreground">Knick bis</label>
+                {calcKnickDatum(form.aktionsHinweis) && (
+                  <span className="text-xs font-bold text-white bg-amber-500 rounded-md px-2 py-0.5">
+                    {calcKnickDatum(form.aktionsHinweis)}
+                  </span>
+                )}
+              </div>
+              <select value={form.aktionsHinweis}
+                onChange={e => setForm({ ...form, aktionsHinweis: e.target.value })}
+                className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
+                <option value="">— keine Angabe —</option>
+                <option value="8 Tage">8 Tage</option>
+                <option value="2 Monate">2 Monate</option>
+                <option value="4 Monate">4 Monate</option>
+                <option value="5 Monate">5 Monate</option>
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Kontrollintervall</label>
+                <select value={form.kontrollIntervall}
+                  onChange={e => setForm({ ...form, kontrollIntervall: Number(e.target.value) })}
+                  className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
+                  {INTERVALL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Naechste Kontrolle</label>
+                <input type="date" value={form.naechsteKontrolle}
+                  onChange={e => setForm({ ...form, naechsteKontrolle: e.target.value })}
+                  className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+              </div>
+            </div>
+
+          </>) : (<>
+
+            {/* ── MITARBEITER: Nur Anzeige + Kontrolliert melden ── */}
+            {marker?.sortiment && (
+              <div className="bg-secondary/40 rounded-xl px-4 py-3">
+                <p className="text-xs text-muted-foreground font-semibold mb-1">Sortiment</p>
+                <p className="text-sm font-medium">{marker.sortiment}</p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className={`rounded-xl px-4 py-3 ${marker?.reduzierungsDatum ? "bg-amber-50 border border-amber-200" : "bg-secondary/30"}`}>
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Reduzieren bis</p>
+                <p className={`text-sm font-bold ${marker?.reduzierungsDatum ? "text-amber-700" : "text-muted-foreground"}`}>
+                  {marker?.reduzierungsDatum ? isoToDE(marker.reduzierungsDatum) : "—"}
+                </p>
+              </div>
+              <div className={`rounded-xl px-4 py-3 ${marker?.knickDatum ? "bg-amber-50 border border-amber-200" : "bg-secondary/30"}`}>
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Knick bis</p>
+                <p className={`text-sm font-bold ${marker?.knickDatum ? "text-amber-700" : "text-muted-foreground"}`}>
+                  {marker?.knickDatum ? isoToDE(marker.knickDatum) : "—"}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl px-4 py-3 bg-secondary/30">
+              <p className="text-xs font-semibold text-muted-foreground mb-1">Letzte Kontrolle</p>
+              {marker?.letzteKontrolleAt ? (
+                <p className="text-sm font-medium text-green-700">
+                  {isoToDE(marker.letzteKontrolleAt)}
+                  {marker.letzteKontrolleVon && <span className="text-muted-foreground"> — {marker.letzteKontrolleVon}</span>}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Noch nicht kontrolliert</p>
+              )}
+            </div>
+
+            <button onClick={() => setPinOpen(true)}
+              className="w-full py-3 rounded-xl bg-[#1a3a6b] hover:bg-[#1a3a6b]/90 text-white text-sm font-bold transition-colors flex items-center justify-center gap-2">
+              <Pencil className="w-4 h-4" />
+              Kontrolliert melden
+            </button>
+
+          </>)}
         </div>
 
         <div className="flex items-center gap-3 px-5 py-4 border-t border-border/60 bg-secondary/20">
-          {mode === "edit" && onDelete && (
+          {canEditSettings && mode === "edit" && onDelete && (
             <button onClick={onDelete}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-sm font-bold transition-colors">
               <Trash2 className="w-3.5 h-3.5" /> Loeschen
@@ -348,15 +423,26 @@ function MarkerModal({
           <div className="flex-1" />
           <button onClick={onClose}
             className="px-4 py-2 rounded-xl border border-border text-sm text-muted-foreground hover:bg-secondary transition-colors">
-            Abbrechen
+            {canEditSettings ? "Abbrechen" : "Schliessen"}
           </button>
-          <button onClick={onSave} disabled={!form.label.trim() || saving}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1a3a6b] hover:bg-[#1a3a6b]/90 text-white text-sm font-bold transition-colors disabled:opacity-50">
-            <Save className="w-3.5 h-3.5" />
-            {saving ? "Speichere..." : mode === "new" ? "Anlegen" : "Speichern"}
-          </button>
+          {canEditSettings && (
+            <button onClick={onSave} disabled={!form.label.trim() || saving}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1a3a6b] hover:bg-[#1a3a6b]/90 text-white text-sm font-bold transition-colors disabled:opacity-50">
+              <Save className="w-3.5 h-3.5" />
+              {saving ? "Speichere..." : mode === "new" ? "Anlegen" : "Speichern"}
+            </button>
+          )}
         </div>
       </div>
+
+      <PinVerification
+        open={pinOpen}
+        onVerified={(userId, userName) => {
+          setPinOpen(false);
+          onKontrolliert(userId, userName);
+        }}
+        onCancel={() => setPinOpen(false)}
+      />
     </div>
   );
 }
@@ -365,6 +451,7 @@ function MarkerModal({
 export default function MarktPlan() {
   const { adminSession, selectedMarketId } = useAppStore();
   const isAdmin = !!adminSession;
+  const canEditSettings = !!adminSession;
 
   const [markers, setMarkers]     = useState<Marker[]>([]);
   const [hotspotMode, setHotspotMode] = useState(false);
@@ -455,10 +542,12 @@ export default function MarktPlan() {
     });
   }, [markers]);
 
-  // Speichern (neu / edit)
+  // Speichern (neu / edit) — nur für canEditSettings
   const handleSave = async () => {
     if (!form.label.trim() || !selectedMarketId) return;
     setSaving(true);
+    const reduzierungsDatum = calcIsoDate(form.reduzierungsRegel, "reduzieren") || null;
+    const knickDatum        = calcIsoDate(form.aktionsHinweis,    "knick")      || null;
     try {
       if (modal?.mode === "new") {
         await fetch(`${BASE}/shelf-markers`, {
@@ -471,7 +560,9 @@ export default function MarktPlan() {
             size: form.size, rotated: form.rotated,
             sortiment: form.sortiment || null,
             reduzierungsRegel: form.reduzierungsRegel || null,
+            reduzierungsDatum,
             aktionsHinweis: form.aktionsHinweis || null,
+            knickDatum,
             kontrollIntervall: form.kontrollIntervall,
             naechsteKontrolle: form.naechsteKontrolle || null,
           }),
@@ -485,7 +576,9 @@ export default function MarktPlan() {
             size: form.size, rotated: form.rotated,
             sortiment: form.sortiment || null,
             reduzierungsRegel: form.reduzierungsRegel || null,
+            reduzierungsDatum,
             aktionsHinweis: form.aktionsHinweis || null,
+            knickDatum,
             kontrollIntervall: form.kontrollIntervall,
             naechsteKontrolle: form.naechsteKontrolle || null,
           }),
@@ -495,6 +588,26 @@ export default function MarktPlan() {
       setModal(null);
     } finally { setSaving(false); }
   };
+
+  // Kontrolliert melden — nach PIN-Bestätigung
+  const handleKontrolliert = useCallback(async (userId: number, userName: string) => {
+    if (!modal?.marker) return;
+    const m = modal.marker;
+    const today = new Date();
+    const next  = new Date(today);
+    next.setDate(today.getDate() + (m.kontrollIntervall ?? 7));
+    await fetch(`${BASE}/shelf-markers/${m.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        letzteKontrolleAt:  today.toISOString(),
+        letzteKontrolleVon: userName,
+        naechsteKontrolle:  next.toISOString().split("T")[0],
+      }),
+    });
+    await load();
+    setModal(null);
+  }, [modal, load]);
 
   const handleDelete = async () => {
     if (!modal?.marker || !confirm(`"${modal.marker.label}" wirklich loeschen?`)) return;
@@ -689,6 +802,8 @@ export default function MarktPlan() {
           onDelete={modal.mode === "edit" ? handleDelete : undefined}
           onClose={() => setModal(null)}
           saving={saving}
+          canEditSettings={canEditSettings}
+          onKontrolliert={handleKontrolliert}
         />
       )}
     </AppLayout>

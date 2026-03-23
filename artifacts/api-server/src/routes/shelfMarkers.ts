@@ -14,7 +14,12 @@ router.get("/shelf-markers", async (req, res) => {
 });
 
 router.post("/shelf-markers", async (req, res) => {
-  const { marketId, label, x, y, size, rotated, sortiment, reduzierungsRegel, aktionsHinweis, kontrollIntervall, naechsteKontrolle } = req.body;
+  const {
+    marketId, label, x, y, size, rotated, sortiment,
+    reduzierungsRegel, reduzierungsDatum,
+    aktionsHinweis, knickDatum,
+    kontrollIntervall, naechsteKontrolle,
+  } = req.body;
   if (!marketId || !label || x == null || y == null) {
     res.status(400).json({ error: "marketId, label, x, y erforderlich" }); return;
   }
@@ -24,7 +29,9 @@ router.post("/shelf-markers", async (req, res) => {
     rotated: rotated ?? false,
     sortiment: sortiment || null,
     reduzierungsRegel: reduzierungsRegel || null,
+    reduzierungsDatum: reduzierungsDatum || null,
     aktionsHinweis: aktionsHinweis || null,
+    knickDatum: knickDatum || null,
     kontrollIntervall: kontrollIntervall ?? 7,
     naechsteKontrolle: naechsteKontrolle || null,
   }).returning();
@@ -34,8 +41,25 @@ router.post("/shelf-markers", async (req, res) => {
 router.patch("/shelf-markers/:id", async (req, res) => {
   const id = Number(req.params.id);
   if (!id) { res.status(400).json({ error: "Ungueltige ID" }); return; }
-  const allowed = ["label","x","y","size","rotated","sortiment","reduzierungsRegel","aktionsHinweis","kontrollIntervall","naechsteKontrolle"];
-  const dbMap: Record<string,string> = { reduzierungsRegel:"reduzierungs_regel", aktionsHinweis:"aktions_hinweis", kontrollIntervall:"kontroll_intervall", naechsteKontrolle:"naechste_kontrolle" };
+
+  const allowed = [
+    "label","x","y","size","rotated","sortiment",
+    "reduzierungsRegel","reduzierungsDatum",
+    "aktionsHinweis","knickDatum",
+    "kontrollIntervall","naechsteKontrolle",
+    "letzteKontrolleAt","letzteKontrolleVon",
+  ];
+  const dbMap: Record<string, string> = {
+    reduzierungsRegel:  "reduzierungs_regel",
+    reduzierungsDatum:  "reduzierungs_datum",
+    aktionsHinweis:     "aktions_hinweis",
+    knickDatum:         "knick_datum",
+    kontrollIntervall:  "kontroll_intervall",
+    naechsteKontrolle:  "naechste_kontrolle",
+    letzteKontrolleAt:  "letzte_kontrolle_at",
+    letzteKontrolleVon: "letzte_kontrolle_von",
+  };
+
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {
     if (req.body[key] !== undefined) {
@@ -44,6 +68,7 @@ router.patch("/shelf-markers/:id", async (req, res) => {
       if (key === "x" || key === "y") updates[dbKey] = String(req.body[key]);
     }
   }
+
   const [row] = await db.update(shelfMarkersTable).set(updates)
     .where(eq(shelfMarkersTable.id, id)).returning();
   if (!row) { res.status(404).json({ error: "Nicht gefunden" }); return; }
