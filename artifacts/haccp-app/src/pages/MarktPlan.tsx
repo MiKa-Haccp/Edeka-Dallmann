@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Link } from "wouter";
 import {
   ChevronLeft, ZoomIn, ZoomOut, Maximize2, MapPin,
-  Move, Plus, X, Trash2, Save, Info, Pencil, RotateCcw, MoveIcon,
+  Move, Plus, X, Trash2, Save, Info, Pencil, RotateCcw, MoveIcon, RotateCw,
 } from "lucide-react";
 import { useAppStore } from "@/store/use-app-store";
 
@@ -317,6 +317,7 @@ export default function MarktPlan() {
   const [modal, setModal]         = useState<null | { mode: "new" | "edit"; marker?: Marker; x?: number; y?: number }>(null);
   const [form, setForm]           = useState(EMPTY_FORM);
   const [saving, setSaving]       = useState(false);
+  const [rotateMap, setRotateMap] = useState(false);
 
   // Drag-State
   const dragId  = useRef<number | null>(null);
@@ -339,15 +340,23 @@ export default function MarktPlan() {
   const activateMove    = () => { setMoveMode(true);    setHotspotMode(false); };
   const deactivateModes = () => { setHotspotMode(false); setMoveMode(false); };
 
+  // Koordinaten-Hilfe: visuell → Layout (bei 90° CW-Rotation)
+  const toLayout = useCallback((vx: number, vy: number) => {
+    if (!rotateMap) return { x: vx, y: vy };
+    return { x: vy, y: 100 - vx };
+  }, [rotateMap]);
+
   // Klick auf Bild (im Hotspot-Modus) → neuen Marker
   const handleImageClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!hotspotMode || !isAdmin) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top)  / rect.height) * 100;
+    const raw = toLayout(
+      ((e.clientX - rect.left) / rect.width)  * 100,
+      ((e.clientY - rect.top)  / rect.height) * 100,
+    );
     setForm(EMPTY_FORM);
-    setModal({ mode: "new", x, y });
-  }, [hotspotMode, isAdmin]);
+    setModal({ mode: "new", x: raw.x, y: raw.y });
+  }, [hotspotMode, isAdmin, toLayout]);
 
   // ── Drag-Handlers ────────────────────────────────────────────────────────
   const handlePointerDown = useCallback((e: React.PointerEvent, m: Marker) => {
@@ -362,12 +371,15 @@ export default function MarktPlan() {
     if (!moveMode || dragId.current !== m.id || !imgRef.current) return;
     e.stopPropagation();
     const rect = imgRef.current.getBoundingClientRect();
-    const x = Math.max(0.5, Math.min(99.5, ((e.clientX - rect.left) / rect.width) * 100));
-    const y = Math.max(0.5, Math.min(99.5, ((e.clientY - rect.top)  / rect.height) * 100));
+    const clamp = (v: number) => Math.max(0.5, Math.min(99.5, v));
+    const raw = toLayout(
+      clamp(((e.clientX - rect.left) / rect.width)  * 100),
+      clamp(((e.clientY - rect.top)  / rect.height) * 100),
+    );
     setMarkers(prev => prev.map(mk =>
-      mk.id === m.id ? { ...mk, x: x.toFixed(3), y: y.toFixed(3) } : mk
+      mk.id === m.id ? { ...mk, x: clamp(raw.x).toFixed(3), y: clamp(raw.y).toFixed(3) } : mk
     ));
-  }, [moveMode]);
+  }, [moveMode, toLayout]);
 
   const handlePointerUp = useCallback(async (e: React.PointerEvent, m: Marker) => {
     if (dragId.current !== m.id) return;
@@ -519,12 +531,26 @@ export default function MarktPlan() {
             )}
 
             <div className="flex-1" />
+
+            {/* Plan drehen */}
+            <button
+              onClick={() => setRotateMap(r => !r)}
+              title={rotateMap ? "Plan horizontal (original)" : "Plan vertikal (90 Grad)"}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all
+                ${rotateMap
+                  ? "bg-teal-600 text-white border-teal-600 shadow-md"
+                  : "bg-white text-teal-700 border-teal-300 hover:bg-teal-50"}`}>
+              <RotateCw className="w-3.5 h-3.5" />
+              {rotateMap ? "Vertikal" : "Drehen"}
+            </button>
+
             <span className="text-xs text-muted-foreground">{markers.length} Marker</span>
           </div>
 
           {/* Zoom/Pan */}
           <TransformWrapper
-            initialScale={1} minScale={0.2} maxScale={10}
+            key={String(rotateMap)}
+            initialScale={rotateMap ? 0.55 : 1} minScale={0.1} maxScale={10}
             limitToBounds={false}
             panning={{ disabled: panningDisabled }}
             wheel={{ step: 0.08 }}
@@ -545,7 +571,14 @@ export default function MarktPlan() {
                     {/* Bild-Container — Marker werden relativ dazu positioniert */}
                     <div
                       ref={imgRef}
-                      style={{ position: "relative", display: "inline-block", width: "100%", lineHeight: 0 }}
+                      style={{
+                        position: "relative",
+                        display: "inline-block",
+                        width: "100%",
+                        lineHeight: 0,
+                        transform: rotateMap ? "rotate(90deg)" : undefined,
+                        transformOrigin: "center center",
+                      }}
                       onClick={handleImageClick}
                     >
                       <img
