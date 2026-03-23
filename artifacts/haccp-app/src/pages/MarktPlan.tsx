@@ -34,7 +34,7 @@ const EMPTY_FORM = {
   aktionsHinweis: "",
   kontrollIntervall: 7,
   naechsteKontrolle: "",
-  size: "md",
+  size: "xs",
   rotated: false,
 };
 
@@ -57,14 +57,16 @@ const ST: Record<St, { dot: string; btn: string; ring: string; label: string }> 
 };
 
 const SIZE_CLASSES: Record<string, string> = {
-  sm: "px-1.5 py-0.5 text-[9px] gap-0.5 rounded-md",
-  md: "px-2 py-1 text-xs gap-1 rounded-lg",
-  lg: "px-3 py-1.5 text-sm gap-1.5 rounded-xl",
+  xs: "px-0.5 py-px  text-[5px]  gap-px  rounded-sm  border   ring-1",
+  sm: "px-1   py-0.5 text-[7px]  gap-0.5 rounded     border   ring-1",
+  md: "px-1.5 py-0.5 text-[9px]  gap-0.5 rounded-md  border-2 ring-2",
+  lg: "px-2   py-1   text-xs     gap-1   rounded-lg  border-2 ring-2",
 };
 const DOT_CLASSES: Record<string, string> = {
-  sm: "w-1.5 h-1.5",
-  md: "w-2 h-2",
-  lg: "w-2.5 h-2.5",
+  xs: "w-1   h-1   flex-shrink-0",
+  sm: "w-1.5 h-1.5 flex-shrink-0",
+  md: "w-2   h-2   flex-shrink-0",
+  lg: "w-2.5 h-2.5 flex-shrink-0",
 };
 
 const INTERVALL_OPTIONS = [
@@ -110,7 +112,7 @@ function MarkerPin({
 }) {
   const st  = markerStatus(marker);
   const s   = ST[st];
-  const sz  = marker.size || "md";
+  const sz  = marker.size || "xs";
   const rot = marker.rotated ?? false;
 
   return (
@@ -132,10 +134,9 @@ function MarkerPin({
       }}
     >
       <div className={`
-        flex items-center font-bold border-2 shadow-md transition-shadow whitespace-nowrap select-none
-        ring-2 ${s.ring} ${s.btn} ${SIZE_CLASSES[sz] ?? SIZE_CLASSES.md}
+        flex items-center font-bold shadow-md transition-shadow whitespace-nowrap select-none
+        ${s.ring} ${s.btn} ${SIZE_CLASSES[sz] ?? SIZE_CLASSES.xs}
         ${isDragging ? "shadow-xl scale-110 opacity-90" : "hover:shadow-lg hover:scale-105"}
-        ${rot ? "" : ""}
       `}
         style={rot ? { writingMode: "vertical-rl", textOrientation: "mixed" } : {}}
       >
@@ -195,11 +196,11 @@ function MarkerModal({
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Groesse</label>
               <div className="flex gap-1">
-                {(["sm","md","lg"] as const).map(sz => (
+                {(["xs","sm","md","lg"] as const).map(sz => (
                   <button key={sz} onClick={() => setForm({ ...form, size: sz })}
                     className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors
                       ${form.size === sz ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border text-muted-foreground hover:bg-secondary"}`}>
-                    {sz === "sm" ? "S" : sz === "md" ? "M" : "L"}
+                    {sz === "xs" ? "XS" : sz === "sm" ? "S" : sz === "md" ? "M" : "L"}
                   </button>
                 ))}
               </div>
@@ -227,8 +228,8 @@ function MarkerModal({
           <div className="flex items-center gap-3 py-2">
             <span className="text-xs text-muted-foreground">Vorschau:</span>
             <div className={`
-              inline-flex items-center font-bold border-2 border-gray-300 bg-white shadow-sm
-              ${SIZE_CLASSES[form.size] ?? SIZE_CLASSES.md}
+              inline-flex items-center font-bold border-gray-300 bg-white shadow-sm ring-gray-200
+              ${SIZE_CLASSES[form.size] ?? SIZE_CLASSES.xs}
             `}
               style={form.rotated ? { writingMode: "vertical-rl", textOrientation: "mixed" } : {}}
             >
@@ -437,7 +438,7 @@ export default function MarktPlan() {
       aktionsHinweis: m.aktionsHinweis ?? "",
       kontrollIntervall: m.kontrollIntervall ?? 7,
       naechsteKontrolle: m.naechsteKontrolle ?? "",
-      size: m.size ?? "md",
+      size: m.size ?? "xs",
       rotated: m.rotated ?? false,
     });
     setModal({ mode: "edit", marker: m });
