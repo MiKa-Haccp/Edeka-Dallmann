@@ -417,46 +417,13 @@ function MarkerModal({
               {ersterfassung && (
                 <div className="mt-2 p-4 rounded-xl bg-orange-50 border border-orange-200 space-y-3">
                   <p className="text-xs text-orange-700 font-medium">
-                    Felder hier ueberschreiben die berechneten Werte. Nur ausfullen wenn du konkrete Vergangenheitsdaten eingeben moechtest.
+                    Datum ueberschreibt den berechneten Wert aus dem Rhythmus-Dropdown.
                   </p>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">Reduzieren bis (Datum)</label>
-                      <input type="date" value={form.erstReduzierungsDatum}
-                        onChange={e => setForm({ ...form, erstReduzierungsDatum: e.target.value })}
-                        className="w-full text-sm border border-orange-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-300" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-muted-foreground mb-1">Knick bis (Datum)</label>
-                      <input type="date" value={form.erstKnickDatum}
-                        onChange={e => setForm({ ...form, erstKnickDatum: e.target.value })}
-                        className="w-full text-sm border border-orange-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-300" />
-                    </div>
-                  </div>
-
                   <div>
                     <label className="block text-xs font-semibold text-muted-foreground mb-1">Naechste Kontrolle (Datum)</label>
                     <input type="date" value={form.erstNaechsteKontrolle}
                       onChange={e => setForm({ ...form, erstNaechsteKontrolle: e.target.value })}
                       className="w-full text-sm border border-orange-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-300" />
-                  </div>
-
-                  <div className="border-t border-orange-200 pt-3 space-y-3">
-                    <p className="text-xs font-semibold text-orange-700">Letzte Kontrolle (historisch)</p>
-                    <div>
-                      <label className="block text-xs text-muted-foreground mb-1">Datum der letzten Kontrolle</label>
-                      <input type="date" value={form.erstLetzteKontrolleAt}
-                        onChange={e => setForm({ ...form, erstLetzteKontrolleAt: e.target.value })}
-                        className="w-full text-sm border border-orange-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-300" />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-muted-foreground mb-1">Kontrolliert von</label>
-                      <input type="text" value={form.erstLetzteKontrolleVon}
-                        onChange={e => setForm({ ...form, erstLetzteKontrolleVon: e.target.value })}
-                        placeholder='z.B. "Max Mustermann"'
-                        className="w-full text-sm border border-orange-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-300" />
-                    </div>
                   </div>
                 </div>
               )}
