@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   CalendarDays, Plus, Trash2, Package, AlertTriangle,
-  CheckCircle2, ChevronLeft, Clock, Tag,
+  CheckCircle2, ChevronLeft, Clock, Tag, Map,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -165,6 +165,21 @@ export default function MHDKontrolle() {
             <p className="text-sm text-muted-foreground">Mindesthaltbarkeitsdatum Ueberwachung</p>
           </div>
         </div>
+
+        {/* Marktplan-Shortcut */}
+        <Link
+          href="/marktplan"
+          className="flex items-center gap-3 px-4 py-3 bg-[#1a3a6b]/5 border border-[#1a3a6b]/20 rounded-2xl hover:bg-[#1a3a6b]/10 transition-colors group"
+        >
+          <div className="p-2 rounded-xl bg-[#1a3a6b] text-white flex-shrink-0">
+            <Map className="w-4 h-4" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-bold text-[#1a3a6b]">Interaktiver Marktplan</div>
+            <div className="text-xs text-muted-foreground">Regalmeter mit Hotspots und Kontrollintervallen</div>
+          </div>
+          <ChevronLeft className="w-4 h-4 text-[#1a3a6b] rotate-180 opacity-50 group-hover:opacity-100 transition-opacity" />
+        </Link>
 
         {/* Datum + Stats */}
         <div className="bg-white rounded-2xl border border-border/60 shadow-sm p-5">
