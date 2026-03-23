@@ -695,14 +695,12 @@ export default function MarktPlan() {
       kontrollRhythmus: m.kontrollRhythmus ?? "",
       size: m.size ?? "xs",
       rotated: m.rotated ?? false,
-      // Ersterfassung: bestehende Daten vorausfuellen
-      erstReduzierungsDatum:  m.reduzierungsDatum  ?? "",
-      erstKnickDatum:         m.knickDatum         ?? "",
-      erstNaechsteKontrolle:  m.naechsteKontrolle  ?? "",
-      erstLetzteKontrolleAt:  m.letzteKontrolleAt
-        ? m.letzteKontrolleAt.split("T")[0]
-        : "",
-      erstLetzteKontrolleVon: m.letzteKontrolleVon ?? "",
+      // Ersterfassung: immer leer starten (nur fuer manuelle Neueingabe)
+      erstReduzierungsDatum:  "",
+      erstKnickDatum:         "",
+      erstNaechsteKontrolle:  "",
+      erstLetzteKontrolleAt:  "",
+      erstLetzteKontrolleVon: "",
     });
     setModal({ mode: "edit", marker: m });
   };
