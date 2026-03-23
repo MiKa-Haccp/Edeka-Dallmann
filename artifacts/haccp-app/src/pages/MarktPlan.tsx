@@ -114,21 +114,27 @@ function calcIsoDate(wert: string, type: "reduzieren" | "knick"): string | null 
 }
 
 // ─── Status-Ampel ─────────────────────────────────────────────────────────────
+// Gruen  = heute <= knickDatum
+// Gelb   = knickDatum ueberschritten, naechsteKontrolle noch nicht erreicht
+// Rot    = naechsteKontrolle ueberschritten
+// Neu    = keine Datumsangaben vorhanden
 type St = "neu" | "ok" | "bald" | "faellig";
 function markerStatus(m: Marker): St {
-  if (!m.naechsteKontrolle) return "neu";
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const next  = new Date(m.naechsteKontrolle + "T00:00:00");
-  const d     = Math.round((next.getTime() - today.getTime()) / 86400000);
-  if (d < 0)  return "faellig";
-  if (d <= 2) return "bald";
-  return "ok";
+  const knick = m.knickDatum       ? new Date(m.knickDatum       + "T00:00:00") : null;
+  const next  = m.naechsteKontrolle ? new Date(m.naechsteKontrolle + "T00:00:00") : null;
+  if (!knick && !next) return "neu";
+  if (knick && today <= knick)  return "ok";
+  if (next  && today <= next)   return "bald";
+  if (next  && today >  next)   return "faellig";
+  // knick ueberschritten aber kein naechsteKontrolle
+  return "bald";
 }
 const ST: Record<St, { dot: string; btn: string; ring: string; label: string }> = {
   neu:     { dot: "bg-gray-400",  btn: "border-gray-300 bg-white/95 text-gray-700",       ring: "ring-gray-200",  label: "Neu" },
-  ok:      { dot: "bg-green-500", btn: "border-green-300 bg-green-50/95 text-green-800",  ring: "ring-green-200", label: "OK" },
-  bald:    { dot: "bg-amber-400", btn: "border-amber-300 bg-amber-50/95 text-amber-800",  ring: "ring-amber-200", label: "Bald" },
-  faellig: { dot: "bg-red-500",   btn: "border-red-300 bg-red-50/95 text-red-800",        ring: "ring-red-200",   label: "Ueberfaellig" },
+  ok:      { dot: "bg-green-500", btn: "border-green-300 bg-green-50/95 text-green-800",  ring: "ring-green-200", label: "Im Limit" },
+  bald:    { dot: "bg-amber-400", btn: "border-amber-300 bg-amber-50/95 text-amber-800",  ring: "ring-amber-200", label: "Knick ueberschritten" },
+  faellig: { dot: "bg-red-500",   btn: "border-red-300 bg-red-50/95 text-red-800",        ring: "ring-red-200",   label: "Kontrolle faellig" },
 };
 
 const SIZE_CLASSES: Record<string, string> = {
