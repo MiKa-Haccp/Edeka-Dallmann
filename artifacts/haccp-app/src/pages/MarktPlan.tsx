@@ -198,11 +198,11 @@ function MarkerModal({
             <div>
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Groesse</label>
               <div className="flex gap-1">
-                {(["xs","sm","md","lg"] as const).map(sz => (
+                {(["xs","sm"] as const).map(sz => (
                   <button key={sz} onClick={() => setForm({ ...form, size: sz })}
                     className={`flex-1 py-2 rounded-xl border text-xs font-bold transition-colors
                       ${form.size === sz ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border text-muted-foreground hover:bg-secondary"}`}>
-                    {sz === "xs" ? "XS" : sz === "sm" ? "S" : sz === "md" ? "M" : "L"}
+                    {sz === "xs" ? "XS" : "S"}
                   </button>
                 ))}
               </div>
