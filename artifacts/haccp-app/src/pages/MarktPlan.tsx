@@ -68,6 +68,12 @@ const EMPTY_FORM = {
   kontrollRhythmus: "",
   size: "xs",
   rotated: false,
+  // Ersterfassung: direkte Datumseingabe (ueberschreibt berechnete Werte)
+  erstReduzierungsDatum: "",
+  erstKnickDatum: "",
+  erstNaechsteKontrolle: "",
+  erstLetzteKontrolleAt: "",
+  erstLetzteKontrolleVon: "",
 };
 
 const KONTROLL_RHYTHMUS_OPTIONEN = [
@@ -241,6 +247,7 @@ function MarkerModal({
   onKontrolliert: (userId: number, userName: string) => void;
 }) {
   const [pinOpen, setPinOpen] = useState(false);
+  const [ersterfassung, setErsterfassung] = useState(false);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
@@ -390,6 +397,69 @@ function MarkerModal({
                   <option key={o.value} value={o.value}>{o.value}</option>
                 ))}
               </select>
+            </div>
+
+            {/* ── Ersterfassung: Historische Daten direkt eingeben ── */}
+            <div>
+              <button type="button"
+                onClick={() => setErsterfassung(v => !v)}
+                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border text-sm font-semibold transition-colors
+                  ${ersterfassung
+                    ? "bg-orange-50 border-orange-300 text-orange-800"
+                    : "bg-secondary/40 border-border text-muted-foreground hover:bg-secondary"}`}>
+                <span className="flex items-center gap-2">
+                  <span className="text-base">{ersterfassung ? "✏️" : "📋"}</span>
+                  Ersterfassung — Historische Daten
+                </span>
+                <span className="text-xs">{ersterfassung ? "▲ schliessen" : "▼ oeffnen"}</span>
+              </button>
+
+              {ersterfassung && (
+                <div className="mt-2 p-4 rounded-xl bg-orange-50 border border-orange-200 space-y-3">
+                  <p className="text-xs text-orange-700 font-medium">
+                    Felder hier ueberschreiben die berechneten Werte. Nur ausfullen wenn du konkrete Vergangenheitsdaten eingeben moechtest.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">Reduzieren bis (Datum)</label>
+                      <input type="date" value={form.erstReduzierungsDatum}
+                        onChange={e => setForm({ ...form, erstReduzierungsDatum: e.target.value })}
+                        className="w-full text-sm border border-orange-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-300" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-muted-foreground mb-1">Knick bis (Datum)</label>
+                      <input type="date" value={form.erstKnickDatum}
+                        onChange={e => setForm({ ...form, erstKnickDatum: e.target.value })}
+                        className="w-full text-sm border border-orange-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-300" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Naechste Kontrolle (Datum)</label>
+                    <input type="date" value={form.erstNaechsteKontrolle}
+                      onChange={e => setForm({ ...form, erstNaechsteKontrolle: e.target.value })}
+                      className="w-full text-sm border border-orange-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-300" />
+                  </div>
+
+                  <div className="border-t border-orange-200 pt-3 space-y-3">
+                    <p className="text-xs font-semibold text-orange-700">Letzte Kontrolle (historisch)</p>
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-1">Datum der letzten Kontrolle</label>
+                      <input type="date" value={form.erstLetzteKontrolleAt}
+                        onChange={e => setForm({ ...form, erstLetzteKontrolleAt: e.target.value })}
+                        className="w-full text-sm border border-orange-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-300" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-muted-foreground mb-1">Kontrolliert von</label>
+                      <input type="text" value={form.erstLetzteKontrolleVon}
+                        onChange={e => setForm({ ...form, erstLetzteKontrolleVon: e.target.value })}
+                        placeholder='z.B. "Max Mustermann"'
+                        className="w-full text-sm border border-orange-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-orange-300" />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
           </>) : (<>
@@ -579,9 +649,18 @@ export default function MarktPlan() {
   const handleSave = async () => {
     if (!form.label.trim() || !selectedMarketId) return;
     setSaving(true);
-    const reduzierungsDatum = calcIsoDate(form.reduzierungsRegel, "reduzieren") || null;
-    const knickDatum        = calcIsoDate(form.aktionsHinweis,    "knick")      || null;
-    const naechsteKontrolle = calcNaechsteKontrolleDatum(form.kontrollRhythmus, knickDatum) || null;
+    // Berechnete Werte — werden durch Ersterfassung-Felder ueberschrieben wenn gesetzt
+    const calcReduzierung = calcIsoDate(form.reduzierungsRegel, "reduzieren") || null;
+    const calcKnick       = calcIsoDate(form.aktionsHinweis,    "knick")      || null;
+    const reduzierungsDatum = form.erstReduzierungsDatum || calcReduzierung;
+    const knickDatum        = form.erstKnickDatum        || calcKnick;
+    const calcKontrolle = calcNaechsteKontrolleDatum(form.kontrollRhythmus, knickDatum) || null;
+    const naechsteKontrolle = form.erstNaechsteKontrolle || calcKontrolle;
+    // Letzte Kontrolle aus Ersterfassung
+    const letzteKontrolleAt  = form.erstLetzteKontrolleAt
+      ? new Date(form.erstLetzteKontrolleAt + "T00:00:00").toISOString()
+      : undefined;
+    const letzteKontrolleVon = form.erstLetzteKontrolleVon || undefined;
     const common = {
       sortiment: form.sortiment || null,
       reduzierungsRegel: form.reduzierungsRegel || null,
@@ -590,6 +669,8 @@ export default function MarktPlan() {
       knickDatum,
       kontrollRhythmus: form.kontrollRhythmus || null,
       naechsteKontrolle,
+      ...(letzteKontrolleAt  !== undefined ? { letzteKontrolleAt }  : {}),
+      ...(letzteKontrolleVon !== undefined ? { letzteKontrolleVon } : {}),
       size: form.size,
       rotated: form.rotated,
     };
@@ -648,6 +729,14 @@ export default function MarktPlan() {
       kontrollRhythmus: m.kontrollRhythmus ?? "",
       size: m.size ?? "xs",
       rotated: m.rotated ?? false,
+      // Ersterfassung: bestehende Daten vorausfuellen
+      erstReduzierungsDatum:  m.reduzierungsDatum  ?? "",
+      erstKnickDatum:         m.knickDatum         ?? "",
+      erstNaechsteKontrolle:  m.naechsteKontrolle  ?? "",
+      erstLetzteKontrolleAt:  m.letzteKontrolleAt
+        ? m.letzteKontrolleAt.split("T")[0]
+        : "",
+      erstLetzteKontrolleVon: m.letzteKontrolleVon ?? "",
     });
     setModal({ mode: "edit", marker: m });
   };
