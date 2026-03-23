@@ -127,7 +127,7 @@ function MarkerPin({
         position: "absolute",
         left: `${marker.x}%`,
         top:  `${marker.y}%`,
-        transform: mapRotated ? "translate(-50%, -50%) rotate(-90deg)" : "translate(-50%, -50%)",
+        transform: mapRotated ? "translate(-50%, -50%) rotate(-180deg)" : "translate(-50%, -50%)",
         zIndex: isDragging ? 50 : 10,
         pointerEvents: "auto",
         cursor: moveMode ? (isDragging ? "grabbing" : "grab") : "pointer",
