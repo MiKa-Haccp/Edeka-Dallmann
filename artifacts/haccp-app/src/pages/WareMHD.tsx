@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   CalendarCheck, ChevronLeft, CheckCircle2, X, Info, Pencil, Plus, Trash2,
-  LayoutGrid, List, RefreshCw, AlertTriangle,
+  LayoutGrid, List, RefreshCw, AlertTriangle, Map,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -228,13 +228,21 @@ export default function WareMHD() {
             <h1 className="text-2xl font-bold">MHD Kontrolle — Leeder</h1>
             <p className="text-sm text-muted-foreground">Bereich im Plan anklicken zum Kontrollieren</p>
           </div>
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5 items-center">
             {isAdmin && (
               <button onClick={handleSeed} disabled={seeding}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-bold border border-amber-300 disabled:opacity-60">
                 <RefreshCw className={`w-4 h-4 ${seeding?"animate-spin":""}`}/>Neu laden
               </button>
             )}
+            <Link
+              href="/marktplan"
+              title="Interaktiver Marktplan"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1a3a6b]/10 hover:bg-[#1a3a6b]/20 text-[#1a3a6b] text-sm font-bold border border-[#1a3a6b]/20 transition-colors">
+              <Map className="w-4 h-4"/>
+              <span className="hidden sm:inline">Marktplan</span>
+            </Link>
+            <div className="w-px h-6 bg-border/60"/>
             <button onClick={()=>setView("plan")} className={`p-2 rounded-xl ${view==="plan"?"bg-[#1a3a6b] text-white":"bg-secondary text-muted-foreground"}`}><LayoutGrid className="w-4 h-4"/></button>
             <button onClick={()=>setView("liste")} className={`p-2 rounded-xl ${view==="liste"?"bg-[#1a3a6b] text-white":"bg-secondary text-muted-foreground"}`}><List className="w-4 h-4"/></button>
           </div>
