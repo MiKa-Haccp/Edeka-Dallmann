@@ -33,6 +33,7 @@ import wareBestellungenRouter from "./wareBestellungen";
 import wareEinraeumserviceRouter from "./wareEinraeumservice";
 import wareMhdRouter from "./wareMhd";
 import metzReinigungRouter from "./metzReinigung";
+import shelfMarkersRouter from "./shelfMarkers";
 
 const router: IRouter = Router();
 
@@ -70,5 +71,6 @@ router.use(wareBestellungenRouter);
 router.use(wareEinraeumserviceRouter);
 router.use(wareMhdRouter);
 router.use(metzReinigungRouter);
+router.use(shelfMarkersRouter);
 
 export default router;
