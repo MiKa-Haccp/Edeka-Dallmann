@@ -1,7 +1,7 @@
 import { useListCategories, useListSections } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import * as Accordion from "@radix-ui/react-accordion";
-import { ChevronDown, Folder, FileText, ClipboardList, GripVertical, X, Map } from "lucide-react";
+import { ChevronDown, Folder, FileText, ClipboardList, GripVertical, X } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
@@ -90,7 +90,6 @@ const SIDEBAR_OPEN_PATHS = [
   "/anti-vektor-zugang", "/bescheinigungen", "/kontrollberichte",
   "/warencheck-og", "/reinigung-taeglich", "/carrier-portal",
   "/wareneingaenge", "/metzgerei-wareneingaenge", "/reinigungsplan-metzgerei",
-  "/marktplan",
   "/section/", "/category/", "/we-", "/besprechungsprotokoll",
   "/gesundheitszeugnisse", "/mitarbeiterverwaltung", "/admin/",
 ];
@@ -180,19 +179,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <div className="mt-auto p-4 border-t border-border/60 space-y-1">
-        <Link
-          href="/marktplan"
-          onClick={onNavigate}
-          className={cn(
-            "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors",
-            location === "/marktplan"
-              ? "bg-primary/10 text-primary"
-              : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-          )}
-        >
-          <Map className="h-4 w-4" />
-          Interaktiver Marktplan
-        </Link>
         <Link
           href="/"
           onClick={onNavigate}
