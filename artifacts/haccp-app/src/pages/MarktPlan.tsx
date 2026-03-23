@@ -249,13 +249,18 @@ function MarkerModal({
               className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
           </div>
 
-          {/* Reduzierungsregel */}
+          {/* Reduzieren bis */}
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Reduzierungsregel</label>
-            <input value={form.reduzierungsRegel}
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Reduzieren bis</label>
+            <select value={form.reduzierungsRegel}
               onChange={e => setForm({ ...form, reduzierungsRegel: e.target.value })}
-              placeholder='z.B. "2 Wochen vor Ablauf"'
-              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+              className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
+              <option value="">— keine Angabe —</option>
+              <option value="4 Tage">4 Tage</option>
+              <option value="1 Woche">1 Woche</option>
+              <option value="2 Wochen">2 Wochen</option>
+              <option value="4 Wochen">4 Wochen</option>
+            </select>
           </div>
 
           {/* Aktionshinweis */}
