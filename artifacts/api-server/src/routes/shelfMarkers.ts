@@ -36,6 +36,7 @@ router.post("/shelf-markers", async (req, res) => {
     aktionsHinweis:     aktionsHinweis     || null,
     knickDatum:         knickDatum         || null,
     kontrollIntervall:  kontrollIntervall  ?? 7,
+    kontrollRhythmus:   req.body.kontrollRhythmus || null,
     naechsteKontrolle:  naechsteKontrolle  || null,
   }).returning();
   res.status(201).json(row);
@@ -59,6 +60,7 @@ router.patch("/shelf-markers/:id", async (req, res) => {
   if (b.aktionsHinweis     !== undefined) updates.aktionsHinweis    = b.aktionsHinweis    || null;
   if (b.knickDatum         !== undefined) updates.knickDatum        = b.knickDatum        || null;
   if (b.kontrollIntervall  !== undefined) updates.kontrollIntervall = b.kontrollIntervall;
+  if (b.kontrollRhythmus   !== undefined) updates.kontrollRhythmus  = b.kontrollRhythmus  || null;
   if (b.naechsteKontrolle  !== undefined) updates.naechsteKontrolle = b.naechsteKontrolle || null;
   if (b.letzteKontrolleAt  !== undefined) updates.letzteKontrolleAt = b.letzteKontrolleAt ? new Date(b.letzteKontrolleAt) : null;
   if (b.letzteKontrolleVon !== undefined) updates.letzteKontrolleVon = b.letzteKontrolleVon || null;

@@ -14,6 +14,7 @@ export const shelfMarkersTable = pgTable("shelf_markers", {
   aktionsHinweis:      text("aktions_hinweis"),
   knickDatum:          text("knick_datum"),
   kontrollIntervall:   integer("kontroll_intervall").default(7),
+  kontrollRhythmus:    text("kontroll_rhythmus"),
   naechsteKontrolle:   date("naechste_kontrolle"),
   letzteKontrolleAt:   timestamp("letzte_kontrolle_at"),
   letzteKontrolleVon:  varchar("letzte_kontrolle_von", { length: 100 }),

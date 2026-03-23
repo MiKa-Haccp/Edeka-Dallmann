@@ -53,7 +53,7 @@ interface Marker {
   reduzierungsDatum:  string | null;
   aktionsHinweis:     string | null;
   knickDatum:         string | null;
-  kontrollIntervall:  number | null;
+  kontrollRhythmus:   string | null;
   naechsteKontrolle:  string | null;
   letzteKontrolleAt:  string | null;
   letzteKontrolleVon: string | null;
@@ -65,11 +65,30 @@ const EMPTY_FORM = {
   sortiment: "",
   reduzierungsRegel: "",
   aktionsHinweis: "",
-  kontrollIntervall: 7,
-  naechsteKontrolle: "",
+  kontrollRhythmus: "",
   size: "xs",
   rotated: false,
 };
+
+const KONTROLL_RHYTHMUS_OPTIONEN = [
+  { value: "1 Monat",   monate: 1 },
+  { value: "2 Monate",  monate: 2 },
+  { value: "3 Monate",  monate: 3 },
+  { value: "4 Monate",  monate: 4 },
+  { value: "Jaehrlich", monate: 0 },
+];
+
+function calcNaechsteKontrolleDatum(rhythmus: string, knickIso: string | null): string | null {
+  if (!rhythmus) return null;
+  if (rhythmus === "Jaehrlich") {
+    return `${new Date().getFullYear() + 1}-01-01`;
+  }
+  const base = knickIso ? new Date(knickIso + "T00:00:00") : new Date();
+  const opt = KONTROLL_RHYTHMUS_OPTIONEN.find(o => o.value === rhythmus);
+  if (!opt) return null;
+  base.setMonth(base.getMonth() + opt.monate);
+  return base.toISOString().split("T")[0];
+}
 
 function isoToDE(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -125,13 +144,6 @@ const DOT_CLASSES: Record<string, string> = {
   lg: "w-2.5 h-2.5 flex-shrink-0",
 };
 
-const INTERVALL_OPTIONS = [
-  { value: 1,  label: "Taeglich" },
-  { value: 2,  label: "Alle 2 Tage" },
-  { value: 7,  label: "Woechentlich" },
-  { value: 14, label: "Alle 2 Wochen" },
-  { value: 30, label: "Monatlich" },
-];
 
 // ─── Zoom Controls ───────────────────────────────────────────────────────────
 function ZoomControls() {
@@ -350,21 +362,28 @@ function MarkerModal({
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Kontrollintervall</label>
-                <select value={form.kontrollIntervall}
-                  onChange={e => setForm({ ...form, kontrollIntervall: Number(e.target.value) })}
-                  className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
-                  {INTERVALL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                </select>
+            {/* Naechste Kontrolle */}
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <label className="text-xs font-semibold text-muted-foreground">Naechste Kontrolle</label>
+                {(() => {
+                  const knickIso = calcIsoDate(form.aktionsHinweis, "knick");
+                  const d = calcNaechsteKontrolleDatum(form.kontrollRhythmus, knickIso);
+                  return d ? (
+                    <span className="text-xs font-bold text-white bg-[#1a3a6b] rounded-md px-2 py-0.5">
+                      {isoToDE(d)}
+                    </span>
+                  ) : null;
+                })()}
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Naechste Kontrolle</label>
-                <input type="date" value={form.naechsteKontrolle}
-                  onChange={e => setForm({ ...form, naechsteKontrolle: e.target.value })}
-                  className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
-              </div>
+              <select value={form.kontrollRhythmus}
+                onChange={e => setForm({ ...form, kontrollRhythmus: e.target.value })}
+                className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
+                <option value="">— keine Angabe —</option>
+                {KONTROLL_RHYTHMUS_OPTIONEN.map(o => (
+                  <option key={o.value} value={o.value}>{o.value}</option>
+                ))}
+              </select>
             </div>
 
           </>) : (<>
@@ -392,16 +411,24 @@ function MarkerModal({
               </div>
             </div>
 
-            <div className="rounded-xl px-4 py-3 bg-secondary/30">
-              <p className="text-xs font-semibold text-muted-foreground mb-1">Letzte Kontrolle</p>
-              {marker?.letzteKontrolleAt ? (
-                <p className="text-sm font-medium text-green-700">
-                  {isoToDE(marker.letzteKontrolleAt)}
-                  {marker.letzteKontrolleVon && <span className="text-muted-foreground"> — {marker.letzteKontrolleVon}</span>}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl px-4 py-3 bg-secondary/30">
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Letzte Kontrolle</p>
+                {marker?.letzteKontrolleAt ? (
+                  <p className="text-sm font-medium text-green-700">
+                    {isoToDE(marker.letzteKontrolleAt)}
+                    {marker.letzteKontrolleVon && <span className="block text-xs text-muted-foreground mt-0.5">{marker.letzteKontrolleVon}</span>}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground">—</p>
+                )}
+              </div>
+              <div className={`rounded-xl px-4 py-3 ${marker?.naechsteKontrolle ? "bg-[#1a3a6b]/5 border border-[#1a3a6b]/20" : "bg-secondary/30"}`}>
+                <p className="text-xs font-semibold text-muted-foreground mb-1">Naechste Kontrolle</p>
+                <p className={`text-sm font-bold ${marker?.naechsteKontrolle ? "text-[#1a3a6b]" : "text-muted-foreground"}`}>
+                  {marker?.naechsteKontrolle ? isoToDE(marker.naechsteKontrolle) : "—"}
                 </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">Noch nicht kontrolliert</p>
-              )}
+              </div>
             </div>
 
             <button onClick={() => setPinOpen(true)}
@@ -548,6 +575,18 @@ export default function MarktPlan() {
     setSaving(true);
     const reduzierungsDatum = calcIsoDate(form.reduzierungsRegel, "reduzieren") || null;
     const knickDatum        = calcIsoDate(form.aktionsHinweis,    "knick")      || null;
+    const naechsteKontrolle = calcNaechsteKontrolleDatum(form.kontrollRhythmus, knickDatum) || null;
+    const common = {
+      sortiment: form.sortiment || null,
+      reduzierungsRegel: form.reduzierungsRegel || null,
+      reduzierungsDatum,
+      aktionsHinweis: form.aktionsHinweis || null,
+      knickDatum,
+      kontrollRhythmus: form.kontrollRhythmus || null,
+      naechsteKontrolle,
+      size: form.size,
+      rotated: form.rotated,
+    };
     try {
       if (modal?.mode === "new") {
         await fetch(`${BASE}/shelf-markers`, {
@@ -557,31 +596,14 @@ export default function MarktPlan() {
             marketId: selectedMarketId,
             label: form.label.trim(),
             x: modal.x?.toFixed(3), y: modal.y?.toFixed(3),
-            size: form.size, rotated: form.rotated,
-            sortiment: form.sortiment || null,
-            reduzierungsRegel: form.reduzierungsRegel || null,
-            reduzierungsDatum,
-            aktionsHinweis: form.aktionsHinweis || null,
-            knickDatum,
-            kontrollIntervall: form.kontrollIntervall,
-            naechsteKontrolle: form.naechsteKontrolle || null,
+            ...common,
           }),
         });
       } else if (modal?.marker) {
         await fetch(`${BASE}/shelf-markers/${modal.marker.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            label: form.label.trim(),
-            size: form.size, rotated: form.rotated,
-            sortiment: form.sortiment || null,
-            reduzierungsRegel: form.reduzierungsRegel || null,
-            reduzierungsDatum,
-            aktionsHinweis: form.aktionsHinweis || null,
-            knickDatum,
-            kontrollIntervall: form.kontrollIntervall,
-            naechsteKontrolle: form.naechsteKontrolle || null,
-          }),
+          body: JSON.stringify({ label: form.label.trim(), ...common }),
         });
       }
       await load();
@@ -589,20 +611,15 @@ export default function MarktPlan() {
     } finally { setSaving(false); }
   };
 
-  // Kontrolliert melden — nach PIN-Bestätigung
-  const handleKontrolliert = useCallback(async (userId: number, userName: string) => {
+  // Kontrolliert melden — nach PIN-Bestätigung (nur letzteKontrolle, kein naechsteKontrolle-Reset)
+  const handleKontrolliert = useCallback(async (_userId: number, userName: string) => {
     if (!modal?.marker) return;
-    const m = modal.marker;
-    const today = new Date();
-    const next  = new Date(today);
-    next.setDate(today.getDate() + (m.kontrollIntervall ?? 7));
-    await fetch(`${BASE}/shelf-markers/${m.id}`, {
+    await fetch(`${BASE}/shelf-markers/${modal.marker.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        letzteKontrolleAt:  today.toISOString(),
+        letzteKontrolleAt:  new Date().toISOString(),
         letzteKontrolleVon: userName,
-        naechsteKontrolle:  next.toISOString().split("T")[0],
       }),
     });
     await load();
@@ -622,8 +639,7 @@ export default function MarktPlan() {
       sortiment: m.sortiment ?? "",
       reduzierungsRegel: m.reduzierungsRegel ?? "",
       aktionsHinweis: m.aktionsHinweis ?? "",
-      kontrollIntervall: m.kontrollIntervall ?? 7,
-      naechsteKontrolle: m.naechsteKontrolle ?? "",
+      kontrollRhythmus: m.kontrollRhythmus ?? "",
       size: m.size ?? "xs",
       rotated: m.rotated ?? false,
     });
