@@ -372,7 +372,13 @@ export default function MarktPlan() {
   const [modal, setModal]         = useState<null | { mode: "new" | "edit"; marker?: Marker; x?: number; y?: number }>(null);
   const [form, setForm]           = useState(EMPTY_FORM);
   const [saving, setSaving]       = useState(false);
-  const [rotateMap, setRotateMap] = useState(false);
+  const [rotateMap, setRotateMap] = useState<boolean>(
+    () => localStorage.getItem("marktplan_rotated") === "1"
+  );
+
+  useEffect(() => {
+    localStorage.setItem("marktplan_rotated", rotateMap ? "1" : "0");
+  }, [rotateMap]);
 
   // Drag-State
   const dragId  = useRef<number | null>(null);
