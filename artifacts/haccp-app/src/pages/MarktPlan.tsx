@@ -130,14 +130,10 @@ function markerStatus(m: Marker): St {
   const knick = m.knickDatum        ? new Date(m.knickDatum        + "T00:00:00") : null;
   const next  = m.naechsteKontrolle ? new Date(m.naechsteKontrolle + "T00:00:00") : null;
   if (!knick && !next) return "neu";
-  // naechsteKontrolle hat absolute Prioritaet sobald gesetzt
-  if (next) {
-    if (today > next) return "faellig"; // rot: Kontrolle ueberfaellig
-    return "bald";                      // gelb: Kontrolle steht bevor
-  }
-  // Kein naechsteKontrolle: nur knickDatum auswerten
-  if (knick && today <= knick) return "ok"; // gruen: innerhalb Knick-Datum
-  return "bald";                            // gelb: Knick-Datum ueberschritten
+  if (knick && today <= knick)  return "ok";
+  if (next  && today <= next)   return "bald";
+  if (next  && today >  next)   return "faellig";
+  return "bald";
 }
 const ST: Record<St, { dot: string; btn: string; ring: string; label: string }> = {
   neu:     { dot: "bg-gray-400",  btn: "border-gray-300 bg-white/95 text-gray-700",       ring: "ring-gray-200",  label: "Neu" },
