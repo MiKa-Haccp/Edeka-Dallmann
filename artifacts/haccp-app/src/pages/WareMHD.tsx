@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   CalendarCheck, ChevronLeft, CheckCircle2, X, Info, Pencil, Plus, Trash2,
-  LayoutGrid, List, RefreshCw, AlertTriangle, Map,
+  LayoutGrid, List, RefreshCw, AlertTriangle, Map as MapIcon,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -239,7 +239,7 @@ export default function WareMHD() {
               href="/marktplan"
               title="Interaktiver Marktplan"
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#1a3a6b]/10 hover:bg-[#1a3a6b]/20 text-[#1a3a6b] text-sm font-bold border border-[#1a3a6b]/20 transition-colors">
-              <Map className="w-4 h-4"/>
+              <MapIcon className="w-4 h-4"/>
               <span className="hidden sm:inline">Marktplan</span>
             </Link>
             <div className="w-px h-6 bg-border/60"/>
