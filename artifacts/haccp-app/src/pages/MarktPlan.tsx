@@ -168,11 +168,11 @@ function MarkerPin({
         ${isDragging ? "shadow-xl scale-110 opacity-90" : "hover:shadow-lg hover:scale-105"}
       `}
         style={rot
-          ? { writingMode: "vertical-rl", textOrientation: "mixed", minHeight: "6ch" }
-          : { minWidth: "6ch" }}
+          ? { writingMode: "vertical-rl", textOrientation: "mixed", minHeight: "5ch" }
+          : { minWidth: "5ch" }}
       >
         <span className={`rounded-full flex-shrink-0 ${DOT_CLASSES[sz] ?? DOT_CLASSES.md} ${s.dot} ${st === "faellig" ? "animate-pulse" : ""}`} />
-        <span>{marker.label.slice(0, 6)}</span>
+        <span>{marker.label.slice(0, 5)}</span>
         {moveMode && <MoveIcon className="w-2.5 h-2.5 opacity-40 flex-shrink-0" />}
       </div>
     </div>
