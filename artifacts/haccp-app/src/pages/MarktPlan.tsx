@@ -10,6 +10,18 @@ import { useAppStore } from "@/store/use-app-store";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
+const REDUZIEREN_TAGE: Record<string, number> = {
+  "4 Tage": 4, "1 Woche": 7, "2 Wochen": 14, "4 Wochen": 28,
+};
+
+function calcReduzierenDatum(wert: string): string | null {
+  const tage = REDUZIEREN_TAGE[wert];
+  if (!tage) return null;
+  const d = new Date();
+  d.setDate(d.getDate() + tage);
+  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
 // ─── Typen ───────────────────────────────────────────────────────────────────
 interface Marker {
   id: number;
@@ -262,6 +274,12 @@ function MarkerModal({
               <option value="2 Wochen">2 Wochen</option>
               <option value="4 Wochen">4 Wochen</option>
             </select>
+            {calcReduzierenDatum(form.reduzierungsRegel) && (
+              <p className="mt-1.5 text-xs text-amber-700 font-semibold flex items-center gap-1">
+                <span>→</span>
+                <span>Reduzieren ab: {calcReduzierenDatum(form.reduzierungsRegel)}</span>
+              </p>
+            )}
           </div>
 
           {/* Aktionshinweis */}
