@@ -127,14 +127,17 @@ function calcIsoDate(wert: string, type: "reduzieren" | "knick"): string | null 
 type St = "neu" | "ok" | "bald" | "faellig";
 function markerStatus(m: Marker): St {
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const knick = m.knickDatum       ? new Date(m.knickDatum       + "T00:00:00") : null;
+  const knick = m.knickDatum        ? new Date(m.knickDatum        + "T00:00:00") : null;
   const next  = m.naechsteKontrolle ? new Date(m.naechsteKontrolle + "T00:00:00") : null;
   if (!knick && !next) return "neu";
-  if (knick && today <= knick)  return "ok";
-  if (next  && today <= next)   return "bald";
-  if (next  && today >  next)   return "faellig";
-  // knick ueberschritten aber kein naechsteKontrolle
-  return "bald";
+  // naechsteKontrolle hat absolute Prioritaet sobald gesetzt
+  if (next) {
+    if (today > next) return "faellig"; // rot: Kontrolle ueberfaellig
+    return "bald";                      // gelb: Kontrolle steht bevor
+  }
+  // Kein naechsteKontrolle: nur knickDatum auswerten
+  if (knick && today <= knick) return "ok"; // gruen: innerhalb Knick-Datum
+  return "bald";                            // gelb: Knick-Datum ueberschritten
 }
 const ST: Record<St, { dot: string; btn: string; ring: string; label: string }> = {
   neu:     { dot: "bg-gray-400",  btn: "border-gray-300 bg-white/95 text-gray-700",       ring: "ring-gray-200",  label: "Neu" },
