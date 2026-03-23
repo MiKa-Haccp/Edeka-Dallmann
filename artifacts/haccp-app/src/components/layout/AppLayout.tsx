@@ -20,6 +20,7 @@ const SIDEBAR_PATHS = [
   "/probeentnahme", "/anti-vektor-zugang", "/bescheinigungen", "/kontrollberichte",
   "/warencheck-og", "/reinigung-taeglich", "/carrier-portal",
   "/wareneingaenge", "/metzgerei-wareneingaenge", "/reinigungsplan-metzgerei",
+  "/marktplan",
   "/section/", "/category/", "/we-", "/besprechungsprotokoll",
   "/gesundheitszeugnisse", "/admin/",
 ];
