@@ -109,6 +109,7 @@ function MarkerPin({
   onPointerMove: (e: React.PointerEvent, m: Marker) => void;
   onPointerUp:   (e: React.PointerEvent, m: Marker) => void;
   isDragging: boolean;
+  mapRotated?: boolean;
 }) {
   const st  = markerStatus(marker);
   const s   = ST[st];
@@ -126,7 +127,7 @@ function MarkerPin({
         position: "absolute",
         left: `${marker.x}%`,
         top:  `${marker.y}%`,
-        transform: "translate(-50%, -50%)",
+        transform: mapRotated ? "translate(-50%, -50%) rotate(-90deg)" : "translate(-50%, -50%)",
         zIndex: isDragging ? 50 : 10,
         pointerEvents: "auto",
         cursor: moveMode ? (isDragging ? "grabbing" : "grab") : "pointer",
@@ -609,6 +610,7 @@ export default function MarktPlan() {
                           onPointerMove={handlePointerMove}
                           onPointerUp={handlePointerUp}
                           isDragging={draggingId === m.id}
+                          mapRotated={rotateMap}
                         />
                       ))}
                     </div>
