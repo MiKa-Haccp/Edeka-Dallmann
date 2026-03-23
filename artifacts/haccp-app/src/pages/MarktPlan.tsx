@@ -264,7 +264,14 @@ function MarkerModal({
 
           {/* Reduzieren bis */}
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Reduzieren bis</label>
+            <div className="flex items-center gap-2 mb-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Reduzieren bis</label>
+              {calcReduzierenDatum(form.reduzierungsRegel) && (
+                <span className="text-xs font-bold text-white bg-amber-500 rounded-md px-2 py-0.5">
+                  {calcReduzierenDatum(form.reduzierungsRegel)}
+                </span>
+              )}
+            </div>
             <select value={form.reduzierungsRegel}
               onChange={e => setForm({ ...form, reduzierungsRegel: e.target.value })}
               className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
@@ -274,12 +281,6 @@ function MarkerModal({
               <option value="2 Wochen">2 Wochen</option>
               <option value="4 Wochen">4 Wochen</option>
             </select>
-            {calcReduzierenDatum(form.reduzierungsRegel) && (
-              <p className="mt-1.5 text-xs text-amber-700 font-semibold flex items-center gap-1">
-                <span>→</span>
-                <span>Reduzieren bis: {calcReduzierenDatum(form.reduzierungsRegel)}</span>
-              </p>
-            )}
           </div>
 
           {/* Aktionshinweis */}
