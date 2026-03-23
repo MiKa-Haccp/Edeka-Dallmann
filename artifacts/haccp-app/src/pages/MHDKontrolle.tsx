@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   CalendarDays, Plus, Trash2, Package, AlertTriangle,
-  CheckCircle2, ChevronLeft, Clock, Tag, Map,
+  CheckCircle2, ChevronLeft, Clock, Tag, Map as MapIcon,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -172,7 +172,7 @@ export default function MHDKontrolle() {
           className="flex items-center gap-3 px-4 py-3 bg-[#1a3a6b]/5 border border-[#1a3a6b]/20 rounded-2xl hover:bg-[#1a3a6b]/10 transition-colors group"
         >
           <div className="p-2 rounded-xl bg-[#1a3a6b] text-white flex-shrink-0">
-            <Map className="w-4 h-4" />
+            <MapIcon className="w-4 h-4" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-bold text-[#1a3a6b]">Interaktiver Marktplan</div>

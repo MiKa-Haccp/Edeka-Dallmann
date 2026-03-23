@@ -100,7 +100,7 @@ function ZoomControls() {
 function MarkerPin({
   marker, onEdit, moveMode,
   onPointerDown, onPointerMove, onPointerUp,
-  isDragging,
+  isDragging, mapRotated,
 }: {
   marker: Marker;
   onEdit: (m: Marker) => void;
