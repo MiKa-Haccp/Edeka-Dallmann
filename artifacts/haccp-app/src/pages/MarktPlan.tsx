@@ -134,11 +134,13 @@ function MarkerPin({
       }}
     >
       <div className={`
-        flex items-center font-bold shadow-md transition-shadow whitespace-nowrap select-none
+        flex items-center justify-center font-bold shadow-md transition-shadow whitespace-nowrap select-none
         ${s.ring} ${s.btn} ${SIZE_CLASSES[sz] ?? SIZE_CLASSES.xs}
         ${isDragging ? "shadow-xl scale-110 opacity-90" : "hover:shadow-lg hover:scale-105"}
       `}
-        style={rot ? { writingMode: "vertical-rl", textOrientation: "mixed" } : {}}
+        style={rot
+          ? { writingMode: "vertical-rl", textOrientation: "mixed", minHeight: "6ch" }
+          : { minWidth: "6ch" }}
       >
         <span className={`rounded-full flex-shrink-0 ${DOT_CLASSES[sz] ?? DOT_CLASSES.md} ${s.dot} ${st === "faellig" ? "animate-pulse" : ""}`} />
         <span>{marker.label.slice(0, 6)}</span>
