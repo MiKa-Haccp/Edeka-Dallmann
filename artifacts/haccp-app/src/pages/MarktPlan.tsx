@@ -22,6 +22,22 @@ function calcReduzierenDatum(wert: string): string | null {
   return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+const KNICK_MONATE: Record<string, number> = {
+  "8 Tage": 0, "2 Monate": 2, "4 Monate": 4, "5 Monate": 5,
+};
+const KNICK_TAGE_EXTRA: Record<string, number> = { "8 Tage": 8 };
+
+function calcKnickDatum(wert: string): string | null {
+  if (!wert || !(wert in KNICK_MONATE) && !(wert in KNICK_TAGE_EXTRA)) return null;
+  const d = new Date();
+  if (wert === "8 Tage") {
+    d.setDate(d.getDate() + 8);
+  } else {
+    d.setMonth(d.getMonth() + KNICK_MONATE[wert]);
+  }
+  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
 // ─── Typen ───────────────────────────────────────────────────────────────────
 interface Marker {
   id: number;
@@ -283,9 +299,16 @@ function MarkerModal({
             </select>
           </div>
 
-          {/* Aktionshinweis */}
+          {/* Knick bis */}
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Aktionshinweis</label>
+            <div className="flex items-center gap-2 mb-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Knick bis</label>
+              {calcKnickDatum(form.aktionsHinweis) && (
+                <span className="text-xs font-bold text-white bg-amber-500 rounded-md px-2 py-0.5">
+                  {calcKnickDatum(form.aktionsHinweis)}
+                </span>
+              )}
+            </div>
             <select value={form.aktionsHinweis}
               onChange={e => setForm({ ...form, aktionsHinweis: e.target.value })}
               className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
