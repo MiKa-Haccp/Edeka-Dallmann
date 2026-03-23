@@ -141,7 +141,7 @@ function MarkerPin({
         style={rot ? { writingMode: "vertical-rl", textOrientation: "mixed" } : {}}
       >
         <span className={`rounded-full flex-shrink-0 ${DOT_CLASSES[sz] ?? DOT_CLASSES.md} ${s.dot} ${st === "faellig" ? "animate-pulse" : ""}`} />
-        <span>{marker.label}</span>
+        <span>{marker.label.slice(0, 6)}</span>
         {moveMode && <MoveIcon className="w-2.5 h-2.5 opacity-40 flex-shrink-0" />}
       </div>
     </div>
