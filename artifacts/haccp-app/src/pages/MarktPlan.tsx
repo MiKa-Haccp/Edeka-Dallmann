@@ -277,7 +277,7 @@ function MarkerModal({
             {calcReduzierenDatum(form.reduzierungsRegel) && (
               <p className="mt-1.5 text-xs text-amber-700 font-semibold flex items-center gap-1">
                 <span>→</span>
-                <span>Reduzieren ab: {calcReduzierenDatum(form.reduzierungsRegel)}</span>
+                <span>Reduzieren bis: {calcReduzierenDatum(form.reduzierungsRegel)}</span>
               </p>
             )}
           </div>
