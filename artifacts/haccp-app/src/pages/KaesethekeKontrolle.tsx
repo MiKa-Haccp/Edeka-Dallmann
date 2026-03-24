@@ -473,7 +473,6 @@ function TempTab({
     return m;
   }, [entries]);
 
-  const artLabel = art === "reifeschrank" ? "Reifeschrank" : "Kaesekühlschrank";
   const tempSpec = art === "reifeschrank" ? "Soll: 2°C (±1°C)" : "Soll: max. 7°C";
 
   const handleSave = async (day: number, data: { temperatur: string; luftfeuchtigkeit?: string; massnahme: string; kuerzel: string; userId: number | null }) => {
@@ -501,90 +500,100 @@ function TempTab({
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-muted-foreground">{tempSpec}{art === "reifeschrank" ? " | Luftfeuchtigkeit: 75–85% rH" : ""} | Bei Abweichungen sofort Abteilungsleitung informieren.</p>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+        <Thermometer className="w-3.5 h-3.5 shrink-0" />
+        <span>{tempSpec}{art === "reifeschrank" ? " | Luftfeuchtigkeit: 75–85% rH" : ""} | Auf einen Tag tippen um Temperatur einzutragen.</span>
+      </div>
       <div className="border rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/50 border-b">
-                <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground w-14">Tag</th>
-                <th className="text-left px-2 py-2.5 font-semibold text-xs text-muted-foreground w-10">WT</th>
-                <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground">Temperatur</th>
-                {art === "reifeschrank" && <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground">Luftfeuchtigkeit</th>}
-                <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground">Massnahme</th>
-                <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground w-24">Kürzel</th>
-                <th className="w-20 px-3 py-2.5"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: days }, (_, i) => i + 1).map(day => {
-                const dayEntries = byDay[day] || [];
-                const latestEntry = dayEntries[dayEntries.length - 1] || null;
-                const wt = getWeekday(year, month, day);
-                const future = isFuture(year, month, day);
-                const today = isToday(year, month, day);
-                const weekend = isWeekend(year, month, day);
-                const tStatus = tempStatus(latestEntry?.temperatur ?? null, art);
-                const hStatus = humidityStatus(latestEntry?.luftfeuchtigkeit ?? null);
-                const hasWarn = tStatus === "warn" || hStatus === "warn";
-                return (
-                  <tr key={day} className={`border-b last:border-0 transition-colors ${today ? "bg-blue-50/60" : weekend ? "bg-muted/20" : ""} ${hasWarn ? "bg-red-50/40" : ""}`}>
-                    <td className="px-3 py-2 font-mono font-semibold text-sm">
-                      {String(day).padStart(2,"0")}
-                      {today && <span className="ml-1 text-xs text-blue-500 font-normal">heute</span>}
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-muted/50 border-b">
+              <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground w-16">Tag</th>
+              <th className="text-left px-2 py-2.5 font-semibold text-xs text-muted-foreground w-8">WT</th>
+              <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground">Temp.</th>
+              {art === "reifeschrank" && <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground">Feuchte</th>}
+              <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground hidden md:table-cell">Massnahme</th>
+              <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground w-16">Kürzel</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: days }, (_, i) => i + 1).map(day => {
+              const dayEntries = byDay[day] || [];
+              const latestEntry = dayEntries[dayEntries.length - 1] || null;
+              const wt = getWeekday(year, month, day);
+              const future = isFuture(year, month, day);
+              const today = isToday(year, month, day);
+              const weekend = isWeekend(year, month, day);
+              const tStatus = tempStatus(latestEntry?.temperatur ?? null, art);
+              const hStatus = humidityStatus(latestEntry?.luftfeuchtigkeit ?? null);
+              const hasWarn = tStatus === "warn" || hStatus === "warn";
+              const clickable = !future;
+
+              return (
+                <tr
+                  key={day}
+                  onClick={() => clickable && setModal(day)}
+                  className={[
+                    "border-b last:border-0 transition-colors",
+                    today ? "bg-blue-50/70" : weekend ? "bg-muted/20" : "",
+                    hasWarn ? "bg-red-50/50" : "",
+                    clickable ? "cursor-pointer hover:bg-primary/5 active:bg-primary/10" : "opacity-40",
+                  ].filter(Boolean).join(" ")}
+                >
+                  <td className="px-3 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-base">{String(day).padStart(2,"0")}</span>
+                      {today && <span className="text-[10px] font-semibold text-blue-500 bg-blue-100 px-1.5 py-0.5 rounded-full">HEUTE</span>}
+                      {!latestEntry && clickable && (
+                        <span className="text-[10px] text-primary/50 hidden sm:inline">+ Eintragen</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className={`px-2 py-3 text-xs font-medium ${weekend ? "text-red-500" : "text-muted-foreground"}`}>{wt}</td>
+                  <td className="px-3 py-3">
+                    {latestEntry?.temperatur ? (
+                      <TempBadge val={latestEntry.temperatur} status={tStatus} />
+                    ) : clickable ? (
+                      <span className="inline-flex items-center gap-1 text-xs text-primary/40 font-medium border border-dashed border-primary/20 rounded px-2 py-0.5">
+                        <Plus className="w-3 h-3" /> Temp.
+                      </span>
+                    ) : <span className="text-muted-foreground/30 text-xs">—</span>}
+                  </td>
+                  {art === "reifeschrank" && (
+                    <td className="px-3 py-3">
+                      {latestEntry?.luftfeuchtigkeit ? (
+                        <span className={`font-mono font-semibold text-sm ${hStatus==="ok"?"text-green-600":hStatus==="warn"?"text-red-600":"text-foreground"}`}>
+                          {latestEntry.luftfeuchtigkeit}%
+                        </span>
+                      ) : <span className="text-muted-foreground/30 text-xs">—</span>}
                     </td>
-                    <td className={`px-2 py-2 text-xs font-medium ${weekend ? "text-red-500" : "text-muted-foreground"}`}>{wt}</td>
-                    <td className="px-3 py-2">
-                      {latestEntry ? <TempBadge val={latestEntry.temperatur} status={tStatus} /> : <span className="text-muted-foreground/40 text-xs">—</span>}
-                    </td>
-                    {art === "reifeschrank" && (
-                      <td className="px-3 py-2">
-                        {latestEntry?.luftfeuchtigkeit ? (
-                          <span className={`font-mono font-semibold text-sm ${hStatus==="ok"?"text-green-600":hStatus==="warn"?"text-red-600":"text-foreground"}`}>
-                            {latestEntry.luftfeuchtigkeit}% rH
-                          </span>
-                        ) : <span className="text-muted-foreground/40 text-xs">—</span>}
-                      </td>
-                    )}
-                    <td className="px-3 py-2 max-w-[180px]">
-                      {latestEntry?.massnahme ? (
-                        <span className="text-xs text-muted-foreground truncate block">{latestEntry.massnahme}</span>
-                      ) : <span className="text-muted-foreground/40 text-xs">—</span>}
-                    </td>
-                    <td className="px-3 py-2">
+                  )}
+                  <td className="px-3 py-3 max-w-[200px] hidden md:table-cell">
+                    {latestEntry?.massnahme ? (
+                      <span className={`text-xs truncate block ${hasWarn ? "text-red-600 font-medium" : "text-muted-foreground"}`}>{latestEntry.massnahme}</span>
+                    ) : <span className="text-muted-foreground/30 text-xs">—</span>}
+                  </td>
+                  <td className="px-3 py-3">
+                    <div className="flex items-center gap-1">
                       {latestEntry ? (
-                        <span className="bg-primary/10 text-primary text-xs font-semibold px-2 py-0.5 rounded">{latestEntry.kuerzel}</span>
-                      ) : <span className="text-muted-foreground/40 text-xs">—</span>}
-                    </td>
-                    <td className="px-3 py-2">
-                      <div className="flex items-center gap-1 justify-end">
-                        {!future && (
-                          <button
-                            onClick={() => setModal(day)}
-                            className="flex items-center gap-1 text-xs border rounded-md px-2 py-1 hover:bg-secondary transition-colors"
-                            title={latestEntry ? "Erneut eintragen" : "Eintragen"}
-                          >
-                            <Thermometer className="w-3.5 h-3.5" />
-                            {latestEntry ? "Neu" : "Eintragen"}
-                          </button>
-                        )}
-                        {adminSession && latestEntry && (
-                          <button
-                            onClick={() => handleDelete(latestEntry.id)}
-                            className="text-muted-foreground hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"
-                            title="Loeschen"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                        <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded">{latestEntry.kuerzel}</span>
+                      ) : <span className="text-muted-foreground/30 text-xs">—</span>}
+                      {adminSession && latestEntry && (
+                        <button
+                          onClick={e => { e.stopPropagation(); handleDelete(latestEntry.id); }}
+                          className="text-muted-foreground hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"
+                          title="Loeschen"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
       {modal !== null && (
         <TempModal
@@ -646,94 +655,76 @@ function HeisseThekeTab({
 
   return (
     <div className="space-y-3">
-      <div className="text-xs text-muted-foreground space-y-0.5">
-        <p><strong>Garen:</strong> Geflügel/Hackbraten/Leberkäse/Schwein mind. +72°C | Fisch mind. +60°C</p>
-        <p><strong>Heisshalten:</strong> mind. 60°C, max. 3 Stunden</p>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+        <Flame className="w-3.5 h-3.5 shrink-0 text-orange-500" />
+        <span><strong>Garen:</strong> mind. +72°C (Fisch: +60°C) | <strong>Heisshalten:</strong> mind. 60°C, max. 3 Std.</span>
       </div>
-      <div className="border rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted/50 border-b">
-                <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground w-14">Tag</th>
-                <th className="text-left px-2 py-2.5 font-semibold text-xs text-muted-foreground w-10">WT</th>
-                <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground">Produkt</th>
-                <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground">Garen</th>
-                <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground">Heisshalten</th>
-                <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground">Massnahme</th>
-                <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground w-20">Kürzel</th>
-                <th className="w-24 px-3 py-2.5"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: days }, (_, i) => i + 1).map(day => {
-                const dayEntries = byDay[day] || [];
-                const wt = getWeekday(year, month, day);
-                const future = isFuture(year, month, day);
-                const today = isToday(year, month, day);
-                const weekend = isWeekend(year, month, day);
-                if (dayEntries.length === 0) {
-                  return (
-                    <tr key={day} className={`border-b last:border-0 ${today ? "bg-blue-50/60" : weekend ? "bg-muted/20" : ""}`}>
-                      <td className="px-3 py-2 font-mono font-semibold text-sm">
-                        {String(day).padStart(2,"0")}
-                        {today && <span className="ml-1 text-xs text-blue-500 font-normal">heute</span>}
-                      </td>
-                      <td className={`px-2 py-2 text-xs font-medium ${weekend ? "text-red-500" : "text-muted-foreground"}`}>{wt}</td>
-                      <td colSpan={5} className="px-3 py-2 text-muted-foreground/40 text-xs">Keine Eintraege</td>
-                      <td className="px-3 py-2">
-                        {!future && (
-                          <button
-                            onClick={() => setModal(day)}
-                            className="flex items-center gap-1 text-xs border rounded-md px-2 py-1 hover:bg-secondary transition-colors"
-                          >
-                            <Plus className="w-3.5 h-3.5" /> Eintragen
-                          </button>
+
+      <div className="space-y-2">
+        {Array.from({ length: days }, (_, i) => i + 1).map(day => {
+          const dayEntries = byDay[day] || [];
+          const wt = getWeekday(year, month, day);
+          const future = isFuture(year, month, day);
+          const today = isToday(year, month, day);
+          const weekend = isWeekend(year, month, day);
+
+          if (future && dayEntries.length === 0) return null;
+
+          return (
+            <div
+              key={day}
+              className={[
+                "border rounded-xl overflow-hidden",
+                today ? "border-blue-200 shadow-sm" : "",
+                weekend && !today ? "bg-muted/20" : "",
+              ].filter(Boolean).join(" ")}
+            >
+              {/* Tages-Header */}
+              <div className={`flex items-center justify-between px-4 py-2.5 ${today ? "bg-blue-50" : "bg-muted/30"} border-b`}>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono font-bold text-base">{String(day).padStart(2,"0")}.</span>
+                  <span className={`text-sm font-medium ${weekend ? "text-red-500" : "text-muted-foreground"}`}>{wt}</span>
+                  {today && <span className="text-[10px] font-bold text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full">HEUTE</span>}
+                  {dayEntries.length > 0 && (
+                    <span className="text-xs text-muted-foreground">{dayEntries.length} Produkt{dayEntries.length !== 1 ? "e" : ""}</span>
+                  )}
+                </div>
+                {!future && (
+                  <button
+                    onClick={() => setModal(day)}
+                    className="flex items-center gap-1.5 text-xs font-semibold bg-primary text-white rounded-lg px-3 py-1.5 hover:bg-primary/90 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Produkt eintragen
+                  </button>
+                )}
+              </div>
+
+              {/* Produkt-Eintraege */}
+              {dayEntries.length > 0 ? (
+                <div className="divide-y">
+                  {dayEntries.map(entry => {
+                    const gStatus = garenStatus(entry.kern_temp_garen, entry.produkt);
+                    const hStatus = heisshaltenStatus(entry.temp_heisshalten);
+                    const hasWarn = gStatus === "warn" || hStatus === "warn";
+                    return (
+                      <div key={entry.id} className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 ${hasWarn ? "bg-red-50/60" : ""}`}>
+                        <span className="font-semibold text-sm w-32 truncate">{entry.produkt}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">Garen:</span>
+                          <TempBadge val={entry.kern_temp_garen} status={gStatus} />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground">Heisshalten:</span>
+                          <TempBadge val={entry.temp_heisshalten} status={hStatus} />
+                        </div>
+                        {entry.massnahme && (
+                          <span className={`text-xs flex-1 min-w-0 truncate ${hasWarn ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
+                            {entry.massnahme}
+                          </span>
                         )}
-                      </td>
-                    </tr>
-                  );
-                }
-                return dayEntries.map((entry, idx) => {
-                  const gStatus = garenStatus(entry.kern_temp_garen, entry.produkt);
-                  const hStatus = heisshaltenStatus(entry.temp_heisshalten);
-                  const hasWarn = gStatus === "warn" || hStatus === "warn";
-                  return (
-                    <tr key={entry.id} className={`border-b last:border-0 transition-colors ${today ? "bg-blue-50/60" : weekend ? "bg-muted/20" : ""} ${hasWarn ? "bg-red-50/40" : ""}`}>
-                      {idx === 0 ? (
-                        <>
-                          <td className="px-3 py-2 font-mono font-semibold text-sm" rowSpan={dayEntries.length}>
-                            {String(day).padStart(2,"0")}
-                            {today && <div className="text-xs text-blue-500 font-normal">heute</div>}
-                          </td>
-                          <td className={`px-2 py-2 text-xs font-medium ${weekend ? "text-red-500" : "text-muted-foreground"}`} rowSpan={dayEntries.length}>{wt}</td>
-                        </>
-                      ) : null}
-                      <td className="px-3 py-2 font-medium text-sm">{entry.produkt}</td>
-                      <td className="px-3 py-2">
-                        <TempBadge val={entry.kern_temp_garen} status={gStatus} />
-                      </td>
-                      <td className="px-3 py-2">
-                        <TempBadge val={entry.temp_heisshalten} status={hStatus} />
-                      </td>
-                      <td className="px-3 py-2 max-w-[160px]">
-                        {entry.massnahme ? (
-                          <span className="text-xs text-muted-foreground truncate block">{entry.massnahme}</span>
-                        ) : <span className="text-muted-foreground/40 text-xs">—</span>}
-                      </td>
-                      <td className="px-3 py-2">
-                        <span className="bg-primary/10 text-primary text-xs font-semibold px-2 py-0.5 rounded">{entry.kuerzel}</span>
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-1 justify-end">
-                          {idx === 0 && !future && (
-                            <button
-                              onClick={() => setModal(day)}
-                              className="flex items-center gap-1 text-xs border rounded-md px-2 py-1 hover:bg-secondary transition-colors"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                            </button>
-                          )}
+                        <div className="flex items-center gap-1 ml-auto">
+                          <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded">{entry.kuerzel}</span>
                           {adminSession && (
                             <button
                               onClick={() => handleDelete(entry.id)}
@@ -744,15 +735,23 @@ function HeisseThekeTab({
                             </button>
                           )}
                         </div>
-                      </td>
-                    </tr>
-                  );
-                });
-              })}
-            </tbody>
-          </table>
-        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div
+                  onClick={() => !future && setModal(day)}
+                  className={`px-4 py-3 text-sm text-muted-foreground/60 text-center ${!future ? "cursor-pointer hover:bg-primary/5 hover:text-primary/70" : ""}`}
+                >
+                  {!future ? "Tippen um erstes Produkt einzutragen" : "Keine Eintraege"}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
+
       {modal !== null && (
         <HeisseThekeModal
           day={modal} year={year} month={month}
