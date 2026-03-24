@@ -35,6 +35,7 @@ import wareMhdRouter from "./wareMhd";
 import metzReinigungRouter from "./metzReinigung";
 import shelfMarkersRouter from "./shelfMarkers";
 import oeffnungSalateRouter from "./oeffnungSalate";
+import kaesethekeKontrolleRouter from "./kaesethekeKontrolle";
 
 const router: IRouter = Router();
 
@@ -74,5 +75,6 @@ router.use(wareMhdRouter);
 router.use(metzReinigungRouter);
 router.use(shelfMarkersRouter);
 router.use(oeffnungSalateRouter);
+router.use(kaesethekeKontrolleRouter);
 
 export default router;
