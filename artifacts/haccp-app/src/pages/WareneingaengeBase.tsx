@@ -17,8 +17,105 @@ const WD_FULL  = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag
 const MONTHS_DE = ["","Januar","Februar","Maerz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 
 // ── KRITERIEN ─────────────────────────────────────────────────
-type CrType = "check" | "temp";
-export interface CritDef { key: string; label: string; short: string; type: CrType; note?: string; group: string; maxVal?: number; minVal?: number; }
+type CrType = "check" | "temp" | "fisch_mhd_list" | "nemat_list";
+export interface CritDef { key: string; label: string; short: string; type: CrType; note?: string; group: string; maxVal?: number; minVal?: number; options?: string[]; }
+
+// ── FISCH-MHD LISTE ───────────────────────────────────────────
+type FischMhdRow = { art: string; mhd: string };
+function parseFischMhd(val: string | undefined): FischMhdRow[] {
+  try { return val ? JSON.parse(val) : []; } catch { return []; }
+}
+function FischMhdList({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const rows = parseFischMhd(value);
+  const update = (next: FischMhdRow[]) => onChange(JSON.stringify(next));
+  const add = () => update([...rows, { art: "", mhd: "" }]);
+  const remove = (i: number) => update(rows.filter((_, idx) => idx !== i));
+  const set = (i: number, field: keyof FischMhdRow, v: string) => {
+    const next = rows.map((r, idx) => idx === i ? { ...r, [field]: v } : r);
+    update(next);
+  };
+  return (
+    <div className="space-y-2">
+      {rows.map((row, i) => (
+        <div key={i} className="flex gap-2 items-center">
+          <input
+            type="text"
+            placeholder="Fischart / Artikel"
+            value={row.art}
+            onChange={e => set(i, "art", e.target.value)}
+            className="flex-1 border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/30"
+          />
+          <input
+            type="date"
+            value={row.mhd}
+            onChange={e => set(i, "mhd", e.target.value)}
+            className="border border-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/30 w-36"
+          />
+          <button onClick={() => remove(i)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ))}
+      <button onClick={add} className="flex items-center gap-1.5 text-xs text-primary font-semibold px-2.5 py-1.5 rounded-lg border border-dashed border-primary/40 hover:bg-primary/5 transition-colors">
+        <Plus className="w-3 h-3" /> Fisch hinzufuegen
+      </button>
+    </div>
+  );
+}
+
+// ── NEMATODEN-KONTROLLE LISTE ──────────────────────────────────
+type NematRow = { art: string; custom?: string };
+function parseNemat(val: string | undefined): NematRow[] {
+  try { return val ? JSON.parse(val) : []; } catch { return []; }
+}
+const NEMAT_OPTIONS = [
+  "Rotbarschfilet","Seelachsfilet","Kabeljaufilet","Steinbuttfilet",
+  "Schellfischfilet","Schwarzes Heilbuttfilet","Lachsfilet","Schollenfilet",
+  "Sonstiges (freitext)",
+];
+function NematList({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const rows = parseNemat(value);
+  const update = (next: NematRow[]) => onChange(JSON.stringify(next));
+  const add = () => update([...rows, { art: "", custom: "" }]);
+  const remove = (i: number) => update(rows.filter((_, idx) => idx !== i));
+  const set = (i: number, field: keyof NematRow, v: string) => {
+    const next = rows.map((r, idx) => idx === i ? { ...r, [field]: v } : r);
+    update(next);
+  };
+  return (
+    <div className="space-y-2">
+      {rows.map((row, i) => (
+        <div key={i} className="space-y-1.5">
+          <div className="flex gap-2 items-center">
+            <select
+              value={row.art}
+              onChange={e => set(i, "art", e.target.value)}
+              className="flex-1 border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/30 bg-white"
+            >
+              <option value="">-- Fischart waehlen --</option>
+              {NEMAT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+            </select>
+            <button onClick={() => remove(i)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          {row.art === "Sonstiges (freitext)" && (
+            <input
+              type="text"
+              placeholder="Fischart eingeben..."
+              value={row.custom ?? ""}
+              onChange={e => set(i, "custom", e.target.value)}
+              className="w-full border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/30 ml-0"
+            />
+          )}
+        </div>
+      ))}
+      <button onClick={add} className="flex items-center gap-1.5 text-xs text-blue-600 font-semibold px-2.5 py-1.5 rounded-lg border border-dashed border-blue-300 hover:bg-blue-50 transition-colors">
+        <Plus className="w-3 h-3" /> Nematodenkontrolle hinzufuegen
+      </button>
+    </div>
+  );
+}
 
 // ── SECTION CONFIG VIA CONTEXT ─────────────────────────────────
 export interface WEBaseConfig {
@@ -236,6 +333,37 @@ function DayDetailModal({ day, year, month, type, entry, onClose, onEdit }: {
               );})}
             </div>
           )}
+          {enabled.filter(c=>c.type==="fisch_mhd_list").map(c=>{
+            const rows=parseFischMhd(v[c.key]);
+            if(rows.length===0)return null;
+            return(
+              <div key={c.key} className="space-y-2">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1"><Fish className="w-3 h-3"/>Fisch / MHD</p>
+                {rows.map((r,i)=>(
+                  <div key={i} className="flex items-center gap-2 text-xs bg-blue-50 rounded-lg px-3 py-2 border border-blue-100">
+                    <Fish className="w-3 h-3 text-blue-400 shrink-0"/>
+                    <span className="flex-1 font-medium">{r.art||"(kein Name)"}</span>
+                    {r.mhd&&<span className="font-mono text-blue-700 shrink-0">MHD: {new Date(r.mhd+"T00:00:00").toLocaleDateString("de-DE")}</span>}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+          {enabled.filter(c=>c.type==="nemat_list").map(c=>{
+            const rows=parseNemat(v[c.key]);
+            if(rows.length===0)return null;
+            return(
+              <div key={c.key} className="space-y-2">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Nematodenkontrolle</p>
+                {rows.map((r,i)=>(
+                  <div key={i} className="flex items-center gap-2 text-xs bg-purple-50 rounded-lg px-3 py-2 border border-purple-100">
+                    <CircleCheck className="w-3 h-3 text-purple-400 shrink-0"/>
+                    <span className="font-medium">{r.art==="Sonstiges (freitext)"?(r.custom||"Sonstiges"):r.art}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
           {v._ausgefallen==="ja"&&(
             <div className="bg-gray-100 border border-gray-200 rounded-xl p-3 flex items-center gap-2">
               <CircleMinus className="w-4 h-4 text-gray-500 shrink-0"/>
@@ -337,6 +465,24 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
                         </button>
                       ))}
                     </div>
+                  </div>
+                ):c.type==="fisch_mhd_list"?(
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium flex items-center gap-1.5">
+                      <Fish className="w-3.5 h-3.5 text-blue-500"/>
+                      {c.label}
+                    </p>
+                    {c.note&&<p className="text-[11px] text-muted-foreground">{c.note}</p>}
+                    <FischMhdList value={vals[c.key]??""} onChange={v=>setVal(c.key,v)}/>
+                  </div>
+                ):c.type==="nemat_list"?(
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium flex items-center gap-1.5">
+                      <CircleCheck className="w-3.5 h-3.5 text-blue-500"/>
+                      {c.label}
+                    </p>
+                    {c.note&&<p className="text-[11px] text-muted-foreground">{c.note}</p>}
+                    <NematList value={vals[c.key]??""} onChange={v=>setVal(c.key,v)}/>
                   </div>
                 ):(
                   <div className="flex items-center gap-2">

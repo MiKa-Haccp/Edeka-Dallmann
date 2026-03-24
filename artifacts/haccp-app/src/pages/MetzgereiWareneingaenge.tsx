@@ -12,12 +12,14 @@ const ALL_CRIT: CritDef[] = [
   { key:"qs_qs",            short:"QS",            label:"QS - Qualitaet u. Sicherheit i.O.",                 type:"check", group:"Fleisch" },
   { key:"qs_by",            short:"QS-BY",         label:"Geprueft. Qualitaet BY geprueft i.O.",              type:"check", group:"Fleisch" },
   // ── Fisch - Allgemein ─────────────────────────────────────
+  { key:"fisch_arten_json", short:"Fisch/MHD",     label:"Fischart(en) mit Verbrauchsdatum / MHD",            type:"fisch_mhd_list", note:"Fuer jede gelieferte Fischart eine Zeile eintragen", group:"Fisch - Allgemein" },
   { key:"fisch_geruch",     short:"Geruch",        label:"Geruch i.O. (frisch, meeresartig)",                 type:"check", group:"Fisch - Allgemein" },
   { key:"fisch_kiemen",     short:"Kiemen",        label:"Kiemenfarbe i.O. (rot / rosa)",                     type:"check", group:"Fisch - Allgemein" },
   { key:"fisch_augen",      short:"Augen",         label:"Augen i.O. (klar, gewoelbt, glaenzend)",            type:"check", group:"Fisch - Allgemein" },
   { key:"fisch_haut",       short:"Haut",          label:"Haut / Schuppen i.O.",                              type:"check", group:"Fisch - Allgemein" },
   { key:"fisch_konsistenz", short:"Konsist.",      label:"Konsistenz i.O. (Fleisch fest und elastisch)",      type:"check", group:"Fisch - Allgemein" },
   { key:"fisch_herkunft",   short:"Herkunft",      label:"Fangebiet / Herkunft angegeben",                    type:"check", group:"Fisch - Allgemein" },
+  { key:"nemat_json",       short:"Nemat.",        label:"Nematodenkontrolle durchgefuehrt",                  type:"nemat_list", note:"Fuer jeden kontrollierten Fisch eine Zeile hinzufuegen", group:"Fisch - Allgemein" },
   // ── MSC-Fisch ─────────────────────────────────────────────
   { key:"fisch_msc_zertifikat", short:"MSC-Zert.", label:"MSC-Zertifikat Lieferant geprueft",                 type:"check", group:"MSC-Fisch" },
   { key:"fisch_msc_kennz",      short:"MSC-Kennz", label:"MSC-Kennzeichnung auf Ware vorhanden",              type:"check", group:"MSC-Fisch" },
