@@ -30,3 +30,4 @@ export * from "./wareEinraeumservice";
 export * from "./wareMhd";
 export * from "./metzReinigung";
 export * from "./shelfMarkers";
+export * from "./oeffnungSalate";

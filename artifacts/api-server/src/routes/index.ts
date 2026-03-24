@@ -34,6 +34,7 @@ import wareEinraeumserviceRouter from "./wareEinraeumservice";
 import wareMhdRouter from "./wareMhd";
 import metzReinigungRouter from "./metzReinigung";
 import shelfMarkersRouter from "./shelfMarkers";
+import oeffnungSalateRouter from "./oeffnungSalate";
 
 const router: IRouter = Router();
 
@@ -72,5 +73,6 @@ router.use(wareEinraeumserviceRouter);
 router.use(wareMhdRouter);
 router.use(metzReinigungRouter);
 router.use(shelfMarkersRouter);
+router.use(oeffnungSalateRouter);
 
 export default router;
