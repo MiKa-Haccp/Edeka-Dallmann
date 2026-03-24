@@ -37,10 +37,16 @@ router.post("/warencheck-og", async (req, res) => {
   }
 
   const now = new Date();
-  const nowYear  = now.getFullYear();
-  const nowMonth = now.getMonth() + 1;
-  const nowDay   = now.getDate();
-  const nowHour  = now.getHours();
+  const berlinParts = new Intl.DateTimeFormat("de-DE", {
+    timeZone: "Europe/Berlin",
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit",
+    hour12: false,
+  }).formatToParts(now);
+  const get = (type: string) => Number(berlinParts.find(p => p.type === type)?.value ?? 0);
+  const nowYear  = get("year");
+  const nowMonth = get("month");
+  const nowDay   = get("day");
+  const nowHour  = get("hour");
 
   const entryDate = new Date(year, month - 1, day);
   const today     = new Date(nowYear, nowMonth - 1, nowDay);
