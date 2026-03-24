@@ -40,6 +40,7 @@ export const ListMarketsResponseItem = zod.object({
   lat: zod.string().nullable().optional(),
   lng: zod.string().nullable().optional(),
   geoRadiusKm: zod.number().nullable().optional(),
+  planRotiert: zod.boolean().nullable().optional(),
   createdAt: zod.date(),
 });
 export const ListMarketsResponse = zod.array(ListMarketsResponseItem);

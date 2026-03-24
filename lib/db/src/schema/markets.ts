@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
@@ -12,6 +12,7 @@ export const marketsTable = pgTable("markets", {
   lat: text("lat"),
   lng: text("lng"),
   geoRadiusKm: integer("geo_radius_km").default(10),
+  planRotiert: boolean("plan_rotiert").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

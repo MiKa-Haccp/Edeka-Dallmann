@@ -528,27 +528,54 @@ export default function MarktPlan() {
   const [modal, setModal]         = useState<null | { mode: "new" | "edit"; marker?: Marker; x?: number; y?: number }>(null);
   const [form, setForm]           = useState(EMPTY_FORM);
   const [saving, setSaving]       = useState(false);
+  // rotateMap: aus DB laden (geraeteuebergreifend), localStorage nur als sofortiger Fallback
   const [rotateMap, setRotateMap] = useState<boolean>(
     () => localStorage.getItem("marktplan_rotated") === "1"
   );
-
-  useEffect(() => {
-    localStorage.setItem("marktplan_rotated", rotateMap ? "1" : "0");
-  }, [rotateMap]);
+  const [rotateMapLoaded, setRotateMapLoaded] = useState(false);
 
   // Drag-State
   const dragId  = useRef<number | null>(null);
   const imgRef  = useRef<HTMLDivElement>(null);
   const [draggingId, setDraggingId] = useState<number | null>(null);
 
-  // Marker laden
+  // Marker laden + Plan-Rotation aus DB laden
   const load = useCallback(async () => {
     if (!selectedMarketId) return;
     try {
-      const r = await fetch(`${BASE}/shelf-markers?marketId=${selectedMarketId}`);
-      if (r.ok) setMarkers(await r.json());
+      const [markersRes, marketsRes] = await Promise.all([
+        fetch(`${BASE}/shelf-markers?marketId=${selectedMarketId}`),
+        fetch(`${BASE}/markets`),
+      ]);
+      if (markersRes.ok) setMarkers(await markersRes.json());
+      if (marketsRes.ok) {
+        const markets: Array<{ id: number; planRotiert?: boolean | null }> = await marketsRes.json();
+        const market = markets.find(m => m.id === selectedMarketId);
+        if (market && !rotateMapLoaded) {
+          const serverRotated = !!market.planRotiert;
+          setRotateMap(serverRotated);
+          localStorage.setItem("marktplan_rotated", serverRotated ? "1" : "0");
+          setRotateMapLoaded(true);
+        }
+      }
     } catch { /* ignore */ }
-  }, [selectedMarketId]);
+  }, [selectedMarketId, rotateMapLoaded]);
+
+  // Plan-Rotation umschalten und in DB speichern
+  const toggleRotateMap = useCallback(async () => {
+    const next = !rotateMap;
+    setRotateMap(next);
+    localStorage.setItem("marktplan_rotated", next ? "1" : "0");
+    if (selectedMarketId) {
+      try {
+        await fetch(`${BASE}/markets/${selectedMarketId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ planRotiert: next }),
+        });
+      } catch { /* ignore */ }
+    }
+  }, [rotateMap, selectedMarketId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -783,7 +810,7 @@ export default function MarktPlan() {
 
             {/* Plan drehen */}
             <button
-              onClick={() => setRotateMap(r => !r)}
+              onClick={toggleRotateMap}
               title={rotateMap ? "Plan horizontal (original)" : "Plan vertikal (90 Grad)"}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all
                 ${rotateMap
