@@ -767,7 +767,7 @@ function HeisseThekeTab({
 type Tab = "reifeschrank" | "kaesekühlschrank" | "heisse_theke";
 
 export default function KaesethekeKontrolle() {
-  const { selectedMarket, adminSession } = useAppStore();
+  const { selectedMarketId, selectedMarketName, adminSession } = useAppStore();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
@@ -775,7 +775,7 @@ export default function KaesethekeKontrolle() {
   const [entries, setEntries] = useState<KontrolleEntry[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const marketId = selectedMarket?.id ?? 0;
+  const marketId = selectedMarketId ?? 0;
 
   const fetchEntries = useCallback(async () => {
     if (!marketId) return;
@@ -842,7 +842,7 @@ export default function KaesethekeKontrolle() {
           </button>
           <div className="text-center">
             <div className="font-bold text-lg">{MONTH_NAMES[month - 1]} {year}</div>
-            {selectedMarket && <div className="text-xs text-muted-foreground">{selectedMarket.name}</div>}
+            {selectedMarketName && <div className="text-xs text-muted-foreground">{selectedMarketName}</div>}
           </div>
           <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
             <ChevronRight className="w-5 h-5" />
