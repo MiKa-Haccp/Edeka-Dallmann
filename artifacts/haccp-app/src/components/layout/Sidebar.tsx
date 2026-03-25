@@ -68,7 +68,7 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
                 : "text-muted-foreground hover:bg-secondary hover:text-foreground"
             )}
           >
-            <FileText className={cn("h-4 w-4 flex-shrink-0", iconColor, trafficStatus === "red" && "animate-pulse")} />
+            <FileText className={cn("h-4 w-4 flex-shrink-0", iconColor)} />
             <span className="truncate">{section.number} {section.title}</span>
           </Link>
         );
