@@ -1,7 +1,37 @@
 import { Router } from "express";
 import { pool } from "@workspace/db";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
 
 const router = Router();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirnameESM = path.dirname(__filename);
+const UPLOAD_DIR = path.resolve(__dirnameESM, "../../../haccp-app/public/rezepturen");
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const base = path.basename(file.originalname, ext)
+      .replace(/[^a-zA-Z0-9_\-äöüÄÖÜß]/g, "_");
+    const unique = `${Date.now()}_${base}${ext}`;
+    cb(null, unique);
+  },
+});
+const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
+
+// POST /rezepturen/upload
+router.post("/rezepturen/upload", upload.single("foto"), (req, res) => {
+  if (!req.file) {
+    res.status(400).json({ error: "Keine Datei hochgeladen" });
+    return;
+  }
+  res.json({ dateiname: req.file.filename });
+});
 
 // GET /rezepturen/kategorien
 router.get("/rezepturen/kategorien", async (_req, res) => {
@@ -11,7 +41,41 @@ router.get("/rezepturen/kategorien", async (_req, res) => {
   res.json(rows);
 });
 
-// GET /rezepturen?kategorieId=
+// POST /rezepturen/kategorien
+router.post("/rezepturen/kategorien", async (req, res) => {
+  const { name } = req.body;
+  if (!name?.trim()) {
+    res.status(400).json({ error: "Name erforderlich" });
+    return;
+  }
+  const maxSort = await pool.query(
+    `SELECT COALESCE(MAX(sort_order),0)+10 AS s FROM rezeptur_kategorien`
+  );
+  const { rows } = await pool.query(
+    `INSERT INTO rezeptur_kategorien (tenant_id, name, sort_order) VALUES (1,$1,$2) RETURNING *`,
+    [name.trim(), maxSort.rows[0].s]
+  );
+  res.json(rows[0]);
+});
+
+// PUT /rezepturen/kategorien/:id
+router.put("/rezepturen/kategorien/:id", async (req, res) => {
+  const { name } = req.body;
+  const { rows } = await pool.query(
+    `UPDATE rezeptur_kategorien SET name=$1 WHERE id=$2 RETURNING *`,
+    [name, req.params.id]
+  );
+  if (!rows.length) { res.status(404).json({ error: "Nicht gefunden" }); return; }
+  res.json(rows[0]);
+});
+
+// DELETE /rezepturen/kategorien/:id
+router.delete("/rezepturen/kategorien/:id", async (req, res) => {
+  await pool.query("DELETE FROM rezeptur_kategorien WHERE id=$1", [req.params.id]);
+  res.json({ ok: true });
+});
+
+// GET /rezepturen
 router.get("/rezepturen", async (req, res) => {
   const { kategorieId } = req.query;
   let q = `
@@ -38,10 +102,7 @@ router.get("/rezepturen/:id", async (req, res) => {
      WHERE r.id = $1`,
     [req.params.id]
   );
-  if (!rows.length) {
-    res.status(404).json({ error: "Nicht gefunden" });
-    return;
-  }
+  if (!rows.length) { res.status(404).json({ error: "Nicht gefunden" }); return; }
   res.json(rows[0]);
 });
 
@@ -89,10 +150,7 @@ router.put("/rezepturen/:id", async (req, res) => {
       req.params.id
     ]
   );
-  if (!rows.length) {
-    res.status(404).json({ error: "Nicht gefunden" });
-    return;
-  }
+  if (!rows.length) { res.status(404).json({ error: "Nicht gefunden" }); return; }
   res.json(rows[0]);
 });
 
