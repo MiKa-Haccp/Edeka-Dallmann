@@ -13,7 +13,6 @@ import { useLocation } from "wouter";
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 const SIDEBAR_PATHS = [
-  "/",
   "/responsibilities", "/mitarbeiter-liste", "/mitarbeiterverwaltung",
   "/info-documentation", "/training-records", "/annual-cleaning-plan",
   "/betriebsbegehung", "/hinweisschild-gesperrte-ware", "/produktfehlermeldung",
@@ -27,8 +26,7 @@ const SIDEBAR_PATHS = [
 
 function useSidebarVisible() {
   const [location] = useLocation();
-  if (location === "/") return true;
-  return SIDEBAR_PATHS.some((p) => p !== "/" && location.startsWith(p));
+  return SIDEBAR_PATHS.some((p) => location.startsWith(p));
 }
 
 export function AppLayout({ children }: { children: ReactNode }) {

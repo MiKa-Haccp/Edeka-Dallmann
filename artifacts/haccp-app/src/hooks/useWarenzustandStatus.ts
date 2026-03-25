@@ -620,6 +620,15 @@ const ANNUAL_PLAN_ITEMS: { key: string; activeMonths: number[] }[] = [
   { key: "wbl_aussenrampe", activeMonths: [1,2,3,4,5,6,7,8,9,10,11,12] },
 ];
 
+/** Gibt den letzten Monat der Periode zurück, die beim activeMonth beginnt.
+ *  Z.B. halbjährlich [1,7]: Periode 1 → Ende 6, Periode 2 → Ende 12
+ *       jährlich [1]:       Periode 1 → Ende 12
+ *       monatlich [1..12]:  Periode m → Ende m  */
+function periodEndMonth(activeMonths: number[], idx: number): number {
+  if (idx + 1 < activeMonths.length) return activeMonths[idx + 1] - 1;
+  return 12;
+}
+
 export function useAnnualCleaningPlanStatus(): TrafficLight {
   const [status, setStatus] = useState<TrafficLight>("none");
   const [tick, setTick] = useState(0);
@@ -640,26 +649,39 @@ export function useAnnualCleaningPlanStatus(): TrafficLight {
       .then((confirmations: { itemKey: string; month: number }[]) => {
         if (cancelled) return;
 
-        const requiredNow = ANNUAL_PLAN_ITEMS.filter(item => item.activeMonths.includes(month));
-        if (requiredNow.length === 0) { setStatus("none"); return; }
-
-        const confirmedThisMonth = new Set(
-          confirmations.filter(c => c.month === month).map(c => c.itemKey)
+        const confirmedSet = new Set(
+          confirmations.map(c => `${c.itemKey}__${c.month}`)
         );
-        const done = requiredNow.filter(item => confirmedThisMonth.has(item.key)).length;
 
-        if (done === requiredNow.length) { setStatus("green"); return; }
+        let anyOverdue = false;
+        let hasCurrentItems = false;
+        let allCurrentDone = true;
 
-        // Check past months for overdue
-        for (let m = 1; m < month; m++) {
-          const req = ANNUAL_PLAN_ITEMS.filter(item => item.activeMonths.includes(m));
-          if (req.length === 0) continue;
-          const pastKeys = new Set(confirmations.filter(c => c.month === m).map(c => c.itemKey));
-          const pastDone = req.filter(item => pastKeys.has(item.key)).length;
-          if (pastDone < req.length) { setStatus("red"); return; }
+        for (const item of ANNUAL_PLAN_ITEMS) {
+          for (let i = 0; i < item.activeMonths.length; i++) {
+            const am = item.activeMonths[i];
+            const periodEnd = periodEndMonth(item.activeMonths, i);
+
+            if (periodEnd < month) {
+              // Periode vollständig abgelaufen → auf Überfall prüfen
+              if (!confirmedSet.has(`${item.key}__${am}`)) {
+                anyOverdue = true;
+              }
+            } else if (am <= month) {
+              // Wir befinden uns innerhalb dieser Periode
+              hasCurrentItems = true;
+              if (!confirmedSet.has(`${item.key}__${am}`)) {
+                allCurrentDone = false;
+              }
+            }
+            // Zukünftige Perioden (am > month) → ignorieren
+          }
         }
 
-        setStatus(done > 0 ? "yellow" : "yellow");
+        if (anyOverdue)        { setStatus("red");    return; }
+        if (!hasCurrentItems)  { setStatus("none");   return; }
+        if (allCurrentDone)    { setStatus("green");  return; }
+        setStatus("yellow");
       })
       .catch(() => { if (!cancelled) setStatus("none"); });
     return () => { cancelled = true; };

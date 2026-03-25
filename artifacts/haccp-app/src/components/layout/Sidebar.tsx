@@ -80,7 +80,6 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
 const ACCORDION_STORAGE_KEY = "haccp-sidebar-open-categories";
 
 const SIDEBAR_OPEN_PATHS = [
-  "/",
   "/responsibilities", "/mitarbeiter-liste", "/info-documentation",
   "/training-records", "/annual-cleaning-plan", "/betriebsbegehung",
   "/hinweisschild-gesperrte-ware", "/produktfehlermeldung", "/probeentnahme",
