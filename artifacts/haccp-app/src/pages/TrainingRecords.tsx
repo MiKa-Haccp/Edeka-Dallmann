@@ -438,6 +438,35 @@ function SessionDetailView({ sessionId, onBack }: { sessionId: number; onBack: (
           </div>
         </div>
 
+        {isSimpleType && TAB_META[session.sessionType as SessionType]?.sections?.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-primary" />
+              Schulungsinhalt
+            </h3>
+            <div className={cn("rounded-xl border p-4 sm:p-5 space-y-5", TAB_META[session.sessionType as SessionType]?.bgColor || "bg-secondary/50 border-border")}>
+              {TAB_META[session.sessionType as SessionType].sections.map((section, si) => (
+                <div key={si}>
+                  <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white border border-border text-xs font-bold text-muted-foreground shrink-0">
+                      {si + 1}
+                    </span>
+                    {section.heading}
+                  </h4>
+                  <ul className="space-y-1.5">
+                    {section.items.map((item, ii) => (
+                      <li key={ii} className="flex items-start gap-2 text-sm text-foreground/80 leading-relaxed">
+                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-foreground/40 shrink-0" />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {!isSimpleType && session.topics?.length > 0 && (
           <div className="mb-6">
             <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
@@ -531,26 +560,184 @@ function SessionDetailView({ sessionId, onBack }: { sessionId: number; onBack: (
   );
 }
 
-const TAB_META: Record<SessionType, { icon: ElementType; color: string; desc: string }> = {
+type ContentSection = { heading: string; items: string[] };
+
+const TAB_META: Record<SessionType, { icon: ElementType; color: string; bgColor: string; desc: string; sections: ContentSection[] }> = {
   schulungsprotokoll: {
     icon: GraduationCap,
     color: "text-primary",
+    bgColor: "bg-primary/5 border-primary/20",
     desc: "Jährliche Schulungen gem. HACCP, IfSG, Arbeitssicherheit u.a.",
+    sections: [],
   },
   taraschulung: {
     icon: Scale,
     color: "text-blue-600",
+    bgColor: "bg-blue-50 border-blue-200",
     desc: "Taraschulung gem. §26 Mess- und Eichverordnung (MessEV) – Pflicht für alle Mitarbeiter an Bedienungstheken und Waagen.",
+    sections: [
+      {
+        heading: "Was ist Tara?",
+        items: [
+          "Tara bezeichnet das Gewicht der Verpackung oder des Behälters, in dem eine Ware gewogen wird.",
+          "Die Tara muss bei jedem Wiegevorgang korrekt abgezogen werden, damit der Kunde nur das Nettogewicht der Ware bezahlt.",
+          "Fehlerhafte Tara kann zu Verbrauchertäuschung führen und ist strafbar.",
+        ],
+      },
+      {
+        heading: "Gesetzliche Grundlage – §26 Mess- und Eichverordnung (MessEV)",
+        items: [
+          "Alle Mitarbeiter, die an geeichten Waagen arbeiten, müssen jährlich im richtigen Umgang mit der Tara geschult werden.",
+          "Die Schulung ist zu dokumentieren und auf Verlangen der Behörden vorzulegen.",
+          "Die Eichgültigkeit der Waagen muss regelmäßig überprüft werden (Eichpflicht).",
+          "Der Betreiber ist verantwortlich dafür, dass nur geeichte und korrekt eingestellte Waagen verwendet werden.",
+        ],
+      },
+      {
+        heading: "Korrekte Durchführung der Tara am Arbeitsplatz",
+        items: [
+          "Vor dem Wiegen: Behälter/Verpackung auf die Waage legen und die Tara-Taste drücken – die Anzeige muss auf 0,000 kg zurückspringen.",
+          "Erst dann die Ware einlegen und das Nettogewicht ablesen.",
+          "Bei verpackten Waren (z.B. Käse in Plastikfolie) immer die Verpackung mittarieren.",
+          "Waagen niemals mit mehr als der zugelassenen Höchstlast belasten (Maximalgewicht beachten).",
+          "Bei Fehlanzeigen oder Unregelmäßigkeiten sofort den Vorgesetzten informieren.",
+        ],
+      },
+      {
+        heading: "Häufige Fehler und ihre Folgen",
+        items: [
+          "Vergessene Tara: Kunde zahlt das Gewicht der Verpackung mit – Verbrauchertäuschung.",
+          "Falsche Tara durch Verschmutzung der Wiegefläche: Ergebnis kann verfälscht werden – Wiegefläche immer sauber halten.",
+          "Nutzung ungeeichter Waagen: Bußgeld bis zu 50.000 € möglich.",
+          "Manipulation der Tara: Strafbar gem. §§ 263, 264a StGB.",
+        ],
+      },
+      {
+        heading: "Pflichten der Mitarbeiter",
+        items: [
+          "Tägliche Sichtkontrolle der Waagen vor Inbetriebnahme (Nullpunkt, Anzeigegenauigkeit).",
+          "Waagen nur für den vorgesehenen Zweck nutzen.",
+          "Schulungsnachweis durch Unterschrift (PIN) in dieser Dokumentation bestätigen.",
+          "Bei Fragen oder Unsicherheiten sofort beim Vorgesetzten nachfragen.",
+        ],
+      },
+    ],
   },
   lebensmittelleitkultur: {
     icon: Leaf,
     color: "text-green-600",
-    desc: "Schulung zu Lebensmittelkennzeichnung, Herkunft und Qualitaetssicherung gemaess Lebensmittelleitkultur.",
+    bgColor: "bg-green-50 border-green-200",
+    desc: "Jährliche Schulung zur EDEKA Lebensmittelleitkultur – Verantwortungsvoller Umgang mit Lebensmitteln, Qualität und Nachhaltigkeit.",
+    sections: [
+      {
+        heading: "Was ist die EDEKA Lebensmittelleitkultur?",
+        items: [
+          "Die Lebensmittelleitkultur ist ein verbindliches Qualitäts- und Wertesystem für alle EDEKA-Märkte.",
+          "Sie definiert, wie EDEKA mit Lebensmitteln, Lieferanten, Kunden und der Umwelt umgeht.",
+          "Ziel: Höchste Qualität bei Lebensmitteln, verantwortungsvolles Handeln und Vertrauen beim Kunden aufbauen.",
+        ],
+      },
+      {
+        heading: "Qualität und Frische",
+        items: [
+          "Alle Produkte müssen den EDEKA-Qualitätsstandards entsprechen – von der Anlieferung bis zum Verkauf.",
+          "MHD (Mindesthaltbarkeitsdatum) und Verbrauchsdatum konsequent kontrollieren und einhalten.",
+          "Frische ist oberstes Gebot: Ware, die nicht mehr einwandfrei ist, darf nicht verkauft werden.",
+          "Eigenmarken und Frischeartikel regelmäßig nach dem FIFO-Prinzip (First In, First Out) rotieren.",
+        ],
+      },
+      {
+        heading: "Herkunft und Regionalität",
+        items: [
+          "Bevorzugte Listung regionaler Produkte: kurze Transportwege schützen die Umwelt und unterstützen heimische Landwirte.",
+          "Korrekte Herkunftskennzeichnung bei Fleisch, Obst, Gemüse und Fisch ist gesetzliche Pflicht.",
+          "Kunden aktiv auf regionale und saisonale Produkte hinweisen.",
+          "Partnerschaft mit regionalen Erzeugern stärkt die lokale Wirtschaft.",
+        ],
+      },
+      {
+        heading: "Tierwohl und nachhaltige Beschaffung",
+        items: [
+          "EDEKA bekennt sich zu artgerechter Tierhaltung und bevorzugt Lieferanten mit anerkannten Tierwohlstandards.",
+          "Haltungsform-Kennzeichnung (1–4) auf Frischfleisch konsequent und korrekt ausloben.",
+          "MSC- und ASC-Zertifizierung bei Fisch beachten und korrekt kennzeichnen.",
+          "Nachhaltige Verpackungen bevorzugen und Einwegplastik reduzieren.",
+        ],
+      },
+      {
+        heading: "Lebensmittelverschwendung vermeiden",
+        items: [
+          "Bestellmengen sorgfältig planen, um Überproduktion und Abfall zu minimieren.",
+          "Produkte, die dem Ablaufdatum nahekommen, aktiv vermarkten (Sonderangebote, Rabattaktionen).",
+          "Ware, die nicht mehr verkauft werden kann, über soziale Einrichtungen (z.B. Tafel) weitergeben.",
+          "Mitarbeiter sensibilisieren: Jede weggeworfene Ware verursacht Kosten und belastet die Umwelt.",
+        ],
+      },
+      {
+        heading: "Kundenkommunikation und Transparenz",
+        items: [
+          "Kunden ehrlich und vollständig über Herkunft, Inhaltsstoffe und Qualität informieren.",
+          "Allergenkennzeichnung bei Thekenprodukten vollständig und gut lesbar aushängen.",
+          "Beschwerden und Rückfragen freundlich und sachlich beantworten.",
+          "Im Zweifel lieber mehr informieren als zu wenig – das schafft Vertrauen.",
+        ],
+      },
+    ],
   },
   strohschwein: {
     icon: Ham,
     color: "text-amber-600",
-    desc: "Jaehrliche Schulung zum Verkauf von Strohschwein-Produkten – Haltungsform, Kennzeichnung und Kundenkommunikation.",
+    bgColor: "bg-amber-50 border-amber-200",
+    desc: "Jährliche Schulung zum Verkauf von EDEKA Strohschwein – Haltungsstandards, Kennzeichnung und Kundenkommunikation.",
+    sections: [
+      {
+        heading: "Was ist das EDEKA Strohschwein?",
+        items: [
+          "Das EDEKA Strohschwein ist eine eigene Qualitätsfleisch-Linie, bei der die Schweine ausschließlich auf Stroh gehalten werden.",
+          "Strohschweine haben mehr Platz, können artgerechtes Verhalten ausleben und müssen kein perforiertes Spaltenbodensystem ertragen.",
+          "Das Produkt steht für mehr Tierwohl und höhere Fleischqualität gegenüber konventioneller Haltung.",
+          "Das Strohschwein entspricht der Haltungsform-Stufe 3 (Außenklima) oder Stufe 2 (Stallhaltung Plus) je nach Betrieb.",
+        ],
+      },
+      {
+        heading: "Haltungsstandards",
+        items: [
+          "Einstreu mit Stroh: Tiere können wühlen, spielen und ihre natürlichen Verhaltensweisen ausleben.",
+          "Erhöhter Mindestplatzbedarf pro Tier gegenüber gesetzlichem Mindeststandard.",
+          "Keine routinemäßige Antibiotikabehandlung; tierärztliche Behandlungen werden dokumentiert.",
+          "Kontrollen durch unabhängige Zertifizierungsstellen gewährleisten die Einhaltung der Standards.",
+        ],
+      },
+      {
+        heading: "Produktkenntnis und Kennzeichnung",
+        items: [
+          "Strohschwein-Produkte sind klar mit dem Strohschwein-Logo gekennzeichnet.",
+          "Die Haltungsform muss am POS (Point of Sale) korrekt ausgelobt sein.",
+          "Herkunft: Deutschland – von zertifizierten Partnerbetrieben.",
+          "Bei Thekenprodukten: Herkunft und Haltungsform im Preisschild korrekt angeben.",
+          "MHD und Lagertemperatur strikt einhalten (frisches Fleisch: max. +7°C, Hackfleisch: max. +4°C).",
+        ],
+      },
+      {
+        heading: "Verkaufsargumente für das Kundengespräch",
+        items: [
+          "Mehr Tierwohl: Schweine leben auf echtem Stroh – kein Spaltenboden, mehr Platz, artgerechte Haltung.",
+          "Bessere Fleischqualität: Geringerer Stress beim Tier führt zu zarterem, aromatischerem Fleisch.",
+          "Regionale Herkunft: Produziert in Deutschland von kontrollierten Partnerbetrieben.",
+          "Transparenz: Kunden können die Haltungsbedingungen über QR-Codes und EDEKA-Infomaterialien nachverfolgen.",
+          "Bewusstes Einkaufen: Wer Strohschwein kauft, setzt ein Zeichen für nachhaltigere Landwirtschaft.",
+        ],
+      },
+      {
+        heading: "Umgang und Lagerung im Markt",
+        items: [
+          "Strohschwein-Ware immer sauber und getrennt von anderem Fleisch lagern.",
+          "Kühlkette lückenlos einhalten – bei Lieferung sofort in die Kühlung.",
+          "Theke täglich reinigen und desinfizieren; Strohschwein-Produkte optisch ansprechend präsentieren.",
+          "Abgelaufene oder nicht mehr einwandfreie Ware sofort aus dem Verkauf nehmen und dokumentieren.",
+        ],
+      },
+    ],
   },
 };
 
@@ -579,14 +766,50 @@ function SessionListTab({
   const Icon = meta.icon;
   const color = trafficLight(sessions, selectedYear);
 
+  const [showContent, setShowContent] = useState(false);
+
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl border border-border p-4 flex items-start gap-3">
-        <Icon className={cn("w-5 h-5 mt-0.5 shrink-0", meta.color)} />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm text-muted-foreground leading-relaxed">{meta.desc}</p>
+      <div className={cn("rounded-xl border p-4", meta.bgColor)}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <Icon className={cn("w-5 h-5 mt-0.5 shrink-0", meta.color)} />
+            <p className="text-sm text-foreground/80 leading-relaxed">{meta.desc}</p>
+          </div>
+          <TrafficBadge color={color} />
         </div>
-        <TrafficBadge color={color} />
+        {sessionType !== "schulungsprotokoll" && meta.sections.length > 0 && (
+          <button
+            onClick={() => setShowContent(!showContent)}
+            className={cn("mt-3 flex items-center gap-1.5 text-xs font-medium transition-colors", meta.color, "hover:opacity-70")}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            {showContent ? "Schulungsinhalt ausblenden" : "Schulungsinhalt anzeigen"}
+            <ChevronLeft className={cn("w-3.5 h-3.5 transition-transform", showContent ? "rotate-90" : "-rotate-90")} />
+          </button>
+        )}
+        {showContent && sessionType !== "schulungsprotokoll" && (
+          <div className="mt-4 space-y-4 border-t border-border/40 pt-4">
+            {meta.sections.map((section, si) => (
+              <div key={si}>
+                <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/80 border border-border text-xs font-bold text-muted-foreground shrink-0">
+                    {si + 1}
+                  </span>
+                  {section.heading}
+                </h4>
+                <ul className="space-y-1.5">
+                  {section.items.map((item, ii) => (
+                    <li key={ii} className="flex items-start gap-2 text-sm text-foreground/75 leading-relaxed">
+                      <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-foreground/40 shrink-0" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-between">
