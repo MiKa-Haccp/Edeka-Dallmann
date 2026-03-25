@@ -172,12 +172,17 @@ export default function AnnualCleaningPlan() {
 
   const handleCellClick = (itemKey: string, month: number, activeMonths: number[]) => {
     if (!activeMonths.includes(month)) return;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+    const isFuture = year > currentYear || (year === currentYear && month > currentMonth);
     const existing = getConfirmation(itemKey, month);
     if (existing) {
       if (!isAdmin) return;
       handleRemove(existing.id);
       return;
     }
+    if (isFuture) return;
     setPinError("");
     setDialog({ itemKey, month });
   };
@@ -299,12 +304,13 @@ export default function AnnualCleaningPlan() {
                               const conf = getConfirmation(item.key, month);
                               const isPast = isActive && !conf && (year < currentYear || (year === currentYear && month < currentMonth));
                               const isCurrent = isActive && !conf && year === currentYear && month === currentMonth;
+                              const isFutureCell = isActive && !conf && (year > currentYear || (year === currentYear && month > currentMonth));
                               return (
                                 <td
                                   key={month}
                                   onClick={() => handleCellClick(item.key, month, activeMonths)}
                                   className={`text-center border-r border-border/30 last:border-r-0 py-1 px-0.5 h-10 transition-all
-                                    ${isPast ? "bg-red-50 cursor-pointer" : isCurrent ? "bg-amber-50 cursor-pointer" : isActive ? conf ? "cursor-pointer" : "cursor-pointer" : "bg-gray-50/50 cursor-default"}`}
+                                    ${isPast ? "bg-red-50 cursor-pointer" : isCurrent ? "bg-amber-50 cursor-pointer" : isFutureCell ? "cursor-default" : isActive ? conf ? "cursor-pointer" : "cursor-default" : "bg-gray-50/50 cursor-default"}`}
                                 >
                                   {conf ? (
                                     <div className={`inline-flex items-center justify-center w-8 h-7 rounded font-bold text-xs font-mono
