@@ -2,9 +2,10 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
-import { CheckCircle2, X, Loader2, KeyRound, Check, AlertCircle, ChevronLeft, ChevronRight, Brush } from "lucide-react";
+import { CheckCircle2, X, Loader2, KeyRound, Check, AlertCircle, ChevronLeft, ChevronRight, Brush, Clock, CalendarCheck } from "lucide-react";
 
 const MONTHS = ["Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+const MONTH_LABELS_FULL = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 
 type Frequency = "monatlich" | "vierteljährlich" | "halbjährlich" | "jährlich" | "nach Bedarf";
 
@@ -18,6 +19,14 @@ interface CleaningItem {
 interface CleaningArea {
   title: string;
   items: CleaningItem[];
+}
+
+interface Period {
+  startMonth: number;
+  endMonth: number;
+  activeMonth: number;
+  colSpan: number;
+  label: string;
 }
 
 const CLEANING_AREAS: CleaningArea[] = [
@@ -54,6 +63,22 @@ function getActiveMonths(frequency: Frequency): number[] {
   }
 }
 
+function getSpanningPeriods(frequency: Frequency): Period[] | null {
+  switch (frequency) {
+    case "halbjährlich":
+      return [
+        { startMonth: 1, endMonth: 6, activeMonth: 1, colSpan: 6, label: "Jan – Jun" },
+        { startMonth: 7, endMonth: 12, activeMonth: 7, colSpan: 6, label: "Jul – Dez" },
+      ];
+    case "jährlich":
+      return [
+        { startMonth: 1, endMonth: 12, activeMonth: 1, colSpan: 12, label: "Ganzes Jahr" },
+      ];
+    default:
+      return null;
+  }
+}
+
 interface Confirmation {
   id: number;
   itemKey: string;
@@ -70,9 +95,10 @@ interface PinDialogProps {
   onClose: () => void;
   error: string;
   loading: boolean;
+  periodLabel?: string;
 }
 
-function PinDialog({ open, onConfirm, onClose, error, loading }: PinDialogProps) {
+function PinDialog({ open, onConfirm, onClose, error, loading, periodLabel }: PinDialogProps) {
   const [pin, setPin] = useState("");
 
   useEffect(() => {
@@ -93,6 +119,12 @@ function PinDialog({ open, onConfirm, onClose, error, loading }: PinDialogProps)
           <h3 className="font-bold text-base">Reinigung bestätigen</h3>
         </div>
         <div className="p-5 space-y-4">
+          {periodLabel && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg text-sm text-blue-700 font-medium">
+              <CalendarCheck className="h-4 w-4 flex-shrink-0" />
+              {periodLabel}
+            </div>
+          )}
           <p className="text-sm text-muted-foreground">
             Geben Sie Ihren 4-stelligen PIN ein. Das Kürzel wird automatisch erkannt.
           </p>
@@ -134,6 +166,91 @@ function PinDialog({ open, onConfirm, onClose, error, loading }: PinDialogProps)
   );
 }
 
+function SpanningPeriodCell({
+  period,
+  conf,
+  status,
+  isAdmin,
+  onClick,
+  onRemove,
+}: {
+  period: Period;
+  conf: Confirmation | undefined;
+  status: "confirmed" | "past" | "current" | "future";
+  isAdmin: boolean;
+  onClick: () => void;
+  onRemove: () => void;
+}) {
+  if (status === "confirmed" && conf) {
+    return (
+      <td
+        colSpan={period.colSpan}
+        className="border-r border-border/30 last:border-r-0 px-2 py-1.5 h-12"
+      >
+        <div
+          className={`w-full h-full rounded-lg flex items-center justify-center gap-2 font-bold text-sm
+            bg-green-100 text-green-700 border border-green-300
+            ${isAdmin ? "cursor-pointer hover:bg-red-100 hover:text-red-600 hover:border-red-300 group transition-colors" : ""}`}
+          title={isAdmin
+            ? `${conf.initials} – ${new Date(conf.confirmedAt).toLocaleDateString("de-DE")} – Klicken zum Entfernen`
+            : `${conf.initials} – ${new Date(conf.confirmedAt).toLocaleDateString("de-DE")}`}
+          onClick={isAdmin ? onRemove : undefined}
+        >
+          <CheckCircle2 className="w-4 h-4 group-hover:hidden" />
+          <X className="w-4 h-4 hidden group-hover:block" />
+          <span className="font-mono group-hover:hidden">{conf.initials}</span>
+          <span className="hidden group-hover:block text-xs">Entfernen</span>
+          <span className="text-xs font-normal text-green-600 group-hover:hidden opacity-70">{period.label}</span>
+        </div>
+      </td>
+    );
+  }
+
+  if (status === "past") {
+    return (
+      <td
+        colSpan={period.colSpan}
+        onClick={onClick}
+        className="border-r border-border/30 last:border-r-0 px-2 py-1.5 h-12 cursor-pointer"
+      >
+        <div className="w-full h-full rounded-lg flex items-center justify-center gap-2 bg-red-50 border border-red-300 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors group">
+          <X className="w-4 h-4 flex-shrink-0" />
+          <span className="text-xs font-semibold">Ausstehend</span>
+          <span className="text-xs text-red-400 opacity-70">{period.label}</span>
+        </div>
+      </td>
+    );
+  }
+
+  if (status === "current") {
+    return (
+      <td
+        colSpan={period.colSpan}
+        onClick={onClick}
+        className="border-r border-border/30 last:border-r-0 px-2 py-1.5 h-12 cursor-pointer"
+      >
+        <div className="w-full h-full rounded-lg flex items-center justify-center gap-2 bg-amber-50 border-2 border-amber-400 text-amber-600 hover:bg-amber-100 hover:text-amber-800 transition-colors animate-pulse hover:animate-none">
+          <Clock className="w-4 h-4 flex-shrink-0" />
+          <span className="text-xs font-bold">Jetzt fällig</span>
+          <span className="text-xs text-amber-500 opacity-80">{period.label}</span>
+        </div>
+      </td>
+    );
+  }
+
+  return (
+    <td
+      colSpan={period.colSpan}
+      className="border-r border-border/30 last:border-r-0 px-2 py-1.5 h-12 cursor-default"
+    >
+      <div className="w-full h-full rounded-lg flex items-center justify-center gap-2 border border-dashed border-border/40 text-muted-foreground/40">
+        <CalendarCheck className="w-4 h-4 flex-shrink-0" />
+        <span className="text-xs">{period.label}</span>
+      </div>
+    </td>
+  );
+}
+
 export default function AnnualCleaningPlan() {
   const selectedMarketId = useAppStore((s) => s.selectedMarketId);
   const adminSession = useAppStore((s) => s.adminSession);
@@ -144,7 +261,7 @@ export default function AnnualCleaningPlan() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [confirmations, setConfirmations] = useState<Confirmation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialog, setDialog] = useState<{ itemKey: string; month: number } | null>(null);
+  const [dialog, setDialog] = useState<{ itemKey: string; month: number; periodLabel?: string } | null>(null);
   const [pinError, setPinError] = useState("");
   const [pinLoading, setPinLoading] = useState(false);
 
@@ -170,7 +287,7 @@ export default function AnnualCleaningPlan() {
   const getConfirmation = (itemKey: string, month: number) =>
     confirmations.find((c) => c.itemKey === itemKey && c.month === month);
 
-  const handleCellClick = (itemKey: string, month: number, activeMonths: number[]) => {
+  const handleCellClick = (itemKey: string, month: number, activeMonths: number[], periodLabel?: string) => {
     if (!activeMonths.includes(month)) return;
     const now = new Date();
     const currentYear = now.getFullYear();
@@ -184,7 +301,7 @@ export default function AnnualCleaningPlan() {
     }
     if (isFuture) return;
     setPinError("");
-    setDialog({ itemKey, month });
+    setDialog({ itemKey, month, periodLabel });
   };
 
   const handleRemove = async (id: number) => {
@@ -216,6 +333,10 @@ export default function AnnualCleaningPlan() {
       setPinLoading(false);
     }
   };
+
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
 
   return (
     <AppLayout>
@@ -265,7 +386,7 @@ export default function AnnualCleaningPlan() {
                 <tr className="bg-[#1a3a6b] text-white">
                   <th className="text-left px-3 py-2.5 font-semibold w-[200px] border-r border-white/20">Gegenstand</th>
                   <th className="text-center px-2 py-2.5 font-semibold w-[100px] border-r border-white/20 text-xs">Reinigung</th>
-                  {MONTHS.map((m) => (
+                  {MONTHS.map((m: string) => (
                     <th key={m} className="text-center py-2.5 font-semibold w-[55px] text-xs border-r border-white/10 last:border-r-0">{m}</th>
                   ))}
                 </tr>
@@ -287,57 +408,93 @@ export default function AnnualCleaningPlan() {
                         </td>
                       </tr>
                       {area.items.map((item, iIdx) => {
+                        const spanningPeriods = getSpanningPeriods(item.frequency);
                         const activeMonths = getActiveMonths(item.frequency);
                         const isEven = iIdx % 2 === 0;
-                        const now = new Date();
-                        const currentYear = now.getFullYear();
-                        const currentMonth = now.getMonth() + 1;
+
                         return (
                           <tr key={item.key} className={`border-b border-border/50 ${isEven ? "bg-white" : "bg-secondary/20"} hover:bg-blue-50/30 transition-colors`}>
                             <td className="px-3 py-2 text-foreground border-r border-border/50 text-xs whitespace-pre-line leading-relaxed">{item.name}</td>
                             <td className="px-2 py-2 text-center text-xs text-muted-foreground border-r border-border/50 whitespace-pre-line leading-snug">
                               {item.frequencyNote || item.frequency}
                             </td>
-                            {MONTHS.map((_, mIdx) => {
-                              const month = mIdx + 1;
-                              const isActive = activeMonths.includes(month);
-                              const conf = getConfirmation(item.key, month);
-                              const isPast = isActive && !conf && (year < currentYear || (year === currentYear && month < currentMonth));
-                              const isCurrent = isActive && !conf && year === currentYear && month === currentMonth;
-                              const isFutureCell = isActive && !conf && (year > currentYear || (year === currentYear && month > currentMonth));
-                              return (
-                                <td
-                                  key={month}
-                                  onClick={() => handleCellClick(item.key, month, activeMonths)}
-                                  className={`text-center border-r border-border/30 last:border-r-0 py-1 px-0.5 h-10 transition-all
-                                    ${isPast ? "bg-red-50 cursor-pointer" : isCurrent ? "bg-amber-50 cursor-pointer" : isFutureCell ? "cursor-default" : isActive ? conf ? "cursor-pointer" : "cursor-default" : "bg-gray-50/50 cursor-default"}`}
-                                >
-                                  {conf ? (
-                                    <div className={`inline-flex items-center justify-center w-8 h-7 rounded font-bold text-xs font-mono
-                                      ${isAdmin ? "bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-600 group cursor-pointer" : "bg-green-100 text-green-700"}`}
-                                      title={isAdmin ? `${conf.initials} – ${new Date(conf.confirmedAt).toLocaleDateString("de-DE")} (Klicken zum Entfernen)` : `${conf.initials} – ${new Date(conf.confirmedAt).toLocaleDateString("de-DE")}`}
-                                    >
-                                      <span className="group-hover:hidden">{conf.initials}</span>
-                                      <X className="w-3 h-3 hidden group-hover:block" />
-                                    </div>
-                                  ) : isPast ? (
-                                    <div className="inline-flex items-center justify-center w-8 h-7 rounded bg-red-100 border border-red-300 text-red-400 hover:bg-red-200 hover:text-red-600 transition-colors" title="Ausstehend – nicht bestätigt">
-                                      <X className="w-3.5 h-3.5" />
-                                    </div>
-                                  ) : isCurrent ? (
-                                    <div className="inline-flex items-center justify-center w-8 h-7 rounded bg-amber-100 border border-amber-400 text-amber-500 hover:bg-amber-200 hover:text-amber-700 transition-colors animate-pulse" title="Aktueller Monat – noch ausstehend">
-                                      <CheckCircle2 className="w-3.5 h-3.5" />
-                                    </div>
-                                  ) : isActive ? (
-                                    <div className="inline-flex items-center justify-center w-8 h-7 rounded border border-dashed border-border/40 text-transparent hover:border-green-400 hover:text-green-500 transition-colors">
-                                      <CheckCircle2 className="w-3.5 h-3.5" />
-                                    </div>
-                                  ) : (
-                                    <div className="inline-block w-8 h-7 bg-gray-100 rounded opacity-30" />
-                                  )}
-                                </td>
-                              );
-                            })}
+
+                            {spanningPeriods ? (
+                              spanningPeriods.map((period) => {
+                                const conf = getConfirmation(item.key, period.activeMonth);
+                                let status: "confirmed" | "past" | "current" | "future";
+                                if (conf) {
+                                  status = "confirmed";
+                                } else {
+                                  const periodPast =
+                                    year < currentYear ||
+                                    (year === currentYear && currentMonth > period.endMonth);
+                                  const periodCurrent =
+                                    year === currentYear &&
+                                    currentMonth >= period.startMonth &&
+                                    currentMonth <= period.endMonth;
+                                  if (periodPast) status = "past";
+                                  else if (periodCurrent) status = "current";
+                                  else status = "future";
+                                }
+
+                                const periodMonthLabel = `${MONTH_LABELS_FULL[period.startMonth - 1]} – ${MONTH_LABELS_FULL[period.endMonth - 1]} ${year}`;
+
+                                return (
+                                  <SpanningPeriodCell
+                                    key={period.activeMonth}
+                                    period={period}
+                                    conf={conf}
+                                    status={status}
+                                    isAdmin={isAdmin}
+                                    onClick={() => handleCellClick(item.key, period.activeMonth, activeMonths, periodMonthLabel)}
+                                    onRemove={() => conf && handleRemove(conf.id)}
+                                  />
+                                );
+                              })
+                            ) : (
+                              MONTHS.map((_, mIdx) => {
+                                const month = mIdx + 1;
+                                const isActive = activeMonths.includes(month);
+                                const conf = getConfirmation(item.key, month);
+                                const isPast = isActive && !conf && (year < currentYear || (year === currentYear && month < currentMonth));
+                                const isCurrent = isActive && !conf && year === currentYear && month === currentMonth;
+                                const isFutureCell = isActive && !conf && (year > currentYear || (year === currentYear && month > currentMonth));
+                                const monthLabel = `${MONTH_LABELS_FULL[mIdx]} ${year}`;
+                                return (
+                                  <td
+                                    key={month}
+                                    onClick={() => handleCellClick(item.key, month, activeMonths, monthLabel)}
+                                    className={`text-center border-r border-border/30 last:border-r-0 py-1 px-0.5 h-10 transition-all
+                                      ${isPast ? "bg-red-50 cursor-pointer" : isCurrent ? "bg-amber-50 cursor-pointer" : isFutureCell ? "cursor-default" : isActive ? conf ? "cursor-pointer" : "cursor-default" : "bg-gray-50/50 cursor-default"}`}
+                                  >
+                                    {conf ? (
+                                      <div className={`inline-flex items-center justify-center w-8 h-7 rounded font-bold text-xs font-mono
+                                        ${isAdmin ? "bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-600 group cursor-pointer" : "bg-green-100 text-green-700"}`}
+                                        title={isAdmin ? `${conf.initials} – ${new Date(conf.confirmedAt).toLocaleDateString("de-DE")} (Klicken zum Entfernen)` : `${conf.initials} – ${new Date(conf.confirmedAt).toLocaleDateString("de-DE")}`}
+                                      >
+                                        <span className="group-hover:hidden">{conf.initials}</span>
+                                        <X className="w-3 h-3 hidden group-hover:block" />
+                                      </div>
+                                    ) : isPast ? (
+                                      <div className="inline-flex items-center justify-center w-8 h-7 rounded bg-red-100 border border-red-300 text-red-400 hover:bg-red-200 hover:text-red-600 transition-colors" title="Ausstehend – nicht bestätigt">
+                                        <X className="w-3.5 h-3.5" />
+                                      </div>
+                                    ) : isCurrent ? (
+                                      <div className="inline-flex items-center justify-center w-8 h-7 rounded bg-amber-100 border border-amber-400 text-amber-500 hover:bg-amber-200 hover:text-amber-700 transition-colors animate-pulse" title="Aktueller Monat – noch ausstehend">
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                      </div>
+                                    ) : isActive ? (
+                                      <div className="inline-flex items-center justify-center w-8 h-7 rounded border border-dashed border-border/40 text-transparent hover:border-green-400 hover:text-green-500 transition-colors">
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                      </div>
+                                    ) : (
+                                      <div className="inline-block w-8 h-7 bg-gray-100 rounded opacity-30" />
+                                    )}
+                                  </td>
+                                );
+                              })
+                            )}
                           </tr>
                         );
                       })}
@@ -360,23 +517,27 @@ export default function AnnualCleaningPlan() {
 
         <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground px-1">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-6 bg-green-100 rounded flex items-center justify-center text-green-700 font-bold font-mono text-xs">AS</div>
+            <div className="w-16 h-6 bg-green-100 rounded flex items-center justify-center gap-1 text-green-700 font-bold font-mono text-xs px-1">
+              <CheckCircle2 className="w-3 h-3" /><span>AS</span>
+            </div>
             <span>Bestätigt</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-6 bg-red-100 border border-red-300 rounded flex items-center justify-center text-red-400">
-              <X className="w-3 h-3" />
+            <div className="w-16 h-6 bg-red-50 border border-red-300 rounded flex items-center justify-center gap-1 text-red-500 text-xs px-1">
+              <X className="w-3 h-3" /><span>Fällig</span>
             </div>
             <span>Überfällig – nicht bestätigt</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-6 bg-amber-100 border border-amber-400 rounded flex items-center justify-center text-amber-500">
-              <CheckCircle2 className="w-3 h-3" />
+            <div className="w-16 h-6 bg-amber-50 border-2 border-amber-400 rounded flex items-center justify-center gap-1 text-amber-600 text-xs px-1">
+              <Clock className="w-3 h-3" /><span>Jetzt</span>
             </div>
-            <span>Aktueller Monat – ausstehend</span>
+            <span>Aktuell fällig</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-6 rounded border border-dashed border-border/40" />
+            <div className="w-16 h-6 rounded border border-dashed border-border/40 flex items-center justify-center text-xs text-muted-foreground/40 gap-1 px-1">
+              <CalendarCheck className="w-3 h-3" /><span>Später</span>
+            </div>
             <span>Zukünftig – noch nicht fällig</span>
           </div>
           <div className="flex items-center gap-2">
@@ -392,6 +553,7 @@ export default function AnnualCleaningPlan() {
         onClose={() => setDialog(null)}
         error={pinError}
         loading={pinLoading}
+        periodLabel={dialog?.periodLabel}
       />
     </AppLayout>
   );
