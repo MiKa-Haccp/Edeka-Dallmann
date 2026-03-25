@@ -16,29 +16,6 @@ const MAX_WIDTH = 500;
 const DEFAULT_WIDTH = 288;
 const STORAGE_KEY = "haccp-sidebar-width";
 
-function TrafficDot({ status }: { status: TrafficLight }) {
-  if (status === "none") return null;
-  const colors: Record<Exclude<TrafficLight, "none">, string> = {
-    green:  "bg-green-500",
-    yellow: "bg-amber-400",
-    red:    "bg-red-500",
-  };
-  const titles: Record<Exclude<TrafficLight, "none">, string> = {
-    green:  "Alle Kontrollen erledigt",
-    yellow: "Aktuelle Phase noch offen",
-    red:    "Kontrollen im Rueckstand",
-  };
-  return (
-    <span
-      title={titles[status]}
-      className={cn(
-        "flex-shrink-0 w-2.5 h-2.5 rounded-full shadow-sm ring-1 ring-white",
-        colors[status],
-        status === "red" && "animate-pulse"
-      )}
-    />
-  );
-}
 
 function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNavigate?: () => void }) {
   const { data: sections, isLoading } = useListSections(categoryId);
@@ -60,12 +37,21 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
       {sections.filter((s) => {
         if (s.number.includes("_")) return false;
         const m = s.number.match(/^3\.(\d+)$/);
-        if (m && parseInt(m[1]) >= 9) return false;
+        if (m && parseInt(m[1]) >= 10) return false;
         return true;
       }).map((section) => {
-        const href = section.number === "1.1" ? "/responsibilities" : section.number === "1.2" ? "/mitarbeiter-liste" : section.number === "1.3" ? "/info-documentation" : section.number === "1.4" ? "/training-records" : section.number === "1.5" ? "/annual-cleaning-plan" : section.number === "1.6" ? "/betriebsbegehung" : section.number === "1.7" ? "/hinweisschild-gesperrte-ware" : section.number === "1.8" ? "/produktfehlermeldung" : section.number === "1.9" ? "/probeentnahme" : section.number === "1.10" ? "/anti-vektor-zugang" : section.number === "1.11" ? "/bescheinigungen" : section.number === "1.12" ? "/kontrollberichte" : section.number === "2.1" ? "/warencheck-og" : section.number === "2.2" ? "/reinigung-taeglich" : section.number === "2.3" ? "/carrier-portal" : section.number === "2.5" ? "/wareneingaenge" : section.number === "3.1" ? "/metzgerei-wareneingaenge" : section.number === "3.2" ? "/reinigungsplan-metzgerei" : section.number === "3.3" ? "/oeffnung-salate" : section.number === "3.4" ? "/kaesetheke-kontrolle" : section.number === "3.5" ? "/semmelliste" : section.number === "3.6" ? "/eingefrorenes-fleisch" : section.number === "3.7" ? "/rezepturen" : section.number === "3.8" ? "/gq-begehung" : `/section/${section.id}`;
+        const href = section.number === "1.1" ? "/responsibilities" : section.number === "1.2" ? "/mitarbeiter-liste" : section.number === "1.3" ? "/info-documentation" : section.number === "1.4" ? "/training-records" : section.number === "1.5" ? "/annual-cleaning-plan" : section.number === "1.6" ? "/betriebsbegehung" : section.number === "1.7" ? "/hinweisschild-gesperrte-ware" : section.number === "1.8" ? "/produktfehlermeldung" : section.number === "1.9" ? "/probeentnahme" : section.number === "1.10" ? "/anti-vektor-zugang" : section.number === "1.11" ? "/bescheinigungen" : section.number === "1.12" ? "/kontrollberichte" : section.number === "2.1" ? "/warencheck-og" : section.number === "2.2" ? "/reinigung-taeglich" : section.number === "2.3" ? "/carrier-portal" : section.number === "2.5" ? "/wareneingaenge" : section.number === "3.1" ? "/metzgerei-wareneingaenge" : section.number === "3.2" ? "/reinigungsplan-metzgerei" : section.number === "3.3" ? "/oeffnung-salate" : section.number === "3.4" ? "/kaesetheke-kontrolle" : section.number === "3.5" ? "/semmelliste" : section.number === "3.6" ? "/eingefrorenes-fleisch" : section.number === "3.7" ? "/rezepturen" : section.number === "3.8" ? "/gq-begehung" : section.number === "3.9" ? "/abteilungsfremde-personen" : `/section/${section.id}`;
         const isActive = location === href;
         const trafficStatus: TrafficLight = section.number === "2.1" ? ogStatus : section.number === "2.2" ? reinigungStatus : section.number === "2.5" ? wareneingaengeStatus : section.number === "3.1" ? metzgereiStatus : section.number === "3.2" ? metzReinigungStatus : section.number === "3.3" ? oeffnungSalateStatus : section.number === "3.4" ? kaesethekeStatus : section.number === "3.8" ? gqBegehungStatus : "none";
+        const iconColor = trafficStatus === "green"
+          ? "text-green-500"
+          : trafficStatus === "yellow"
+          ? "text-amber-400"
+          : trafficStatus === "red"
+          ? "text-red-500"
+          : isActive
+          ? "text-primary"
+          : "text-muted-foreground/50 group-hover:text-muted-foreground";
         return (
           <Link
             key={section.id}
@@ -73,13 +59,12 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
             onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 px-4 py-2 text-sm rounded-lg transition-all duration-200 group",
-              isActive 
-                ? "bg-primary/10 text-primary font-medium" 
+              isActive
+                ? "bg-primary/10 text-primary font-medium"
                 : "text-muted-foreground hover:bg-secondary hover:text-foreground"
             )}
           >
-            <TrafficDot status={trafficStatus} />
-            <FileText className={cn("h-4 w-4 flex-shrink-0", isActive ? "text-primary" : "text-muted-foreground/50 group-hover:text-muted-foreground")} />
+            <FileText className={cn("h-4 w-4 flex-shrink-0", iconColor, trafficStatus === "red" && "animate-pulse")} />
             <span className="truncate">{section.number} {section.title}</span>
           </Link>
         );
@@ -97,7 +82,7 @@ const SIDEBAR_OPEN_PATHS = [
   "/hinweisschild-gesperrte-ware", "/produktfehlermeldung", "/probeentnahme",
   "/anti-vektor-zugang", "/bescheinigungen", "/kontrollberichte",
   "/warencheck-og", "/reinigung-taeglich", "/carrier-portal",
-  "/wareneingaenge", "/metzgerei-wareneingaenge", "/reinigungsplan-metzgerei", "/oeffnung-salate", "/kaesetheke-kontrolle", "/semmelliste", "/eingefrorenes-fleisch", "/rezepturen", "/gq-begehung",
+  "/wareneingaenge", "/metzgerei-wareneingaenge", "/reinigungsplan-metzgerei", "/oeffnung-salate", "/kaesetheke-kontrolle", "/semmelliste", "/eingefrorenes-fleisch", "/rezepturen", "/gq-begehung", "/abteilungsfremde-personen",
   "/section/", "/category/", "/we-", "/besprechungsprotokoll",
   "/gesundheitszeugnisse", "/mitarbeiterverwaltung", "/admin/",
 ];

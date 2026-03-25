@@ -40,6 +40,7 @@ import semmellisteRouter from "./semmelliste";
 import eingefrorenesFleischRouter from "./eingefrorenesFleisch";
 import rezepturenRouter from "./rezepturen";
 import gqBegehungRouter from "./gqBegehung";
+import hygienebelehrungAbtRouter from "./hygienebelehrungAbt";
 
 const router: IRouter = Router();
 
@@ -84,5 +85,6 @@ router.use(semmellisteRouter);
 router.use(eingefrorenesFleischRouter);
 router.use(rezepturenRouter);
 router.use(gqBegehungRouter);
+router.use(hygienebelehrungAbtRouter);
 
 export default router;

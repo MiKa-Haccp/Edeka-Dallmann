@@ -59,6 +59,7 @@ import SemmelListe from "./pages/SemmelListe";
 import EingefrorenesFleisch from "./pages/EingefrorenesFleisch";
 import Rezepturen from "./pages/Rezepturen";
 import GQBegehung from "./pages/GQBegehung";
+import AbteilungsfremdePersonen from "./pages/AbteilungsfremdePersonen";
 import InfoDocumentation from "./pages/InfoDocumentation";
 import AnnualCleaningPlan from "./pages/AnnualCleaningPlan";
 import Betriebsbegehung from "./pages/Betriebsbegehung";
@@ -118,6 +119,7 @@ function Router() {
       <Route path="/eingefrorenes-fleisch" component={EingefrorenesFleisch} />
       <Route path="/rezepturen" component={Rezepturen} />
       <Route path="/gq-begehung" component={GQBegehung} />
+      <Route path="/abteilungsfremde-personen" component={AbteilungsfremdePersonen} />
       <Route path="/besprechungsprotokoll" component={TrainingBesprechung} />
       <Route path="/anti-vektor-zugang" component={AntiVektorZugang} />
       <Route path="/gesundheitszeugnisse" component={Gesundheitszeugnisse} />

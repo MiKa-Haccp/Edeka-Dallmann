@@ -98,7 +98,8 @@ artifacts-monorepo/
 - `/bescheinigungen` — Section 1.11: Bescheinigungen & Nachweise
 - `/kontrollberichte` — Section 1.12: Kontrollberichte
 - `/rezepturen` — Section 3.7: Rezepturen (Eigenherstellung-Rezepturuebersicht; 20 Bratwurst-Rezepte mit Bildern, Naehrwerten, Zutaten, Herstellungsablauf; Suchfunktion; Kategorie-Filter; Detail-Modal mit Tabs; Bilder in public/rezepturen/; DB-Tabellen rezeptur_kategorien + rezepturen)
-- `/gq-begehung` — Section 3.8: GQ-Betriebsbegehung (quartalsweise; 16 allgemeine + 3 Rindfleisch-Kontrollpunkte; i.O./nicht i.O. + Abhilfe; PIN-Pflicht; Ampel gruen=erledigt/gelb=<14 Tage bis Quartalsende/rot=verfallen; Sektionen 3.9+ in Sidebar ausgeblendet; DB-Tabelle gq_begehung)
+- `/gq-begehung` — Section 3.8: GQ-Betriebsbegehung (quartalsweise; 16 allgemeine + 3 Rindfleisch-Kontrollpunkte; i.O./nicht i.O. + Abhilfe; PIN-Pflicht; Ampel gruen=erledigt/gelb=<14 Tage bis Quartalsende/rot=verfallen; DB-Tabelle gq_begehung)
+- `/abteilungsfremde-personen` — Section 3.9: Abteilungsfremde Personen (Hygienebelehrung gemaess §43 Abs.1 IfSG; Tabelle: Name/Firma/Datum/Unterschrift; monatliche Monatsnavigation; PIN-Pflicht beim Hinzufuegen; keine Ampel; DB-Tabelle hygienebelehrung_abt)
 - `/admin/login` — Admin login page (email + password)
 - `/admin/register` — Admin registration via invitation token
 - `/admin/users` — Benutzerverwaltung: Role management, permission checkboxes, market assignments (SUPERADMIN only)
