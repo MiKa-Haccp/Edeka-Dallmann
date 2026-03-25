@@ -518,6 +518,56 @@ export function useKaesethekeStatus(): TrafficLight {
   return status;
 }
 
+// ─── 3.8 GQ-Betriebsbegehung – Quartalsampel ────────────────────────────────
+function currentGQQuartal() {
+  const m = new Date().getMonth() + 1;
+  return m <= 3 ? 1 : m <= 6 ? 2 : m <= 9 ? 3 : 4;
+}
+
+function gqQuartalEnd(year: number, q: number): Date {
+  const ends: [number, number][] = [[3,31],[6,30],[9,30],[12,31]];
+  const [em, ed] = ends[q - 1];
+  return new Date(year, em - 1, ed, 23, 59, 59);
+}
+
+export function useGQBegehungStatus(): TrafficLight {
+  const { selectedMarketId } = useAppStore();
+  const [status, setStatus] = useState<TrafficLight>("none");
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 30 * 60 * 1000);
+    const onUpdate = () => setTick(t => t + 1);
+    window.addEventListener("gq-begehung-updated", onUpdate);
+    return () => { clearInterval(id); window.removeEventListener("gq-begehung-updated", onUpdate); };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedMarketId) { setStatus("none"); return; }
+    const now   = new Date();
+    const year  = now.getFullYear();
+    const q     = currentGQQuartal();
+    const qEnd  = gqQuartalEnd(year, q);
+    const daysLeft = Math.ceil((qEnd.getTime() - now.getTime()) / 86400000);
+    let cancelled  = false;
+
+    fetch(`${BASE}/gq-begehung?tenantId=1&marketId=${selectedMarketId}&year=${year}&quartal=${q}`)
+      .then(r => r.json())
+      .then((data: unknown[]) => {
+        if (cancelled) return;
+        if (Array.isArray(data) && data.length > 0) { setStatus("green"); return; }
+        if (daysLeft < 0)   { setStatus("red");    return; }
+        if (daysLeft <= 14) { setStatus("yellow");  return; }
+        setStatus("none");
+      })
+      .catch(() => { if (!cancelled) setStatus("none"); });
+
+    return () => { cancelled = true; };
+  }, [selectedMarketId, tick]);
+
+  return status;
+}
+
 // ─── 3.3 Öffnung Salate & Eigenherstellung – MHD-Ampel ───────────────────────
 export function useOeffnungSalateStatus(): TrafficLight {
   const { selectedMarketId } = useAppStore();

@@ -69,7 +69,7 @@ router.post("/seed", async (_req, res) => {
     { number: "3.5", title: "Wurstherstellung", sortOrder: 5 },
     { number: "3.6", title: "Räuchern", sortOrder: 6 },
     { number: "3.7", title: "Kochprozesse", sortOrder: 7 },
-    { number: "3.8", title: "Kühlung & Lagerung", sortOrder: 8 },
+    { number: "3.8", title: "GQ-Betriebsbegehung", sortOrder: 8 },
     { number: "3.9", title: "Verpackung", sortOrder: 9 },
     { number: "3.10", title: "Etikettierung", sortOrder: 10 },
     { number: "3.11", title: "Thekenverkauf", sortOrder: 11 },
