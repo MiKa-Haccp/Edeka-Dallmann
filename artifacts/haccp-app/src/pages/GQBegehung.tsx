@@ -4,7 +4,7 @@ import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
 import {
   ClipboardCheck, ChevronLeft, ChevronRight, Check, X, Minus,
-  CheckCircle2, AlertTriangle, MinusCircle, Loader2, Lock, Save,
+  CheckCircle2, AlertTriangle, MinusCircle, Loader2, Lock,
   ChevronDown, ChevronUp,
 } from "lucide-react";
 
@@ -333,13 +333,13 @@ export default function GQBegehung() {
 
   const [eintraege, setEintraege] = useState<Eintrag[]>([]);
   const [loading, setLoading] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const [checkData, setCheckData] = useState<CheckData>(emptyCheckData());
   const [durchgefuehrtAm, setDurchgefuehrtAm] = useState(() => now.toISOString().slice(0, 10));
   const [showPin, setShowPin] = useState(false);
   const [pinLoading, setPinLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [identified, setIdentified] = useState<{ name: string; userId: number; kuerzel: string } | null>(null);
 
   const load = useCallback(async () => {
     if (!selectedMarketId) return;
@@ -359,15 +359,16 @@ export default function GQBegehung() {
   const handleSetItem = (id: string, val: CheckEntry) =>
     setCheckData(prev => ({ ...prev, [id]: val }));
 
-  const handleSubmit = async () => {
-    if (!identified || !selectedMarketId) return;
+  const handleSubmit = async (user: { name: string; userId: number; kuerzel: string }) => {
+    if (!selectedMarketId) return;
     setSaving(true);
+    setShowPin(false);
     try {
       const body = {
         tenantId: 1, marketId: selectedMarketId,
         quartal, year, durchgefuehrtAm,
-        durchgefuehrtVon: identified.name,
-        kuerzel: identified.kuerzel,
+        durchgefuehrtVon: user.name,
+        kuerzel: user.kuerzel,
         checkData,
       };
       if (existing) {
@@ -380,8 +381,7 @@ export default function GQBegehung() {
         });
       }
       window.dispatchEvent(new Event("gq-begehung-updated"));
-      setShowPin(false);
-      setIdentified(null);
+      setEditing(false);
       load();
     } catch { /* ignore */ }
     finally { setSaving(false); }
@@ -392,6 +392,7 @@ export default function GQBegehung() {
     await fetch(`${BASE}/gq-begehung/${existing.id}`, { method: "DELETE" });
     window.dispatchEvent(new Event("gq-begehung-updated"));
     setCheckData(emptyCheckData());
+    setEditing(false);
     load();
   };
 
@@ -399,7 +400,7 @@ export default function GQBegehung() {
     setCheckData(existing?.checkData ? migrate(existing.checkData as Record<string,unknown>) : emptyCheckData());
     if (existing?.durchgefuehrtAm) setDurchgefuehrtAm(existing.durchgefuehrtAm);
     setShowPin(false);
-    setIdentified(null);
+    setEditing(true);
   };
 
   const prevQ = () => {
@@ -454,7 +455,7 @@ export default function GQBegehung() {
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
-        ) : existing && !identified ? (
+        ) : existing && !editing ? (
           <ReadOnlyView existing={existing} onEdit={startEdit} onDelete={handleDelete} />
         ) : (
           <div className="space-y-4">
@@ -481,14 +482,6 @@ export default function GQBegehung() {
                   <input type="date" value={durchgefuehrtAm} onChange={e => setDurchgefuehrtAm(e.target.value)}
                     className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
-                {identified && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 block mb-1">Durchgeführt von</label>
-                    <div className="border rounded-lg px-3 py-2 text-sm font-medium text-green-700 bg-green-50">
-                      {identified.name} ({identified.kuerzel})
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -517,17 +510,17 @@ export default function GQBegehung() {
               </div>
             )}
 
-            <div className="pt-2">
-              {!identified ? (
-                <button onClick={() => setShowPin(true)}
-                  className="w-full bg-primary text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-primary/90 flex items-center justify-center gap-2">
-                  <Lock className="w-4 h-4" /> PIN eingeben und speichern
-                </button>
-              ) : (
-                <button onClick={handleSubmit} disabled={saving}
-                  className="w-full bg-green-600 text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2">
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  Begehung speichern
+            <div className="pt-2 flex flex-col gap-2">
+              <button onClick={() => setShowPin(true)} disabled={saving}
+                className="w-full bg-primary text-white rounded-xl px-4 py-3 text-sm font-semibold hover:bg-primary/90 disabled:opacity-60 flex items-center justify-center gap-2">
+                {saving
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Wird gespeichert...</>
+                  : <><Lock className="w-4 h-4" /> Mit PIN speichern</>}
+              </button>
+              {editing && (
+                <button onClick={() => { setEditing(false); }}
+                  className="w-full border rounded-xl px-4 py-2 text-sm text-gray-600 hover:bg-gray-50">
+                  Abbrechen
                 </button>
               )}
             </div>
@@ -538,7 +531,9 @@ export default function GQBegehung() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
               <PinStep
-                onVerified={(name, userId, kuerzel) => { setIdentified({ name, userId, kuerzel }); setShowPin(false); }}
+                onVerified={(name, userId, kuerzel) => {
+                  handleSubmit({ name, userId, kuerzel });
+                }}
                 onBack={() => setShowPin(false)}
                 loading={pinLoading}
                 setLoading={setPinLoading}
