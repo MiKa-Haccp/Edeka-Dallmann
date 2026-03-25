@@ -508,7 +508,7 @@ export default function Rezepturen() {
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <button
-          onClick={() => window.history.back()}
+          onClick={() => navigate("/")}
           className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center flex-shrink-0 transition-colors"
           title="Zurück"
         >
