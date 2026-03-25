@@ -48,6 +48,12 @@ export default function Responsibilities() {
     { query: { enabled: !!selectedMarketId } }
   );
 
+  const { data: prevYearResponsibilities } = useListResponsibilities(
+    selectedMarketId || 0,
+    { year: selectedYear - 1 },
+    { query: { enabled: !!selectedMarketId } }
+  );
+
   const { data: currentYearResponsibilities } = useListResponsibilities(
     selectedMarketId || 0,
     { year: currentYear },
@@ -60,6 +66,12 @@ export default function Responsibilities() {
     { query: { enabled: !!selectedMarketId } }
   );
 
+  const { data: prevYearMarketInfo } = useGetMarketInfo(
+    selectedMarketId || 0,
+    { year: selectedYear - 1 },
+    { query: { enabled: !!selectedMarketId } }
+  );
+
   const upsertResponsibilities = useUpsertResponsibilities();
   const upsertMarketInfo = useUpsertMarketInfo();
 
@@ -68,6 +80,7 @@ export default function Responsibilities() {
   const [marketNumber, setMarketNumber] = useState("");
   const [street, setStreet] = useState("");
   const [plzOrt, setPlzOrt] = useState("");
+  const [prefillSource, setPrefillSource] = useState<"current" | "prevyear" | "empty">("empty");
 
   useEffect(() => {
     if (responsibilities && responsibilities.length > 0) {
@@ -81,6 +94,19 @@ export default function Responsibilities() {
           sortOrder: r.sortOrder,
         }))
       );
+      setPrefillSource("current");
+    } else if (prevYearResponsibilities && prevYearResponsibilities.length > 0) {
+      setRows(
+        prevYearResponsibilities.map((r) => ({
+          department: r.department,
+          responsibleName: r.responsibleName || "",
+          responsiblePhone: r.responsiblePhone || "",
+          deputyName: r.deputyName || "",
+          deputyPhone: r.deputyPhone || "",
+          sortOrder: r.sortOrder,
+        }))
+      );
+      setPrefillSource("prevyear");
     } else {
       setRows(
         DEFAULT_DEPARTMENTS.map((dept, idx) => ({
@@ -92,16 +118,25 @@ export default function Responsibilities() {
           sortOrder: idx + 1,
         }))
       );
+      setPrefillSource("empty");
     }
-  }, [responsibilities]);
+  }, [responsibilities, prevYearResponsibilities]);
 
   useEffect(() => {
-    if (marketInfo) {
+    if (marketInfo && (marketInfo.marketNumber || marketInfo.street || marketInfo.plzOrt)) {
       setMarketNumber(marketInfo.marketNumber || "");
       setStreet(marketInfo.street || "");
       setPlzOrt(marketInfo.plzOrt || "");
+    } else if (prevYearMarketInfo && (prevYearMarketInfo.marketNumber || prevYearMarketInfo.street || prevYearMarketInfo.plzOrt)) {
+      setMarketNumber(prevYearMarketInfo.marketNumber || "");
+      setStreet(prevYearMarketInfo.street || "");
+      setPlzOrt(prevYearMarketInfo.plzOrt || "");
+    } else {
+      setMarketNumber("");
+      setStreet("");
+      setPlzOrt("");
     }
-  }, [marketInfo]);
+  }, [marketInfo, prevYearMarketInfo]);
 
   const handleSave = async () => {
     if (!selectedMarketId) return;
@@ -266,6 +301,22 @@ export default function Responsibilities() {
               wie z.B. Wareneingangskontrolle, Lager- und Temperaturkontrolle oder Bearbeitung von Warenrückrufen.
             </p>
           </div>
+
+          {/* Vorjahr-Hinweis */}
+          {prefillSource === "prevyear" && (
+            <div className="px-6 py-3 bg-amber-50 border-b border-amber-200 flex items-start gap-3">
+              <span className="text-amber-500 text-base mt-0.5">⚠</span>
+              <div>
+                <p className="text-sm font-semibold text-amber-800">
+                  Vorschau aus {selectedYear - 1} – noch nicht für {selectedYear} gespeichert
+                </p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Die Einträge wurden aus dem Vorjahr übernommen. Bitte prüfen, bei Bedarf anpassen und anschließend 
+                  <strong> Speichern</strong> klicken, damit die Verantwortlichkeiten für {selectedYear} gültig sind.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Market Info */}
           <div className="px-6 py-4 border-b border-border/60">
