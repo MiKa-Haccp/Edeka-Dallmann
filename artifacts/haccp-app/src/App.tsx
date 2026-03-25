@@ -55,6 +55,8 @@ import MarktPlan from "./pages/MarktPlan";
 import MetzgereiReinigung from "./pages/MetzgereiReinigung";
 import OeffnungSalate from "./pages/OeffnungSalate";
 import KaesethekeKontrolle from "./pages/KaesethekeKontrolle";
+import SemmelListe from "./pages/SemmelListe";
+import EingefrorenesFleisch from "./pages/EingefrorenesFleisch";
 import InfoDocumentation from "./pages/InfoDocumentation";
 import AnnualCleaningPlan from "./pages/AnnualCleaningPlan";
 import Betriebsbegehung from "./pages/Betriebsbegehung";
@@ -110,6 +112,8 @@ function Router() {
       <Route path="/reinigungsplan-metzgerei" component={MetzgereiReinigung} />
       <Route path="/oeffnung-salate" component={OeffnungSalate} />
       <Route path="/kaesetheke-kontrolle" component={KaesethekeKontrolle} />
+      <Route path="/semmelliste" component={SemmelListe} />
+      <Route path="/eingefrorenes-fleisch" component={EingefrorenesFleisch} />
       <Route path="/besprechungsprotokoll" component={TrainingBesprechung} />
       <Route path="/anti-vektor-zugang" component={AntiVektorZugang} />
       <Route path="/gesundheitszeugnisse" component={Gesundheitszeugnisse} />

@@ -36,6 +36,8 @@ import metzReinigungRouter from "./metzReinigung";
 import shelfMarkersRouter from "./shelfMarkers";
 import oeffnungSalateRouter from "./oeffnungSalate";
 import kaesethekeKontrolleRouter from "./kaesethekeKontrolle";
+import semmellisteRouter from "./semmelliste";
+import eingefrorenesFleischRouter from "./eingefrorenesFleisch";
 
 const router: IRouter = Router();
 
@@ -76,5 +78,7 @@ router.use(metzReinigungRouter);
 router.use(shelfMarkersRouter);
 router.use(oeffnungSalateRouter);
 router.use(kaesethekeKontrolleRouter);
+router.use(semmellisteRouter);
+router.use(eingefrorenesFleischRouter);
 
 export default router;
