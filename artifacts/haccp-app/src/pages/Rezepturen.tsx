@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { ChefHat, Search, Plus, X, Upload, ChevronDown, ChevronUp, Trash2, Edit2, Check, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
@@ -478,9 +479,10 @@ export default function Rezepturen() {
   const [editingKatId, setEditingKatId] = useState<number | null>(null);
   const [editingKatName, setEditingKatName] = useState("");
 
-  const rezepturen = search
+  const rezepturen = (search
     ? allRezepturen.filter(r => r.name.toLowerCase().includes(search.toLowerCase()))
-    : allRezepturen;
+    : allRezepturen
+  ).slice().sort((a, b) => a.name.localeCompare(b.name, "de"));
 
   const handleKatAdded = (k: Kategorie) => {
     reloadKat();
@@ -505,6 +507,7 @@ export default function Rezepturen() {
   };
 
   return (
+    <AppLayout>
     <div className="max-w-5xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <button
@@ -670,5 +673,6 @@ export default function Rezepturen() {
         <NeueKategorieModal onClose={() => setShowNeueKat(false)} onSaved={handleKatAdded} />
       )}
     </div>
+    </AppLayout>
   );
 }
