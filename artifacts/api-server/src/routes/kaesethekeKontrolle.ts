@@ -52,18 +52,19 @@ router.post("/kaesetheke-kontrolle", async (req, res) => {
     return;
   }
 
+  const { defekt = false } = req.body;
   const { rows } = await pool.query(
     `INSERT INTO kaesetheke_kontrolle
       (tenant_id, market_id, year, month, day, kontrolle_art,
        produkt, temperatur, luftfeuchtigkeit, kern_temp_garen,
-       temp_heisshalten, massnahme, kuerzel, user_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+       temp_heisshalten, massnahme, kuerzel, user_id, defekt)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
      RETURNING *`,
     [
       tenantId, marketId, year, month, day, kontrolleArt,
       produkt || null, temperatur || null, luftfeuchtigkeit || null,
       kernTempGaren || null, tempHeisshalten || null,
-      massnahme || null, kuerzel, userId || null,
+      massnahme || null, kuerzel, userId || null, !!defekt,
     ]
   );
   res.json(rows[0]);

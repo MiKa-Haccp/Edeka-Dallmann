@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
+import { useLocation } from "wouter";
 import {
   Thermometer, ChevronLeft, ChevronRight, Loader2, Check,
   X, Printer, Lock, Plus, Trash2, Wind, Flame, Snowflake,
+  AlertTriangle, ArrowLeft,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -12,6 +14,7 @@ const WOCHENTAGE = ["So","Mo","Di","Mi","Do","Fr","Sa"];
 const MONTH_NAMES = ["Januar","Februar","Maerz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 
 type KontrolleArt = "reifeschrank" | "kaesekühlschrank" | "heisse_theke";
+type TrafficLight = "green" | "yellow" | "red" | "none";
 
 type KontrolleEntry = {
   id: number;
@@ -24,567 +27,432 @@ type KontrolleEntry = {
   temp_heisshalten: string | null;
   massnahme: string | null;
   kuerzel: string;
+  defekt: boolean;
 };
 
 const HEISSE_THEKE_PRODUKTE = [
-  "Geflügel",
-  "Hackbraten",
-  "Fleischpflanzerl",
-  "Leberkäse",
-  "Schweinebraten",
-  "Kasselerbraten",
-  "Fisch",
-  "Sonstiges",
+  "Geflügel","Hackbraten","Fleischpflanzerl","Leberkäse",
+  "Schweinebraten","Kasselerbraten","Fisch","Sonstiges",
 ];
 
-function daysInMonth(year: number, month: number) {
-  return new Date(year, month, 0).getDate();
-}
-function getWeekday(year: number, month: number, day: number) {
-  return WOCHENTAGE[new Date(year, month - 1, day).getDay()];
-}
-function isWeekend(year: number, month: number, day: number) {
-  const wd = new Date(year, month - 1, day).getDay();
-  return wd === 0 || wd === 6;
-}
-function isFuture(year: number, month: number, day: number) {
-  const now = new Date();
-  now.setHours(0,0,0,0);
-  return new Date(year, month - 1, day) > now;
-}
-function isToday(year: number, month: number, day: number) {
-  const now = new Date();
-  return now.getFullYear() === year && now.getMonth() + 1 === month && now.getDate() === day;
+// ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
+function daysInMonth(year: number, month: number) { return new Date(year, month, 0).getDate(); }
+function getWeekday(year: number, month: number, day: number) { return WOCHENTAGE[new Date(year, month-1, day).getDay()]; }
+function isWeekend(year: number, month: number, day: number) { const d=new Date(year,month-1,day).getDay(); return d===0||d===6; }
+function isFuture(year: number, month: number, day: number) { const n=new Date();n.setHours(0,0,0,0);return new Date(year,month-1,day)>n; }
+function isToday(year: number, month: number, day: number) { const n=new Date(); return n.getFullYear()===year&&n.getMonth()+1===month&&n.getDate()===day; }
+function todayBerlin() {
+  const parts = new Intl.DateTimeFormat("de-DE",{timeZone:"Europe/Berlin",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date());
+  const g=(t:string)=>Number(parts.find(p=>p.type===t)?.value??0);
+  return {y:g("year"),m:g("month"),d:g("day")};
 }
 
-// Temperatur-Validierung
-function tempStatus(val: string | null, art: KontrolleArt): "ok" | "warn" | "none" {
-  if (!val) return "none";
-  const n = parseFloat(val.replace(",","."));
-  if (isNaN(n)) return "none";
-  if (art === "reifeschrank") return (n >= 1 && n <= 3) ? "ok" : "warn";
-  if (art === "kaesekühlschrank") return n <= 7 ? "ok" : "warn";
-  return "none";
-}
-function humidityStatus(val: string | null): "ok" | "warn" | "none" {
-  if (!val) return "none";
-  const n = parseFloat(val.replace(",","."));
-  if (isNaN(n)) return "none";
-  return (n >= 75 && n <= 85) ? "ok" : "warn";
-}
-function garenStatus(val: string | null, produkt: string | null): "ok" | "warn" | "none" {
-  if (!val) return "none";
-  const n = parseFloat(val.replace(",","."));
-  if (isNaN(n)) return "none";
-  const minTemp = produkt === "Fisch" ? 60 : 72;
-  return n >= minTemp ? "ok" : "warn";
-}
-function heisshaltenStatus(val: string | null): "ok" | "warn" | "none" {
-  if (!val) return "none";
-  const n = parseFloat(val.replace(",","."));
-  if (isNaN(n)) return "none";
-  return n >= 60 ? "ok" : "warn";
+// ─── Ampellogik ──────────────────────────────────────────────────────────────
+function getTabStatus(entries: KontrolleEntry[], art: KontrolleArt, year: number, month: number): TrafficLight {
+  const { y, m, d } = todayBerlin();
+  if (year !== y || month !== m) return "none";
+  const tabEntries = entries.filter(e => e.kontrolle_art === art);
+  const daysWithEntries = new Set(tabEntries.map(e => e.day));
+  const todayHasEntry = daysWithEntries.has(d);
+  let hasMissingPast = false;
+  for (let i = 1; i < d; i++) { if (!daysWithEntries.has(i)) { hasMissingPast = true; break; } }
+  if (todayHasEntry && !hasMissingPast) return "green";
+  if (!todayHasEntry && hasMissingPast) return "red";
+  if (!todayHasEntry) return "yellow";
+  return "red"; // today done but past missing
 }
 
-function TempBadge({ val, status }: { val: string | null; status: "ok" | "warn" | "none" }) {
-  if (!val) return <span className="text-muted-foreground/40">—</span>;
-  return (
-    <span className={`font-mono font-semibold text-sm ${status === "ok" ? "text-green-600" : status === "warn" ? "text-red-600" : "text-foreground"}`}>
-      {val}°C
-    </span>
-  );
+function TrafficDot({ status }: { status: TrafficLight }) {
+  if (status === "none") return null;
+  const cls = status==="green"?"bg-green-500":status==="yellow"?"bg-amber-400 animate-pulse":"bg-red-500 animate-pulse";
+  return <span className={`w-2.5 h-2.5 rounded-full shrink-0 ring-1 ring-white ${cls}`} />;
 }
 
-// ===== PIN-Verifikation =====
-function PinStep({
-  onVerified, onBack, loading, setLoading,
-}: {
-  onVerified: (name: string, userId: number, kuerzel: string) => void;
-  onBack: () => void;
-  loading: boolean;
-  setLoading: (v: boolean) => void;
-}) {
-  const [pin, setPin] = useState("");
-  const [error, setError] = useState("");
+// ─── Temperatur-Validierung ───────────────────────────────────────────────────
+function tempStatus(val:string|null,art:KontrolleArt):"ok"|"warn"|"none"{
+  if(!val)return"none";const n=parseFloat(val.replace(",","."));if(isNaN(n))return"none";
+  if(art==="reifeschrank")return(n>=1&&n<=3)?"ok":"warn";
+  if(art==="kaesekühlschrank")return n<=7?"ok":"warn";
+  return"none";
+}
+function humidityStatus(val:string|null):"ok"|"warn"|"none"{
+  if(!val)return"none";const n=parseFloat(val.replace(",","."));if(isNaN(n))return"none";
+  return(n>=75&&n<=85)?"ok":"warn";
+}
+function garenStatus(val:string|null,produkt:string|null):"ok"|"warn"|"none"{
+  if(!val)return"none";const n=parseFloat(val.replace(",","."));if(isNaN(n))return"none";
+  return n>=(produkt==="Fisch"?60:72)?"ok":"warn";
+}
+function heisshaltenStatus(val:string|null):"ok"|"warn"|"none"{
+  if(!val)return"none";const n=parseFloat(val.replace(",","."));if(isNaN(n))return"none";
+  return n>=60?"ok":"warn";
+}
 
-  const verify = async () => {
-    setError("");
-    setLoading(true);
-    try {
-      const res = await fetch(`${BASE}/users/verify-pin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pin, tenantId: 1 }),
-      });
-      const data = await res.json();
-      if (data.valid) {
-        onVerified(data.userName, data.userId, data.initials);
-      } else {
-        setError("PIN ungueltig.");
-      }
-    } catch {
-      setError("Verbindungsfehler.");
-    } finally {
-      setLoading(false);
-    }
+function TempBadge({val,status}:{val:string|null;status:"ok"|"warn"|"none"}){
+  if(!val)return<span className="text-muted-foreground/40">—</span>;
+  return<span className={`font-mono font-semibold text-sm ${status==="ok"?"text-green-600":status==="warn"?"text-red-600":"text-foreground"}`}>{val}°C</span>;
+}
+
+// ─── PIN-Schritt ─────────────────────────────────────────────────────────────
+function PinStep({onVerified,onBack,loading,setLoading}:{
+  onVerified:(name:string,userId:number,kuerzel:string)=>void;
+  onBack:()=>void; loading:boolean; setLoading:(v:boolean)=>void;
+}){
+  const [pin,setPin]=useState("");const[error,setError]=useState("");
+  const verify=async()=>{
+    setError("");setLoading(true);
+    try{
+      const res=await fetch(`${BASE}/users/verify-pin`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin,tenantId:1})});
+      const data=await res.json();
+      if(data.valid)onVerified(data.userName,data.userId,data.initials);
+      else setError("PIN ungueltig.");
+    }catch{setError("Verbindungsfehler.");}
+    finally{setLoading(false);}
   };
-
-  return (
+  return(
     <div className="space-y-4">
       <div className="text-center">
-        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
-          <Lock className="w-6 h-6 text-primary" />
-        </div>
+        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2"><Lock className="w-6 h-6 text-primary"/></div>
         <p className="text-sm text-muted-foreground">PIN eingeben zur Bestaetigung</p>
       </div>
-      <input
-        type="password"
-        inputMode="numeric"
-        maxLength={6}
-        placeholder="PIN"
-        value={pin}
-        onChange={e => setPin(e.target.value.replace(/\D/g,""))}
-        onKeyDown={e => e.key === "Enter" && pin.length >= 3 && verify()}
-        className="w-full border rounded-lg px-3 py-2 text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary"
-        autoFocus
-      />
-      {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+      <input type="password" inputMode="numeric" maxLength={6} placeholder="PIN" value={pin}
+        onChange={e=>setPin(e.target.value.replace(/\D/g,""))}
+        onKeyDown={e=>e.key==="Enter"&&pin.length>=3&&verify()}
+        className="w-full border rounded-lg px-3 py-2 text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary" autoFocus/>
+      {error&&<p className="text-red-500 text-sm text-center">{error}</p>}
       <div className="flex gap-2">
-        <button onClick={onBack} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">
-          Zurueck
-        </button>
-        <button
-          onClick={verify}
-          disabled={pin.length < 3 || loading}
-          className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-          Bestaetigen
+        <button onClick={onBack} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurueck</button>
+        <button onClick={verify} disabled={pin.length<3||loading}
+          className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
+          {loading?<Loader2 className="w-4 h-4 animate-spin"/>:<Check className="w-4 h-4"/>}Bestaetigen
         </button>
       </div>
     </div>
   );
 }
 
-// ===== MODAL: Reifeschrank / Käsekühlschrank =====
-function TempModal({
-  art, day, year, month, onConfirm, onClose,
-}: {
-  art: "reifeschrank" | "kaesekühlschrank";
-  day: number; year: number; month: number;
-  onConfirm: (data: { temperatur: string; luftfeuchtigkeit?: string; massnahme: string; kuerzel: string; userId: number | null }) => void;
-  onClose: () => void;
-}) {
-  const [step, setStep] = useState<"form"|"pin">("form");
-  const [temp, setTemp] = useState("");
-  const [feuchte, setFeuchte] = useState("");
-  const [massnahme, setMassnahme] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [identified, setIdentified] = useState<{ name: string; userId: number; kuerzel: string } | null>(null);
+// ─── Modal: Reifeschrank / Käsekühlschrank ────────────────────────────────────
+function TempModal({art,day,year,month,onConfirm,onClose}:{
+  art:"reifeschrank"|"kaesekühlschrank"; day:number; year:number; month:number;
+  onConfirm:(data:{temperatur:string;luftfeuchtigkeit?:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean})=>void;
+  onClose:()=>void;
+}){
+  const [step,setStep]=useState<"form"|"pin"|"defektPin">("form");
+  const [temp,setTemp]=useState("");const[feuchte,setFeuchte]=useState("");
+  const [massnahme,setMassnahme]=useState("");const[loading,setLoading]=useState(false);
+  const [identified,setIdentified]=useState<{name:string;userId:number;kuerzel:string}|null>(null);
+  const [defektMode,setDefektMode]=useState(false);
+  const [defektGrund,setDefektGrund]=useState("");
 
-  const artLabel = art === "reifeschrank" ? "Reifeschrank" : "Kaesekühlschrank";
-  const tempSpec = art === "reifeschrank" ? "Soll: 2°C (±1°C)" : "Soll: max. 7°C";
+  const tempSpec=art==="reifeschrank"?"Soll: 2°C (±1°C)":"Soll: max. 7°C";
+  const tStatus=tempStatus(temp,art);
+  const hStatus=humidityStatus(feuchte);
+  const hasWarn=tStatus==="warn"||hStatus==="warn";
+  const dayStr=`${String(day).padStart(2,"0")}.${String(month).padStart(2,"0")}.${year}`;
+  const artLabel=art==="reifeschrank"?"Reifeschrank":"Kaesekühlschrank";
 
-  const tStatus = tempStatus(temp, art);
-  const hStatus = humidityStatus(feuchte);
+  const handlePinVerified=(name:string,userId:number,kuerzel:string)=>{
+    setIdentified({name,userId,kuerzel});
+  };
+  const handleConfirm=()=>{
+    if(!identified)return;
+    if(defektMode){
+      onConfirm({temperatur:"",massnahme:defektGrund||"Defekt / nicht in Betrieb",kuerzel:identified.kuerzel,userId:identified.userId,defekt:true});
+    } else {
+      onConfirm({temperatur:temp,...(art==="reifeschrank"?{luftfeuchtigkeit:feuchte}:{}),massnahme,kuerzel:identified.kuerzel,userId:identified.userId,defekt:false});
+    }
+  };
 
-  return (
+  return(
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-lg">{artLabel} – {day < 10 ? "0"+day : day}.{month < 10 ? "0"+month : month}.{year}</h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+          <h3 className="font-bold text-lg">{artLabel} – {dayStr}</h3>
+          <button onClick={onClose}><X className="w-5 h-5 text-muted-foreground"/></button>
         </div>
 
-        {step === "form" ? (
+        {step==="form"&&!defektMode&&(
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Temperatur (°C) <span className="text-muted-foreground/60 font-normal">{tempSpec}</span></label>
+              <label className="text-xs font-medium text-muted-foreground block mb-1">Temperatur (°C) <span className="text-muted-foreground/60">{tempSpec}</span></label>
               <div className="relative">
-                <input
-                  type="text" inputMode="decimal"
-                  placeholder="z.B. 2,1"
-                  value={temp}
-                  onChange={e => setTemp(e.target.value)}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${tStatus==="warn"?"border-red-400 bg-red-50":tStatus==="ok"?"border-green-400 bg-green-50":""}`}
-                />
-                {tStatus !== "none" && (
-                  <span className={`absolute right-2 top-2 text-xs font-medium ${tStatus==="ok"?"text-green-600":"text-red-600"}`}>
-                    {tStatus==="ok" ? "i.O." : "ABWEICHUNG"}
-                  </span>
-                )}
+                <input type="text" inputMode="decimal" placeholder="z.B. 2,1" value={temp} onChange={e=>setTemp(e.target.value)}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${tStatus==="warn"?"border-red-400 bg-red-50":tStatus==="ok"?"border-green-400 bg-green-50":""}`} autoFocus/>
+                {tStatus!=="none"&&<span className={`absolute right-2 top-2 text-xs font-semibold ${tStatus==="ok"?"text-green-600":"text-red-600"}`}>{tStatus==="ok"?"i.O.":"ABWEICHUNG"}</span>}
               </div>
             </div>
-
-            {art === "reifeschrank" && (
+            {art==="reifeschrank"&&(
               <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Luftfeuchtigkeit (% rH) <span className="text-muted-foreground/60 font-normal">Soll: 75–85%</span></label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Luftfeuchtigkeit (% rH) <span className="text-muted-foreground/60">Soll: 75–85%</span></label>
                 <div className="relative">
-                  <input
-                    type="text" inputMode="decimal"
-                    placeholder="z.B. 80,0"
-                    value={feuchte}
-                    onChange={e => setFeuchte(e.target.value)}
-                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${hStatus==="warn"?"border-red-400 bg-red-50":hStatus==="ok"?"border-green-400 bg-green-50":""}`}
-                  />
-                  {hStatus !== "none" && (
-                    <span className={`absolute right-2 top-2 text-xs font-medium ${hStatus==="ok"?"text-green-600":"text-red-600"}`}>
-                      {hStatus==="ok" ? "i.O." : "ABWEICHUNG"}
-                    </span>
-                  )}
+                  <input type="text" inputMode="decimal" placeholder="z.B. 80,0" value={feuchte} onChange={e=>setFeuchte(e.target.value)}
+                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${hStatus==="warn"?"border-red-400 bg-red-50":hStatus==="ok"?"border-green-400 bg-green-50":""}`}/>
+                  {hStatus!=="none"&&<span className={`absolute right-2 top-2 text-xs font-semibold ${hStatus==="ok"?"text-green-600":"text-red-600"}`}>{hStatus==="ok"?"i.O.":"ABWEICHUNG"}</span>}
                 </div>
               </div>
             )}
-
-            {(tStatus === "warn" || hStatus === "warn") && (
-              <div>
-                <label className="text-xs font-medium text-red-600 mb-1 block">Massnahme bei Abweichung <span className="text-red-400">*</span></label>
-                <textarea
-                  rows={2}
-                  placeholder="Getroffene Massnahme beschreiben..."
-                  value={massnahme}
-                  onChange={e => setMassnahme(e.target.value)}
-                  className="w-full border border-red-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"
-                />
-              </div>
-            )}
-            {(tStatus !== "warn" && hStatus !== "warn") && (
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Massnahme (optional)</label>
-                <textarea
-                  rows={2}
-                  placeholder="Ggf. Massnahme beschreiben..."
-                  value={massnahme}
-                  onChange={e => setMassnahme(e.target.value)}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                />
-              </div>
-            )}
-
+            <div>
+              <label className={`text-xs font-medium block mb-1 ${hasWarn?"text-red-600":"text-muted-foreground"}`}>Massnahme {hasWarn&&<span className="text-red-400">* Pflicht bei Abweichung</span>}</label>
+              <textarea rows={2} placeholder={hasWarn?"Getroffene Massnahme beschreiben...":"Ggf. Massnahme (optional)..."} value={massnahme} onChange={e=>setMassnahme(e.target.value)}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 resize-none ${hasWarn?"border-red-300 focus:ring-red-400":"focus:ring-primary"}`}/>
+            </div>
             <div className="flex gap-2 pt-1">
+              <button onClick={()=>{setDefektMode(true);setStep("defektPin");}} className="flex items-center gap-1.5 border border-orange-300 text-orange-700 bg-orange-50 rounded-lg px-3 py-2 text-sm hover:bg-orange-100 transition-colors">
+                <AlertTriangle className="w-4 h-4"/>Defekt
+              </button>
               <button onClick={onClose} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Abbrechen</button>
-              <button
-                onClick={() => setStep("pin")}
-                disabled={!temp || ((tStatus==="warn"||hStatus==="warn") && !massnahme.trim())}
-                className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
-              >
-                Weiter
-              </button>
+              <button onClick={()=>setStep("pin")} disabled={!temp||(hasWarn&&!massnahme.trim())}
+                className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50">Weiter</button>
             </div>
           </div>
-        ) : identified ? (
+        )}
+
+        {step==="defektPin"&&!identified&&(
+          <div className="space-y-3">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-orange-700 font-medium text-sm mb-2"><AlertTriangle className="w-4 h-4"/>Defekt / nicht in Betrieb</div>
+              <textarea rows={2} placeholder="Grund (optional)..." value={defektGrund} onChange={e=>setDefektGrund(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none bg-white"/>
+            </div>
+            <PinStep onVerified={handlePinVerified} onBack={()=>{setDefektMode(false);setStep("form");}} loading={loading} setLoading={setLoading}/>
+          </div>
+        )}
+
+        {step==="pin"&&!identified&&(
+          <PinStep onVerified={handlePinVerified} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
+        )}
+
+        {identified&&(
           <div className="space-y-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-              <Check className="w-6 h-6 text-green-600" />
-            </div>
+            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto"><Check className="w-6 h-6 text-green-600"/></div>
             <p className="font-medium">{identified.name}</p>
+            {defektMode&&<p className="text-sm text-orange-600 font-medium">Wird als Defekt / nicht in Betrieb gespeichert</p>}
             <div className="flex gap-2">
-              <button onClick={() => { setIdentified(null); setStep("pin"); }} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurueck</button>
-              <button
-                onClick={() => onConfirm({ temperatur: temp, ...(art==="reifeschrank" ? { luftfeuchtigkeit: feuchte } : {}), massnahme, kuerzel: identified.kuerzel, userId: identified.userId })}
-                className="flex-1 bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-green-700"
-              >
-                Speichern
-              </button>
+              <button onClick={()=>{setIdentified(null);}} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurueck</button>
+              <button onClick={handleConfirm} className="flex-1 bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-green-700">Speichern</button>
             </div>
           </div>
-        ) : (
-          <PinStep
-            onVerified={(name, userId, kuerzel) => setIdentified({ name, userId, kuerzel })}
-            onBack={() => setStep("form")}
-            loading={loading}
-            setLoading={setLoading}
-          />
         )}
       </div>
     </div>
   );
 }
 
-// ===== MODAL: Heiße Theke =====
-function HeisseThekeModal({
-  day, year, month, onConfirm, onClose,
-}: {
-  day: number; year: number; month: number;
-  onConfirm: (data: { produkt: string; kernTempGaren: string; tempHeisshalten: string; massnahme: string; kuerzel: string; userId: number | null }) => void;
-  onClose: () => void;
-}) {
-  const [step, setStep] = useState<"form"|"pin">("form");
-  const [produkt, setProdukt] = useState("");
-  const [customProdukt, setCustomProdukt] = useState("");
-  const [garenTemp, setGarenTemp] = useState("");
-  const [heissTemp, setHeissTemp] = useState("");
-  const [massnahme, setMassnahme] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [identified, setIdentified] = useState<{ name: string; userId: number; kuerzel: string } | null>(null);
+// ─── Modal: Heiße Theke ───────────────────────────────────────────────────────
+function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
+  day:number; year:number; month:number;
+  onConfirm:(data:{produkt:string;kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean})=>void;
+  onClose:()=>void;
+}){
+  const [step,setStep]=useState<"form"|"pin"|"defektPin">("form");
+  const [produkt,setProdukt]=useState("");const[customProdukt,setCustomProdukt]=useState("");
+  const [garenTemp,setGarenTemp]=useState("");const[heissTemp,setHeissTemp]=useState("");
+  const [massnahme,setMassnahme]=useState("");const[loading,setLoading]=useState(false);
+  const [identified,setIdentified]=useState<{name:string;userId:number;kuerzel:string}|null>(null);
+  const [defektMode,setDefektMode]=useState(false);
+  const [defektGrund,setDefektGrund]=useState("");
 
-  const finalProdukt = produkt === "Sonstiges" ? customProdukt : produkt;
-  const gStatus = garenStatus(garenTemp, produkt);
-  const hStatus = heisshaltenStatus(heissTemp);
-  const hasWarn = gStatus === "warn" || hStatus === "warn";
-  const minGarenTemp = produkt === "Fisch" ? "60°C" : "72°C";
+  const finalProdukt=produkt==="Sonstiges"?customProdukt:produkt;
+  const gStatus=garenStatus(garenTemp,produkt);
+  const hStatus=heisshaltenStatus(heissTemp);
+  const hasWarn=gStatus==="warn"||hStatus==="warn";
+  const minTemp=produkt==="Fisch"?"60°C":"72°C";
+  const dayStr=`${String(day).padStart(2,"0")}.${String(month).padStart(2,"0")}.${year}`;
 
-  return (
+  const handleConfirm=()=>{
+    if(!identified)return;
+    if(defektMode){
+      onConfirm({produkt:"Defekt",kernTempGaren:"",tempHeisshalten:"",massnahme:defektGrund||"Defekt / nicht in Betrieb",kuerzel:identified.kuerzel,userId:identified.userId,defekt:true});
+    } else {
+      onConfirm({produkt:finalProdukt,kernTempGaren:garenTemp,tempHeisshalten:heissTemp,massnahme,kuerzel:identified.kuerzel,userId:identified.userId,defekt:false});
+    }
+  };
+
+  return(
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-bold text-lg">Heisse Theke – {day < 10 ? "0"+day : day}.{month < 10 ? "0"+month : month}.{year}</h3>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+          <h3 className="font-bold text-lg">Heisse Theke – {dayStr}</h3>
+          <button onClick={onClose}><X className="w-5 h-5 text-muted-foreground"/></button>
         </div>
 
-        {step === "form" ? (
+        {step==="form"&&!defektMode&&(
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Produkt</label>
-              <select
-                value={produkt}
-                onChange={e => { setProdukt(e.target.value); setCustomProdukt(""); }}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary bg-white"
-              >
+              <label className="text-xs font-medium text-muted-foreground block mb-1">Produkt</label>
+              <select value={produkt} onChange={e=>{setProdukt(e.target.value);setCustomProdukt("");}} autoFocus
+                className="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary">
                 <option value="">Produkt waehlen...</option>
-                {HEISSE_THEKE_PRODUKTE.map(p => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
+                {HEISSE_THEKE_PRODUKTE.map(p=><option key={p} value={p}>{p}</option>)}
               </select>
-              {produkt === "Sonstiges" && (
-                <input
-                  type="text"
-                  placeholder="Produktbezeichnung eingeben..."
-                  value={customProdukt}
-                  onChange={e => setCustomProdukt(e.target.value)}
-                  className="mt-2 w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-              )}
+              {produkt==="Sonstiges"&&<input type="text" placeholder="Produktbezeichnung..." value={customProdukt} onChange={e=>setCustomProdukt(e.target.value)} className="mt-2 w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>}
             </div>
-
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                Kerntemperatur Garen (°C) <span className="text-muted-foreground/60 font-normal">Soll: mind. {minGarenTemp || "72°C"}</span>
-              </label>
+              <label className="text-xs font-medium text-muted-foreground block mb-1">Kerntemperatur Garen <span className="text-muted-foreground/60">mind. {minTemp||"72°C"}</span></label>
               <div className="relative">
-                <input
-                  type="text" inputMode="decimal"
-                  placeholder="z.B. 75,0"
-                  value={garenTemp}
-                  onChange={e => setGarenTemp(e.target.value)}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${gStatus==="warn"?"border-red-400 bg-red-50":gStatus==="ok"?"border-green-400 bg-green-50":""}`}
-                />
-                {gStatus !== "none" && (
-                  <span className={`absolute right-2 top-2 text-xs font-medium ${gStatus==="ok"?"text-green-600":"text-red-600"}`}>
-                    {gStatus==="ok" ? "i.O." : "ABWEICHUNG"}
-                  </span>
-                )}
+                <input type="text" inputMode="decimal" placeholder="z.B. 75,0" value={garenTemp} onChange={e=>setGarenTemp(e.target.value)}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${gStatus==="warn"?"border-red-400 bg-red-50":gStatus==="ok"?"border-green-400 bg-green-50":""}`}/>
+                {gStatus!=="none"&&<span className={`absolute right-2 top-2 text-xs font-semibold ${gStatus==="ok"?"text-green-600":"text-red-600"}`}>{gStatus==="ok"?"i.O.":"ABWEICHUNG"}</span>}
               </div>
             </div>
-
             <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">
-                Temperatur Heisshalten (°C) <span className="text-muted-foreground/60 font-normal">Soll: mind. 60°C, max. 3 Std.</span>
-              </label>
+              <label className="text-xs font-medium text-muted-foreground block mb-1">Temp. Heisshalten <span className="text-muted-foreground/60">mind. 60°C, max. 3 Std.</span></label>
               <div className="relative">
-                <input
-                  type="text" inputMode="decimal"
-                  placeholder="z.B. 65,0"
-                  value={heissTemp}
-                  onChange={e => setHeissTemp(e.target.value)}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${hStatus==="warn"?"border-red-400 bg-red-50":hStatus==="ok"?"border-green-400 bg-green-50":""}`}
-                />
-                {hStatus !== "none" && (
-                  <span className={`absolute right-2 top-2 text-xs font-medium ${hStatus==="ok"?"text-green-600":"text-red-600"}`}>
-                    {hStatus==="ok" ? "i.O." : "ABWEICHUNG"}
-                  </span>
-                )}
+                <input type="text" inputMode="decimal" placeholder="z.B. 65,0" value={heissTemp} onChange={e=>setHeissTemp(e.target.value)}
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${hStatus==="warn"?"border-red-400 bg-red-50":hStatus==="ok"?"border-green-400 bg-green-50":""}`}/>
+                {hStatus!=="none"&&<span className={`absolute right-2 top-2 text-xs font-semibold ${hStatus==="ok"?"text-green-600":"text-red-600"}`}>{hStatus==="ok"?"i.O.":"ABWEICHUNG"}</span>}
               </div>
             </div>
-
             <div>
-              <label className={`text-xs font-medium mb-1 block ${hasWarn ? "text-red-600" : "text-muted-foreground"}`}>
-                Massnahme {hasWarn ? <span className="text-red-400">* (Abweichung!)</span> : "(optional)"}
-              </label>
-              <textarea
-                rows={2}
-                placeholder={hasWarn ? "Getroffene Massnahme beschreiben..." : "Ggf. Massnahme beschreiben..."}
-                value={massnahme}
-                onChange={e => setMassnahme(e.target.value)}
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 resize-none ${hasWarn ? "border-red-300 focus:ring-red-400" : "focus:ring-primary"}`}
-              />
+              <label className={`text-xs font-medium block mb-1 ${hasWarn?"text-red-600":"text-muted-foreground"}`}>Massnahme {hasWarn&&<span className="text-red-400">* Pflicht</span>}</label>
+              <textarea rows={2} placeholder={hasWarn?"Massnahme beschreiben...":"Ggf. Massnahme (optional)..."} value={massnahme} onChange={e=>setMassnahme(e.target.value)}
+                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 resize-none ${hasWarn?"border-red-300 focus:ring-red-400":"focus:ring-primary"}`}/>
             </div>
-
             <div className="flex gap-2 pt-1">
+              <button onClick={()=>{setDefektMode(true);setStep("defektPin");}} className="flex items-center gap-1.5 border border-orange-300 text-orange-700 bg-orange-50 rounded-lg px-3 py-2 text-sm hover:bg-orange-100 transition-colors">
+                <AlertTriangle className="w-4 h-4"/>Defekt
+              </button>
               <button onClick={onClose} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Abbrechen</button>
-              <button
-                onClick={() => setStep("pin")}
-                disabled={!finalProdukt.trim() || !garenTemp || !heissTemp || (hasWarn && !massnahme.trim())}
-                className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50"
-              >
-                Weiter
-              </button>
+              <button onClick={()=>setStep("pin")} disabled={!finalProdukt.trim()||!garenTemp||!heissTemp||(hasWarn&&!massnahme.trim())}
+                className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50">Weiter</button>
             </div>
           </div>
-        ) : identified ? (
+        )}
+
+        {step==="defektPin"&&!identified&&(
+          <div className="space-y-3">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+              <div className="flex items-center gap-2 text-orange-700 font-medium text-sm mb-2"><AlertTriangle className="w-4 h-4"/>Defekt / nicht in Betrieb</div>
+              <textarea rows={2} placeholder="Grund (optional)..." value={defektGrund} onChange={e=>setDefektGrund(e.target.value)}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none bg-white"/>
+            </div>
+            <PinStep onVerified={id=>setIdentified(id)} onBack={()=>{setDefektMode(false);setStep("form");}} loading={loading} setLoading={setLoading}/>
+          </div>
+        )}
+        {step==="pin"&&!identified&&(
+          <PinStep onVerified={id=>setIdentified(id)} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
+        )}
+        {identified&&(
           <div className="space-y-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-              <Check className="w-6 h-6 text-green-600" />
-            </div>
+            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto"><Check className="w-6 h-6 text-green-600"/></div>
             <p className="font-medium">{identified.name}</p>
+            {defektMode&&<p className="text-sm text-orange-600 font-medium">Wird als Defekt / nicht in Betrieb gespeichert</p>}
             <div className="flex gap-2">
-              <button onClick={() => { setIdentified(null); setStep("pin"); }} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurueck</button>
-              <button
-                onClick={() => onConfirm({ produkt: finalProdukt, kernTempGaren: garenTemp, tempHeisshalten: heissTemp, massnahme, kuerzel: identified.kuerzel, userId: identified.userId })}
-                className="flex-1 bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-green-700"
-              >
-                Speichern
-              </button>
+              <button onClick={()=>setIdentified(null)} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurueck</button>
+              <button onClick={handleConfirm} className="flex-1 bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-green-700">Speichern</button>
             </div>
           </div>
-        ) : (
-          <PinStep
-            onVerified={(name, userId, kuerzel) => setIdentified({ name, userId, kuerzel })}
-            onBack={() => setStep("form")}
-            loading={loading}
-            setLoading={setLoading}
-          />
         )}
       </div>
     </div>
   );
 }
 
-// ===== TAB: Reifeschrank / Käsekühlschrank =====
-function TempTab({
-  art, entries, year, month, marketId, onSaved, onDeleted, adminSession,
-}: {
-  art: "reifeschrank" | "kaesekühlschrank";
-  entries: KontrolleEntry[];
-  year: number; month: number; marketId: number;
-  onSaved: () => void;
-  onDeleted: (id: number) => void;
-  adminSession: boolean;
-}) {
-  const [modal, setModal] = useState<number | null>(null);
+// ─── Tab: Reifeschrank / Käsekühlschrank ──────────────────────────────────────
+function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession,openTodayModal,onTodayModalHandled}:{
+  art:"reifeschrank"|"kaesekühlschrank";
+  entries:KontrolleEntry[]; year:number; month:number; marketId:number;
+  onSaved:()=>void; onDeleted:(id:number)=>void; adminSession:boolean;
+  openTodayModal:boolean; onTodayModalHandled:()=>void;
+}){
+  const {d:todayD,y:ty,m:tm}=todayBerlin();
+  const isCurrentMonth=year===ty&&month===tm;
+  const [modal,setModal]=useState<number|null>(null);
 
-  const days = daysInMonth(year, month);
-  const byDay = useMemo(() => {
-    const m: Record<number, KontrolleEntry[]> = {};
-    for (const e of entries) {
-      if (!m[e.day]) m[e.day] = [];
-      m[e.day].push(e);
+  useEffect(()=>{
+    if(openTodayModal&&isCurrentMonth){
+      const todayHas=entries.some(e=>e.day===todayD);
+      if(!todayHas){setModal(todayD);}
+      onTodayModalHandled();
     }
+  },[openTodayModal]);
+
+  const days=daysInMonth(year,month);
+  const byDay=useMemo(()=>{
+    const m:Record<number,KontrolleEntry[]>={};
+    for(const e of entries){if(!m[e.day])m[e.day]=[];m[e.day].push(e);}
     return m;
-  }, [entries]);
+  },[entries]);
 
-  const tempSpec = art === "reifeschrank" ? "Soll: 2°C (±1°C)" : "Soll: max. 7°C";
+  const tempSpec=art==="reifeschrank"?"Soll: 2°C (±1°C)":"Soll: max. 7°C";
 
-  const handleSave = async (day: number, data: { temperatur: string; luftfeuchtigkeit?: string; massnahme: string; kuerzel: string; userId: number | null }) => {
-    await fetch(`${BASE}/kaesetheke-kontrolle`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        marketId, year, month, day,
-        kontrolleArt: art,
-        temperatur: data.temperatur,
-        luftfeuchtigkeit: data.luftfeuchtigkeit || null,
-        massnahme: data.massnahme,
-        kuerzel: data.kuerzel,
-        userId: data.userId,
-      }),
-    });
-    setModal(null);
-    onSaved();
+  const handleSave=async(day:number,data:{temperatur:string;luftfeuchtigkeit?:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean})=>{
+    await fetch(`${BASE}/kaesetheke-kontrolle`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marketId,year,month,day,kontrolleArt:art,temperatur:data.temperatur,luftfeuchtigkeit:data.luftfeuchtigkeit||null,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:data.defekt})});
+    setModal(null);onSaved();
   };
 
-  const handleDelete = async (id: number) => {
-    await fetch(`${BASE}/kaesetheke-kontrolle/${id}`, { method: "DELETE" });
-    onDeleted(id);
-  };
-
-  return (
+  return(
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
-        <Thermometer className="w-3.5 h-3.5 shrink-0" />
-        <span>{tempSpec}{art === "reifeschrank" ? " | Luftfeuchtigkeit: 75–85% rH" : ""} | Auf einen Tag tippen um Temperatur einzutragen.</span>
+        <Thermometer className="w-3.5 h-3.5 shrink-0"/>
+        <span>{tempSpec}{art==="reifeschrank"?" | Luftfeuchtigkeit: 75–85% rH":""} | Auf einen Tag tippen zum Eintragen.</span>
       </div>
       <div className="border rounded-xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-muted/50 border-b">
-              <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground w-16">Tag</th>
-              <th className="text-left px-2 py-2.5 font-semibold text-xs text-muted-foreground w-8">WT</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground">Temp.</th>
-              {art === "reifeschrank" && <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground">Feuchte</th>}
-              <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground hidden md:table-cell">Massnahme</th>
-              <th className="text-left px-3 py-2.5 font-semibold text-xs text-muted-foreground w-16">Kürzel</th>
+              <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground w-16">Tag</th>
+              <th className="text-left px-2 py-2.5 text-xs font-semibold text-muted-foreground w-8">WT</th>
+              <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Temp.</th>
+              {art==="reifeschrank"&&<th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Feuchte</th>}
+              <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground hidden md:table-cell">Massnahme</th>
+              <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground w-20">Kuerzel</th>
             </tr>
           </thead>
           <tbody>
-            {Array.from({ length: days }, (_, i) => i + 1).map(day => {
-              const dayEntries = byDay[day] || [];
-              const latestEntry = dayEntries[dayEntries.length - 1] || null;
-              const wt = getWeekday(year, month, day);
-              const future = isFuture(year, month, day);
-              const today = isToday(year, month, day);
-              const weekend = isWeekend(year, month, day);
-              const tStatus = tempStatus(latestEntry?.temperatur ?? null, art);
-              const hStatus = humidityStatus(latestEntry?.luftfeuchtigkeit ?? null);
-              const hasWarn = tStatus === "warn" || hStatus === "warn";
-              const clickable = !future;
+            {Array.from({length:days},(_,i)=>i+1).map(day=>{
+              const dayEntries=byDay[day]||[];
+              const latestEntry=dayEntries[dayEntries.length-1]||null;
+              const wt=getWeekday(year,month,day);
+              const future=isFuture(year,month,day);
+              const today=isToday(year,month,day);
+              const weekend=isWeekend(year,month,day);
+              const tSt=tempStatus(latestEntry?.temperatur??null,art);
+              const hSt=humidityStatus(latestEntry?.luftfeuchtigkeit??null);
+              const hasWarn=(tSt==="warn"||hSt==="warn")&&!latestEntry?.defekt;
+              const clickable=!future;
 
-              return (
-                <tr
-                  key={day}
-                  onClick={() => clickable && setModal(day)}
-                  className={[
-                    "border-b last:border-0 transition-colors",
-                    today ? "bg-blue-50/70" : weekend ? "bg-muted/20" : "",
-                    hasWarn ? "bg-red-50/50" : "",
-                    clickable ? "cursor-pointer hover:bg-primary/5 active:bg-primary/10" : "opacity-40",
-                  ].filter(Boolean).join(" ")}
-                >
+              return(
+                <tr key={day} onClick={()=>clickable&&setModal(day)}
+                  className={["border-b last:border-0 transition-colors",
+                    today?"bg-blue-50/70":weekend?"bg-muted/20":"",
+                    hasWarn?"bg-red-50/50":"",
+                    clickable?"cursor-pointer hover:bg-primary/5 active:bg-primary/10":"opacity-40",
+                  ].filter(Boolean).join(" ")}>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1.5">
                       <span className="font-mono font-bold text-base">{String(day).padStart(2,"0")}</span>
-                      {today && <span className="text-[10px] font-semibold text-blue-500 bg-blue-100 px-1.5 py-0.5 rounded-full">HEUTE</span>}
-                      {!latestEntry && clickable && (
-                        <span className="text-[10px] text-primary/50 hidden sm:inline">+ Eintragen</span>
-                      )}
+                      {today&&<span className="text-[10px] font-bold text-blue-500 bg-blue-100 px-1.5 py-0.5 rounded-full">HEUTE</span>}
+                      {!latestEntry&&clickable&&<span className="text-[10px] text-primary/50 hidden sm:inline">+ Eintragen</span>}
                     </div>
                   </td>
-                  <td className={`px-2 py-3 text-xs font-medium ${weekend ? "text-red-500" : "text-muted-foreground"}`}>{wt}</td>
+                  <td className={`px-2 py-3 text-xs font-medium ${weekend?"text-red-500":"text-muted-foreground"}`}>{wt}</td>
                   <td className="px-3 py-3">
-                    {latestEntry?.temperatur ? (
-                      <TempBadge val={latestEntry.temperatur} status={tStatus} />
-                    ) : clickable ? (
-                      <span className="inline-flex items-center gap-1 text-xs text-primary/40 font-medium border border-dashed border-primary/20 rounded px-2 py-0.5">
-                        <Plus className="w-3 h-3" /> Temp.
-                      </span>
-                    ) : <span className="text-muted-foreground/30 text-xs">—</span>}
+                    {latestEntry?.defekt?(
+                      <span className="flex items-center gap-1 text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-2 py-0.5"><AlertTriangle className="w-3 h-3"/>Defekt</span>
+                    ):latestEntry?.temperatur?(
+                      <TempBadge val={latestEntry.temperatur} status={tSt}/>
+                    ):clickable?(
+                      <span className="inline-flex items-center gap-1 text-xs text-primary/40 border border-dashed border-primary/20 rounded px-2 py-0.5"><Plus className="w-3 h-3"/>Temp.</span>
+                    ):<span className="text-muted-foreground/30 text-xs">—</span>}
                   </td>
-                  {art === "reifeschrank" && (
+                  {art==="reifeschrank"&&(
                     <td className="px-3 py-3">
-                      {latestEntry?.luftfeuchtigkeit ? (
-                        <span className={`font-mono font-semibold text-sm ${hStatus==="ok"?"text-green-600":hStatus==="warn"?"text-red-600":"text-foreground"}`}>
-                          {latestEntry.luftfeuchtigkeit}%
-                        </span>
-                      ) : <span className="text-muted-foreground/30 text-xs">—</span>}
+                      {!latestEntry?.defekt&&latestEntry?.luftfeuchtigkeit?(
+                        <span className={`font-mono font-semibold text-sm ${hSt==="ok"?"text-green-600":hSt==="warn"?"text-red-600":"text-foreground"}`}>{latestEntry.luftfeuchtigkeit}%</span>
+                      ):<span className="text-muted-foreground/30 text-xs">—</span>}
                     </td>
                   )}
                   <td className="px-3 py-3 max-w-[200px] hidden md:table-cell">
-                    {latestEntry?.massnahme ? (
-                      <span className={`text-xs truncate block ${hasWarn ? "text-red-600 font-medium" : "text-muted-foreground"}`}>{latestEntry.massnahme}</span>
-                    ) : <span className="text-muted-foreground/30 text-xs">—</span>}
+                    {latestEntry?.massnahme?<span className={`text-xs truncate block ${hasWarn?"text-red-600 font-medium":"text-muted-foreground"}`}>{latestEntry.massnahme}</span>:<span className="text-muted-foreground/30 text-xs">—</span>}
                   </td>
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-1">
-                      {latestEntry ? (
-                        <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded">{latestEntry.kuerzel}</span>
-                      ) : <span className="text-muted-foreground/30 text-xs">—</span>}
-                      {adminSession && latestEntry && (
-                        <button
-                          onClick={e => { e.stopPropagation(); handleDelete(latestEntry.id); }}
-                          className="text-muted-foreground hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"
-                          title="Loeschen"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
+                      {latestEntry?<span className="bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded">{latestEntry.kuerzel}</span>:<span className="text-muted-foreground/30 text-xs">—</span>}
+                      {adminSession&&latestEntry&&(
+                        <button onClick={e=>{e.stopPropagation();fetch(`${BASE}/kaesetheke-kontrolle/${latestEntry.id}`,{method:"DELETE"}).then(()=>onDeleted(latestEntry.id));}}
+                          className="text-muted-foreground hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors" title="Loeschen">
+                          <Trash2 className="w-3.5 h-3.5"/>
                         </button>
                       )}
                     </div>
@@ -595,300 +463,226 @@ function TempTab({
           </tbody>
         </table>
       </div>
-      {modal !== null && (
-        <TempModal
-          art={art}
-          day={modal} year={year} month={month}
-          onConfirm={(data) => handleSave(modal, data)}
-          onClose={() => setModal(null)}
-        />
+      {modal!==null&&(
+        <TempModal art={art} day={modal} year={year} month={month}
+          onConfirm={data=>handleSave(modal,data)} onClose={()=>setModal(null)}/>
       )}
     </div>
   );
 }
 
-// ===== TAB: Heiße Theke =====
-function HeisseThekeTab({
-  entries, year, month, marketId, onSaved, onDeleted, adminSession,
-}: {
-  entries: KontrolleEntry[];
-  year: number; month: number; marketId: number;
-  onSaved: () => void;
-  onDeleted: (id: number) => void;
-  adminSession: boolean;
-}) {
-  const [modal, setModal] = useState<number | null>(null);
+// ─── Tab: Heiße Theke ─────────────────────────────────────────────────────────
+function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSession,openTodayModal,onTodayModalHandled}:{
+  entries:KontrolleEntry[]; year:number; month:number; marketId:number;
+  onSaved:()=>void; onDeleted:(id:number)=>void; adminSession:boolean;
+  openTodayModal:boolean; onTodayModalHandled:()=>void;
+}){
+  const {d:todayD,y:ty,m:tm}=todayBerlin();
+  const isCurrentMonth=year===ty&&month===tm;
+  const [modal,setModal]=useState<number|null>(null);
 
-  const days = daysInMonth(year, month);
-  const byDay = useMemo(() => {
-    const m: Record<number, KontrolleEntry[]> = {};
-    for (const e of entries) {
-      if (!m[e.day]) m[e.day] = [];
-      m[e.day].push(e);
+  useEffect(()=>{
+    if(openTodayModal&&isCurrentMonth){
+      const todayHas=entries.some(e=>e.day===todayD);
+      if(!todayHas){setModal(todayD);}
+      onTodayModalHandled();
     }
+  },[openTodayModal]);
+
+  const days=daysInMonth(year,month);
+  const byDay=useMemo(()=>{
+    const m:Record<number,KontrolleEntry[]>={};
+    for(const e of entries){if(!m[e.day])m[e.day]=[];m[e.day].push(e);}
     return m;
-  }, [entries]);
+  },[entries]);
 
-  const handleSave = async (day: number, data: { produkt: string; kernTempGaren: string; tempHeisshalten: string; massnahme: string; kuerzel: string; userId: number | null }) => {
-    await fetch(`${BASE}/kaesetheke-kontrolle`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        marketId, year, month, day,
-        kontrolleArt: "heisse_theke",
-        produkt: data.produkt,
-        kernTempGaren: data.kernTempGaren,
-        tempHeisshalten: data.tempHeisshalten,
-        massnahme: data.massnahme,
-        kuerzel: data.kuerzel,
-        userId: data.userId,
-      }),
-    });
-    setModal(null);
-    onSaved();
+  const handleSave=async(day:number,data:{produkt:string;kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean})=>{
+    await fetch(`${BASE}/kaesetheke-kontrolle`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marketId,year,month,day,kontrolleArt:"heisse_theke",produkt:data.produkt,kernTempGaren:data.kernTempGaren,tempHeisshalten:data.tempHeisshalten,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:data.defekt})});
+    setModal(null);onSaved();
   };
 
-  const handleDelete = async (id: number) => {
-    await fetch(`${BASE}/kaesetheke-kontrolle/${id}`, { method: "DELETE" });
-    onDeleted(id);
-  };
-
-  return (
+  return(
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
-        <Flame className="w-3.5 h-3.5 shrink-0 text-orange-500" />
+        <Flame className="w-3.5 h-3.5 shrink-0 text-orange-500"/>
         <span><strong>Garen:</strong> mind. +72°C (Fisch: +60°C) | <strong>Heisshalten:</strong> mind. 60°C, max. 3 Std.</span>
       </div>
-
       <div className="space-y-2">
-        {Array.from({ length: days }, (_, i) => i + 1).map(day => {
-          const dayEntries = byDay[day] || [];
-          const wt = getWeekday(year, month, day);
-          const future = isFuture(year, month, day);
-          const today = isToday(year, month, day);
-          const weekend = isWeekend(year, month, day);
-
-          if (future && dayEntries.length === 0) return null;
-
-          return (
-            <div
-              key={day}
-              className={[
-                "border rounded-xl overflow-hidden",
-                today ? "border-blue-200 shadow-sm" : "",
-                weekend && !today ? "bg-muted/20" : "",
-              ].filter(Boolean).join(" ")}
-            >
-              {/* Tages-Header */}
-              <div className={`flex items-center justify-between px-4 py-2.5 ${today ? "bg-blue-50" : "bg-muted/30"} border-b`}>
+        {Array.from({length:days},(_,i)=>i+1).map(day=>{
+          const dayEntries=byDay[day]||[];
+          const wt=getWeekday(year,month,day);
+          const future=isFuture(year,month,day);
+          const today=isToday(year,month,day);
+          const weekend=isWeekend(year,month,day);
+          if(future&&dayEntries.length===0)return null;
+          return(
+            <div key={day} className={["border rounded-xl overflow-hidden",today?"border-blue-200 shadow-sm":"",weekend&&!today?"bg-muted/10":""].filter(Boolean).join(" ")}>
+              <div className={`flex items-center justify-between px-4 py-2.5 border-b ${today?"bg-blue-50":"bg-muted/30"}`}>
                 <div className="flex items-center gap-2">
                   <span className="font-mono font-bold text-base">{String(day).padStart(2,"0")}.</span>
-                  <span className={`text-sm font-medium ${weekend ? "text-red-500" : "text-muted-foreground"}`}>{wt}</span>
-                  {today && <span className="text-[10px] font-bold text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full">HEUTE</span>}
-                  {dayEntries.length > 0 && (
-                    <span className="text-xs text-muted-foreground">{dayEntries.length} Produkt{dayEntries.length !== 1 ? "e" : ""}</span>
-                  )}
+                  <span className={`text-sm font-medium ${weekend?"text-red-500":"text-muted-foreground"}`}>{wt}</span>
+                  {today&&<span className="text-[10px] font-bold text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full">HEUTE</span>}
+                  {dayEntries.length>0&&<span className="text-xs text-muted-foreground">{dayEntries.length} Produkt{dayEntries.length!==1?"e":""}</span>}
                 </div>
-                {!future && (
-                  <button
-                    onClick={() => setModal(day)}
-                    className="flex items-center gap-1.5 text-xs font-semibold bg-primary text-white rounded-lg px-3 py-1.5 hover:bg-primary/90 transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Produkt eintragen
+                {!future&&(
+                  <button onClick={()=>setModal(day)} className="flex items-center gap-1.5 text-xs font-semibold bg-primary text-white rounded-lg px-3 py-1.5 hover:bg-primary/90 transition-colors">
+                    <Plus className="w-3.5 h-3.5"/>Produkt eintragen
                   </button>
                 )}
               </div>
-
-              {/* Produkt-Eintraege */}
-              {dayEntries.length > 0 ? (
+              {dayEntries.length>0?(
                 <div className="divide-y">
-                  {dayEntries.map(entry => {
-                    const gStatus = garenStatus(entry.kern_temp_garen, entry.produkt);
-                    const hStatus = heisshaltenStatus(entry.temp_heisshalten);
-                    const hasWarn = gStatus === "warn" || hStatus === "warn";
-                    return (
-                      <div key={entry.id} className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 ${hasWarn ? "bg-red-50/60" : ""}`}>
-                        <span className="font-semibold text-sm w-32 truncate">{entry.produkt}</span>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-muted-foreground">Garen:</span>
-                          <TempBadge val={entry.kern_temp_garen} status={gStatus} />
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-muted-foreground">Heisshalten:</span>
-                          <TempBadge val={entry.temp_heisshalten} status={hStatus} />
-                        </div>
-                        {entry.massnahme && (
-                          <span className={`text-xs flex-1 min-w-0 truncate ${hasWarn ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
-                            {entry.massnahme}
-                          </span>
-                        )}
+                  {dayEntries.map(entry=>{
+                    const gSt=garenStatus(entry.kern_temp_garen,entry.produkt);
+                    const hSt=heisshaltenStatus(entry.temp_heisshalten);
+                    const hasWarn=(gSt==="warn"||hSt==="warn")&&!entry.defekt;
+                    return(
+                      <div key={entry.id} className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 ${hasWarn?"bg-red-50/60":""}`}>
+                        {entry.defekt?(
+                          <span className="flex items-center gap-1 text-sm font-semibold text-orange-600"><AlertTriangle className="w-4 h-4"/>Defekt / nicht in Betrieb</span>
+                        ):<span className="font-semibold text-sm w-32 truncate">{entry.produkt}</span>}
+                        {!entry.defekt&&<>
+                          <div className="flex items-center gap-1"><span className="text-xs text-muted-foreground">Garen:</span><TempBadge val={entry.kern_temp_garen} status={gSt}/></div>
+                          <div className="flex items-center gap-1"><span className="text-xs text-muted-foreground">Heisshalten:</span><TempBadge val={entry.temp_heisshalten} status={hSt}/></div>
+                        </>}
+                        {entry.massnahme&&<span className={`text-xs flex-1 min-w-0 truncate ${hasWarn?"text-red-600 font-medium":"text-muted-foreground"}`}>{entry.massnahme}</span>}
                         <div className="flex items-center gap-1 ml-auto">
                           <span className="bg-primary/10 text-primary text-xs font-bold px-2 py-0.5 rounded">{entry.kuerzel}</span>
-                          {adminSession && (
-                            <button
-                              onClick={() => handleDelete(entry.id)}
-                              className="text-muted-foreground hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"
-                              title="Loeschen"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
+                          {adminSession&&<button onClick={()=>fetch(`${BASE}/kaesetheke-kontrolle/${entry.id}`,{method:"DELETE"}).then(()=>onDeleted(entry.id))} className="text-muted-foreground hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"><Trash2 className="w-3.5 h-3.5"/></button>}
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              ) : (
-                <div
-                  onClick={() => !future && setModal(day)}
-                  className={`px-4 py-3 text-sm text-muted-foreground/60 text-center ${!future ? "cursor-pointer hover:bg-primary/5 hover:text-primary/70" : ""}`}
-                >
-                  {!future ? "Tippen um erstes Produkt einzutragen" : "Keine Eintraege"}
+              ):(
+                <div onClick={()=>!future&&setModal(day)} className={`px-4 py-3 text-sm text-center text-muted-foreground/60 ${!future?"cursor-pointer hover:bg-primary/5 hover:text-primary/70":""}`}>
+                  {!future?"Tippen um erstes Produkt einzutragen":"Keine Eintraege"}
                 </div>
               )}
             </div>
           );
         })}
       </div>
-
-      {modal !== null && (
-        <HeisseThekeModal
-          day={modal} year={year} month={month}
-          onConfirm={(data) => handleSave(modal, data)}
-          onClose={() => setModal(null)}
-        />
-      )}
+      {modal!==null&&<HeisseThekeModal day={modal} year={year} month={month} onConfirm={data=>handleSave(modal,data)} onClose={()=>setModal(null)}/>}
     </div>
   );
 }
 
-// ===== HAUPTSEITE =====
+// ─── Hauptseite ───────────────────────────────────────────────────────────────
 type Tab = "reifeschrank" | "kaesekühlschrank" | "heisse_theke";
 
 export default function KaesethekeKontrolle() {
-  const { selectedMarketId, selectedMarketName, adminSession } = useAppStore();
-  const today = new Date();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth() + 1);
-  const [tab, setTab] = useState<Tab>("reifeschrank");
-  const [entries, setEntries] = useState<KontrolleEntry[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { selectedMarketId, adminSession } = useAppStore();
+  const [,navigate] = useLocation();
+  const now = new Date();
+  const [year,setYear]=useState(now.getFullYear());
+  const [month,setMonth]=useState(now.getMonth()+1);
+  const [tab,setTab]=useState<Tab>("reifeschrank");
+  const [entries,setEntries]=useState<KontrolleEntry[]>([]);
+  const [loading,setLoading]=useState(false);
+  const [openTodayFor,setOpenTodayFor]=useState<Tab|null>(null);
 
-  const marketId = selectedMarketId ?? 0;
+  const marketId=selectedMarketId??0;
 
-  const fetchEntries = useCallback(async () => {
-    if (!marketId) return;
+  const fetchEntries=useCallback(async()=>{
+    if(!marketId)return;
     setLoading(true);
-    try {
-      const res = await fetch(`${BASE}/kaesetheke-kontrolle?marketId=${marketId}&year=${year}&month=${month}`);
-      const data = await res.json();
-      setEntries(Array.isArray(data) ? data : []);
-    } catch {
-      setEntries([]);
-    } finally {
-      setLoading(false);
+    try{const res=await fetch(`${BASE}/kaesetheke-kontrolle?marketId=${marketId}&year=${year}&month=${month}`);const data=await res.json();setEntries(Array.isArray(data)?data:[]);}
+    catch{setEntries([]);}
+    finally{setLoading(false);}
+  },[marketId,year,month]);
+
+  useEffect(()=>{fetchEntries();},[fetchEntries]);
+
+  const filteredEntries=useMemo(()=>entries.filter(e=>e.kontrolle_art===tab),[entries,tab]);
+
+  const prevMonth=()=>{if(month===1){setMonth(12);setYear(y=>y-1);}else setMonth(m=>m-1);};
+  const nextMonth=()=>{if(month===12){setMonth(1);setYear(y=>y+1);}else setMonth(m=>m+1);};
+  const handleDeleted=(id:number)=>setEntries(prev=>prev.filter(e=>e.id!==id));
+
+  const handleTabClick=(newTab:Tab)=>{
+    setTab(newTab);
+    // Direkt heute-Modal öffnen wenn noch kein Eintrag
+    const {d,y,m}=todayBerlin();
+    if(year===y&&month===m){
+      const hasToday=entries.some(e=>e.kontrolle_art===newTab&&e.day===d);
+      if(!hasToday) setOpenTodayFor(newTab);
     }
-  }, [marketId, year, month]);
-
-  useEffect(() => { fetchEntries(); }, [fetchEntries]);
-
-  const filteredEntries = useMemo(() => entries.filter(e => e.kontrolle_art === tab), [entries, tab]);
-
-  const prevMonth = () => {
-    if (month === 1) { setMonth(12); setYear(y => y - 1); }
-    else setMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (month === 12) { setMonth(1); setYear(y => y + 1); }
-    else setMonth(m => m + 1);
   };
 
-  const handleDeleted = (id: number) => setEntries(prev => prev.filter(e => e.id !== id));
-
-  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: "reifeschrank", label: "Reifeschrank", icon: <Wind className="w-4 h-4" /> },
-    { key: "kaesekühlschrank", label: "Kaesekühlschrank", icon: <Snowflake className="w-4 h-4" /> },
-    { key: "heisse_theke", label: "Heisse Theke", icon: <Flame className="w-4 h-4" /> },
+  const tabs:{key:Tab;label:string;icon:React.ReactNode}[]=[
+    {key:"reifeschrank",label:"Reifeschrank",icon:<Wind className="w-4 h-4"/>},
+    {key:"kaesekühlschrank",label:"Kaesekühlschrank",icon:<Snowflake className="w-4 h-4"/>},
+    {key:"heisse_theke",label:"Heisse Theke",icon:<Flame className="w-4 h-4"/>},
   ];
 
-  return (
+  return(
     <AppLayout>
-      <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Thermometer className="w-6 h-6 text-primary" />
-              <h1 className="text-xl md:text-2xl font-bold">3.4 Kaesetheke und Reifeschrank</h1>
+      <div className="max-w-5xl mx-auto space-y-5">
+        {/* Header mit Zurück-Button */}
+        <div className="flex items-start gap-3">
+          <button onClick={()=>navigate("/metzgerei-wareneingaenge")}
+            className="mt-1 p-2 rounded-lg border hover:bg-secondary transition-colors shrink-0" title="Zurueck">
+            <ArrowLeft className="w-4 h-4"/>
+          </button>
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-0.5">
+              <Thermometer className="w-5 h-5 text-primary"/>
+              <h1 className="text-xl font-bold">3.4 Kaesetheke und Reifeschrank</h1>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Temperaturkontrolle Reifeschrank (FB 9.5) | Kaesekühlschrank | Heisse Theke (FB 9.7)
-            </p>
+            <p className="text-xs text-muted-foreground">Temperaturkontrolle Reifeschrank (FB 9.5) | Kaesekühlschrank | Heisse Theke (FB 9.7)</p>
           </div>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 text-sm border rounded-lg px-3 py-2 hover:bg-secondary transition-colors shrink-0"
-          >
-            <Printer className="w-4 h-4" />
-            <span className="hidden sm:inline">Drucken</span>
+          <button onClick={()=>window.print()} className="mt-1 flex items-center gap-1.5 text-sm border rounded-lg px-3 py-2 hover:bg-secondary shrink-0">
+            <Printer className="w-4 h-4"/><span className="hidden sm:inline">Drucken</span>
           </button>
         </div>
 
         {/* Monatsnavigation */}
         <div className="flex items-center justify-between bg-card border rounded-xl px-4 py-3">
-          <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+          <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-secondary"><ChevronLeft className="w-5 h-5"/></button>
           <div className="text-center">
-            <div className="font-bold text-lg">{MONTH_NAMES[month - 1]} {year}</div>
-            {selectedMarketName && <div className="text-xs text-muted-foreground">{selectedMarketName}</div>}
+            <div className="font-bold text-lg">{MONTH_NAMES[month-1]} {year}</div>
+            {marketId>0&&<div className="text-xs text-muted-foreground">Markt-ID: {marketId}</div>}
           </div>
-          <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-secondary transition-colors">
-            <ChevronRight className="w-5 h-5" />
-          </button>
+          <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-secondary"><ChevronRight className="w-5 h-5"/></button>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs mit Ampel */}
         <div className="flex gap-1 bg-muted/40 rounded-xl p-1">
-          {tabs.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${tab === t.key ? "bg-white shadow text-primary" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              {t.icon}
-              <span className="hidden sm:inline">{t.label}</span>
-            </button>
-          ))}
+          {tabs.map(t=>{
+            const status=getTabStatus(entries,t.key,year,month);
+            return(
+              <button key={t.key} onClick={()=>handleTabClick(t.key)}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${tab===t.key?"bg-white shadow text-primary":"text-muted-foreground hover:text-foreground"}`}>
+                <TrafficDot status={status}/>
+                {t.icon}
+                <span className="hidden sm:inline">{t.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Inhalt */}
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
-        ) : !marketId ? (
+        {loading?(
+          <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary"/></div>
+        ):!marketId?(
           <div className="text-center py-16 text-muted-foreground">Bitte einen Markt auswaehlen.</div>
-        ) : (
+        ):(
           <>
-            {tab !== "heisse_theke" ? (
-              <TempTab
-                art={tab as "reifeschrank" | "kaesekühlschrank"}
-                entries={filteredEntries}
-                year={year} month={month} marketId={marketId}
-                onSaved={fetchEntries}
-                onDeleted={handleDeleted}
-                adminSession={!!adminSession}
-              />
-            ) : (
-              <HeisseThekeTab
-                entries={filteredEntries}
-                year={year} month={month} marketId={marketId}
-                onSaved={fetchEntries}
-                onDeleted={handleDeleted}
-                adminSession={!!adminSession}
-              />
+            {tab==="reifeschrank"&&(
+              <TempTab art="reifeschrank" entries={filteredEntries} year={year} month={month} marketId={marketId}
+                onSaved={fetchEntries} onDeleted={handleDeleted} adminSession={!!adminSession}
+                openTodayModal={openTodayFor==="reifeschrank"} onTodayModalHandled={()=>setOpenTodayFor(null)}/>
+            )}
+            {tab==="kaesekühlschrank"&&(
+              <TempTab art="kaesekühlschrank" entries={filteredEntries} year={year} month={month} marketId={marketId}
+                onSaved={fetchEntries} onDeleted={handleDeleted} adminSession={!!adminSession}
+                openTodayModal={openTodayFor==="kaesekühlschrank"} onTodayModalHandled={()=>setOpenTodayFor(null)}/>
+            )}
+            {tab==="heisse_theke"&&(
+              <HeisseThekeTab entries={filteredEntries} year={year} month={month} marketId={marketId}
+                onSaved={fetchEntries} onDeleted={handleDeleted} adminSession={!!adminSession}
+                openTodayModal={openTodayFor==="heisse_theke"} onTodayModalHandled={()=>setOpenTodayFor(null)}/>
             )}
           </>
         )}
