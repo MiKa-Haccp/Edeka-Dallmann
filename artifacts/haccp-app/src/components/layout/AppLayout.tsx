@@ -1,4 +1,4 @@
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect, useRef } from "react";
 import { Header } from "./Header";
 import { Sidebar, MobileSidebar } from "./Sidebar";
 import { motion } from "framer-motion";
@@ -10,8 +10,8 @@ import { useAutoLogout } from "@/hooks/useAutoLogout";
 import { useBookingAutoReturn } from "@/hooks/useBookingAutoReturn";
 import { useLocation } from "wouter";
 
-// Pfade auf denen die HACCP-Seitenleiste sichtbar sein soll
-// (Dashboard + alle HACCP-Seiten)
+const BASE = import.meta.env.VITE_API_URL || "/api";
+
 const SIDEBAR_PATHS = [
   "/",
   "/responsibilities", "/mitarbeiter-liste", "/mitarbeiterverwaltung",
@@ -33,12 +33,41 @@ function useSidebarVisible() {
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { selectedMarketId, deviceAuthorized } = useAppStore();
+  const { selectedMarketId, deviceAuthorized, deviceToken, setDeviceToken, setDeviceAuthorized } = useAppStore();
   const { isLoading: marketsLoading } = useListMarkets();
   const showSidebar = useSidebarVisible();
+  const verifiedRef = useRef(false);
 
   useAutoLogout();
   useBookingAutoReturn();
+
+  useEffect(() => {
+    if (verifiedRef.current) return;
+    verifiedRef.current = true;
+
+    if (!deviceToken) {
+      setDeviceAuthorized(false);
+      return;
+    }
+
+    fetch(`${BASE}/device/verify-token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: deviceToken }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.valid) {
+          setDeviceToken(null);
+          setDeviceAuthorized(false);
+        } else {
+          setDeviceAuthorized(true);
+        }
+      })
+      .catch(() => {
+        setDeviceAuthorized(true);
+      });
+  }, [deviceToken, setDeviceToken, setDeviceAuthorized]);
 
   const showGeraetSperre = !deviceAuthorized;
   const showMarktwahlScreen = deviceAuthorized && !marketsLoading && !selectedMarketId;

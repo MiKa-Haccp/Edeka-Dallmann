@@ -3,32 +3,36 @@ import { Shield, Eye, EyeOff, Smartphone, AlertCircle, CheckCircle2 } from "luci
 import { motion } from "framer-motion";
 import { useAppStore } from "@/store/use-app-store";
 
+const BASE = import.meta.env.VITE_API_URL || "/api";
+
 export function GeraetSperrScreen() {
   const [password, setPassword] = useState("");
+  const [deviceName, setDeviceName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const setDeviceAuthorized = useAppStore((s) => s.setDeviceAuthorized);
+  const { setDeviceToken, setDeviceAuthorized } = useAppStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password.trim()) return;
+    if (!password.trim() || !deviceName.trim()) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const res = await fetch(import.meta.env.BASE_URL + "api/device/verify", {
+      const res = await fetch(`${BASE}/device/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ password, name: deviceName.trim() }),
       });
       const data = await res.json();
 
-      if (data.authorized) {
+      if (data.authorized && data.token) {
         setSuccess(true);
         setTimeout(() => {
+          setDeviceToken(data.token);
           setDeviceAuthorized(true);
         }, 800);
       } else {
@@ -79,7 +83,7 @@ export function GeraetSperrScreen() {
           <p className="text-blue-200 text-sm text-center max-w-xs">
             {success
               ? "Dieses Gerät ist jetzt für EDEKA DALLMANN HACCP autorisiert."
-              : "Dieses Gerät wurde noch nicht für die HACCP-App freigegeben. Bitte geben Sie das Master-Passwort ein."}
+              : "Dieses Gerät wurde noch nicht für die HACCP-App freigegeben. Bitte geben Sie das Master-Passwort und einen Gerätenamen ein."}
           </p>
         </div>
 
@@ -93,25 +97,33 @@ export function GeraetSperrScreen() {
           >
             <div className="flex items-center gap-2 mb-5">
               <Shield className="w-4 h-4 text-blue-300" />
-              <span className="text-blue-200 text-sm font-medium">Master-Passwort eingeben</span>
+              <span className="text-blue-200 text-sm font-medium">Gerät registrieren</span>
+            </div>
+
+            <div className="mb-3">
+              <label className="block text-xs text-blue-300 font-medium mb-1.5">Gerätename</label>
+              <input
+                type="text"
+                value={deviceName}
+                onChange={(e) => { setDeviceName(e.target.value); setError(null); }}
+                placeholder="z.B. iPad Metzgerei, Tablet Büro"
+                className="w-full bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
+              />
             </div>
 
             <div className="relative mb-4">
+              <label className="block text-xs text-blue-300 font-medium mb-1.5">Master-Passwort</label>
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  setError(null);
-                }}
+                onChange={(e) => { setPassword(e.target.value); setError(null); }}
                 placeholder="••••••••••••"
-                autoFocus
                 className="w-full bg-white/10 border border-white/20 text-white placeholder-white/40 rounded-xl px-4 py-3 pr-12 text-base focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition"
+                className="absolute right-3 bottom-3 text-white/50 hover:text-white transition"
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -130,7 +142,7 @@ export function GeraetSperrScreen() {
 
             <button
               type="submit"
-              disabled={isLoading || !password.trim()}
+              disabled={isLoading || !password.trim() || !deviceName.trim()}
               className="w-full bg-white text-[#1a3a6b] font-bold rounded-xl py-3 text-sm hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading ? (

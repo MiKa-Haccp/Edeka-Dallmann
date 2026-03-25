@@ -16,6 +16,7 @@ import {
   Settings,
   Store,
   Activity,
+  Smartphone,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -105,7 +106,7 @@ export default function AdminUserManagement() {
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
               <Settings className="h-7 w-7 text-primary" />
@@ -115,6 +116,13 @@ export default function AdminUserManagement() {
               Rollen und Berechtigungen für alle Mitarbeiter verwalten
             </p>
           </div>
+          <button
+            onClick={() => navigate("/admin/geraete")}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-white hover:bg-secondary text-sm font-medium text-foreground shadow-sm transition-colors"
+          >
+            <Smartphone className="w-4 h-4 text-muted-foreground" />
+            Geräteverwaltung
+          </button>
         </div>
 
         <RoleOverview />

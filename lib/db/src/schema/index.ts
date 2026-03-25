@@ -33,3 +33,4 @@ export * from "./shelfMarkers";
 export * from "./oeffnungSalate";
 export * from "./gqBegehung";
 export * from "./hygienebelehrungAbt";
+export * from "./registeredDevices";

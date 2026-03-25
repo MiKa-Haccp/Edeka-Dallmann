@@ -26,6 +26,8 @@ interface AppState {
   isGpsLocked: () => boolean;
   deviceAuthorized: boolean;
   setDeviceAuthorized: (v: boolean) => void;
+  deviceToken: string | null;
+  setDeviceToken: (token: string | null) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -61,6 +63,8 @@ export const useAppStore = create<AppState>()(
       },
       deviceAuthorized: false,
       setDeviceAuthorized: (v) => set({ deviceAuthorized: v }),
+      deviceToken: null,
+      setDeviceToken: (token) => set({ deviceToken: token, deviceAuthorized: !!token }),
     }),
     {
       name: 'haccp-app-storage',
@@ -69,6 +73,7 @@ export const useAppStore = create<AppState>()(
         selectedYear: state.selectedYear,
         selectedMonth: state.selectedMonth,
         deviceAuthorized: state.deviceAuthorized,
+        deviceToken: state.deviceToken,
       }),
     }
   )

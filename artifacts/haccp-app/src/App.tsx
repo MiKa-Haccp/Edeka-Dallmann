@@ -38,6 +38,7 @@ import UserRegistry from "./pages/UserRegistry";
 import AdminLogin from "./pages/AdminLogin";
 import AdminRegister from "./pages/AdminRegister";
 import AdminUserManagement from "./pages/AdminUserManagement";
+import GeraeteVerwaltung from "./pages/GeraeteVerwaltung";
 import TrainingBesprechung from "./pages/TrainingBesprechung";
 import TrainingRecords from "./pages/TrainingRecords";
 import WarenzustandOG from "./pages/WarenzustandOG";
@@ -135,6 +136,7 @@ function Router() {
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/register" component={AdminRegister} />
       <Route path="/admin/users" component={AdminUserManagement} />
+      <Route path="/admin/geraete" component={GeraeteVerwaltung} />
       <Route component={NotFound} />
     </Switch>
   );
