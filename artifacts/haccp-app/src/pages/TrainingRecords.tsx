@@ -710,6 +710,132 @@ const TAB_META: Record<SessionType, { icon: ElementType; color: string; bgColor:
   },
 };
 
+const MAX_TOPICS_SHOWN = 4;
+
+function SessionCard({
+  session,
+  sessionType,
+  isAdmin,
+  meta,
+  onSelect,
+  onRepeat,
+}: {
+  session: any;
+  sessionType: SessionType;
+  isAdmin: boolean;
+  meta: (typeof TAB_META)[SessionType];
+  onSelect: () => void;
+  onRepeat: (e: React.MouseEvent) => void;
+}) {
+  const Icon = meta.icon as ElementType;
+  const [topicsExpanded, setTopicsExpanded] = useState(false);
+
+  const attendees: { initials: string; name: string }[] = session.attendees || [];
+  const topics: string[] = session.topicTitles || [];
+  const visibleTopics = topicsExpanded ? topics : topics.slice(0, MAX_TOPICS_SHOWN);
+  const hiddenCount = topics.length - MAX_TOPICS_SHOWN;
+
+  const formattedDate = new Date(session.sessionDate + "T00:00:00").toLocaleDateString("de-DE", {
+    day: "2-digit", month: "long", year: "numeric",
+  });
+
+  return (
+    <div className="bg-white rounded-xl border border-border hover:border-primary/40 hover:shadow-md transition-all group">
+      {/* Card Header */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border/50 cursor-pointer" onClick={onSelect}>
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="p-2 bg-primary/5 rounded-lg group-hover:bg-primary/10 transition-colors shrink-0">
+            <Icon className={cn("w-4 h-4", meta.color)} />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-sm font-bold text-foreground">{formattedDate}</h3>
+            {session.trainerName && (
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                Schulungsleiter: <span className="font-medium text-foreground/70">{session.trainerName}</span>
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0 ml-2">
+          {isAdmin && sessionType === "schulungsprotokoll" && (
+            <span
+              role="button"
+              onClick={onRepeat}
+              title="Schulung wiederholen (gleiche Themen)"
+              className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </span>
+          )}
+          <span className="p-1.5 rounded-lg text-muted-foreground group-hover:text-primary transition-colors" onClick={onSelect}>
+            <Eye className="w-4 h-4" />
+          </span>
+        </div>
+      </div>
+
+      {/* Topics (Schulungsprotokoll only) */}
+      {sessionType === "schulungsprotokoll" && topics.length > 0 && (
+        <div className="px-4 py-3 border-b border-border/50">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            Schulungsthemen ({topics.length})
+          </p>
+          <div className="flex flex-wrap gap-1">
+            {visibleTopics.map((title: string, i: number) => (
+              <span key={i} className="inline-block px-2 py-0.5 rounded-full bg-primary/8 text-primary text-xs font-medium border border-primary/15 leading-5">
+                {title}
+              </span>
+            ))}
+            {!topicsExpanded && hiddenCount > 0 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setTopicsExpanded(true); }}
+                className="inline-block px-2 py-0.5 rounded-full bg-secondary text-muted-foreground text-xs font-medium border border-border hover:bg-primary/10 hover:text-primary hover:border-primary/20 transition-colors leading-5"
+              >
+                +{hiddenCount} weitere
+              </button>
+            )}
+            {topicsExpanded && hiddenCount > 0 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setTopicsExpanded(false); }}
+                className="inline-block px-2 py-0.5 rounded-full bg-secondary text-muted-foreground text-xs font-medium border border-border hover:bg-secondary/80 transition-colors leading-5"
+              >
+                Weniger anzeigen
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Attendees */}
+      <div className="px-4 py-3">
+        {attendees.length > 0 ? (
+          <>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
+              <Users className="w-3 h-3" />
+              Teilnehmer ({attendees.length})
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {attendees.map((a, i) => (
+                <span key={i}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-50 border border-green-200 text-green-800 text-xs font-medium">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-200 text-green-800 text-[10px] font-bold shrink-0">
+                    {a.initials}
+                  </span>
+                  {a.name || a.initials}
+                </span>
+              ))}
+            </div>
+          </>
+        ) : (
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Users className="w-3.5 h-3.5" />
+            Noch keine Teilnehmer eingetragen
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function SessionListTab({
   marketId,
   tenantId,
@@ -818,68 +944,15 @@ function SessionListTab({
       ) : (
         <div className="grid gap-3">
           {sessions.map((session: any) => (
-            <button key={session.id} onClick={() => onSelectSession(session.id)}
-              className="bg-white rounded-xl border border-border p-4 hover:border-primary/50 hover:shadow-md transition-all text-left group w-full">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-primary/5 rounded-lg group-hover:bg-primary/10 transition-colors shrink-0 mt-0.5">
-                  <Icon className={cn("w-5 h-5", meta.color)} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="text-sm font-bold text-foreground">
-                      {new Date(session.sessionDate + "T00:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
-                    </h3>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {isAdmin && sessionType === "schulungsprotokoll" && (
-                        <span
-                          role="button"
-                          onClick={(e) => handleRepeat(e, session)}
-                          title="Schulung wiederholen (gleiche Themen)"
-                          className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <RefreshCw className="w-3.5 h-3.5" />
-                        </span>
-                      )}
-                      <Eye className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
-                    </div>
-                  </div>
-                  {session.trainerName && (
-                    <p className="text-xs text-muted-foreground mt-0.5">Schulungsleiter: {session.trainerName}</p>
-                  )}
-                  {sessionType === "schulungsprotokoll" && (
-                    <p className="text-xs text-muted-foreground mt-0.5">Jährliche Schulung gem. HACCP, IfSG, Arbeitssicherheit u.a.</p>
-                  )}
-                  {sessionType === "schulungsprotokoll" && session.topicTitles?.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {session.topicTitles.map((title: string, i: number) => (
-                        <span key={i} className="inline-block px-2 py-0.5 rounded-full bg-primary/8 text-primary text-xs font-medium border border-primary/15">
-                          {title}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    {session.attendees?.length > 0 ? (
-                      <div className="flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                        <div className="flex gap-0.5 flex-wrap">
-                          {session.attendees.map((a: any, i: number) => (
-                            <span key={i} title={a.name}
-                              className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 border border-green-300 text-green-700 text-[10px] font-bold">
-                              {a.initials}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Users className="w-3.5 h-3.5" />Noch keine Teilnehmer
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </button>
+            <SessionCard
+              key={session.id}
+              session={session}
+              sessionType={sessionType}
+              isAdmin={isAdmin}
+              meta={meta}
+              onSelect={() => onSelectSession(session.id)}
+              onRepeat={(e) => handleRepeat(e, session)}
+            />
           ))}
         </div>
       )}
