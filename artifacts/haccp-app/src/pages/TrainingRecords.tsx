@@ -885,6 +885,14 @@ function SessionListTab({
   );
 }
 
+const TAB_ICONS: Record<TabKey, ElementType> = {
+  schulungsprotokoll: GraduationCap,
+  taraschulung: Scale,
+  lebensmittelleitkultur: Leaf,
+  strohschwein: Ham,
+  besprechungsprotokoll: FileText,
+};
+
 export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {}) {
   const selectedMarketId = useAppStore((s) => s.selectedMarketId);
   const selectedYear = useAppStore((s) => s.selectedYear);
@@ -896,6 +904,19 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
 
   const [activeTab, setActiveTab] = useState<TabKey>("schulungsprotokoll");
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
+
+  const enabled = { query: { enabled: !!selectedMarketId } };
+  const { data: sessSchul } = useListTrainingSessions(selectedMarketId ?? 0, { year: selectedYear, type: "schulungsprotokoll" } as any, enabled);
+  const { data: sessTara } = useListTrainingSessions(selectedMarketId ?? 0, { year: selectedYear, type: "taraschulung" } as any, enabled);
+  const { data: sessLeben } = useListTrainingSessions(selectedMarketId ?? 0, { year: selectedYear, type: "lebensmittelleitkultur" } as any, enabled);
+  const { data: sessStroh } = useListTrainingSessions(selectedMarketId ?? 0, { year: selectedYear, type: "strohschwein" } as any, enabled);
+
+  const tabStatuses: Record<SessionType, "green" | "yellow" | "red"> = {
+    schulungsprotokoll: trafficLight(sessSchul, selectedYear),
+    taraschulung: trafficLight(sessTara, selectedYear),
+    lebensmittelleitkultur: trafficLight(sessLeben, selectedYear),
+    strohschwein: trafficLight(sessStroh, selectedYear),
+  };
 
   if (!selectedMarketId) {
     return (
@@ -917,14 +938,6 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
     );
   }
 
-  const tabIcons: Record<TabKey, ElementType> = {
-    schulungsprotokoll: GraduationCap,
-    taraschulung: Scale,
-    lebensmittelleitkultur: Leaf,
-    strohschwein: Ham,
-    besprechungsprotokoll: FileText,
-  };
-
   return (
     <Wrap>
       <div className="max-w-5xl mx-auto space-y-5">
@@ -935,7 +948,7 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-foreground">1.4 Schulungsnachweise</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Schulungsprotokolle und Teilnehmerbestaetigung</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Schulungsprotokolle und Teilnehmerbestätigung</p>
             </div>
           </div>
         </div>
@@ -943,13 +956,14 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
         <div className="bg-white rounded-xl border border-border overflow-hidden">
           <div className="flex overflow-x-auto border-b border-border">
             {ALL_TABS.map((tab) => {
-              const Icon = tabIcons[tab];
+              const Icon = TAB_ICONS[tab];
+              const st = tab !== "besprechungsprotokoll" ? tabStatuses[tab as SessionType] : null;
               return (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={cn(
-                    "flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors",
+                    "flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors relative",
                     activeTab === tab
                       ? "border-primary text-primary bg-primary/5"
                       : "border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/50"
@@ -957,6 +971,14 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
                 >
                   <Icon className="w-4 h-4" />
                   {TAB_LABELS[tab]}
+                  {st && (
+                    <span className={cn(
+                      "inline-block w-2 h-2 rounded-full ml-0.5 flex-shrink-0",
+                      st === "green" && "bg-green-500",
+                      st === "yellow" && "bg-amber-400",
+                      st === "red" && "bg-red-500 animate-pulse",
+                    )} />
+                  )}
                 </button>
               );
             })}

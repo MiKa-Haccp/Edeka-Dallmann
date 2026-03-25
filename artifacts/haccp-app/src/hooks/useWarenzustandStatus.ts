@@ -620,16 +620,23 @@ export function useSchulungsnachweiseStatus(): TrafficLight {
     if (!selectedMarketId) { setStatus("none"); return; }
     let cancelled = false;
 
-    fetch(`${BASE}/markets/${selectedMarketId}/training-sessions?year=${selectedYear}&type=schulungsprotokoll`)
-      .then(r => r.json())
-      .then((data: unknown[]) => {
-        if (cancelled) return;
-        if (Array.isArray(data) && data.length > 0) { setStatus("green"); return; }
-        const now = new Date();
-        const jan31 = new Date(selectedYear, 0, 31, 23, 59, 59);
-        setStatus(now > jan31 ? "red" : "yellow");
-      })
-      .catch(() => { if (!cancelled) setStatus("none"); });
+    const types = ["schulungsprotokoll", "taraschulung", "lebensmittelleitkultur", "strohschwein"];
+
+    Promise.all(
+      types.map(type =>
+        fetch(`${BASE}/markets/${selectedMarketId}/training-sessions?year=${selectedYear}&type=${type}`)
+          .then(r => r.json())
+          .then((data: unknown[]) => Array.isArray(data) && data.length > 0)
+          .catch(() => false)
+      )
+    ).then(results => {
+      if (cancelled) return;
+      const allDone = results.every(r => r);
+      if (allDone) { setStatus("green"); return; }
+      const now = new Date();
+      const jan31 = new Date(selectedYear, 0, 31, 23, 59, 59);
+      setStatus(now > jan31 ? "red" : "yellow");
+    });
 
     return () => { cancelled = true; };
   }, [selectedMarketId, selectedYear]);
