@@ -12,8 +12,8 @@ import {
 
 const CATEGORY_META: Record<number, { label: string; icon: React.ElementType; color: string; bgColor: string; nummer: string; borderColor: string }> = {
   1: { label: "Allgemein", icon: ShieldCheck,  color: "text-[#1a3a6b]",  bgColor: "bg-[#1a3a6b]/10", borderColor: "border-[#1a3a6b]/20", nummer: "HACCP 1" },
-  2: { label: "Markt",     icon: ShoppingCart, color: "text-sky-700",     bgColor: "bg-sky-50",        borderColor: "border-sky-200",       nummer: "HACCP 2" },
-  3: { label: "Metzgerei", icon: Beef,         color: "text-violet-700",  bgColor: "bg-violet-50",     borderColor: "border-violet-200",    nummer: "HACCP 3" },
+  2: { label: "Markt",     icon: ShoppingCart, color: "text-gray-800",    bgColor: "bg-gray-100",      borderColor: "border-gray-200",      nummer: "HACCP 2" },
+  3: { label: "Metzgerei", icon: Beef,         color: "text-gray-800",    bgColor: "bg-gray-100",      borderColor: "border-gray-200",      nummer: "HACCP 3" },
 };
 
 const SECTION_HREFS: Record<string, string> = {
