@@ -438,7 +438,7 @@ export default function Besprechungsprotokoll({ noLayout }: { noLayout?: boolean
               <ClipboardList className="w-5 h-5 text-[#1a3a6b]" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">1.10 Besprechungsprotokoll</h1>
+              <h1 className="text-xl font-bold text-foreground">Besprechungsprotokoll</h1>
               <p className="text-xs text-muted-foreground">EDEKA Formblatt 2.5 — Teilnehmerbestätigung per PIN</p>
             </div>
           </div>
