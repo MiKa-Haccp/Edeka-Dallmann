@@ -517,3 +517,46 @@ export function useKaesethekeStatus(): TrafficLight {
 
   return status;
 }
+
+// ─── 3.3 Öffnung Salate & Eigenherstellung – MHD-Ampel ───────────────────────
+export function useOeffnungSalateStatus(): TrafficLight {
+  const { selectedMarketId } = useAppStore();
+  const [status, setStatus] = useState<TrafficLight>("none");
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 5 * 60 * 1000);
+    const onUpdate = () => setTick(t => t + 1);
+    window.addEventListener("oeffnung-salate-updated", onUpdate);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("oeffnung-salate-updated", onUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedMarketId) { setStatus("none"); return; }
+
+    const now = new Date();
+    const year  = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const todayStr = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(now);
+
+    let cancelled = false;
+
+    fetch(`${BASE}/oeffnung-salate?marketId=${selectedMarketId}&year=${year}&month=${month}`)
+      .then(r => r.json())
+      .then((entries: { verbrauchsdatum: string | null; aufgebrauchtAm: string | null }[]) => {
+        if (cancelled) return;
+        const mitMhd = entries.filter(e => !!e.verbrauchsdatum);
+        if (mitMhd.length === 0) { setStatus("none"); return; }
+        const abgelaufen = mitMhd.filter(e => !!e.verbrauchsdatum && e.verbrauchsdatum < todayStr && !e.aufgebrauchtAm);
+        setStatus(abgelaufen.length > 0 ? "red" : "green");
+      })
+      .catch(() => { if (!cancelled) setStatus("none"); });
+
+    return () => { cancelled = true; };
+  }, [selectedMarketId, tick]);
+
+  return status;
+}

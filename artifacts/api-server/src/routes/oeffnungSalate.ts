@@ -1,8 +1,27 @@
 import { Router, type IRouter } from "express";
 import { db, oeffnungSalateTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { pool } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const router: IRouter = Router();
+
+function mapRow(r: Record<string, unknown>) {
+  return {
+    id: r.id,
+    tenantId: r.tenant_id,
+    marketId: r.market_id,
+    year: r.year,
+    month: r.month,
+    day: r.day,
+    artikelBezeichnung: r.artikel_bezeichnung,
+    verbrauchsdatum: r.verbrauchsdatum,
+    eigenherstellung: r.eigenherstellung,
+    kuerzel: r.kuerzel,
+    userId: r.user_id,
+    createdAt: r.created_at,
+    aufgebrauchtAm: r.aufgebraucht_am,
+  };
+}
 
 router.get("/oeffnung-salate", async (req, res) => {
   const marketId = Number(req.query.marketId);
@@ -12,17 +31,11 @@ router.get("/oeffnung-salate", async (req, res) => {
     res.status(400).json({ error: "marketId, year, month required" });
     return;
   }
-  const rows = await db
-    .select()
-    .from(oeffnungSalateTable)
-    .where(
-      and(
-        eq(oeffnungSalateTable.marketId, marketId),
-        eq(oeffnungSalateTable.year, year),
-        eq(oeffnungSalateTable.month, month)
-      )
-    );
-  res.json(rows);
+  const { rows } = await pool.query(
+    `SELECT * FROM oeffnung_salate WHERE market_id=$1 AND year=$2 AND month=$3 ORDER BY day, created_at`,
+    [marketId, year, month]
+  );
+  res.json(rows.map(mapRow));
 });
 
 router.post("/oeffnung-salate", async (req, res) => {
@@ -40,20 +53,32 @@ router.post("/oeffnung-salate", async (req, res) => {
   const nowYear  = get("year");
   const nowMonth = get("month");
   const nowDay   = get("day");
-
   const entryDate = new Date(year, month - 1, day);
   const today     = new Date(nowYear, nowMonth - 1, nowDay);
-
   if (entryDate > today) {
     res.status(400).json({ error: "Eintragungen fuer zukuenftige Tage sind nicht erlaubt" });
     return;
   }
+  const { rows } = await pool.query(
+    `INSERT INTO oeffnung_salate
+       (tenant_id, market_id, year, month, day, artikel_bezeichnung, verbrauchsdatum, eigenherstellung, kuerzel, user_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+    [tenantId, marketId, year, month, day, artikelBezeichnung, verbrauchsdatum || null, !!eigenherstellung, kuerzel, userId || null]
+  );
+  res.json(mapRow(rows[0]));
+});
 
-  const [row] = await db
-    .insert(oeffnungSalateTable)
-    .values({ tenantId, marketId, year, month, day, artikelBezeichnung, verbrauchsdatum: verbrauchsdatum || null, eigenherstellung: !!eigenherstellung, kuerzel, userId: userId || null })
-    .returning();
-  res.json(row);
+router.patch("/oeffnung-salate/:id/aufgebraucht", async (req, res) => {
+  const id = Number(req.params.id);
+  const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date());
+  await pool.query(`UPDATE oeffnung_salate SET aufgebraucht_am=$1 WHERE id=$2`, [today, id]);
+  res.json({ ok: true });
+});
+
+router.patch("/oeffnung-salate/:id/aufgebraucht-rueckgaengig", async (req, res) => {
+  const id = Number(req.params.id);
+  await pool.query(`UPDATE oeffnung_salate SET aufgebraucht_am=NULL WHERE id=$1`, [id]);
+  res.json({ ok: true });
 });
 
 router.delete("/oeffnung-salate/:id", async (req, res) => {
