@@ -44,12 +44,12 @@ const SECTION_HREFS: Record<string, string> = {
   "3.9": "/abteilungsfremde-personen",
 };
 
-// Ampel-Punkt Komponente
+// Ampel-Punkt als Badge auf dem Icon (oben rechts)
 function AmpelDot({ status }: { status: TrafficLight }) {
   if (status === "none") return null;
   return (
     <span
-      className={`w-2.5 h-2.5 rounded-full inline-block flex-shrink-0 ${
+      className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
         status === "green"  ? "bg-green-500" :
         status === "yellow" ? "bg-amber-400" :
         "bg-red-500"
@@ -187,8 +187,11 @@ export default function CategoryView() {
                     className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-9 h-9 rounded-lg ${meta?.bgColor ?? "bg-primary/10"} flex items-center justify-center flex-shrink-0`}>
-                        <FileText className={`w-4 h-4 ${meta?.color ?? "text-primary"}`} />
+                      <div className="relative flex-shrink-0">
+                        <div className={`w-9 h-9 rounded-lg ${meta?.bgColor ?? "bg-primary/10"} flex items-center justify-center`}>
+                          <FileText className={`w-4 h-4 ${meta?.color ?? "text-primary"}`} />
+                        </div>
+                        <AmpelDot status={status} />
                       </div>
                       <div>
                         <span className="text-xs text-gray-400 font-medium">{section.number}</span>
@@ -197,10 +200,7 @@ export default function CategoryView() {
                         </h3>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <AmpelDot status={status} />
-                      <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
-                    </div>
+                    <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0" />
                   </Link>
                 );
               })
