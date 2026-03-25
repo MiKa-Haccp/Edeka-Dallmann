@@ -49,7 +49,7 @@ const TABS: {
   },
   {
     key: "arzneimittel",
-    label: "Freiverkäufliche Arzneimittel",
+    label: "Sachkundenachweise freiverkäufliche Arzneimittel",
     kurzLabel: "Arzneimittel",
     icon: <Pill className="w-4 h-4" />,
     color: "text-violet-600",
