@@ -1,6 +1,7 @@
 import type { ReactNode, ElementType } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
+import BesprechungsprotokollPage from "./Besprechungsprotokoll";
 import {
   useListTrainingTopics,
   useListTrainingSessions,
@@ -35,6 +36,7 @@ import {
   Ham,
   RefreshCw,
   Calendar,
+  FileText,
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { clsx, type ClassValue } from "clsx";
@@ -46,14 +48,15 @@ function cn(...inputs: ClassValue[]) {
 
 type SessionType = "schulungsprotokoll" | "taraschulung" | "lebensmittelleitkultur" | "strohschwein";
 
-const TAB_LABELS: Record<SessionType, string> = {
+const TAB_LABELS: Record<SessionType | "besprechungsprotokoll", string> = {
   schulungsprotokoll: "Schulungsprotokoll",
   taraschulung: "Taraschulung",
   lebensmittelleitkultur: "Lebensmittelleitkultur",
   strohschwein: "Strohschwein",
+  besprechungsprotokoll: "Besprechungsprotokoll",
 };
 
-const ALL_TABS = ["schulungsprotokoll", "taraschulung", "lebensmittelleitkultur", "strohschwein"] as const;
+const ALL_TABS = ["schulungsprotokoll", "taraschulung", "lebensmittelleitkultur", "strohschwein", "besprechungsprotokoll"] as const;
 type TabKey = (typeof ALL_TABS)[number];
 
 function trafficLight(sessions: any[] | undefined, selectedYear: number): "green" | "yellow" | "red" {
@@ -975,6 +978,7 @@ const TAB_ICONS: Record<TabKey, ElementType> = {
   taraschulung: Scale,
   lebensmittelleitkultur: Leaf,
   strohschwein: Ham,
+  besprechungsprotokoll: FileText,
 };
 
 export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {}) {
@@ -1065,7 +1069,7 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
           <div className="flex overflow-x-auto border-b border-border">
             {ALL_TABS.map((tab) => {
               const Icon = TAB_ICONS[tab];
-              const st = tabStatuses[tab];
+              const st = tab !== "besprechungsprotokoll" ? tabStatuses[tab as SessionType] : null;
               return (
                 <button
                   key={tab}
@@ -1093,15 +1097,19 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
           </div>
 
           <div className="p-4 sm:p-6">
-            <SessionListTab
-              key={`${activeTab}-${selectedYear}`}
-              marketId={selectedMarketId}
-              tenantId={1}
-              sessionType={activeTab}
-              selectedYear={selectedYear}
-              isAdmin={isAdmin}
-              onSelectSession={setSelectedSessionId}
-            />
+            {activeTab === "besprechungsprotokoll" ? (
+              <BesprechungsprotokollPage noLayout />
+            ) : (
+              <SessionListTab
+                key={`${activeTab}-${selectedYear}`}
+                marketId={selectedMarketId}
+                tenantId={1}
+                sessionType={activeTab}
+                selectedYear={selectedYear}
+                isAdmin={isAdmin}
+                onSelectSession={setSelectedSessionId}
+              />
+            )}
           </div>
         </div>
       </div>
