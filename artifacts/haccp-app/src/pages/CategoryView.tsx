@@ -44,20 +44,6 @@ const SECTION_HREFS: Record<string, string> = {
   "3.9": "/abteilungsfremde-personen",
 };
 
-// Ampel-Punkt als Badge auf dem Icon (oben rechts)
-function AmpelDot({ status }: { status: TrafficLight }) {
-  if (status === "none") return null;
-  return (
-    <span
-      className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
-        status === "green"  ? "bg-green-500" :
-        status === "yellow" ? "bg-amber-400" :
-        "bg-red-500"
-      }`}
-    />
-  );
-}
-
 // Ampel-Badge mit Label für die Zusammenfassung oben
 function AmpelBadge({ status, label }: { status: TrafficLight; label: string }) {
   if (status === "none") return null;
@@ -187,11 +173,18 @@ export default function CategoryView() {
                     className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors group"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="relative flex-shrink-0">
-                        <div className={`w-9 h-9 rounded-lg ${meta?.bgColor ?? "bg-primary/10"} flex items-center justify-center`}>
-                          <FileText className={`w-4 h-4 ${meta?.color ?? "text-primary"}`} />
-                        </div>
-                        <AmpelDot status={status} />
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          status === "green"  ? "bg-green-100" :
+                          status === "yellow" ? "bg-amber-100" :
+                          status === "red"    ? "bg-red-100"   :
+                          (meta?.bgColor ?? "bg-primary/10")
+                        }`}>
+                        <FileText className={`w-4 h-4 ${
+                          status === "green"  ? "text-green-600" :
+                          status === "yellow" ? "text-amber-500" :
+                          status === "red"    ? "text-red-500"   :
+                          (meta?.color ?? "text-primary")
+                        }`} />
                       </div>
                       <div>
                         <span className="text-xs text-gray-400 font-medium">{section.number}</span>
