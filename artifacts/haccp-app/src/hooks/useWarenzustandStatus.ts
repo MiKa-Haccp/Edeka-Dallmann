@@ -448,3 +448,72 @@ export function useReinigungTaeglichStatus(): TrafficLight {
 
   return status;
 }
+
+// ─── Käsetheke-Ampel (3.4) ──────────────────────────────────────────────────
+// Grün  = alle 3 Arten heute eingetragen
+// Gelb  = heute noch nicht vollständig (aber noch kein vergangener Tag offen)
+// Rot   = mindestens ein vergangener Tag ohne Eintrag ODER heute fehlt nach Ladenöffnung
+
+const KAESETHEKE_ARTEN = ["reifeschrank", "kaesekühlschrank", "heisse_theke"] as const;
+
+export function useKaesethekeStatus(): TrafficLight {
+  const { selectedMarketId } = useAppStore();
+  const [status, setStatus] = useState<TrafficLight>("none");
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 5 * 60 * 1000);
+    const onUpdate = () => setTick(t => t + 1);
+    window.addEventListener("kaesetheke-updated", onUpdate);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("kaesetheke-updated", onUpdate);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedMarketId) { setStatus("none"); return; }
+
+    const now   = new Date();
+    const year  = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const today = now.getDate();
+    const hour  = now.getHours();
+
+    let cancelled = false;
+
+    fetch(`${BASE}/kaesetheke-kontrolle?marketId=${selectedMarketId}&year=${year}&month=${month}`)
+      .then(r => r.json())
+      .then((entries: { day: number; kontrolle_art: string }[]) => {
+        if (cancelled) return;
+
+        // Vergangene Tage prüfen (alle 3 Arten müssen vorhanden sein)
+        for (let d = 1; d < today; d++) {
+          for (const art of KAESETHEKE_ARTEN) {
+            if (!entries.some(e => e.day === d && e.kontrolle_art === art)) {
+              setStatus("red");
+              return;
+            }
+          }
+        }
+
+        // Heute prüfen
+        const todayComplete = KAESETHEKE_ARTEN.every(art =>
+          entries.some(e => e.day === today && e.kontrolle_art === art)
+        );
+        if (todayComplete) { setStatus("green"); return; }
+
+        const todayPartial = KAESETHEKE_ARTEN.some(art =>
+          entries.some(e => e.day === today && e.kontrolle_art === art)
+        );
+        if (todayPartial) { setStatus("yellow"); return; }
+
+        setStatus(hour >= 7 ? "yellow" : "none");
+      })
+      .catch(() => { if (!cancelled) setStatus("none"); });
+
+    return () => { cancelled = true; };
+  }, [selectedMarketId, tick]);
+
+  return status;
+}

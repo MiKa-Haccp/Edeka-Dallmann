@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
+import { useListMarkets } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import {
   Thermometer, ChevronLeft, ChevronRight, Loader2, Check,
@@ -573,6 +574,8 @@ type Tab = "reifeschrank" | "kaesekühlschrank" | "heisse_theke";
 
 export default function KaesethekeKontrolle() {
   const { selectedMarketId, adminSession } = useAppStore();
+  const { data: markets } = useListMarkets();
+  const marketName = useMemo(() => markets?.find(m => m.id === selectedMarketId)?.name ?? null, [markets, selectedMarketId]);
   const [,navigate] = useLocation();
   const now = new Date();
   const [year,setYear]=useState(now.getFullYear());
@@ -642,7 +645,7 @@ export default function KaesethekeKontrolle() {
           <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-secondary"><ChevronLeft className="w-5 h-5"/></button>
           <div className="text-center">
             <div className="font-bold text-lg">{MONTH_NAMES[month-1]} {year}</div>
-            {marketId>0&&<div className="text-xs text-muted-foreground">Markt-ID: {marketId}</div>}
+            {marketName&&<div className="text-xs text-muted-foreground">Markt {marketName}</div>}
           </div>
           <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-secondary"><ChevronRight className="w-5 h-5"/></button>
         </div>
