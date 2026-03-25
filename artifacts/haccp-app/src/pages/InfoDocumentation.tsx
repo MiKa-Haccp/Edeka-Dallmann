@@ -151,7 +151,7 @@ export default function InfoDocumentation() {
           </h2>
           <div className="grid gap-3 md:grid-cols-2 text-sm">
             <a
-              href="https://www.gesetze-im-internet.de/lmhv/"
+              href="https://www.gesetze-im-internet.de/lmhv_2007/"
               target="_blank"
               rel="noopener noreferrer"
               className="bg-secondary/30 hover:bg-primary/5 border border-transparent hover:border-primary/20 rounded-lg p-3 transition-all group block"
