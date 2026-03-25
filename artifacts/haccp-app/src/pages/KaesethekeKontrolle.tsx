@@ -327,11 +327,11 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
               <textarea rows={2} placeholder="Grund (optional)..." value={defektGrund} onChange={e=>setDefektGrund(e.target.value)}
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none bg-white"/>
             </div>
-            <PinStep onVerified={id=>setIdentified(id)} onBack={()=>{setDefektMode(false);setStep("form");}} loading={loading} setLoading={setLoading}/>
+            <PinStep onVerified={(name,userId,kuerzel)=>setIdentified({name,userId,kuerzel})} onBack={()=>{setDefektMode(false);setStep("form");}} loading={loading} setLoading={setLoading}/>
           </div>
         )}
         {step==="pin"&&!identified&&(
-          <PinStep onVerified={id=>setIdentified(id)} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
+          <PinStep onVerified={(name,userId,kuerzel)=>setIdentified({name,userId,kuerzel})} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
         )}
         {identified&&(
           <div className="space-y-4 text-center">

@@ -131,7 +131,7 @@ function NeuerArtikelModal({year,onConfirm,onClose}:{
         )}
 
         {step==="pin"&&!identified&&(
-          <PinStep onVerified={id=>setIdentified(id)} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
+          <PinStep onVerified={(name,userId,kuerzel)=>setIdentified({name,userId,kuerzel})} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
         )}
 
         {identified&&(
@@ -235,7 +235,7 @@ function EntnahmeModal({entry,onSaved,onClose}:{
         )}
 
         {step==="pin"&&!identified&&(
-          <PinStep onVerified={id=>setIdentified(id)} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
+          <PinStep onVerified={(name,userId,kuerzel)=>setIdentified({name,userId,kuerzel})} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
         )}
 
         {identified&&(

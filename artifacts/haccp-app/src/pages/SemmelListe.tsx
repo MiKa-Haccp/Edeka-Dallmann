@@ -117,7 +117,7 @@ function SemmelModal({day,year,month,existing,onConfirm,onClose}:{
         )}
 
         {step==="pin"&&!identified&&(
-          <PinStep onVerified={id=>setIdentified(id)} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
+          <PinStep onVerified={(name,userId,kuerzel)=>setIdentified({name,userId,kuerzel})} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
         )}
 
         {identified&&(
@@ -215,12 +215,6 @@ export default function SemmelListe() {
             {marketName&&<div className="text-xs text-muted-foreground">Markt {marketName}</div>}
           </div>
           <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-secondary"><ChevronRight className="w-5 h-5"/></button>
-        </div>
-
-        {/* Info-Hinweis */}
-        <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2.5 text-xs text-blue-700">
-          <ShoppingBag className="w-3.5 h-3.5 shrink-0 mt-0.5"/>
-          <span>Hier wird nur das <strong>zusaetzliche</strong> Kontingent zum normalen Brot-/Semmelauftrag erfasst. Kein Pflichtfeld – nur bei Bedarf ausfullen.</span>
         </div>
 
         {/* Tabelle */}
