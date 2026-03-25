@@ -1,6 +1,6 @@
 import { useListMarkets } from "@workspace/api-client-react";
 import { useAppStore } from "@/store/use-app-store";
-import { MapPin, Bell, LogIn, LogOut, Shield, Settings, Menu, RefreshCw, Navigation, Lock } from "lucide-react";
+import { MapPin, LogIn, LogOut, Shield, Settings, Menu, RefreshCw, Navigation, Lock } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
 export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
@@ -130,11 +130,6 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-3">
-          <button className="relative p-1.5 sm:p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-full transition-colors hidden sm:flex">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 h-2 w-2 rounded-full bg-destructive border-2 border-white"></span>
-          </button>
-
           <div className="h-8 w-px bg-border hidden sm:block"></div>
 
           {isLoggedIn ? (
@@ -146,11 +141,11 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
                   {adminSession.role}
                 </span>
               </div>
-              {(adminSession.role === "SUPERADMIN") && (
+              {adminSession.role === "SUPERADMIN" && (
                 <button
-                  onClick={() => navigate("/admin/users")}
+                  onClick={() => navigate("/admin/system")}
                   className="p-1.5 sm:p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-full transition-colors"
-                  title="Benutzerverwaltung"
+                  title="Systemverwaltung"
                 >
                   <Settings className="h-4 w-4" />
                 </button>

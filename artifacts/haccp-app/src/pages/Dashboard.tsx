@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ShieldCheck, ArrowRight,
-  Lock, Users, UserCog, KeyRound, Package, ClipboardList,
+  Lock, UserCog, Package, Settings,
 } from "lucide-react";
 import { Link } from "wouter";
 import { FaelligkeitenWidget } from "@/components/FaelligkeitenWidget";
@@ -18,7 +18,7 @@ interface ModuleCard {
   bgColor: string;
   available: boolean;
   badge?: string;
-  adminOnly?: boolean;
+  requiredRoles?: string[];
 }
 
 const MODULES: ModuleCard[] = [
@@ -37,7 +37,7 @@ const MODULES: ModuleCard[] = [
     id: "ware",
     icon: Package,
     title: "Ware",
-    description: "Wareneingangskontrolle fur Markt und Metzgerei. Temperatur, Qualitat, MSC-Prufung und Lieferantenbewertung.",
+    description: "Wareneingangskontrolle für Markt und Metzgerei. Temperatur, Qualität, MSC-Prüfung und Lieferantenbewertung.",
     href: "/ware",
     color: "text-orange-600",
     bgColor: "bg-orange-50",
@@ -45,16 +45,28 @@ const MODULES: ModuleCard[] = [
     badge: "Aktiv",
   },
   {
-    id: "mitarbeiter",
+    id: "verwaltung",
     icon: UserCog,
-    title: "Mitarbeiterverwaltung",
-    description: "Zentrale Verwaltung aller Mitarbeiter: Stammdaten, Kürzel-Vergabe, PIN-Management und Kürzel-Verzeichnis für Kontrollen.",
-    href: "/mitarbeiterverwaltung",
+    title: "Verwaltung",
+    description: "Mitarbeiterstammdaten, Kürzel-Vergabe und PIN-Management für Kontrollen und Unterschriften.",
+    href: "/verwaltung",
     color: "text-teal-600",
     bgColor: "bg-teal-50",
     available: true,
-    badge: "Admin",
-    adminOnly: true,
+    badge: "Verwaltung",
+    requiredRoles: ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER"],
+  },
+  {
+    id: "system",
+    icon: Settings,
+    title: "Systemverwaltung",
+    description: "Rollenverwaltung, Benutzerrechte und Geräteverwaltung. Nur für Systemadministratoren.",
+    href: "/admin/system",
+    color: "text-purple-600",
+    bgColor: "bg-purple-50",
+    available: true,
+    badge: "System",
+    requiredRoles: ["SUPERADMIN"],
   },
 ];
 
@@ -116,8 +128,18 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {MODULES.filter((mod) => !mod.adminOnly || !!adminSession).map((mod) => {
+            {MODULES.filter((mod) => {
+              if (!mod.requiredRoles) return true;
+              if (!adminSession) return false;
+              return mod.requiredRoles.includes(adminSession.role);
+            }).map((mod) => {
               const Icon = mod.icon;
+              const badgeColors: Record<string, string> = {
+                "Aktiv": "bg-green-100 text-green-700",
+                "Verwaltung": "bg-teal-100 text-teal-700",
+                "System": "bg-purple-100 text-purple-700",
+              };
+              const badgeClass = badgeColors[mod.badge ?? ""] ?? "bg-secondary text-foreground";
               return (
                 <div
                   key={mod.id}
@@ -137,7 +159,7 @@ export default function Dashboard() {
                         <Icon className={`w-6 h-6 ${mod.color}`} />
                       </div>
                       {mod.available && mod.badge && (
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${mod.adminOnly ? "bg-teal-100 text-teal-700" : "bg-green-100 text-green-700"}`}>
+                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badgeClass}`}>
                           {mod.badge}
                         </span>
                       )}
@@ -162,34 +184,6 @@ export default function Dashboard() {
         </div>
 
         <FaelligkeitenWidget />
-
-        {adminSession && (
-          <div className="bg-white rounded-2xl border border-border/60 shadow-sm p-5">
-            <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-              <UserCog className="w-4 h-4 text-muted-foreground" /> Admin-Schnellzugriff
-            </h2>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/mitarbeiterverwaltung"
-                className="flex items-center gap-2 px-4 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-xl text-sm font-semibold transition-colors border border-teal-200"
-              >
-                <Users className="w-4 h-4" /> Mitarbeiterverwaltung
-              </Link>
-              <Link
-                href="/mitarbeiterverwaltung"
-                className="flex items-center gap-2 px-4 py-2 bg-[#1a3a6b]/5 hover:bg-[#1a3a6b]/10 text-[#1a3a6b] rounded-xl text-sm font-semibold transition-colors border border-[#1a3a6b]/10"
-              >
-                <KeyRound className="w-4 h-4" /> PIN-Verwaltung
-              </Link>
-              <Link
-                href="/admin/users"
-                className="flex items-center gap-2 px-4 py-2 bg-secondary hover:bg-secondary/80 text-foreground rounded-xl text-sm font-semibold transition-colors"
-              >
-                <ClipboardList className="w-4 h-4" /> Rollenverwaltung
-              </Link>
-            </div>
-          </div>
-        )}
 
       </div>
     </AppLayout>

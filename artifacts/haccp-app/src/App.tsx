@@ -76,6 +76,8 @@ import Bescheinigungen from "./pages/Bescheinigungen";
 import Kontrollberichte from "./pages/Kontrollberichte";
 import Mitarbeiterverwaltung from "./pages/Mitarbeiterverwaltung";
 import MitarbeiterListe from "./pages/MitarbeiterListe";
+import VerwaltungHub from "./pages/VerwaltungHub";
+import SystemAdminHub from "./pages/SystemAdminHub";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
@@ -132,11 +134,13 @@ function Router() {
       <Route path="/kontrollberichte" component={Kontrollberichte} />
       <Route path="/mitarbeiterverwaltung" component={Mitarbeiterverwaltung} />
       <Route path="/mitarbeiter-liste" component={MitarbeiterListe} />
+      <Route path="/verwaltung" component={VerwaltungHub} />
       <Route path="/training-records" component={TrainingRecords} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/register" component={AdminRegister} />
       <Route path="/admin/users" component={AdminUserManagement} />
       <Route path="/admin/geraete" component={GeraeteVerwaltung} />
+      <Route path="/admin/system" component={SystemAdminHub} />
       <Route component={NotFound} />
     </Switch>
   );

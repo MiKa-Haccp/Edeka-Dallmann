@@ -13,7 +13,7 @@ import { useLocation } from "wouter";
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 const SIDEBAR_PATHS = [
-  "/responsibilities", "/mitarbeiter-liste", "/mitarbeiterverwaltung",
+  "/responsibilities", "/mitarbeiter-liste", "/mitarbeiterverwaltung", "/verwaltung",
   "/info-documentation", "/training-records", "/annual-cleaning-plan",
   "/betriebsbegehung", "/hinweisschild-gesperrte-ware", "/produktfehlermeldung",
   "/probeentnahme", "/anti-vektor-zugang", "/bescheinigungen", "/kontrollberichte",
