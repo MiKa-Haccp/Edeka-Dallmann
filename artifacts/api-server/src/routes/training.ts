@@ -41,7 +41,7 @@ router.get("/markets/:marketId/training-sessions", async (req, res) => {
     .where(and(...conditions))
     .orderBy(desc(trainingSessionsTable.sessionDate));
 
-  const sessionsWithCounts = await Promise.all(
+  const sessionsWithDetails = await Promise.all(
     sessions.map(async (session) => {
       const [topicCount] = await db
         .select({ count: sql<number>`count(*)::int` })
@@ -51,15 +51,30 @@ router.get("/markets/:marketId/training-sessions", async (req, res) => {
         .select({ count: sql<number>`count(*)::int` })
         .from(trainingAttendancesTable)
         .where(eq(trainingAttendancesTable.sessionId, session.id));
+      const topicRows = await db
+        .select({ topicId: trainingSessionTopicsTable.topicId, title: trainingTopicsTable.title, customTitle: trainingSessionTopicsTable.customTitle })
+        .from(trainingSessionTopicsTable)
+        .innerJoin(trainingTopicsTable, eq(trainingSessionTopicsTable.topicId, trainingTopicsTable.id))
+        .where(eq(trainingSessionTopicsTable.sessionId, session.id))
+        .orderBy(asc(trainingTopicsTable.sortOrder));
+      const attendeeRows = await db
+        .select({ initials: trainingAttendancesTable.initials, name: usersTable.name })
+        .from(trainingAttendancesTable)
+        .innerJoin(usersTable, eq(trainingAttendancesTable.userId, usersTable.id))
+        .where(eq(trainingAttendancesTable.sessionId, session.id))
+        .orderBy(asc(trainingAttendancesTable.confirmedAt));
       return {
         ...session,
         topicCount: topicCount?.count ?? 0,
         attendanceCount: attendanceCount?.count ?? 0,
+        topicIds: topicRows.map(t => t.topicId),
+        topicTitles: topicRows.map(t => t.customTitle || t.title),
+        attendees: attendeeRows.map(a => ({ initials: a.initials, name: a.name })),
       };
     })
   );
 
-  res.json(sessionsWithCounts);
+  res.json(sessionsWithDetails);
 });
 
 router.post("/markets/:marketId/training-sessions", async (req, res) => {

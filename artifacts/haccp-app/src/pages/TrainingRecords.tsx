@@ -19,6 +19,7 @@ import {
   GraduationCap,
   Plus,
   ChevronLeft,
+  ChevronRight,
   Check,
   X,
   Trash2,
@@ -34,6 +35,8 @@ import {
   Ham,
   FileText,
   ExternalLink,
+  RefreshCw,
+  Calendar,
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { clsx, type ClassValue } from "clsx";
@@ -101,11 +104,13 @@ function NewSchulungsprotokollDialog({
   onClose,
   marketId,
   tenantId,
+  initialTopicIds,
 }: {
   isOpen: boolean;
   onClose: () => void;
   marketId: number;
   tenantId: number;
+  initialTopicIds?: number[];
 }) {
   const { data: topics } = useListTrainingTopics();
   const { data: users } = useListUsers({ tenantId });
@@ -115,7 +120,7 @@ function NewSchulungsprotokollDialog({
   const [sessionDate, setSessionDate] = useState(new Date().toISOString().split("T")[0]);
   const [trainerId, setTrainerId] = useState<number | null>(null);
   const [trainerName, setTrainerName] = useState("");
-  const [selectedTopics, setSelectedTopics] = useState<number[]>([]);
+  const [selectedTopics, setSelectedTopics] = useState<number[]>(initialTopicIds ?? []);
   const [notes, setNotes] = useState("");
 
   const adminUsers = users?.filter(
@@ -305,6 +310,7 @@ function AttendanceDialog({ isOpen, onClose, sessionId }: { isOpen: boolean; onC
     try {
       await addAttendance.mutateAsync({ sessionId, data: { pin } });
       queryClient.invalidateQueries({ queryKey: [`/api/training-sessions/${sessionId}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/markets"] });
       setPin("");
       onClose();
     } catch (err: any) {
@@ -396,6 +402,7 @@ function SessionDetailView({ sessionId, onBack }: { sessionId: number; onBack: (
     if (!confirm("Teilnahme wirklich entfernen?")) return;
     await removeAttendance.mutateAsync({ sessionId, attendanceId });
     queryClient.invalidateQueries({ queryKey: [`/api/training-sessions/${sessionId}`] });
+    queryClient.invalidateQueries({ queryKey: ["/api/markets"] });
   };
 
   if (isLoading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
@@ -671,53 +678,32 @@ const TAB_META: Record<SessionType, { icon: ElementType; color: string; bgColor:
     icon: Ham,
     color: "text-amber-600",
     bgColor: "bg-amber-50 border-amber-200",
-    desc: "Jährliche Schulung zum Verkauf von EDEKA Strohschwein – Haltungsstandards, Kennzeichnung und Kundenkommunikation.",
+    desc: "Schulungsprotokoll: Strohschwein & Bestes vom Huhn – gem. Qualitätssicherungs-Handbuch Einzelhandel Kapitel 9.4, Version 03/2023.",
     sections: [
       {
-        heading: "Was ist das EDEKA Strohschwein?",
+        heading: "Für GQB-Teilnehmer (Geprüfte Qualität – Bayern)",
         items: [
-          "Das EDEKA Strohschwein ist eine eigene Qualitätsfleisch-Linie, bei der die Schweine ausschließlich auf Stroh gehalten werden.",
-          "Strohschweine haben mehr Platz, können artgerechtes Verhalten ausleben und müssen kein perforiertes Spaltenbodensystem ertragen.",
-          "Das Produkt steht für mehr Tierwohl und höhere Fleischqualität gegenüber konventioneller Haltung.",
-          "Das Strohschwein entspricht der Haltungsform-Stufe 3 (Außenklima) oder Stufe 2 (Stallhaltung Plus) je nach Betrieb.",
+          "Verkauf von unverpackter, loser GQ-Ware (Strohschwein, Bestes vom Huhn) über die Bedienungstheke.",
+          "Einhaltung der Systemvorgaben: Umsetzung, Ein-/Ausgangsdokumentation sowie Verhalten bei Kontrollen.",
+          "Korrekte Auslobung: Kennzeichnung als \"Geprüfte Qualität – Bayern\" und \"Haltungsstufe 3\".",
+          "Herstellung leicht verderblicher Produkte aus diesen Rohstoffen (Dokumentation FB 3.18.1 für Kunden ohne Lunar).",
         ],
       },
       {
-        heading: "Haltungsstandards",
+        heading: "Für NICHT GQB-Teilnehmer",
         items: [
-          "Einstreu mit Stroh: Tiere können wühlen, spielen und ihre natürlichen Verhaltensweisen ausleben.",
-          "Erhöhter Mindestplatzbedarf pro Tier gegenüber gesetzlichem Mindeststandard.",
-          "Keine routinemäßige Antibiotikabehandlung; tierärztliche Behandlungen werden dokumentiert.",
-          "Kontrollen durch unabhängige Zertifizierungsstellen gewährleisten die Einhaltung der Standards.",
+          "Verkauf von bayerischem Strohschwein / Bestem vom Huhn über die Bedienungstheke.",
+          "Wichtig: Keine Auslobung als \"Geprüfte Qualität – Bayern\". Nur die Kennzeichnung mit \"Haltungsstufe 3\" ist erlaubt.",
+          "Wissensstand über die spezifischen Produkte sicherstellen.",
+          "Teilnahme an der verpflichtenden externen Kontrolle (Stichprobenplan 10% durch externe Zertifizierer).",
         ],
       },
       {
-        heading: "Produktkenntnis und Kennzeichnung",
+        heading: "Rechtliche Erklärungen & Bestätigung",
         items: [
-          "Strohschwein-Produkte sind klar mit dem Strohschwein-Logo gekennzeichnet.",
-          "Die Haltungsform muss am POS (Point of Sale) korrekt ausgelobt sein.",
-          "Herkunft: Deutschland – von zertifizierten Partnerbetrieben.",
-          "Bei Thekenprodukten: Herkunft und Haltungsform im Preisschild korrekt angeben.",
-          "MHD und Lagertemperatur strikt einhalten (frisches Fleisch: max. +7°C, Hackfleisch: max. +4°C).",
-        ],
-      },
-      {
-        heading: "Verkaufsargumente für das Kundengespräch",
-        items: [
-          "Mehr Tierwohl: Schweine leben auf echtem Stroh – kein Spaltenboden, mehr Platz, artgerechte Haltung.",
-          "Bessere Fleischqualität: Geringerer Stress beim Tier führt zu zarterem, aromatischerem Fleisch.",
-          "Regionale Herkunft: Produziert in Deutschland von kontrollierten Partnerbetrieben.",
-          "Transparenz: Kunden können die Haltungsbedingungen über QR-Codes und EDEKA-Infomaterialien nachverfolgen.",
-          "Bewusstes Einkaufen: Wer Strohschwein kauft, setzt ein Zeichen für nachhaltigere Landwirtschaft.",
-        ],
-      },
-      {
-        heading: "Umgang und Lagerung im Markt",
-        items: [
-          "Strohschwein-Ware immer sauber und getrennt von anderem Fleisch lagern.",
-          "Kühlkette lückenlos einhalten – bei Lieferung sofort in die Kühlung.",
-          "Theke täglich reinigen und desinfizieren; Strohschwein-Produkte optisch ansprechend präsentieren.",
-          "Abgelaufene oder nicht mehr einwandfreie Ware sofort aus dem Verkauf nehmen und dokumentieren.",
+          "Erhalt & Verständnis: Die oben genannten Schulungsinhalte wurden vermittelt und verstanden.",
+          "Infektionsschutzgesetz: Es liegen keine Gründe für ein Beschäftigungsverbot nach §42 Abs. 1 IfSG vor.",
+          "Kontrollsystem: Kenntnisnahme, dass man automatisch an das vorgeschriebene, unangemeldete Kontrollsystem der EDEKA Südbayern angebunden ist.",
         ],
       },
     ],
@@ -745,11 +731,18 @@ function SessionListTab({
     { query: { enabled: !!marketId } }
   );
   const [showNewDialog, setShowNewDialog] = useState(false);
+  const [cloneTopicIds, setCloneTopicIds] = useState<number[] | undefined>(undefined);
   const meta = TAB_META[sessionType];
   const Icon = meta.icon;
   const color = trafficLight(sessions, selectedYear);
 
   const [showContent, setShowContent] = useState(false);
+
+  const handleRepeat = (e: React.MouseEvent, session: any) => {
+    e.stopPropagation();
+    setCloneTopicIds(session.topicIds || []);
+    setShowNewDialog(true);
+  };
 
   return (
     <div className="space-y-4">
@@ -826,9 +819,9 @@ function SessionListTab({
         <div className="grid gap-3">
           {sessions.map((session: any) => (
             <button key={session.id} onClick={() => onSelectSession(session.id)}
-              className="bg-white rounded-xl border border-border p-4 hover:border-primary/50 hover:shadow-md transition-all text-left group">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-primary/5 rounded-lg group-hover:bg-primary/10 transition-colors shrink-0">
+              className="bg-white rounded-xl border border-border p-4 hover:border-primary/50 hover:shadow-md transition-all text-left group w-full">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-primary/5 rounded-lg group-hover:bg-primary/10 transition-colors shrink-0 mt-0.5">
                   <Icon className={cn("w-5 h-5", meta.color)} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -836,20 +829,53 @@ function SessionListTab({
                     <h3 className="text-sm font-bold text-foreground">
                       {new Date(session.sessionDate + "T00:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
                     </h3>
-                    <Eye className="w-4 h-4 text-muted-foreground group-hover:text-primary shrink-0" />
+                    <div className="flex items-center gap-1 shrink-0">
+                      {isAdmin && sessionType === "schulungsprotokoll" && (
+                        <span
+                          role="button"
+                          onClick={(e) => handleRepeat(e, session)}
+                          title="Schulung wiederholen (gleiche Themen)"
+                          className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <RefreshCw className="w-3.5 h-3.5" />
+                        </span>
+                      )}
+                      <Eye className="w-4 h-4 text-muted-foreground group-hover:text-primary" />
+                    </div>
                   </div>
                   {session.trainerName && (
                     <p className="text-xs text-muted-foreground mt-0.5">Schulungsleiter: {session.trainerName}</p>
                   )}
-                  <div className="flex items-center gap-3 mt-1.5">
-                    {sessionType === "schulungsprotokoll" && (
+                  {sessionType === "schulungsprotokoll" && (
+                    <p className="text-xs text-muted-foreground mt-0.5">Jährliche Schulung gem. HACCP, IfSG, Arbeitssicherheit u.a.</p>
+                  )}
+                  {sessionType === "schulungsprotokoll" && session.topicTitles?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {session.topicTitles.map((title: string, i: number) => (
+                        <span key={i} className="inline-block px-2 py-0.5 rounded-full bg-primary/8 text-primary text-xs font-medium border border-primary/15">
+                          {title}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    {session.attendees?.length > 0 ? (
+                      <div className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <div className="flex gap-0.5 flex-wrap">
+                          {session.attendees.map((a: any, i: number) => (
+                            <span key={i} title={a.name}
+                              className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 border border-green-300 text-green-700 text-[10px] font-bold">
+                              {a.initials}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
                       <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <BookOpen className="w-3.5 h-3.5" />{session.topicCount} Themen
+                        <Users className="w-3.5 h-3.5" />Noch keine Teilnehmer
                       </span>
                     )}
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Users className="w-3.5 h-3.5" />{session.attendanceCount} Teilnehmer
-                    </span>
                   </div>
                 </div>
               </div>
@@ -859,7 +885,13 @@ function SessionListTab({
       )}
 
       {sessionType === "schulungsprotokoll" ? (
-        <NewSchulungsprotokollDialog isOpen={showNewDialog} onClose={() => setShowNewDialog(false)} marketId={marketId} tenantId={tenantId} />
+        <NewSchulungsprotokollDialog
+          isOpen={showNewDialog}
+          onClose={() => { setShowNewDialog(false); setCloneTopicIds(undefined); }}
+          marketId={marketId}
+          tenantId={tenantId}
+          initialTopicIds={cloneTopicIds}
+        />
       ) : (
         <NewSimpleSessionDialog isOpen={showNewDialog} onClose={() => setShowNewDialog(false)}
           marketId={marketId} tenantId={tenantId} sessionType={sessionType} typeLabel={TAB_LABELS[sessionType]} />
@@ -879,6 +911,8 @@ const TAB_ICONS: Record<TabKey, ElementType> = {
 export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {}) {
   const selectedMarketId = useAppStore((s) => s.selectedMarketId);
   const selectedYear = useAppStore((s) => s.selectedYear);
+  const selectedMonth = useAppStore((s) => s.selectedMonth);
+  const setDate = useAppStore((s) => s.setDate);
   const adminSession = useAppStore((s) => s.adminSession);
   const isAdmin = adminSession?.role === "SUPERADMIN" || adminSession?.role === "ADMIN" || adminSession?.role === "MARKTLEITER";
   const Wrap = noLayout
@@ -925,13 +959,35 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
     <Wrap>
       <div className="max-w-5xl mx-auto space-y-5">
         <div className="bg-white rounded-xl border border-border p-5 sm:p-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary/10 rounded-xl">
-              <GraduationCap className="w-6 h-6 text-primary" />
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-primary/10 rounded-xl shrink-0">
+                <GraduationCap className="w-6 h-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-foreground">1.4 Schulungsnachweise</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">Schulungsprotokolle und Teilnehmerbestätigung</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">1.4 Schulungsnachweise</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Schulungsprotokolle und Teilnehmerbestätigung</p>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                onClick={() => setDate(selectedYear - 1, selectedMonth)}
+                className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                title="Vorjahr"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-bold min-w-[4.5rem] justify-center">
+                <Calendar className="w-3.5 h-3.5" />
+                {selectedYear}
+              </span>
+              <button
+                onClick={() => setDate(selectedYear + 1, selectedMonth)}
+                className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                title="Nächstes Jahr"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
