@@ -480,7 +480,7 @@ export default function Betriebsbegehung() {
           <div className="bg-secondary/30 border-b border-border/60 px-6 py-4">
             <h2 className="font-semibold text-foreground text-sm">Allgemeine Angaben</h2>
           </div>
-          <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-5 grid grid-cols-1 xl:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Durchgeführt am</label>
               <input
