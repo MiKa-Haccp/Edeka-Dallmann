@@ -21,32 +21,24 @@ interface CleaningArea {
 
 const CLEANING_AREAS: CleaningArea[] = [
   {
-    title: "Bereich: Vorbereitungsräume / Produktionsräume",
+    title: "Warenannahme, Lager- und Verkaufsräume, Kühl- und Tiefkühleinrichtungen",
     items: [
-      { key: "vp_schraenke", name: "Schränke innen", frequency: "vierteljährlich" },
-      { key: "vp_lueftungsgitter", name: "Lüftungsgitter, Verdampfer", frequency: "vierteljährlich" },
-      { key: "vp_decken_lampen", name: "Decken, Lampen", frequency: "halbjährlich" },
-      { key: "vp_fettabscheider", name: "Fettabscheider", frequency: "vierteljährlich", frequencyNote: "vierteljährliche Kontrolle" },
-    ],
-  },
-  {
-    title: "Bereich: Theke",
-    items: [
-      { key: "th_verkaufstheke", name: "Verkaufstheke: Grundreinigung\n(Abdeckbleche 14-tägig hochnehmen)", frequency: "monatlich", frequencyNote: "monatlich\n(+Desinfektion)" },
-      { key: "th_schraenke", name: "Schränke innen", frequency: "vierteljährlich" },
-      { key: "th_lueftungsgitter", name: "Lüftungsgitter", frequency: "vierteljährlich" },
-      { key: "th_decken_lampen", name: "Decken, Lampen, Glasschürzen", frequency: "halbjährlich" },
-    ],
-  },
-  {
-    title: "Bereich: Warenannahme, Betriebsgänge, Lager- und Verkaufsräume,\nKühl- und Tiefkühleinrichtungen",
-    items: [
-      { key: "wbl_kuehleinrichtungen", name: "Kühleinrichtungen: Frische", frequency: "monatlich" },
-      { key: "wbl_tk_trocken", name: "Tiefkühleinrichtungen\n(trockene Reinigung)", frequency: "monatlich" },
-      { key: "wbl_lueftungsgitter", name: "Lüftungsgitter, Verdampfer", frequency: "vierteljährlich" },
-      { key: "wbl_tk_nass", name: "Tiefkühleinrichtungen\n(nasse Reinigung nach Abtauen)", frequency: "jährlich" },
-      { key: "wbl_decken_lampen", name: "Decken, Lampen", frequency: "halbjährlich" },
-      { key: "wbl_aussenrampe", name: "Außenrampe", frequency: "nach Bedarf" },
+      { key: "einkaufswagenbox", name: "Einkaufswagenbox", frequency: "monatlich" },
+      { key: "rampe_anlieferung", name: "Rampe, Anlieferung, Stellplätze Abfallcontainer", frequency: "monatlich" },
+      { key: "boeden_abfluesse", name: "Böden/Abflüsse im Lagerbereich", frequency: "monatlich" },
+      { key: "regalboeden_aufsteller", name: "Regalböden, Aufsteller, Preisschilder im Verkaufsbereich", frequency: "monatlich" },
+      { key: "umkleideschraenke", name: "Umkleideschränke in Sanitär-/Sozialräume", frequency: "monatlich" },
+      { key: "fenster_waende", name: "Fenster, Wände", frequency: "monatlich" },
+      { key: "tk_trocken", name: "Tiefkühlräume\n(trockene Reinigung)", frequency: "monatlich" },
+      { key: "kuehlraeume", name: "Kühlräume\n(Deckenverdampfer, Wände, Regale, Fußboden, Abflüsse)", frequency: "monatlich" },
+      {
+        key: "kuehlmoebel_theke",
+        name: "Kühlmöbel, Bedientheke inkl. Wanne,\nTiefkühlmöbel, Wandkühlregale",
+        frequency: "monatlich",
+        frequencyNote: "Monatlich:\nMöbelinnenreinigung\ninkl. Lüftungsgitter\n\n½ Jährlich:\nDesinfektion",
+      },
+      { key: "decken_lampen", name: "Decken, Lampen, Versorgungsleitungen", frequency: "halbjährlich" },
+      { key: "tk_nass", name: "Tiefkühlräume\n(nasse Reinigung nach Abtauen)", frequency: "jährlich" },
     ],
   },
 ];
