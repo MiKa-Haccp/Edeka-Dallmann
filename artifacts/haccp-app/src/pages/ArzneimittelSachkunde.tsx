@@ -386,9 +386,9 @@ export default function ArzneimittelSachkunde() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground leading-tight">
-                1.13 Sachkundenachweise
+                1.11 Sachkundenachweis freiverkäufliche Arzneimittel
               </h1>
-              <p className="text-xs text-muted-foreground">Freiverkäufliche Arzneimittel</p>
+              <p className="text-xs text-muted-foreground">Schulungen &amp; Nachweise der Mitarbeiter</p>
             </div>
           </div>
           {!showForm && (
