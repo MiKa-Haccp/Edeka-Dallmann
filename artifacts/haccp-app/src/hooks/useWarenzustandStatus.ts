@@ -603,21 +603,19 @@ export function useResponsibilitiesStatus(): TrafficLight {
 }
 
 // ===== 1.5 Reinigungsplan Jahr – Monatsampel =====
+const MONTHLY = [1,2,3,4,5,6,7,8,9,10,11,12];
 const ANNUAL_PLAN_ITEMS: { key: string; activeMonths: number[] }[] = [
-  { key: "vp_schraenke", activeMonths: [1,4,7,10] },
-  { key: "vp_lueftungsgitter", activeMonths: [1,4,7,10] },
-  { key: "vp_decken_lampen", activeMonths: [1,7] },
-  { key: "vp_fettabscheider", activeMonths: [1,4,7,10] },
-  { key: "th_verkaufstheke", activeMonths: [1,2,3,4,5,6,7,8,9,10,11,12] },
-  { key: "th_schraenke", activeMonths: [1,4,7,10] },
-  { key: "th_lueftungsgitter", activeMonths: [1,4,7,10] },
-  { key: "th_decken_lampen", activeMonths: [1,7] },
-  { key: "wbl_kuehleinrichtungen", activeMonths: [1,2,3,4,5,6,7,8,9,10,11,12] },
-  { key: "wbl_tk_trocken", activeMonths: [1,2,3,4,5,6,7,8,9,10,11,12] },
-  { key: "wbl_lueftungsgitter", activeMonths: [1,4,7,10] },
-  { key: "wbl_tk_nass", activeMonths: [1] },
-  { key: "wbl_decken_lampen", activeMonths: [1,7] },
-  { key: "wbl_aussenrampe", activeMonths: [1,2,3,4,5,6,7,8,9,10,11,12] },
+  { key: "einkaufswagenbox",        activeMonths: MONTHLY },
+  { key: "rampe_anlieferung",       activeMonths: MONTHLY },
+  { key: "boeden_abfluesse",        activeMonths: MONTHLY },
+  { key: "regalboeden_aufsteller",  activeMonths: MONTHLY },
+  { key: "umkleideschraenke",       activeMonths: MONTHLY },
+  { key: "fenster_waende",          activeMonths: MONTHLY },
+  { key: "tk_trocken",              activeMonths: MONTHLY },
+  { key: "kuehlraeume",             activeMonths: MONTHLY },
+  { key: "kuehlmoebel_theke",       activeMonths: MONTHLY },
+  { key: "decken_lampen",           activeMonths: [1, 7] },
+  { key: "tk_nass",                 activeMonths: [1] },
 ];
 
 /** Gibt den letzten Monat der Periode zurück, die beim activeMonth beginnt.
@@ -790,8 +788,8 @@ export function useSchulungsnachweiseStatus(): TrafficLight {
       const allDone = results.every(r => r);
       if (allDone) { setStatus("green"); return; }
       const now = new Date();
-      const jan31 = new Date(selectedYear, 0, 31, 23, 59, 59);
-      setStatus(now > jan31 ? "red" : "yellow");
+      const deadline = new Date(selectedYear, 2, 31, 23, 59, 59); // Ende März
+      setStatus(now > deadline ? "red" : "yellow");
     });
 
     return () => { cancelled = true; };
