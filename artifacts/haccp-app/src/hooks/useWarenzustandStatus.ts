@@ -568,6 +568,140 @@ export function useGQBegehungStatus(): TrafficLight {
   return status;
 }
 
+// ===== 1.1 Verantwortlichkeiten – Jahresampel =====
+export function useResponsibilitiesStatus(): TrafficLight {
+  const { selectedMarketId } = useAppStore();
+  const [status, setStatus] = useState<TrafficLight>("none");
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 30 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!selectedMarketId) { setStatus("none"); return; }
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    let cancelled = false;
+
+    fetch(`${BASE}/markets/${selectedMarketId}/responsibilities?year=${year}`)
+      .then(r => r.json())
+      .then((items: { responsibleName?: string | null }[]) => {
+        if (cancelled) return;
+        const hasFilled = Array.isArray(items) && items.some(r => r.responsibleName && r.responsibleName.trim() !== "");
+        if (hasFilled) { setStatus("green"); return; }
+        if (month >= 11) { setStatus("red"); return; }
+        setStatus("yellow");
+      })
+      .catch(() => { if (!cancelled) setStatus("none"); });
+    return () => { cancelled = true; };
+  }, [selectedMarketId, tick]);
+
+  return status;
+}
+
+// ===== 1.5 Reinigungsplan Jahr – Monatsampel =====
+const ANNUAL_PLAN_ITEMS: { key: string; activeMonths: number[] }[] = [
+  { key: "vp_schraenke", activeMonths: [1,4,7,10] },
+  { key: "vp_lueftungsgitter", activeMonths: [1,4,7,10] },
+  { key: "vp_decken_lampen", activeMonths: [1,7] },
+  { key: "vp_fettabscheider", activeMonths: [1,4,7,10] },
+  { key: "th_verkaufstheke", activeMonths: [1,2,3,4,5,6,7,8,9,10,11,12] },
+  { key: "th_schraenke", activeMonths: [1,4,7,10] },
+  { key: "th_lueftungsgitter", activeMonths: [1,4,7,10] },
+  { key: "th_decken_lampen", activeMonths: [1,7] },
+  { key: "wbl_kuehleinrichtungen", activeMonths: [1,2,3,4,5,6,7,8,9,10,11,12] },
+  { key: "wbl_tk_trocken", activeMonths: [1,2,3,4,5,6,7,8,9,10,11,12] },
+  { key: "wbl_lueftungsgitter", activeMonths: [1,4,7,10] },
+  { key: "wbl_tk_nass", activeMonths: [1] },
+  { key: "wbl_decken_lampen", activeMonths: [1,7] },
+  { key: "wbl_aussenrampe", activeMonths: [1,2,3,4,5,6,7,8,9,10,11,12] },
+];
+
+export function useAnnualCleaningPlanStatus(): TrafficLight {
+  const [status, setStatus] = useState<TrafficLight>("none");
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 30 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    let cancelled = false;
+
+    fetch(`${BASE}/cleaning-plan?tenantId=1&year=${year}`)
+      .then(r => r.json())
+      .then((confirmations: { itemKey: string; month: number }[]) => {
+        if (cancelled) return;
+
+        const requiredNow = ANNUAL_PLAN_ITEMS.filter(item => item.activeMonths.includes(month));
+        if (requiredNow.length === 0) { setStatus("none"); return; }
+
+        const confirmedThisMonth = new Set(
+          confirmations.filter(c => c.month === month).map(c => c.itemKey)
+        );
+        const done = requiredNow.filter(item => confirmedThisMonth.has(item.key)).length;
+
+        if (done === requiredNow.length) { setStatus("green"); return; }
+
+        // Check past months for overdue
+        for (let m = 1; m < month; m++) {
+          const req = ANNUAL_PLAN_ITEMS.filter(item => item.activeMonths.includes(m));
+          if (req.length === 0) continue;
+          const pastKeys = new Set(confirmations.filter(c => c.month === m).map(c => c.itemKey));
+          const pastDone = req.filter(item => pastKeys.has(item.key)).length;
+          if (pastDone < req.length) { setStatus("red"); return; }
+        }
+
+        setStatus(done > 0 ? "yellow" : "yellow");
+      })
+      .catch(() => { if (!cancelled) setStatus("none"); });
+    return () => { cancelled = true; };
+  }, [tick]);
+
+  return status;
+}
+
+// ===== 1.6 Betriebsbegehung – Quartalsampel =====
+export function useBetriebsbegehungStatus(): TrafficLight {
+  const [status, setStatus] = useState<TrafficLight>("none");
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 30 * 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const curQ = Math.ceil((now.getMonth() + 1) / 3);
+    let cancelled = false;
+
+    fetch(`${BASE}/betriebsbegehung?tenantId=1`)
+      .then(r => r.json())
+      .then((reports: { quartal: number; year: number }[]) => {
+        if (cancelled) return;
+        const thisYear = reports.filter(r => r.year === year);
+        const doneQ = new Set(thisYear.map(r => r.quartal));
+
+        if (doneQ.has(curQ)) { setStatus("green"); return; }
+        if (curQ > 1 && !doneQ.has(curQ - 1)) { setStatus("red"); return; }
+        setStatus("yellow");
+      })
+      .catch(() => { if (!cancelled) setStatus("none"); });
+    return () => { cancelled = true; };
+  }, [tick]);
+
+  return status;
+}
+
 // ─── 3.3 Öffnung Salate & Eigenherstellung – MHD-Ampel ───────────────────────
 export function useOeffnungSalateStatus(): TrafficLight {
   const { selectedMarketId } = useAppStore();

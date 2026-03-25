@@ -150,29 +150,73 @@ export default function InfoDocumentation() {
             Gesetzliche Grundlagen
           </h2>
           <div className="grid gap-3 md:grid-cols-2 text-sm">
-            <div className="bg-secondary/30 rounded-lg p-3">
-              <p className="font-semibold text-foreground">LMHV</p>
+            <a
+              href="https://www.gesetze-im-internet.de/lmhv/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-secondary/30 hover:bg-primary/5 border border-transparent hover:border-primary/20 rounded-lg p-3 transition-all group block"
+            >
+              <p className="font-semibold text-foreground group-hover:text-primary flex items-center gap-1.5">
+                LMHV
+                <span className="text-[10px] text-muted-foreground group-hover:text-primary/60 font-normal">↗ gesetze-im-internet.de</span>
+              </p>
               <p className="text-muted-foreground text-xs mt-0.5">
                 Lebensmittelhygiene-Verordnung — Grundlage für HACCP-Dokumentationspflichten
               </p>
-            </div>
-            <div className="bg-secondary/30 rounded-lg p-3">
-              <p className="font-semibold text-foreground">VO (EG) 852/2004</p>
+            </a>
+            <a
+              href="https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX%3A32004R0852"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-secondary/30 hover:bg-primary/5 border border-transparent hover:border-primary/20 rounded-lg p-3 transition-all group block"
+            >
+              <p className="font-semibold text-foreground group-hover:text-primary flex items-center gap-1.5">
+                VO (EG) 852/2004
+                <span className="text-[10px] text-muted-foreground group-hover:text-primary/60 font-normal">↗ eur-lex.europa.eu</span>
+              </p>
               <p className="text-muted-foreground text-xs mt-0.5">
                 EU-Verordnung über Lebensmittelhygiene — HACCP-Grundsätze und Dokumentation
               </p>
-            </div>
-            <div className="bg-secondary/30 rounded-lg p-3">
-              <p className="font-semibold text-foreground">IfSG §43</p>
+            </a>
+            <a
+              href="https://www.gesetze-im-internet.de/ifsg/__43.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-secondary/30 hover:bg-primary/5 border border-transparent hover:border-primary/20 rounded-lg p-3 transition-all group block"
+            >
+              <p className="font-semibold text-foreground group-hover:text-primary flex items-center gap-1.5">
+                IfSG §43
+                <span className="text-[10px] text-muted-foreground group-hover:text-primary/60 font-normal">↗ gesetze-im-internet.de</span>
+              </p>
               <p className="text-muted-foreground text-xs mt-0.5">
                 Infektionsschutzgesetz — Belehrungen und Gesundheitszeugnisse
               </p>
-            </div>
-            <div className="bg-secondary/30 rounded-lg p-3">
-              <p className="font-semibold text-foreground">HGB §257 / AO §147</p>
-              <p className="text-muted-foreground text-xs mt-0.5">
-                Handelsgesetzbuch / Abgabenordnung — Steuerrechtliche Aufbewahrungsfristen
-              </p>
+            </a>
+            <div className="grid grid-cols-2 gap-2">
+              <a
+                href="https://www.gesetze-im-internet.de/hgb/__257.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-secondary/30 hover:bg-primary/5 border border-transparent hover:border-primary/20 rounded-lg p-3 transition-all group block"
+              >
+                <p className="font-semibold text-foreground group-hover:text-primary flex items-center gap-1">
+                  HGB §257
+                  <span className="text-[10px] text-muted-foreground group-hover:text-primary/60 font-normal">↗</span>
+                </p>
+                <p className="text-muted-foreground text-xs mt-0.5">Handelsgesetzbuch — 6 Jahre</p>
+              </a>
+              <a
+                href="https://www.gesetze-im-internet.de/ao_1977/__147.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-secondary/30 hover:bg-primary/5 border border-transparent hover:border-primary/20 rounded-lg p-3 transition-all group block"
+              >
+                <p className="font-semibold text-foreground group-hover:text-primary flex items-center gap-1">
+                  AO §147
+                  <span className="text-[10px] text-muted-foreground group-hover:text-primary/60 font-normal">↗</span>
+                </p>
+                <p className="text-muted-foreground text-xs mt-0.5">Abgabenordnung — 10 Jahre</p>
+              </a>
             </div>
           </div>
         </div>

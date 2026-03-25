@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets, useListResponsibilities, useGetMarketInfo, useUpsertResponsibilities, useUpsertMarketInfo } from "@workspace/api-client-react";
 import { useState, useEffect } from "react";
-import { Save, Pencil, X, Plus, Trash2, Building2 } from "lucide-react";
+import { Save, Pencil, X, Plus, Trash2, Building2, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
 import { JaehrlicheErinnerung } from "@/components/JaehrlicheErinnerung";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -34,7 +34,10 @@ interface ResponsibilityRow {
 }
 
 export default function Responsibilities() {
-  const { selectedMarketId, selectedYear } = useAppStore();
+  const selectedMarketId = useAppStore((s) => s.selectedMarketId);
+  const selectedYear = useAppStore((s) => s.selectedYear);
+  const selectedMonth = useAppStore((s) => s.selectedMonth);
+  const setDate = useAppStore((s) => s.setDate);
   const { data: markets } = useListMarkets();
   const selectedMarket = markets?.find((m) => m.id === selectedMarketId);
   const currentYear = new Date().getFullYear();
@@ -231,9 +234,31 @@ export default function Responsibilities() {
 
           {/* Stand vom / Year */}
           <div className="px-6 py-4 bg-gray-50 border-b border-border/60">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="font-semibold text-muted-foreground">Stand vom:</span>
-              <span className="font-bold text-xl text-foreground">{selectedYear}</span>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="font-semibold text-muted-foreground">Stand vom:</span>
+                <span className="font-bold text-xl text-foreground">{selectedYear}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setDate(selectedYear - 1, selectedMonth)}
+                  className="p-1.5 rounded-lg hover:bg-white hover:shadow-sm text-muted-foreground hover:text-foreground transition-all border border-transparent hover:border-border/40"
+                  title="Vorjahr"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1a3a6b]/10 text-[#1a3a6b] text-sm font-bold min-w-[4.5rem] justify-center">
+                  <Calendar className="w-3.5 h-3.5" />
+                  {selectedYear}
+                </span>
+                <button
+                  onClick={() => setDate(selectedYear + 1, selectedMonth)}
+                  className="p-1.5 rounded-lg hover:bg-white hover:shadow-sm text-muted-foreground hover:text-foreground transition-all border border-transparent hover:border-border/40"
+                  title="Nächstes Jahr"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-2 max-w-3xl">
               Die Verantwortlichkeiten müssen für jeden Bereich klar geregelt und schriftlich fixiert werden. 
@@ -340,16 +365,12 @@ export default function Responsibilities() {
           {/* Footer */}
           <div className="px-6 py-3 bg-gray-50 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
             <span>1.1</span>
-            <span>{String(selectedMonth()).padStart(2, "0")}/{selectedYear}</span>
+            <span>{String(selectedMonth).padStart(2, "0")}/{selectedYear}</span>
           </div>
         </div>
       </div>
     </AppLayout>
   );
-}
-
-function selectedMonth() {
-  return useAppStore.getState().selectedMonth;
 }
 
 function RowGroup({
