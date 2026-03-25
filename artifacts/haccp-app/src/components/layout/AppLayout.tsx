@@ -13,7 +13,7 @@ import { useLocation } from "wouter";
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 const SIDEBAR_PATHS = [
-  "/responsibilities", "/mitarbeiter-liste", "/mitarbeiterverwaltung", "/verwaltung",
+  "/responsibilities", "/mitarbeiter-liste", "/mitarbeiterverwaltung",
   "/info-documentation", "/training-records", "/annual-cleaning-plan",
   "/betriebsbegehung", "/hinweisschild-gesperrte-ware", "/produktfehlermeldung",
   "/probeentnahme", "/anti-vektor-zugang", "/bescheinigungen", "/kontrollberichte",
@@ -21,7 +21,7 @@ const SIDEBAR_PATHS = [
   "/haccp", "/wareneingaenge", "/metzgerei-wareneingaenge", "/reinigungsplan-metzgerei", "/oeffnung-salate", "/kaesetheke-kontrolle", "/semmelliste", "/eingefrorenes-fleisch", "/rezepturen", "/gq-begehung", "/abteilungsfremde-personen",
   "/marktplan",
   "/section/", "/category/", "/we-", "/besprechungsprotokoll",
-  "/gesundheitszeugnisse", "/admin/",
+  "/gesundheitszeugnisse", "/admin/users", "/admin/geraete", "/admin/login", "/admin/register",
 ];
 
 function useSidebarVisible() {
