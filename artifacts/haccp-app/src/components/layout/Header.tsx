@@ -66,7 +66,7 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
                     <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
                   )}
                   <span className="text-xs sm:text-sm font-semibold text-foreground">
-                    {selectedMarket?.name ?? "—"} ({selectedMarket?.code ?? "—"})
+                    {selectedMarket?.name ?? "—"}
                   </span>
                   <Lock className="h-3 w-3 text-muted-foreground" />
                 </div>
@@ -88,7 +88,7 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
                     >
                       {markets?.map((market) => (
                         <option key={market.id} value={market.id} disabled={!canAccessMarket(market.id)}>
-                          {market.name} ({market.code}){!canAccessMarket(market.id) ? " 🔒" : ""}
+                          {market.name}{!canAccessMarket(market.id) ? " 🔒" : ""}
                         </option>
                       ))}
                     </select>
