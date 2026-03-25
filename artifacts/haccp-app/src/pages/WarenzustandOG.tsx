@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   Salad, ChevronLeft, ChevronRight, Loader2, Check,
-  X, Printer, Lock, TrendingUp,
+  X, Printer, Lock,
 } from "lucide-react";
 import { getBavarianHolidays, getHolidayName } from "@/utils/holidays";
 
@@ -47,7 +47,7 @@ function isPast(year: number, month: number, day: number) {
   return d < now;
 }
 
-// ===== PIN MODAL =====
+// ===== PIN MODAL (ohne Doppelbestätigung) =====
 function PinModal({
   onConfirm, onClose, day, slot,
 }: {
@@ -59,11 +59,11 @@ function PinModal({
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [identified, setIdentified] = useState<{ name: string; userId: number; kuerzel: string } | null>(null);
 
   const handleVerify = async () => {
     setError("");
     setLoading(true);
+    let confirmed = false;
     try {
       const res = await fetch(`${BASE}/users/verify-pin`, {
         method: "POST",
@@ -72,20 +72,15 @@ function PinModal({
       });
       const data = await res.json();
       if (data.valid) {
-        setIdentified({ name: data.userName, userId: data.userId, kuerzel: data.initials });
+        confirmed = true;
+        onConfirm(data.initials, data.userId);
       } else {
-        setError("PIN ungueltig.");
+        setError("PIN ungültig.");
       }
     } catch {
       setError("Verbindungsfehler.");
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConfirm = () => {
-    if (identified) {
-      onConfirm(identified.kuerzel, identified.userId);
+      if (!confirmed) setLoading(false);
     }
   };
 
@@ -102,55 +97,33 @@ function PinModal({
           </button>
         </div>
 
-        {!identified ? (
-          <>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">PIN eingeben</label>
-              <input
-                type="password"
-                inputMode="numeric"
-                className="w-full border border-border rounded-lg px-3 py-3 text-center text-lg tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/30"
-                placeholder="&#9679;&#9679;&#9679;&#9679;"
-                value={pin}
-                maxLength={6}
-                autoFocus
-                onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
-                onKeyDown={e => e.key === "Enter" && pin.length >= 4 && handleVerify()}
-              />
-            </div>
-            {error && (
-              <p className="text-xs text-red-500 flex items-center gap-1.5">
-                <X className="w-3 h-3" />{error}
-              </p>
-            )}
-            <button
-              onClick={handleVerify}
-              disabled={loading || pin.length < 4}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0] transition-colors"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-              PIN pruefen
-            </button>
-          </>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl border border-green-200">
-              <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-                <Check className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-green-800">{identified.name}</p>
-                <p className="text-xs text-green-600">Kuerzel: <span className="font-mono font-bold">{identified.kuerzel}</span></p>
-              </div>
-            </div>
-            <button
-              onClick={handleConfirm}
-              className="w-full py-2.5 rounded-xl bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-            >
-              <Check className="w-4 h-4" /> Abzeichnen
-            </button>
-          </div>
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">PIN eingeben</label>
+          <input
+            type="password"
+            inputMode="numeric"
+            className="w-full border border-border rounded-lg px-3 py-3 text-center text-lg tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/30"
+            placeholder="&#9679;&#9679;&#9679;&#9679;"
+            value={pin}
+            maxLength={6}
+            autoFocus
+            onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
+            onKeyDown={e => e.key === "Enter" && pin.length >= 4 && handleVerify()}
+          />
+        </div>
+        {error && (
+          <p className="text-xs text-red-500 flex items-center gap-1.5">
+            <X className="w-3 h-3" />{error}
+          </p>
         )}
+        <button
+          onClick={handleVerify}
+          disabled={loading || pin.length < 4}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0] transition-colors"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+          Abzeichnen
+        </button>
       </div>
     </div>
   );
@@ -170,10 +143,16 @@ export default function WarenzustandOG() {
   const [activeCell, setActiveCell] = useState<{ day: number; slot: typeof SLOTS[0] } | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+
+  // Refs für Scroll-Management
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const todayRowRef = useRef<HTMLTableRowElement>(null);
+  const hasAutoScrolled = useRef(false);
 
   const totalDays = daysInMonth(year, month);
-
   const holidays = useMemo(() => getBavarianHolidays(year), [year]);
+  const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 
   const dateStr = (day: number) => `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   const isDayHoliday = (day: number) => holidays.has(dateStr(day));
@@ -186,8 +165,10 @@ export default function WarenzustandOG() {
       const res = await fetch(`${BASE}/warencheck-og?marketId=${selectedMarketId}&year=${year}&month=${month}`);
       const data = await res.json();
       setEntries(data);
+      setInitialLoadDone(true);
     } catch {
       setEntries([]);
+      setInitialLoadDone(true);
     } finally {
       setLoading(false);
     }
@@ -195,11 +176,26 @@ export default function WarenzustandOG() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Auto-Scroll zu heute nach erstem Laden
+  useEffect(() => {
+    if (initialLoadDone && !hasAutoScrolled.current) {
+      const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear();
+      if (isCurrentMonth && todayRowRef.current && scrollRef.current) {
+        hasAutoScrolled.current = true;
+        requestAnimationFrame(() => {
+          todayRowRef.current?.scrollIntoView({ block: "start" });
+        });
+      }
+    }
+  }, [initialLoadDone, month, year]);
+
   const getEntry = (day: number, slotKey: string) =>
     entries.find(e => e.day === day && e.slot === slotKey) ?? null;
 
   const handleSign = async (kuerzel: string, userId: number | null) => {
     if (!activeCell || !selectedMarketId) return;
+    // Scroll-Position speichern
+    const savedScroll = scrollRef.current?.scrollTop ?? 0;
     setSaving(true);
     try {
       const res = await fetch(`${BASE}/warencheck-og`, {
@@ -216,6 +212,10 @@ export default function WarenzustandOG() {
       if (res.ok) {
         setActiveCell(null);
         await load();
+        // Scroll-Position wiederherstellen
+        requestAnimationFrame(() => {
+          if (scrollRef.current) scrollRef.current.scrollTop = savedScroll;
+        });
         window.dispatchEvent(new CustomEvent("warenzustand-og-updated"));
       }
     } finally {
@@ -224,10 +224,14 @@ export default function WarenzustandOG() {
   };
 
   const handleDelete = async (id: number) => {
+    const savedScroll = scrollRef.current?.scrollTop ?? 0;
     setDeletingId(id);
     try {
       await fetch(`${BASE}/warencheck-og/${id}`, { method: "DELETE" });
       await load();
+      requestAnimationFrame(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = savedScroll;
+      });
       window.dispatchEvent(new CustomEvent("warenzustand-og-updated"));
     } finally {
       setDeletingId(null);
@@ -235,24 +239,20 @@ export default function WarenzustandOG() {
   };
 
   const prevMonth = () => {
+    hasAutoScrolled.current = false;
     if (month === 1) { setYear(y => y - 1); setMonth(12); }
     else setMonth(m => m - 1);
   };
   const nextMonth = () => {
+    hasAutoScrolled.current = false;
     if (month === 12) { setYear(y => y + 1); setMonth(1); }
     else setMonth(m => m + 1);
   };
 
-  const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
-
-  const closedDays = Array.from({ length: totalDays }, (_, i) => i + 1)
-    .filter(d => getWeekday(year, month, d) === "So" || isDayHoliday(d)).length;
-  const openDays = totalDays - closedDays;
-  const totalSlots = openDays * SLOTS.length;
-  const filledSlots = entries.filter(e => getWeekday(year, month, e.day) !== "So" && !isDayHoliday(e.day)).length;
-  const pct = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
-
-  const todayCheckedCount = entries.filter(e => e.day === now.getDate() && month === now.getMonth() + 1 && year === now.getFullYear()).length;
+  const todayCheckedCount = entries.filter(
+    e => e.day === now.getDate() && month === now.getMonth() + 1 && year === now.getFullYear()
+  ).length;
+  const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear();
 
   return (
     <AppLayout>
@@ -277,7 +277,7 @@ export default function WarenzustandOG() {
             </div>
           </div>
 
-          {/* Monats-Navigation */}
+          {/* Monats-Navigation + Tagesfortschritt */}
           <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/60">
             <button onClick={prevMonth} className="p-2 rounded-xl hover:bg-muted transition-colors">
               <ChevronLeft className="w-5 h-5" />
@@ -285,32 +285,18 @@ export default function WarenzustandOG() {
             <div className="text-center">
               <p className="text-lg font-bold text-foreground">{MONTH_NAMES[month - 1]} {year}</p>
               {selectedMarketName && <p className="text-xs text-muted-foreground">Markt: {selectedMarketName}</p>}
+              {isCurrentMonth && (
+                <p className="text-xs mt-1">
+                  <span className="text-muted-foreground">Heute ({now.getDate()}. {MONTH_NAMES[month - 1]}): </span>
+                  <span className={`font-bold ${todayCheckedCount === SLOTS.length ? "text-green-600" : todayCheckedCount > 0 ? "text-amber-600" : "text-muted-foreground"}`}>
+                    {todayCheckedCount} / {SLOTS.length} abgezeichnet
+                  </span>
+                </p>
+              )}
             </div>
             <button onClick={nextMonth} className="p-2 rounded-xl hover:bg-muted transition-colors">
               <ChevronRight className="w-5 h-5" />
             </button>
-          </div>
-
-          {/* Fortschritt */}
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3" /> Monatsfortschritt</span>
-              <span className="font-bold text-foreground">{filledSlots} / {totalSlots} Zeitslots ({pct}%)</span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full bg-green-500 rounded-full transition-all duration-500"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            {month === now.getMonth() + 1 && year === now.getFullYear() && (
-              <p className="text-xs text-muted-foreground">
-                Heute ({now.getDate()}. {MONTH_NAMES[month - 1]}):
-                <span className={`ml-1 font-bold ${todayCheckedCount === SLOTS.length ? "text-green-600" : todayCheckedCount > 0 ? "text-amber-600" : "text-muted-foreground"}`}>
-                  {todayCheckedCount} / {SLOTS.length} abgezeichnet
-                </span>
-              </p>
-            )}
           </div>
         </div>
 
@@ -324,12 +310,17 @@ export default function WarenzustandOG() {
             <Loader2 className="w-7 h-7 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-border overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
+          <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+            {/* Scrollbarer Container mit Sticky-Header */}
+            <div
+              ref={scrollRef}
+              className="overflow-auto"
+              style={{ maxHeight: "calc(100vh - 260px)" }}
+            >
               <table className="w-full text-sm border-collapse">
-                <thead>
+                <thead className="sticky top-0 z-20">
                   <tr className="bg-[#1a3a6b] text-white">
-                    <th className="px-3 py-3 text-left font-semibold text-xs w-16 sticky left-0 bg-[#1a3a6b] z-10">Tag</th>
+                    <th className="px-3 py-3 text-left font-semibold text-xs w-16 sticky left-0 top-0 bg-[#1a3a6b] z-30">Tag</th>
                     <th className="px-2 py-2 text-center font-semibold text-xs w-10 opacity-70">Wt</th>
                     {SLOTS.map(s => (
                       <th key={s.key} className="px-2 py-3 text-center font-semibold text-xs min-w-[110px]">
@@ -356,6 +347,7 @@ export default function WarenzustandOG() {
                     return (
                       <tr
                         key={day}
+                        ref={today ? todayRowRef : undefined}
                         className={[
                           "border-t border-border/40 transition-colors",
                           isClosed ? "bg-slate-100/80 opacity-60" : "",
