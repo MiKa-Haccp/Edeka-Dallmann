@@ -183,7 +183,7 @@ const SECTIONS: Section[] = [
       { nr: "11.2", text: "Alle Mitarbeiter haben innerhalb der letzten 12 Monate eine den Vorschriften entsprechende Schulung erhalten." },
       { nr: "11.3", text: "Alle Mitarbeiter, die mit offenen Lebensmitteln umgehen, haben innerhalb der letzten 12 Monate eine Belehrung nach dem Infektionsschutzgesetz erhalten." },
       { nr: "11.4", text: "Alle geführten Formblätter werden gemäß den Handbuchvorgaben im jeweiligen Ablageordner (HACCP Ablage 1-x) archiviert." },
-      { nr: "11.5", text: "Funktionsfähige, geeignete und kontrollierte Prüfmittel (z.B. Thermometer) sind in ausreichender Anzahl in den Abteilungen vorhanden. Das Formblatt „3.19 Prüfmittelüberwachung" wird geführt." },
+      { nr: "11.5", text: 'Funktionsfähige, geeignete und kontrollierte Prüfmittel (z.B. Thermometer) sind in ausreichender Anzahl in den Abteilungen vorhanden. Das Formblatt \u201E3.19 Prüfmittelüberwachung\u201C wird geführt.' },
       { nr: "11.6", text: "Die Selbstverpflichtung zur Einhaltung der Regeln der Lebensmittelsicherheitskultur wurde von allen Mitarbeitern mit Unterschrift bestätigt." },
     ],
   },
