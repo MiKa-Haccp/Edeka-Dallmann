@@ -610,3 +610,29 @@ export function useOeffnungSalateStatus(): TrafficLight {
 
   return status;
 }
+
+// ─── 1.4 Schulungsnachweise – Jahresampel ─────────────────────────────────────
+export function useSchulungsnachweiseStatus(): TrafficLight {
+  const { selectedMarketId, selectedYear } = useAppStore();
+  const [status, setStatus] = useState<TrafficLight>("none");
+
+  useEffect(() => {
+    if (!selectedMarketId) { setStatus("none"); return; }
+    let cancelled = false;
+
+    fetch(`${BASE}/markets/${selectedMarketId}/training-sessions?year=${selectedYear}&type=schulungsprotokoll`)
+      .then(r => r.json())
+      .then((data: unknown[]) => {
+        if (cancelled) return;
+        if (Array.isArray(data) && data.length > 0) { setStatus("green"); return; }
+        const now = new Date();
+        const jan31 = new Date(selectedYear, 0, 31, 23, 59, 59);
+        setStatus(now > jan31 ? "red" : "yellow");
+      })
+      .catch(() => { if (!cancelled) setStatus("none"); });
+
+    return () => { cancelled = true; };
+  }, [selectedMarketId, selectedYear]);
+
+  return status;
+}

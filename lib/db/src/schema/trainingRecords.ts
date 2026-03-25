@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp, date, boolean, unique } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, varchar, timestamp, date, boolean, unique } from "drizzle-orm/pg-core";
 import { tenantsTable } from "./tenants";
 import { usersTable } from "./users";
 
@@ -20,6 +20,7 @@ export const trainingSessionsTable = pgTable("training_sessions", {
   trainerId: integer("trainer_id").references(() => usersTable.id),
   trainerName: text("trainer_name"),
   notes: text("notes"),
+  sessionType: varchar("session_type", { length: 64 }).default("schulungsprotokoll"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

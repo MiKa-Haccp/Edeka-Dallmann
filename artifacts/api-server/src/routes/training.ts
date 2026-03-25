@@ -17,6 +17,13 @@ router.get("/training-topics", async (_req, res) => {
 router.get("/markets/:marketId/training-sessions", async (req, res) => {
   const marketId = parseInt(req.params.marketId);
   const year = req.query.year ? parseInt(req.query.year as string) : new Date().getFullYear();
+  const sessionType = (req.query.type as string) || null;
+
+  const conditions = [
+    eq(trainingSessionsTable.marketId, marketId),
+    sql`EXTRACT(YEAR FROM ${trainingSessionsTable.sessionDate}::date) = ${year}`,
+    ...(sessionType ? [sql`${trainingSessionsTable.sessionType} = ${sessionType}`] : []),
+  ];
 
   const sessions = await db
     .select({
@@ -27,15 +34,11 @@ router.get("/markets/:marketId/training-sessions", async (req, res) => {
       trainerId: trainingSessionsTable.trainerId,
       trainerName: trainingSessionsTable.trainerName,
       notes: trainingSessionsTable.notes,
+      sessionType: trainingSessionsTable.sessionType,
       createdAt: trainingSessionsTable.createdAt,
     })
     .from(trainingSessionsTable)
-    .where(
-      and(
-        eq(trainingSessionsTable.marketId, marketId),
-        sql`EXTRACT(YEAR FROM ${trainingSessionsTable.sessionDate}::date) = ${year}`
-      )
-    )
+    .where(and(...conditions))
     .orderBy(desc(trainingSessionsTable.sessionDate));
 
   const sessionsWithCounts = await Promise.all(
@@ -63,6 +66,7 @@ router.post("/markets/:marketId/training-sessions", async (req, res) => {
   const marketId = parseInt(req.params.marketId);
   const { tenantId, sessionDate, trainerId, trainerName, notes, topicIds, customTopicTitle } = req.body;
 
+  const sessionType = req.body.sessionType || 'schulungsprotokoll';
   const [session] = await db
     .insert(trainingSessionsTable)
     .values({
@@ -72,6 +76,7 @@ router.post("/markets/:marketId/training-sessions", async (req, res) => {
       trainerId: trainerId || null,
       trainerName: trainerName || null,
       notes: notes || null,
+      sessionType,
     })
     .returning();
 

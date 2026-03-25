@@ -39,6 +39,7 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminRegister from "./pages/AdminRegister";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import TrainingBesprechung from "./pages/TrainingBesprechung";
+import TrainingRecords from "./pages/TrainingRecords";
 import WarenzustandOG from "./pages/WarenzustandOG";
 import ReinigungTaeglich from "./pages/ReinigungTaeglich";
 import CarrierPortal from "./pages/CarrierPortal";
@@ -130,7 +131,7 @@ function Router() {
       <Route path="/kontrollberichte" component={Kontrollberichte} />
       <Route path="/mitarbeiterverwaltung" component={Mitarbeiterverwaltung} />
       <Route path="/mitarbeiter-liste" component={MitarbeiterListe} />
-      <Route path="/training-records" component={TrainingBesprechung} />
+      <Route path="/training-records" component={TrainingRecords} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/register" component={AdminRegister} />
       <Route path="/admin/users" component={AdminUserManagement} />

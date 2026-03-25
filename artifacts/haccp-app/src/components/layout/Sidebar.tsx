@@ -5,7 +5,7 @@ import { ChevronDown, Folder, FileText, ClipboardList, GripVertical, X } from "l
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { useWarenzustandOGStatus, useReinigungTaeglichStatus, useWareneingaengeStatus, useMetzgereiWareneingaengeStatus, useMetzgereiReinigungStatus, useKaesethekeStatus, useOeffnungSalateStatus, useGQBegehungStatus, type TrafficLight } from "@/hooks/useWarenzustandStatus";
+import { useWarenzustandOGStatus, useReinigungTaeglichStatus, useWareneingaengeStatus, useMetzgereiWareneingaengeStatus, useMetzgereiReinigungStatus, useKaesethekeStatus, useOeffnungSalateStatus, useGQBegehungStatus, useSchulungsnachweiseStatus, type TrafficLight } from "@/hooks/useWarenzustandStatus";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -28,6 +28,7 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
   const kaesethekeStatus       = useKaesethekeStatus();
   const oeffnungSalateStatus   = useOeffnungSalateStatus();
   const gqBegehungStatus       = useGQBegehungStatus();
+  const schulungsnachweiseStatus = useSchulungsnachweiseStatus();
 
   if (isLoading) return <div className="p-4 text-xs text-muted-foreground">Lade Bereiche...</div>;
   if (!sections?.length) return <div className="p-4 text-xs text-muted-foreground">Keine Bereiche gefunden.</div>;
@@ -42,7 +43,7 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
       }).map((section) => {
         const href = section.number === "1.1" ? "/responsibilities" : section.number === "1.2" ? "/mitarbeiter-liste" : section.number === "1.3" ? "/info-documentation" : section.number === "1.4" ? "/training-records" : section.number === "1.5" ? "/annual-cleaning-plan" : section.number === "1.6" ? "/betriebsbegehung" : section.number === "1.7" ? "/hinweisschild-gesperrte-ware" : section.number === "1.8" ? "/produktfehlermeldung" : section.number === "1.9" ? "/probeentnahme" : section.number === "1.10" ? "/anti-vektor-zugang" : section.number === "1.11" ? "/bescheinigungen" : section.number === "1.12" ? "/kontrollberichte" : section.number === "2.1" ? "/warencheck-og" : section.number === "2.2" ? "/reinigung-taeglich" : section.number === "2.3" ? "/carrier-portal" : section.number === "2.5" ? "/wareneingaenge" : section.number === "3.1" ? "/metzgerei-wareneingaenge" : section.number === "3.2" ? "/reinigungsplan-metzgerei" : section.number === "3.3" ? "/oeffnung-salate" : section.number === "3.4" ? "/kaesetheke-kontrolle" : section.number === "3.5" ? "/semmelliste" : section.number === "3.6" ? "/eingefrorenes-fleisch" : section.number === "3.7" ? "/rezepturen" : section.number === "3.8" ? "/gq-begehung" : section.number === "3.9" ? "/abteilungsfremde-personen" : `/section/${section.id}`;
         const isActive = location === href;
-        const trafficStatus: TrafficLight = section.number === "2.1" ? ogStatus : section.number === "2.2" ? reinigungStatus : section.number === "2.5" ? wareneingaengeStatus : section.number === "3.1" ? metzgereiStatus : section.number === "3.2" ? metzReinigungStatus : section.number === "3.3" ? oeffnungSalateStatus : section.number === "3.4" ? kaesethekeStatus : section.number === "3.8" ? gqBegehungStatus : "none";
+        const trafficStatus: TrafficLight = section.number === "1.4" ? schulungsnachweiseStatus : section.number === "2.1" ? ogStatus : section.number === "2.2" ? reinigungStatus : section.number === "2.5" ? wareneingaengeStatus : section.number === "3.1" ? metzgereiStatus : section.number === "3.2" ? metzReinigungStatus : section.number === "3.3" ? oeffnungSalateStatus : section.number === "3.4" ? kaesethekeStatus : section.number === "3.8" ? gqBegehungStatus : "none";
         const iconColor = trafficStatus === "green"
           ? "text-green-500"
           : trafficStatus === "yellow"
