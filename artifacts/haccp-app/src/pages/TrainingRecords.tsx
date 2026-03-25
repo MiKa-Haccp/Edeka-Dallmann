@@ -14,7 +14,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link } from "wouter";
+
 import {
   GraduationCap,
   Plus,
@@ -33,8 +33,6 @@ import {
   Scale,
   Leaf,
   Ham,
-  FileText,
-  ExternalLink,
   RefreshCw,
   Calendar,
 } from "lucide-react";
@@ -48,15 +46,14 @@ function cn(...inputs: ClassValue[]) {
 
 type SessionType = "schulungsprotokoll" | "taraschulung" | "lebensmittelleitkultur" | "strohschwein";
 
-const TAB_LABELS: Record<SessionType | "besprechungsprotokoll", string> = {
+const TAB_LABELS: Record<SessionType, string> = {
   schulungsprotokoll: "Schulungsprotokoll",
   taraschulung: "Taraschulung",
   lebensmittelleitkultur: "Lebensmittelleitkultur",
   strohschwein: "Strohschwein",
-  besprechungsprotokoll: "Besprechungsprotokoll",
 };
 
-const ALL_TABS = ["schulungsprotokoll", "taraschulung", "lebensmittelleitkultur", "strohschwein", "besprechungsprotokoll"] as const;
+const ALL_TABS = ["schulungsprotokoll", "taraschulung", "lebensmittelleitkultur", "strohschwein"] as const;
 type TabKey = (typeof ALL_TABS)[number];
 
 function trafficLight(sessions: any[] | undefined, selectedYear: number): "green" | "yellow" | "red" {
@@ -978,7 +975,6 @@ const TAB_ICONS: Record<TabKey, ElementType> = {
   taraschulung: Scale,
   lebensmittelleitkultur: Leaf,
   strohschwein: Ham,
-  besprechungsprotokoll: FileText,
 };
 
 export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {}) {
@@ -1069,7 +1065,7 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
           <div className="flex overflow-x-auto border-b border-border">
             {ALL_TABS.map((tab) => {
               const Icon = TAB_ICONS[tab];
-              const st = tab !== "besprechungsprotokoll" ? tabStatuses[tab as SessionType] : null;
+              const st = tabStatuses[tab];
               return (
                 <button
                   key={tab}
@@ -1097,32 +1093,15 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
           </div>
 
           <div className="p-4 sm:p-6">
-            {activeTab === "besprechungsprotokoll" ? (
-              <div className="text-center py-10">
-                <FileText className="w-12 h-12 text-primary/30 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-foreground mb-2">Besprechungsprotokoll</h3>
-                <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
-                  Das Besprechungsprotokoll befindet sich im Bereich Hygienebelehrung und Mitarbeiterbesprechungen.
-                </p>
-                <Link
-                  href="/besprechungsprotokoll"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Zum Besprechungsprotokoll
-                </Link>
-              </div>
-            ) : (
-              <SessionListTab
-                key={`${activeTab}-${selectedYear}`}
-                marketId={selectedMarketId}
-                tenantId={1}
-                sessionType={activeTab as SessionType}
-                selectedYear={selectedYear}
-                isAdmin={isAdmin}
-                onSelectSession={setSelectedSessionId}
-              />
-            )}
+            <SessionListTab
+              key={`${activeTab}-${selectedYear}`}
+              marketId={selectedMarketId}
+              tenantId={1}
+              sessionType={activeTab}
+              selectedYear={selectedYear}
+              isAdmin={isAdmin}
+              onSelectSession={setSelectedSessionId}
+            />
           </div>
         </div>
       </div>
