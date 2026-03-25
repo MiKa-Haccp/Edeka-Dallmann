@@ -57,6 +57,7 @@ import OeffnungSalate from "./pages/OeffnungSalate";
 import KaesethekeKontrolle from "./pages/KaesethekeKontrolle";
 import SemmelListe from "./pages/SemmelListe";
 import EingefrorenesFleisch from "./pages/EingefrorenesFleisch";
+import Rezepturen from "./pages/Rezepturen";
 import InfoDocumentation from "./pages/InfoDocumentation";
 import AnnualCleaningPlan from "./pages/AnnualCleaningPlan";
 import Betriebsbegehung from "./pages/Betriebsbegehung";
@@ -114,6 +115,7 @@ function Router() {
       <Route path="/kaesetheke-kontrolle" component={KaesethekeKontrolle} />
       <Route path="/semmelliste" component={SemmelListe} />
       <Route path="/eingefrorenes-fleisch" component={EingefrorenesFleisch} />
+      <Route path="/rezepturen" component={Rezepturen} />
       <Route path="/besprechungsprotokoll" component={TrainingBesprechung} />
       <Route path="/anti-vektor-zugang" component={AntiVektorZugang} />
       <Route path="/gesundheitszeugnisse" component={Gesundheitszeugnisse} />

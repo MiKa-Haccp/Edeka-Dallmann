@@ -97,6 +97,7 @@ artifacts-monorepo/
 - `/anti-vektor-zugang` — Section 1.10: Anti-Vektor Zugang (Tab 1: AV-ODS Portal-Link + Login-Daten editierbar durch Admins; Tab 2: Sachkundenachweise der Schädlingsbekämpfer mit Foto, Gültigkeitsdatum, Ablauf-Warnung; gespeichert in `anti_vektor_zugangsdaten` + `anti_vektor_zertifikate`)
 - `/bescheinigungen` — Section 1.11: Bescheinigungen & Nachweise
 - `/kontrollberichte` — Section 1.12: Kontrollberichte
+- `/rezepturen` — Section 3.7: Rezepturen (Eigenherstellung-Rezepturuebersicht; 20 Bratwurst-Rezepte mit Bildern, Naehrwerten, Zutaten, Herstellungsablauf; Suchfunktion; Kategorie-Filter; Detail-Modal mit Tabs; Bilder in public/rezepturen/; DB-Tabellen rezeptur_kategorien + rezepturen)
 - `/admin/login` — Admin login page (email + password)
 - `/admin/register` — Admin registration via invitation token
 - `/admin/users` — Benutzerverwaltung: Role management, permission checkboxes, market assignments (SUPERADMIN only)

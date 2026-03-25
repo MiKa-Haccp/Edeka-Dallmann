@@ -38,6 +38,7 @@ import oeffnungSalateRouter from "./oeffnungSalate";
 import kaesethekeKontrolleRouter from "./kaesethekeKontrolle";
 import semmellisteRouter from "./semmelliste";
 import eingefrorenesFleischRouter from "./eingefrorenesFleisch";
+import rezepturenRouter from "./rezepturen";
 
 const router: IRouter = Router();
 
@@ -80,5 +81,6 @@ router.use(oeffnungSalateRouter);
 router.use(kaesethekeKontrolleRouter);
 router.use(semmellisteRouter);
 router.use(eingefrorenesFleischRouter);
+router.use(rezepturenRouter);
 
 export default router;
