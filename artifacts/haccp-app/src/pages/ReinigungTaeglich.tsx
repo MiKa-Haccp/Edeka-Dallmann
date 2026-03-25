@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ClipboardCheck, ChevronLeft, ChevronRight, Loader2, Check,
-  X, Printer, Lock, TrendingUp, ListChecks,
+  X, Printer, Lock, ListChecks,
 } from "lucide-react";
 import { getBavarianHolidays, getHolidayName } from "@/utils/holidays";
 
@@ -49,7 +49,7 @@ function isPast(year: number, month: number, day: number) {
   return new Date(year, month - 1, day) < n;
 }
 
-// ===== PIN MODAL =====
+// ===== PIN MODAL (ohne Doppelbestätigung) =====
 function PinModal({
   onConfirm, onClose, day, area,
 }: {
@@ -61,11 +61,11 @@ function PinModal({
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [identified, setIdentified] = useState<{ name: string; userId: number; kuerzel: string } | null>(null);
 
   const handleVerify = async () => {
     setError("");
     setLoading(true);
+    let confirmed = false;
     try {
       const res = await fetch(`${BASE}/users/verify-pin`, {
         method: "POST",
@@ -74,14 +74,15 @@ function PinModal({
       });
       const data = await res.json();
       if (data.valid) {
-        setIdentified({ name: data.userName, userId: data.userId, kuerzel: data.initials });
+        confirmed = true;
+        onConfirm(data.initials, data.userId);
       } else {
-        setError("PIN ungueltig.");
+        setError("PIN ungültig.");
       }
     } catch {
       setError("Verbindungsfehler.");
     } finally {
-      setLoading(false);
+      if (!confirmed) setLoading(false);
     }
   };
 
@@ -97,56 +98,33 @@ function PinModal({
             <X className="w-4 h-4" />
           </button>
         </div>
-
-        {!identified ? (
-          <>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">PIN eingeben</label>
-              <input
-                type="password"
-                inputMode="numeric"
-                className="w-full border border-border rounded-lg px-3 py-3 text-center text-lg tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/30"
-                placeholder="&#9679;&#9679;&#9679;&#9679;"
-                value={pin}
-                maxLength={6}
-                autoFocus
-                onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
-                onKeyDown={e => e.key === "Enter" && pin.length >= 4 && handleVerify()}
-              />
-            </div>
-            {error && (
-              <p className="text-xs text-red-500 flex items-center gap-1.5">
-                <X className="w-3 h-3" />{error}
-              </p>
-            )}
-            <button
-              onClick={handleVerify}
-              disabled={loading || pin.length < 4}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0] transition-colors"
-            >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-              PIN pruefen
-            </button>
-          </>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl border border-green-200">
-              <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-                <Check className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-green-800">{identified.name}</p>
-                <p className="text-xs text-green-600">Kuerzel: <span className="font-mono font-bold">{identified.kuerzel}</span></p>
-              </div>
-            </div>
-            <button
-              onClick={() => onConfirm(identified.kuerzel, identified.userId)}
-              className="w-full py-2.5 rounded-xl bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-            >
-              <Check className="w-4 h-4" /> Abzeichnen
-            </button>
-          </div>
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">PIN eingeben</label>
+          <input
+            type="password"
+            inputMode="numeric"
+            className="w-full border border-border rounded-lg px-3 py-3 text-center text-lg tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/30"
+            placeholder="&#9679;&#9679;&#9679;&#9679;"
+            value={pin}
+            maxLength={6}
+            autoFocus
+            onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
+            onKeyDown={e => e.key === "Enter" && pin.length >= 4 && handleVerify()}
+          />
+        </div>
+        {error && (
+          <p className="text-xs text-red-500 flex items-center gap-1.5">
+            <X className="w-3 h-3" />{error}
+          </p>
         )}
+        <button
+          onClick={handleVerify}
+          disabled={loading || pin.length < 4}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0] transition-colors"
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+          Abzeichnen
+        </button>
       </div>
     </div>
   );
@@ -180,7 +158,7 @@ function BulkSignModal({
       if (data.valid) {
         setIdentified({ name: data.userName, userId: data.userId, kuerzel: data.initials });
       } else {
-        setError("PIN ungueltig.");
+        setError("PIN ungültig.");
       }
     } catch {
       setError("Verbindungsfehler.");
@@ -241,23 +219,21 @@ function BulkSignModal({
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0] transition-colors"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-              PIN pruefen
+              PIN prüfen
             </button>
           </>
         ) : (
           <div className="space-y-4">
-            {/* Mitarbeiter-Badge */}
             <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl border border-green-200">
               <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shrink-0">
                 <Check className="w-4 h-4 text-white" />
               </div>
               <div>
                 <p className="text-sm font-bold text-green-800">{identified.name}</p>
-                <p className="text-xs text-green-600">Kuerzel: <span className="font-mono font-bold">{identified.kuerzel}</span></p>
+                <p className="text-xs text-green-600">Kürzel: <span className="font-mono font-bold">{identified.kuerzel}</span></p>
               </div>
             </div>
 
-            {/* Alle / Keine */}
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Bereiche auswählen:</span>
               <div className="flex gap-2">
@@ -278,7 +254,6 @@ function BulkSignModal({
               </div>
             </div>
 
-            {/* Bereichsliste */}
             <div className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
               {openAreas.map(area => (
                 <label
@@ -307,7 +282,6 @@ function BulkSignModal({
               ))}
             </div>
 
-            {/* Bestätigen */}
             <button
               onClick={() => identified && onConfirm(identified.kuerzel, identified.userId, Array.from(selected))}
               disabled={selected.size === 0}
@@ -332,16 +306,24 @@ export default function ReinigungTaeglich() {
   const [year, setYear]   = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
 
-  const [entries, setEntries]     = useState<CheckEntry[]>([]);
-  const [loading, setLoading]     = useState(false);
+  const [entries, setEntries]       = useState<CheckEntry[]>([]);
+  const [loading, setLoading]       = useState(false);
   const [activeCell, setActiveCell] = useState<{ day: number; area: typeof AREAS[0] } | null>(null);
   const [activeBulkDay, setActiveBulkDay] = useState<number | null>(null);
-  const [saving, setSaving]       = useState(false);
+  const [saving, setSaving]         = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+
+  // Refs für Scroll-Management
+  const scrollRef       = useRef<HTMLDivElement>(null);
+  const todayRowRef     = useRef<HTMLTableRowElement>(null);
+  const hasAutoScrolled = useRef(false);
 
   const totalDays = daysInMonth(year, month);
   const holidays  = useMemo(() => getBavarianHolidays(year), [year]);
-  const dateStr   = (day: number) => `${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+  const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+
+  const dateStr      = (day: number) => `${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
   const isDayHoliday = (day: number) => holidays.has(dateStr(day));
   const holidayLabel = (day: number) => getHolidayName(dateStr(day), year);
 
@@ -352,8 +334,10 @@ export default function ReinigungTaeglich() {
       const res  = await fetch(`${BASE}/reinigung-taeglich?marketId=${selectedMarketId}&year=${year}&month=${month}`);
       const data = await res.json();
       setEntries(data);
+      setInitialLoadDone(true);
     } catch {
       setEntries([]);
+      setInitialLoadDone(true);
     } finally {
       setLoading(false);
     }
@@ -361,11 +345,25 @@ export default function ReinigungTaeglich() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Auto-Scroll zu heute nach erstem Laden
+  useEffect(() => {
+    if (initialLoadDone && !hasAutoScrolled.current) {
+      const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear();
+      if (isCurrentMonth && todayRowRef.current && scrollRef.current) {
+        hasAutoScrolled.current = true;
+        requestAnimationFrame(() => {
+          todayRowRef.current?.scrollIntoView({ block: "start" });
+        });
+      }
+    }
+  }, [initialLoadDone, month, year]);
+
   const getEntry = (day: number, areaKey: string) =>
     entries.find(e => e.day === day && e.area === areaKey) ?? null;
 
   const handleSign = async (kuerzel: string, userId: number | null) => {
     if (!activeCell || !selectedMarketId) return;
+    const savedScroll = scrollRef.current?.scrollTop ?? 0;
     setSaving(true);
     try {
       const res = await fetch(`${BASE}/reinigung-taeglich`, {
@@ -382,6 +380,9 @@ export default function ReinigungTaeglich() {
       if (res.ok) {
         setActiveCell(null);
         await load();
+        requestAnimationFrame(() => {
+          if (scrollRef.current) scrollRef.current.scrollTop = savedScroll;
+        });
         window.dispatchEvent(new CustomEvent("reinigung-taeglich-updated"));
       }
     } finally {
@@ -391,6 +392,7 @@ export default function ReinigungTaeglich() {
 
   const handleBulkSign = async (kuerzel: string, userId: number | null, areaKeys: string[]) => {
     if (!selectedMarketId || areaKeys.length === 0) return;
+    const savedScroll = scrollRef.current?.scrollTop ?? 0;
     setSaving(true);
     try {
       await Promise.all(
@@ -407,6 +409,9 @@ export default function ReinigungTaeglich() {
       );
       setActiveBulkDay(null);
       await load();
+      requestAnimationFrame(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = savedScroll;
+      });
       window.dispatchEvent(new CustomEvent("reinigung-taeglich-updated"));
     } finally {
       setSaving(false);
@@ -414,31 +419,33 @@ export default function ReinigungTaeglich() {
   };
 
   const handleDelete = async (id: number) => {
+    const savedScroll = scrollRef.current?.scrollTop ?? 0;
     setDeletingId(id);
     try {
       await fetch(`${BASE}/reinigung-taeglich/${id}`, { method: "DELETE" });
       await load();
+      requestAnimationFrame(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = savedScroll;
+      });
       window.dispatchEvent(new CustomEvent("reinigung-taeglich-updated"));
     } finally {
       setDeletingId(null);
     }
   };
 
-  const prevMonth = () => { if (month === 1) { setYear(y => y-1); setMonth(12); } else setMonth(m => m-1); };
-  const nextMonth = () => { if (month === 12) { setYear(y => y+1); setMonth(1); } else setMonth(m => m+1); };
-
-  const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
-
-  const closedDays = Array.from({ length: totalDays }, (_, i) => i+1)
-    .filter(d => getWeekday(year, month, d) === "So" || isDayHoliday(d)).length;
-  const openDays   = totalDays - closedDays;
-  const totalSlots = openDays * AREAS.length;
-  const filledSlots = entries.filter(e => getWeekday(year, month, e.day) !== "So" && !isDayHoliday(e.day)).length;
-  const pct = totalSlots > 0 ? Math.round((filledSlots / totalSlots) * 100) : 0;
+  const prevMonth = () => {
+    hasAutoScrolled.current = false;
+    if (month === 1) { setYear(y => y - 1); setMonth(12); } else setMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    hasAutoScrolled.current = false;
+    if (month === 12) { setYear(y => y + 1); setMonth(1); } else setMonth(m => m + 1);
+  };
 
   const todayDone = entries.filter(e =>
-    e.day === now.getDate() && month === now.getMonth()+1 && year === now.getFullYear()
+    e.day === now.getDate() && month === now.getMonth() + 1 && year === now.getFullYear()
   ).length;
+  const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear();
 
   return (
     <AppLayout>
@@ -463,36 +470,27 @@ export default function ReinigungTaeglich() {
           </button>
         </div>
 
-        {/* MONATSNAVIGATION + FORTSCHRITT */}
-        <div className="bg-white rounded-xl border border-border/60 p-4 flex flex-col sm:flex-row sm:items-center gap-4 print:hidden">
-          <div className="flex items-center gap-3">
-            <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-secondary transition-colors">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="text-base font-bold min-w-[160px] text-center text-foreground">
-              {MONTH_NAMES[month-1]} {year}
+        {/* MONATSNAVIGATION + Tages-Badge */}
+        <div className="bg-white rounded-xl border border-border/60 p-4 flex items-center justify-between gap-4 print:hidden">
+          <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-secondary transition-colors">
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <div className="text-center">
+            <span className="text-base font-bold text-foreground">
+              {MONTH_NAMES[month - 1]} {year}
             </span>
-            <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-secondary transition-colors">
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            {isCurrentMonth && (
+              <p className="text-xs mt-0.5">
+                <span className="text-muted-foreground">Heute ({now.getDate()}. {MONTH_NAMES[month - 1]}): </span>
+                <span className={`font-bold ${todayDone === AREAS.length ? "text-green-600" : todayDone > 0 ? "text-amber-600" : "text-muted-foreground"}`}>
+                  {todayDone} / {AREAS.length} abgezeichnet
+                </span>
+              </p>
+            )}
           </div>
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> Monatsfortschritt</span>
-              <span className="font-bold text-foreground">{filledSlots} / {totalSlots} ({pct}%)</span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${pct >= 90 ? "bg-green-500" : pct >= 60 ? "bg-amber-400" : "bg-red-400"}`}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-          </div>
-          {month === now.getMonth()+1 && year === now.getFullYear() && (
-            <div className={`text-xs font-bold px-3 py-1.5 rounded-full ${todayDone === AREAS.length ? "bg-green-100 text-green-700" : todayDone > 0 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"}`}>
-              Heute: {todayDone}/{AREAS.length}
-            </div>
-          )}
+          <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-secondary transition-colors">
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
 
         {/* TABELLE */}
@@ -502,11 +500,15 @@ export default function ReinigungTaeglich() {
               <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            <div className="overflow-x-auto haccp-table-container">
+            <div
+              ref={scrollRef}
+              className="overflow-auto"
+              style={{ maxHeight: "calc(100vh - 260px)" }}
+            >
               <table className="w-full text-sm border-collapse">
-                <thead>
+                <thead className="sticky top-0 z-20">
                   <tr className="bg-[#1a3a6b] text-white">
-                    <th className="px-3 py-3 text-left text-xs font-bold sticky left-0 bg-[#1a3a6b] z-10 min-w-[48px]">Tag</th>
+                    <th className="px-3 py-3 text-left text-xs font-bold sticky left-0 top-0 bg-[#1a3a6b] z-30 min-w-[48px]">Tag</th>
                     <th className="px-2 py-3 text-center text-xs font-bold min-w-[36px]">WT</th>
                     {AREAS.map(a => (
                       <th key={a.key} title={a.label} className="px-1.5 py-3 text-center text-xs font-bold min-w-[62px] whitespace-nowrap">
@@ -517,7 +519,7 @@ export default function ReinigungTaeglich() {
                   </tr>
                 </thead>
                 <tbody>
-                  {Array.from({ length: totalDays }, (_, i) => i+1).map(day => {
+                  {Array.from({ length: totalDays }, (_, i) => i + 1).map(day => {
                     const today    = isToday(year, month, day);
                     const past     = isPast(year, month, day);
                     const wd       = getWeekday(year, month, day);
@@ -534,12 +536,13 @@ export default function ReinigungTaeglich() {
                     return (
                       <tr
                         key={day}
+                        ref={today ? todayRowRef : undefined}
                         className={[
                           "border-t border-border/40 transition-colors",
                           isClosed  ? "bg-slate-100/80 opacity-60" : "",
                           !isClosed && today  ? "bg-green-50/70 border-l-4 border-l-green-500" : "",
                           !isClosed && !today && past && partial ? "bg-amber-50/30" : "",
-                          !isClosed && !today && past && !partial && !complete && day < now.getDate()-1 ? "bg-red-50/20" : "",
+                          !isClosed && !today && past && !partial && !complete && day < now.getDate() - 1 ? "bg-red-50/20" : "",
                           !isClosed && !today && !past ? "bg-white" : "",
                           isSat && !today && !isHoliday ? "bg-slate-50/60" : "",
                         ].filter(Boolean).join(" ")}
@@ -548,7 +551,7 @@ export default function ReinigungTaeglich() {
                         <td className="px-3 py-1.5 sticky left-0 bg-inherit z-10">
                           <div className="flex items-center gap-1">
                             <span className={`text-sm font-bold tabular-nums ${today ? "text-green-700" : isClosed ? "text-slate-400" : "text-foreground"}`}>
-                              {String(day).padStart(2,"0")}
+                              {String(day).padStart(2, "0")}
                             </span>
                             {today && <span className="text-[8px] font-bold bg-green-500 text-white px-1 rounded-full leading-4">HEUTE</span>}
                             {isHoliday && !isSunday && <span className="text-[8px] font-bold bg-amber-400 text-white px-1 rounded-full leading-4">FT</span>}
@@ -560,14 +563,14 @@ export default function ReinigungTaeglich() {
                         </td>
 
                         {isClosed ? (
-                          <td colSpan={AREAS.length+1} className="px-3 py-1.5 text-center text-xs text-slate-400 italic">
+                          <td colSpan={AREAS.length + 1} className="px-3 py-1.5 text-center text-xs text-slate-400 italic">
                             {isSunday && !isHoliday ? "Geschlossen" : hName ?? "Feiertag"}
                           </td>
                         ) : (
                           <>
                             {AREAS.map(area => {
-                              const entry   = getEntry(day, area.key);
-                              const locked  = isFuture;
+                              const entry  = getEntry(day, area.key);
+                              const locked = isFuture;
                               return (
                                 <td key={area.key} className="px-1 py-1.5 text-center">
                                   {entry ? (
@@ -652,7 +655,7 @@ export default function ReinigungTaeglich() {
         </div>
 
         <p className="text-xs text-muted-foreground/60 print:hidden">
-          Im Bedarfsfall muss ueber die normalen Reinigungsintervalle hinaus haeufiger gereinigt bzw. desinfiziert werden.
+          Im Bedarfsfall muss über die normalen Reinigungsintervalle hinaus häufiger gereinigt bzw. desinfiziert werden.
         </p>
       </div>
 
