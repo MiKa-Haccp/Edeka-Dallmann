@@ -1,11 +1,12 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
-  ShieldCheck, ArrowRight, Activity,
+  ShieldCheck, ArrowRight,
   Lock, Users, UserCog, KeyRound, Package, ClipboardList,
 } from "lucide-react";
 import { Link } from "wouter";
 import { FaelligkeitenWidget } from "@/components/FaelligkeitenWidget";
+import { useState, useEffect } from "react";
 
 interface ModuleCard {
   id: string;
@@ -66,6 +67,15 @@ function getGreeting() {
 
 export default function Dashboard() {
   const { adminSession } = useAppStore();
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const on = () => setIsOnline(true);
+    const off = () => setIsOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, []);
 
   return (
     <AppLayout>
@@ -76,14 +86,15 @@ export default function Dashboard() {
             <ShieldCheck className="w-80 h-80" />
           </div>
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white/90 text-xs font-bold uppercase tracking-wider mb-4">
-              <Activity className="w-3.5 h-3.5" /> System Online
+            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-white/90 text-xs font-bold uppercase tracking-wider mb-4`}>
+              <span className={`w-2 h-2 rounded-full flex-shrink-0 ${isOnline ? "bg-green-400" : "bg-red-400"}`} />
+              {isOnline ? "Online" : "Offline"}
             </div>
             <h1 className="text-2xl sm:text-4xl font-bold mb-2 leading-tight">
               {getGreeting()}{adminSession?.name ? `, ${adminSession.name.split(" ")[0]}` : ""}!
             </h1>
             <p className="text-blue-100 text-sm sm:text-base max-w-xl">
-              Willkommen bei der EDEKA DALLMANN Plattform. Wählen Sie ein Modul, um fortzufahren.
+              Willkommen bei Edeka Dallmann. Wählen Sie ein Modul um fortzufahren.
             </p>
 
             <div className="flex flex-wrap gap-3 mt-5">
@@ -95,10 +106,6 @@ export default function Dashboard() {
                 <div className="text-xl font-bold">2</div>
                 <div className="text-xs text-blue-200">Aktive Module</div>
               </div>
-              <div className="bg-white/10 rounded-xl px-4 py-2 text-center">
-                <div className="text-xl font-bold">3</div>
-                <div className="text-xs text-blue-200">Module geplant</div>
-              </div>
             </div>
           </div>
         </div>
@@ -106,7 +113,6 @@ export default function Dashboard() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg sm:text-xl font-bold text-foreground">Module</h2>
-            <span className="text-xs text-muted-foreground">Weitere Module werden laufend ergänzt</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

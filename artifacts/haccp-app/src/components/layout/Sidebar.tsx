@@ -1,7 +1,7 @@
 import { useListCategories, useListSections } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import * as Accordion from "@radix-ui/react-accordion";
-import { ChevronDown, Folder, FileText, ClipboardList, GripVertical, X } from "lucide-react";
+import { ChevronDown, Folder, FileText, ClipboardList, GripVertical, X, Home } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
@@ -92,7 +92,7 @@ const SIDEBAR_OPEN_PATHS = [
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { data: categories, isLoading } = useListCategories();
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
 
   const isHaccpPage = useMemo(
     () => location === "/" || SIDEBAR_OPEN_PATHS.some((p) => p !== "/" && location.startsWith(p)),
@@ -123,8 +123,21 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <>
-      <div className="p-4">
-        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 px-2">
+      <div className="p-4 pb-2">
+        <Link
+          href="/"
+          onClick={onNavigate}
+          className={cn(
+            "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold mb-3 transition-colors",
+            location === "/"
+              ? "bg-primary/10 text-primary"
+              : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+          )}
+        >
+          <Home className="h-4 w-4 flex-shrink-0" />
+          Startseite
+        </Link>
+        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 px-2 mt-1">
           HACCP Handbuch
         </div>
         
@@ -151,14 +164,19 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 className="border border-transparent focus-within:border-border rounded-xl overflow-hidden"
               >
                 <Accordion.Header>
-                  <Accordion.Trigger className="flex items-center justify-between w-full px-3 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary rounded-lg transition-colors group [&[data-state=open]>div>svg]:rotate-180">
-                    <div className="flex items-center gap-3 min-w-0">
+                  <Accordion.Trigger
+                    className="flex items-center justify-between w-full px-3 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary rounded-lg transition-colors group [&[data-state=open]>div>svg]:rotate-180"
+                  >
+                    <div
+                      className="flex items-center gap-3 min-w-0 flex-1"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/category/${category.id}`); onNavigate?.(); }}
+                    >
                       <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors flex-shrink-0">
                         <Folder className="h-4 w-4" />
                       </div>
-                      <span className="truncate">{category.label}</span>
+                      <span className="truncate text-left">{category.label}</span>
                     </div>
-                    <div className="text-muted-foreground transition-transform duration-200 flex-shrink-0">
+                    <div className="text-muted-foreground transition-transform duration-200 flex-shrink-0 pl-2">
                       <ChevronDown className="h-4 w-4" />
                     </div>
                   </Accordion.Trigger>
