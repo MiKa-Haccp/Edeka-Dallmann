@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ClipboardCheck, ChevronLeft, ChevronRight, Save, Plus, Trash2,
-  CheckCircle2, AlertTriangle, MinusCircle, Loader2, FileText, Check, X
+  CheckCircle2, AlertTriangle, MinusCircle, Loader2, FileText, Check, X, KeyRound
 } from "lucide-react";
 import { JaehrlicheErinnerung } from "@/components/JaehrlicheErinnerung";
 
@@ -279,6 +279,10 @@ export default function Betriebsbegehung() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pinValue, setPinValue] = useState("");
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState("");
 
   const loadReports = useCallback(async () => {
     setLoading(true);
@@ -358,6 +362,34 @@ export default function Betriebsbegehung() {
     await fetch(`${BASE}/betriebsbegehung/${currentReport.id}`, { method: "DELETE" });
     setDeleteConfirm(false);
     await loadReports();
+  };
+
+  const handlePinSign = async () => {
+    if (pinValue.length !== 4) return;
+    setPinLoading(true);
+    setPinError("");
+    try {
+      const res = await fetch(`${BASE}/users/verify-pin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: pinValue, tenantId: 1 }),
+      });
+      if (res.status === 409) {
+        setPinError("PIN mehrfach vergeben – bitte Admin kontaktieren.");
+        return;
+      }
+      const data = await res.json();
+      if (!data.valid) {
+        setPinError("Ungültige PIN. Kein Mitarbeiter gefunden.");
+        return;
+      }
+      setDurchgefuehrtVon(data.userName || "");
+      setPinDialogOpen(false);
+      setPinValue("");
+      setPinError("");
+    } finally {
+      setPinLoading(false);
+    }
   };
 
   const countByStatus = (status: CheckStatus) =>
@@ -460,13 +492,24 @@ export default function Betriebsbegehung() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Durchgeführt von</label>
-              <input
-                type="text"
-                value={durchgefuehrtVon}
-                onChange={(e) => setDurchgefuehrtVon(e.target.value)}
-                placeholder="Name / Kürzel"
-                className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={durchgefuehrtVon}
+                  onChange={(e) => setDurchgefuehrtVon(e.target.value)}
+                  placeholder="Name eingeben oder per PIN"
+                  className="flex-1 border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+                <button
+                  type="button"
+                  onClick={() => { setPinDialogOpen(true); setPinValue(""); setPinError(""); }}
+                  title="Mit PIN unterschreiben"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground text-xs font-medium transition-colors"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  PIN
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -643,6 +686,56 @@ export default function Betriebsbegehung() {
           </div>
         )}
       </div>
+
+      {pinDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xs mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                <KeyRound className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">PIN-Unterschrift</h3>
+                <p className="text-xs text-muted-foreground">4-stellige PIN eingeben</p>
+              </div>
+            </div>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              autoFocus
+              value={pinValue}
+              onChange={(e) => { setPinValue(e.target.value.replace(/\D/g, "").slice(0, 4)); setPinError(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") handlePinSign(); }}
+              placeholder="• • • •"
+              className="w-full border border-border rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] font-bold focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary mb-3"
+            />
+            {pinError && (
+              <p className="text-xs text-red-600 text-center mb-3 flex items-center justify-center gap-1">
+                <X className="w-3.5 h-3.5" /> {pinError}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => { setPinDialogOpen(false); setPinValue(""); setPinError(""); }}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={handlePinSign}
+                disabled={pinValue.length !== 4 || pinLoading}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              >
+                {pinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Bestätigen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }
