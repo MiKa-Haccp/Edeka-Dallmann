@@ -34,3 +34,4 @@ export * from "./oeffnungSalate";
 export * from "./gqBegehung";
 export * from "./hygienebelehrungAbt";
 export * from "./registeredDevices";
+export * from "./tuevJahresbericht";

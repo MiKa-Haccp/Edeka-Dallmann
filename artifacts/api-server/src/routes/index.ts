@@ -41,6 +41,7 @@ import eingefrorenesFleischRouter from "./eingefrorenesFleisch";
 import rezepturenRouter from "./rezepturen";
 import gqBegehungRouter from "./gqBegehung";
 import hygienebelehrungAbtRouter from "./hygienebelehrungAbt";
+import tuevJahresberichtRouter from "./tuevJahresbericht";
 
 const router: IRouter = Router();
 
@@ -86,5 +87,6 @@ router.use(eingefrorenesFleischRouter);
 router.use(rezepturenRouter);
 router.use(gqBegehungRouter);
 router.use(hygienebelehrungAbtRouter);
+router.use(tuevJahresberichtRouter);
 
 export default router;
