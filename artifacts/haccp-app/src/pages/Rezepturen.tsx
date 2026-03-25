@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { ChefHat, Search, Plus, X, Upload, ChevronDown, ChevronUp, Trash2, Edit2, Check } from "lucide-react";
+import { ChefHat, Search, Plus, X, Upload, ChevronDown, ChevronUp, Trash2, Edit2, Check, ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
@@ -466,6 +467,7 @@ function NeueKategorieModal({ onClose, onSaved }: { onClose: () => void; onSaved
 }
 
 export default function Rezepturen() {
+  const [, navigate] = useLocation();
   const { data: kategorien, loading: katLoading, reload: reloadKat } = useKategorien();
   const [activeKatId, setActiveKatId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
@@ -504,13 +506,20 @@ export default function Rezepturen() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-          <ChefHat className="w-6 h-6 text-amber-600" />
+      <div className="flex items-center gap-3 mb-6">
+        <button
+          onClick={() => window.history.back()}
+          className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center flex-shrink-0 transition-colors"
+          title="Zurück"
+        >
+          <ArrowLeft className="w-5 h-5 text-gray-600" />
+        </button>
+        <div className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+          <ChefHat className="w-5 h-5 text-amber-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold text-gray-900">3.7 Eigenherstellung / Rezepturen</h1>
-          <p className="text-sm text-gray-500">Rezepturuebersicht und Eigenherstellung</p>
+          <h1 className="text-xl font-bold text-gray-900 leading-tight">3.7 Eigenherstellung / Rezepturen</h1>
+          <p className="text-xs text-gray-500">Rezepturuebersicht</p>
         </div>
         <button
           onClick={() => setShowNeu(true)}
