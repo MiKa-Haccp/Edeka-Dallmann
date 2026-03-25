@@ -3,35 +3,40 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
 import {
-  ClipboardCheck, ChevronLeft, ChevronRight, Check, X,
+  ClipboardCheck, ChevronLeft, ChevronRight, Check, X, Minus,
   CheckCircle2, AlertTriangle, MinusCircle, Loader2, Lock, Save,
+  ChevronDown, ChevronUp,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
-type CheckStatus = "io" | "nichtIo" | "";
+type CheckStatus = "io" | "nichtIo" | "nichtRelevant" | "";
 
 interface CheckItem {
   id: string;
   text: string;
-  abhilfe?: string;
   rindfleisch?: boolean;
 }
 
+interface CheckEntry {
+  status: CheckStatus;
+  massnahme: string;
+}
+
 interface CheckData {
-  [id: string]: { status: CheckStatus; abhilfe: string };
+  [id: string]: CheckEntry;
 }
 
 const CHECK_ITEMS: CheckItem[] = [
-  { id: "1", text: "Alle Lieferanten sind Teilnehmer am GQ-Programm (Teilnahmebestätigungen liegen ausnahmslos vor)." },
-  { id: "2", text: "GQ-Frischeartikel werden ausschließlich über einen GQ-Lieferanten bezogen." },
-  { id: "3", text: "Der Eingang der Waren wird dokumentiert." },
-  { id: "4", text: "Gesetzliche Angaben werden auf Richtigkeit und Vollständigkeit überprüft." },
-  { id: "5", text: "Frischeartikel, deren Auslobung nicht den geforderten Angaben entspricht, werden zurückgewiesen." },
-  { id: "6", text: "GQ-Ware wird getrennt von anderer Ware gehandhabt / gelagert / portioniert." },
-  { id: "7", text: "Zu jeder Zeit ist eine Etikettierung der Ware in Kühl- und Vorbereitungsräumen gegeben." },
-  { id: "8", text: "Eine Vermischung der Chargen ist ausgeschlossen." },
-  { id: "9", text: "Bei dezentraler Verpackung werden die Öffnungsdaten nach den Vorgaben dokumentiert." },
+  { id: "1",  text: "Alle Lieferanten sind Teilnehmer am GQ-Programm (Teilnahmebestätigungen liegen ausnahmslos vor)." },
+  { id: "2",  text: "GQ-Frischeartikel werden ausschließlich über einen GQ-Lieferanten bezogen." },
+  { id: "3",  text: "Der Eingang der Waren wird dokumentiert." },
+  { id: "4",  text: "Gesetzliche Angaben werden auf Richtigkeit und Vollständigkeit überprüft." },
+  { id: "5",  text: "Frischeartikel, deren Auslobung nicht den geforderten Angaben entspricht, werden zurückgewiesen." },
+  { id: "6",  text: "GQ-Ware wird getrennt von anderer Ware gehandhabt / gelagert / portioniert." },
+  { id: "7",  text: "Zu jeder Zeit ist eine Etikettierung der Ware in Kühl- und Vorbereitungsräumen gegeben." },
+  { id: "8",  text: "Eine Vermischung der Chargen ist ausgeschlossen." },
+  { id: "9",  text: "Bei dezentraler Verpackung werden die Öffnungsdaten nach den Vorgaben dokumentiert." },
   { id: "10", text: "Die vorgegebenen Angaben der Originaletiketten werden nachvollziehbar auf die SB-Etiketten übertragen." },
   { id: "11", text: "Ein Abgleich von Wareneingang und Warenausgang liegt dokumentiert vor (Begleitpapier)." },
   { id: "12", text: "Alle relevanten Dokumente (z.B. Begleitpapiere) werden für zwei Jahre in der Verkaufsstelle aufbewahrt." },
@@ -46,24 +51,32 @@ const CHECK_ITEMS: CheckItem[] = [
 
 function emptyCheckData(): CheckData {
   const d: CheckData = {};
-  for (const item of CHECK_ITEMS) d[item.id] = { status: "", abhilfe: "" };
+  for (const item of CHECK_ITEMS) d[item.id] = { status: "", massnahme: "" };
   return d;
 }
 
-function getQuartalRange(year: number, q: number): { start: Date; end: Date } {
-  const starts = [[1, 1], [4, 1], [7, 1], [10, 1]];
-  const ends   = [[3, 31], [6, 30], [9, 30], [12, 31]];
-  const [sm, sd] = starts[q - 1];
+function migrate(raw: Record<string, unknown>): CheckData {
+  const out: CheckData = emptyCheckData();
+  for (const id of Object.keys(out)) {
+    const v = raw[id] as { status?: string; abhilfe?: string; massnahme?: string } | undefined;
+    if (!v) continue;
+    const s = v.status ?? "";
+    out[id] = {
+      status: (["io","nichtIo","nichtRelevant"].includes(s) ? s : "") as CheckStatus,
+      massnahme: v.massnahme ?? v.abhilfe ?? "",
+    };
+  }
+  return out;
+}
+
+function getQuartalRange(year: number, q: number): { end: Date } {
+  const ends: [number, number][] = [[3,31],[6,30],[9,30],[12,31]];
   const [em, ed] = ends[q - 1];
-  return {
-    start: new Date(year, sm - 1, sd),
-    end:   new Date(year, em - 1, ed, 23, 59, 59),
-  };
+  return { end: new Date(year, em - 1, ed, 23, 59, 59) };
 }
 
 function currentQuartal() {
-  const now = new Date();
-  const m = now.getMonth() + 1;
+  const m = new Date().getMonth() + 1;
   return m <= 3 ? 1 : m <= 6 ? 2 : m <= 9 ? 3 : 4;
 }
 
@@ -74,12 +87,10 @@ type Eintrag = {
   durchgefuehrtAm: string | null;
   durchgefuehrtVon: string | null;
   kuerzel: string | null;
-  checkData: CheckData | null;
+  checkData: Record<string, unknown> | null;
 };
 
-function PinStep({
-  onVerified, onBack, loading, setLoading,
-}: {
+function PinStep({ onVerified, onBack, loading, setLoading }: {
   onVerified: (name: string, userId: number, kuerzel: string) => void;
   onBack: () => void; loading: boolean; setLoading: (v: boolean) => void;
 }) {
@@ -94,7 +105,7 @@ function PinStep({
       });
       const data = await res.json();
       if (data.valid) onVerified(data.userName, data.userId, data.initials);
-      else setError("PIN ungueltig.");
+      else setError("PIN ungültig.");
     } catch { setError("Verbindungsfehler."); }
     finally { setLoading(false); }
   };
@@ -104,7 +115,7 @@ function PinStep({
         <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
           <Lock className="w-6 h-6 text-primary" />
         </div>
-        <p className="text-sm text-muted-foreground">PIN eingeben zur Bestaetigung</p>
+        <p className="text-sm text-muted-foreground">PIN eingeben zur Bestätigung</p>
       </div>
       <input type="password" inputMode="numeric" maxLength={6} placeholder="PIN" value={pin}
         onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
@@ -112,76 +123,200 @@ function PinStep({
         className="w-full border rounded-lg px-3 py-2 text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary" autoFocus />
       {error && <p className="text-red-500 text-sm text-center">{error}</p>}
       <div className="flex gap-2">
-        <button onClick={onBack} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurueck</button>
+        <button onClick={onBack} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurück</button>
         <button onClick={verify} disabled={pin.length < 3 || loading}
           className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}Bestaetigen
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}Bestätigen
         </button>
       </div>
     </div>
   );
 }
 
-function CheckRow({
-  item, value, onChange, readOnly,
-}: {
+function StatusBadge({ status }: { status: CheckStatus }) {
+  if (status === "io") return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-green-100 text-green-700">
+      <CheckCircle2 className="w-3 h-3" />i.O.
+    </span>
+  );
+  if (status === "nichtIo") return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-red-100 text-red-700">
+      <AlertTriangle className="w-3 h-3" />nicht i.O.
+    </span>
+  );
+  if (status === "nichtRelevant") return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-gray-100 text-gray-500">
+      <MinusCircle className="w-3 h-3" />n. rel.
+    </span>
+  );
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-md bg-gray-100 text-gray-400">
+      <MinusCircle className="w-3 h-3" />offen
+    </span>
+  );
+}
+
+function CheckRow({ item, value, onChange, readOnly }: {
   item: CheckItem;
-  value: { status: CheckStatus; abhilfe: string };
-  onChange?: (v: { status: CheckStatus; abhilfe: string }) => void;
+  value: CheckEntry;
+  onChange?: (v: CheckEntry) => void;
   readOnly?: boolean;
 }) {
-  const isIo = value.status === "io";
-  const isNichtIo = value.status === "nichtIo";
+  const { status, massnahme } = value;
+  const isIo  = status === "io";
+  const isNio = status === "nichtIo";
+  const isNR  = status === "nichtRelevant";
+  const hasStatus = status !== "";
+
+  const bg = isNio ? "border-red-200 bg-red-50"
+    : isIo         ? "border-green-100 bg-green-50/60"
+    : isNR         ? "border-gray-200 bg-gray-50"
+    : "border-border bg-white";
+
+  const toggle = (next: CheckStatus) =>
+    onChange?.({ ...value, status: status === next ? "" : next });
+
   return (
-    <div className={[
-      "border rounded-xl p-3 sm:p-4 transition-colors",
-      isNichtIo ? "border-red-200 bg-red-50" : isIo ? "border-green-200 bg-green-50" : "border-border bg-white",
-    ].join(" ")}>
-      <div className="flex items-start gap-3">
-        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 mt-0.5">{item.id}</span>
-        <p className="flex-1 text-sm text-gray-800 leading-snug">{item.text}</p>
+    <div className={`border rounded-xl p-3 transition-colors ${bg}`}>
+      <div className="flex items-start gap-2.5">
+        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/80 border flex items-center justify-center text-xs font-bold text-gray-500 mt-0.5 shadow-sm">{item.id}</span>
+        <p className="flex-1 text-sm text-gray-800 leading-snug min-w-0">{item.text}</p>
         {!readOnly ? (
-          <div className="flex gap-2 flex-shrink-0">
-            <button
-              onClick={() => onChange?.({ ...value, status: isIo ? "" : "io" })}
-              className={[
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
-                isIo ? "bg-green-500 text-white border-green-500" : "bg-white text-gray-600 border-gray-300 hover:bg-green-50",
-              ].join(" ")}>
-              <Check className="w-3.5 h-3.5" /> i.O.
+          <div className="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
+            <button onClick={() => toggle("io")}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all whitespace-nowrap ${
+                isIo ? "bg-green-500 text-white border-green-500 shadow-sm" : "bg-white text-gray-600 border-gray-300 hover:bg-green-50"}`}>
+              <Check className="w-3 h-3" />i.O.
             </button>
-            <button
-              onClick={() => onChange?.({ ...value, status: isNichtIo ? "" : "nichtIo" })}
-              className={[
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
-                isNichtIo ? "bg-red-500 text-white border-red-500" : "bg-white text-gray-600 border-gray-300 hover:bg-red-50",
-              ].join(" ")}>
-              <X className="w-3.5 h-3.5" /> nicht i.O.
+            <button onClick={() => toggle("nichtIo")}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all whitespace-nowrap ${
+                isNio ? "bg-red-500 text-white border-red-500 shadow-sm" : "bg-white text-gray-600 border-gray-300 hover:bg-red-50"}`}>
+              <X className="w-3 h-3" />nicht i.O.
+            </button>
+            <button onClick={() => toggle("nichtRelevant")}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all whitespace-nowrap ${
+                isNR ? "bg-gray-400 text-white border-gray-400 shadow-sm" : "bg-white text-gray-400 border-gray-200 hover:bg-gray-50"}`}>
+              <Minus className="w-3 h-3" />n. rel.
             </button>
           </div>
         ) : (
-          <span className={[
-            "flex-shrink-0 flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-lg",
-            isIo ? "bg-green-100 text-green-700" : isNichtIo ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-500",
-          ].join(" ")}>
-            {isIo ? <><CheckCircle2 className="w-3.5 h-3.5" />i.O.</> : isNichtIo ? <><AlertTriangle className="w-3.5 h-3.5" />nicht i.O.</> : <><MinusCircle className="w-3.5 h-3.5" />offen</>}
-          </span>
+          <StatusBadge status={status} />
         )}
       </div>
-      {isNichtIo && (
-        <div className="mt-2 ml-9">
+
+      {hasStatus && (
+        <div className="mt-2.5 ml-8">
           {readOnly ? (
-            value.abhilfe ? <p className="text-xs text-red-700 bg-red-100 rounded-lg px-3 py-2">{value.abhilfe}</p> : null
+            massnahme ? (
+              <p className={`text-xs rounded-lg px-3 py-2 ${isNio ? "bg-red-100 text-red-800" : "bg-gray-100 text-gray-600"}`}>
+                {massnahme}
+              </p>
+            ) : null
           ) : (
             <textarea
-              placeholder="Abhilfe / Massnahmen..."
-              value={value.abhilfe}
-              onChange={e => onChange?.({ ...value, abhilfe: e.target.value })}
-              rows={2}
-              className="w-full border border-red-300 rounded-lg px-3 py-2 text-xs resize-none focus:outline-none focus:ring-2 focus:ring-red-200 bg-white"
+              placeholder={isNio ? "Maßnahme / Abhilfe eintragen..." : "Maßnahme / Notiz (optional)..."}
+              value={massnahme}
+              onChange={e => onChange?.({ ...value, massnahme: e.target.value })}
+              rows={isNio ? 2 : 1}
+              className={`w-full border rounded-lg px-3 py-1.5 text-xs resize-none focus:outline-none focus:ring-2 bg-white transition-all ${
+                isNio ? "border-red-300 focus:ring-red-200" : "border-gray-200 focus:ring-gray-200 text-gray-600"}`}
             />
           )}
         </div>
+      )}
+    </div>
+  );
+}
+
+function ReadOnlyView({
+  existing, onEdit, onDelete,
+}: {
+  existing: Eintrag;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const cd = existing.checkData ? migrate(existing.checkData as Record<string,unknown>) : null;
+
+  const countIo  = cd ? CHECK_ITEMS.filter(i => cd[i.id]?.status === "io").length : 0;
+  const countNio = cd ? CHECK_ITEMS.filter(i => cd[i.id]?.status === "nichtIo").length : 0;
+  const countNR  = cd ? CHECK_ITEMS.filter(i => cd[i.id]?.status === "nichtRelevant").length : 0;
+
+  const mainItems = CHECK_ITEMS.filter(i => !i.rindfleisch);
+  const rindfleischItems = CHECK_ITEMS.filter(i => i.rindfleisch);
+
+  return (
+    <div className="space-y-3">
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="w-full text-left rounded-2xl bg-green-50 border border-green-200 p-4 transition-colors hover:bg-green-100/60 focus:outline-none"
+      >
+        <div className="flex items-start gap-3">
+          <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-green-800 text-sm">Begehung durchgeführt</p>
+            <p className="text-xs text-green-700 mt-0.5">
+              {existing.durchgefuehrtAm
+                ? new Date(existing.durchgefuehrtAm).toLocaleDateString("de-DE")
+                : "–"}
+              {existing.durchgefuehrtVon
+                ? ` · ${existing.durchgefuehrtVon} (${existing.kuerzel ?? ""})`
+                : ""}
+            </p>
+            {cd && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-md font-medium">
+                  <CheckCircle2 className="w-3 h-3" />{countIo} i.O.
+                </span>
+                {countNio > 0 && (
+                  <span className="inline-flex items-center gap-1 text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-md font-medium">
+                    <AlertTriangle className="w-3 h-3" />{countNio} nicht i.O.
+                  </span>
+                )}
+                {countNR > 0 && (
+                  <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md font-medium">
+                    <MinusCircle className="w-3 h-3" />{countNR} nicht relevant
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {expanded
+              ? <ChevronUp className="w-4 h-4 text-green-600" />
+              : <ChevronDown className="w-4 h-4 text-green-600" />}
+          </div>
+        </div>
+      </button>
+
+      {expanded && (
+        <>
+          <div className="flex gap-2 justify-end">
+            <button onClick={onEdit} className="text-xs bg-white border rounded-lg px-3 py-1.5 hover:bg-gray-50 font-medium">
+              Bearbeiten
+            </button>
+            <button onClick={onDelete} className="text-xs bg-red-50 border border-red-200 text-red-600 rounded-lg px-3 py-1.5 hover:bg-red-100 font-medium">
+              Löschen
+            </button>
+          </div>
+
+          {cd && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">Allgemeine Kontrollpunkte</h3>
+                {mainItems.map(item => (
+                  <CheckRow key={item.id} item={item} value={cd[item.id] ?? { status: "", massnahme: "" }} readOnly />
+                ))}
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">Zusätzlich für GQ-Rindfleisch</h3>
+                {rindfleischItems.map(item => (
+                  <CheckRow key={item.id} item={item} value={cd[item.id] ?? { status: "", massnahme: "" }} readOnly />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -221,20 +356,16 @@ export default function GQBegehung() {
 
   const existing = eintraege.find(e => e.year === year && e.quartal === quartal) ?? null;
 
-  const handleSetItem = (id: string, val: { status: CheckStatus; abhilfe: string }) => {
+  const handleSetItem = (id: string, val: CheckEntry) =>
     setCheckData(prev => ({ ...prev, [id]: val }));
-  };
 
   const handleSubmit = async () => {
     if (!identified || !selectedMarketId) return;
     setSaving(true);
     try {
       const body = {
-        tenantId: 1,
-        marketId: selectedMarketId,
-        quartal,
-        year,
-        durchgefuehrtAm,
+        tenantId: 1, marketId: selectedMarketId,
+        quartal, year, durchgefuehrtAm,
         durchgefuehrtVon: identified.name,
         kuerzel: identified.kuerzel,
         checkData,
@@ -257,7 +388,7 @@ export default function GQBegehung() {
   };
 
   const handleDelete = async () => {
-    if (!existing || !window.confirm("Eintrag wirklich loeschen?")) return;
+    if (!existing || !window.confirm("Eintrag wirklich löschen?")) return;
     await fetch(`${BASE}/gq-begehung/${existing.id}`, { method: "DELETE" });
     window.dispatchEvent(new Event("gq-begehung-updated"));
     setCheckData(emptyCheckData());
@@ -265,8 +396,7 @@ export default function GQBegehung() {
   };
 
   const startEdit = () => {
-    if (existing?.checkData) setCheckData(existing.checkData as CheckData);
-    else setCheckData(emptyCheckData());
+    setCheckData(existing?.checkData ? migrate(existing.checkData as Record<string,unknown>) : emptyCheckData());
     if (existing?.durchgefuehrtAm) setDurchgefuehrtAm(existing.durchgefuehrtAm);
     setShowPin(false);
     setIdentified(null);
@@ -285,8 +415,7 @@ export default function GQBegehung() {
   const { end: qEnd } = getQuartalRange(year, quartal);
   const daysLeft = Math.ceil((qEnd.getTime() - now.getTime()) / 86400000);
 
-  const allAnswered = CHECK_ITEMS.every(item => checkData[item.id]?.status !== "");
-  const nichtIoCount = CHECK_ITEMS.filter(item => checkData[item.id]?.status === "nichtIo").length;
+  const nichtIoCount = CHECK_ITEMS.filter(i => checkData[i.id]?.status === "nichtIo").length;
 
   const mainItems = CHECK_ITEMS.filter(i => !i.rindfleisch);
   const rindfleischItems = CHECK_ITEMS.filter(i => i.rindfleisch);
@@ -310,7 +439,11 @@ export default function GQBegehung() {
           </button>
           <div className="flex-1 text-center">
             <span className="text-base font-bold text-gray-900">Q{quartal} / {year}</span>
-            {isCurrentQ && <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">aktuelles Quartal</span>}
+            {isCurrentQ && (
+              <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                aktuelles Quartal
+              </span>
+            )}
           </div>
           <button onClick={nextQ} className="w-9 h-9 rounded-xl border bg-white hover:bg-gray-50 flex items-center justify-center">
             <ChevronRight className="w-5 h-5 text-gray-600" />
@@ -322,43 +455,7 @@ export default function GQBegehung() {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : existing && !identified ? (
-          <div className="space-y-4">
-            <div className="rounded-2xl bg-green-50 border border-green-200 p-4 flex items-start gap-3">
-              <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-green-800 text-sm">Begehung durchgefuehrt</p>
-                <p className="text-xs text-green-700 mt-0.5">
-                  {existing.durchgefuehrtAm ? new Date(existing.durchgefuehrtAm).toLocaleDateString("de-DE") : "–"}
-                  {existing.durchgefuehrtVon ? ` · ${existing.durchgefuehrtVon} (${existing.kuerzel ?? ""})` : ""}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={startEdit} className="text-xs bg-white border rounded-lg px-3 py-1.5 hover:bg-gray-50 font-medium">
-                  Bearbeiten
-                </button>
-                <button onClick={handleDelete} className="text-xs bg-red-50 border border-red-200 text-red-600 rounded-lg px-3 py-1.5 hover:bg-red-100 font-medium">
-                  Loeschen
-                </button>
-              </div>
-            </div>
-
-            {existing.checkData && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">Allgemeine Kontrollpunkte</h3>
-                  {mainItems.map(item => (
-                    <CheckRow key={item.id} item={item} value={(existing.checkData as CheckData)[item.id] ?? { status: "", abhilfe: "" }} readOnly />
-                  ))}
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">Zusaetzlich fuer GQ-Rindfleisch</h3>
-                  {rindfleischItems.map(item => (
-                    <CheckRow key={item.id} item={item} value={(existing.checkData as CheckData)[item.id] ?? { status: "", abhilfe: "" }} readOnly />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <ReadOnlyView existing={existing} onEdit={startEdit} onDelete={handleDelete} />
         ) : (
           <div className="space-y-4">
             {isCurrentQ && !existing && daysLeft <= 14 && daysLeft >= 0 && (
@@ -380,14 +477,16 @@ export default function GQBegehung() {
                   <div className="border rounded-lg px-3 py-2 text-sm font-medium text-gray-700 bg-gray-50">{marktName || "–"}</div>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-500 block mb-1">Durchgefuehrt am</label>
+                  <label className="text-xs font-medium text-gray-500 block mb-1">Durchgeführt am</label>
                   <input type="date" value={durchgefuehrtAm} onChange={e => setDurchgefuehrtAm(e.target.value)}
                     className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
                 {identified && (
                   <div>
-                    <label className="text-xs font-medium text-gray-500 block mb-1">Durchgefuehrt von</label>
-                    <div className="border rounded-lg px-3 py-2 text-sm font-medium text-green-700 bg-green-50">{identified.name} ({identified.kuerzel})</div>
+                    <label className="text-xs font-medium text-gray-500 block mb-1">Durchgeführt von</label>
+                    <div className="border rounded-lg px-3 py-2 text-sm font-medium text-green-700 bg-green-50">
+                      {identified.name} ({identified.kuerzel})
+                    </div>
                   </div>
                 )}
               </div>
@@ -396,22 +495,25 @@ export default function GQBegehung() {
             <div className="space-y-2">
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">Allgemeine Kontrollpunkte</h3>
               {mainItems.map(item => (
-                <CheckRow key={item.id} item={item} value={checkData[item.id] ?? { status: "", abhilfe: "" }}
+                <CheckRow key={item.id} item={item}
+                  value={checkData[item.id] ?? { status: "", massnahme: "" }}
                   onChange={v => handleSetItem(item.id, v)} />
               ))}
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">Zusaetzlich fuer GQ-Rindfleisch</h3>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-1">Zusätzlich für GQ-Rindfleisch</h3>
               {rindfleischItems.map(item => (
-                <CheckRow key={item.id} item={item} value={checkData[item.id] ?? { status: "", abhilfe: "" }}
+                <CheckRow key={item.id} item={item}
+                  value={checkData[item.id] ?? { status: "", massnahme: "" }}
                   onChange={v => handleSetItem(item.id, v)} />
               ))}
             </div>
 
             {nichtIoCount > 0 && (
               <div className="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-800">
-                <span className="font-semibold">{nichtIoCount} Punkt{nichtIoCount !== 1 ? "e" : ""} mit Maengeln</span> – bitte Abhilfe/Massnahmen eintragen.
+                <span className="font-semibold">{nichtIoCount} Punkt{nichtIoCount !== 1 ? "e" : ""} mit Mängeln</span>
+                {" "}– bitte Maßnahmen eintragen.
               </div>
             )}
 
