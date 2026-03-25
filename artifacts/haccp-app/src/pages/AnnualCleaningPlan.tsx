@@ -289,6 +289,9 @@ export default function AnnualCleaningPlan() {
                       {area.items.map((item, iIdx) => {
                         const activeMonths = getActiveMonths(item.frequency);
                         const isEven = iIdx % 2 === 0;
+                        const now = new Date();
+                        const currentYear = now.getFullYear();
+                        const currentMonth = now.getMonth() + 1;
                         return (
                           <tr key={item.key} className={`border-b border-border/50 ${isEven ? "bg-white" : "bg-secondary/20"} hover:bg-blue-50/30 transition-colors`}>
                             <td className="px-3 py-2 text-foreground border-r border-border/50 text-xs whitespace-pre-line leading-relaxed">{item.name}</td>
@@ -299,17 +302,14 @@ export default function AnnualCleaningPlan() {
                               const month = mIdx + 1;
                               const isActive = activeMonths.includes(month);
                               const conf = getConfirmation(item.key, month);
+                              const isPast = isActive && !conf && (year < currentYear || (year === currentYear && month < currentMonth));
+                              const isCurrent = isActive && !conf && year === currentYear && month === currentMonth;
                               return (
                                 <td
                                   key={month}
                                   onClick={() => handleCellClick(item.key, month, activeMonths)}
                                   className={`text-center border-r border-border/30 last:border-r-0 py-1 px-0.5 h-10 transition-all
-                                    ${isActive
-                                      ? conf
-                                        ? "cursor-pointer"
-                                        : "cursor-pointer hover:bg-green-50"
-                                      : "bg-gray-50/50 cursor-default"
-                                    }`}
+                                    ${isPast ? "bg-red-50 cursor-pointer" : isCurrent ? "bg-amber-50 cursor-pointer" : isActive ? conf ? "cursor-pointer" : "cursor-pointer" : "bg-gray-50/50 cursor-default"}`}
                                 >
                                   {conf ? (
                                     <div className={`inline-flex items-center justify-center w-8 h-7 rounded font-bold text-xs font-mono
@@ -318,6 +318,14 @@ export default function AnnualCleaningPlan() {
                                     >
                                       <span className="group-hover:hidden">{conf.initials}</span>
                                       <X className="w-3 h-3 hidden group-hover:block" />
+                                    </div>
+                                  ) : isPast ? (
+                                    <div className="inline-flex items-center justify-center w-8 h-7 rounded bg-red-100 border border-red-300 text-red-400 hover:bg-red-200 hover:text-red-600 transition-colors" title="Ausstehend – nicht bestätigt">
+                                      <X className="w-3.5 h-3.5" />
+                                    </div>
+                                  ) : isCurrent ? (
+                                    <div className="inline-flex items-center justify-center w-8 h-7 rounded bg-amber-100 border border-amber-400 text-amber-500 hover:bg-amber-200 hover:text-amber-700 transition-colors animate-pulse" title="Aktueller Monat – noch ausstehend">
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
                                     </div>
                                   ) : isActive ? (
                                     <div className="inline-flex items-center justify-center w-8 h-7 rounded border border-dashed border-border/40 text-transparent hover:border-green-400 hover:text-green-500 transition-colors">
@@ -349,14 +357,26 @@ export default function AnnualCleaningPlan() {
           </p>
         </div>
 
-        <div className="flex items-center gap-6 text-xs text-muted-foreground px-1">
+        <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground px-1">
           <div className="flex items-center gap-2">
             <div className="w-8 h-6 bg-green-100 rounded flex items-center justify-center text-green-700 font-bold font-mono text-xs">AS</div>
-            <span>Bestätigt mit Kürzel</span>
+            <span>Bestätigt</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-6 bg-red-100 border border-red-300 rounded flex items-center justify-center text-red-400">
+              <X className="w-3 h-3" />
+            </div>
+            <span>Überfällig – nicht bestätigt</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-6 bg-amber-100 border border-amber-400 rounded flex items-center justify-center text-amber-500">
+              <CheckCircle2 className="w-3 h-3" />
+            </div>
+            <span>Aktueller Monat – ausstehend</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-8 h-6 rounded border border-dashed border-border/40" />
-            <span>Ausstehend (klicken zum Bestätigen)</span>
+            <span>Zukünftig – noch nicht fällig</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-8 h-6 bg-gray-100 rounded opacity-30" />
