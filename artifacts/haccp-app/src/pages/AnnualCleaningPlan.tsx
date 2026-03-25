@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
+import { useListMarkets } from "@workspace/api-client-react";
 import { CheckCircle2, X, Loader2, KeyRound, Check, AlertCircle, ChevronLeft, ChevronRight, Brush } from "lucide-react";
 
 const MONTHS = ["Jan", "Feb", "Mrz", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
@@ -134,8 +135,10 @@ function PinDialog({ open, onConfirm, onClose, error, loading }: PinDialogProps)
 }
 
 export default function AnnualCleaningPlan() {
-  const selectedMarket = useAppStore((s) => s.selectedMarket);
+  const selectedMarketId = useAppStore((s) => s.selectedMarketId);
   const adminSession = useAppStore((s) => s.adminSession);
+  const { data: markets } = useListMarkets();
+  const selectedMarket = useMemo(() => markets?.find((m) => m.id === selectedMarketId), [markets, selectedMarketId]);
   const isAdmin = !!adminSession;
 
   const [year, setYear] = useState(new Date().getFullYear());
@@ -237,7 +240,7 @@ export default function AnnualCleaningPlan() {
             </div>
             <div className="flex items-center gap-2">
               <span>Markt:</span>
-              <span className="font-semibold text-white">{selectedMarket?.label || "EDEKA Markt"}</span>
+              <span className="font-semibold text-white">{selectedMarket?.name || "–"}</span>
             </div>
             <div className="ml-auto text-xs text-blue-200 italic">(Bestätigung durch Namenskürzel)</div>
           </div>
