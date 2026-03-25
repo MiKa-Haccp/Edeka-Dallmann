@@ -51,14 +51,12 @@ function PinStep({ onVerified, onBack }: { onVerified: (name: string, userId: nu
 interface Eintrag {
   id: number;
   name: string;
-  firmaAbteilung: string | null;
+  firma_abteilung: string | null;
   datum: string;
   unterschrift: string | null;
-  eingetragenVon: string | null;
+  eingetragen_von: string | null;
   kuerzel: string | null;
 }
-
-const MONATE = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 
 function AddModal({ marketId, tenantId, onClose }: { marketId: number | null; tenantId: number; onClose: () => void }) {
   const qc = useQueryClient();
@@ -147,14 +145,13 @@ export default function AbteilungsfremdePersonen() {
 
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
   const [showAdd, setShowAdd] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
 
   const { data: eintraege = [], isLoading } = useQuery<Eintrag[]>({
-    queryKey: ["hygienebelehrung-abt", selectedMarketId, year, month],
+    queryKey: ["hygienebelehrung-abt", selectedMarketId, year],
     queryFn: async () => {
-      const p = new URLSearchParams({ tenantId: String(tenantId), year: String(year), month: String(month) });
+      const p = new URLSearchParams({ tenantId: String(tenantId), year: String(year) });
       if (selectedMarketId) p.set("marketId", String(selectedMarketId));
       const r = await fetch(`${BASE}/hygienebelehrung-abt?${p}`);
       return r.json();
@@ -169,9 +166,6 @@ export default function AbteilungsfremdePersonen() {
     qc.invalidateQueries({ queryKey: ["hygienebelehrung-abt"] });
     setDeleting(null);
   };
-
-  const prevMonth = () => { if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); };
-  const nextMonth = () => { if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); };
 
   return (
     <AppLayout>
@@ -191,9 +185,9 @@ export default function AbteilungsfremdePersonen() {
         <div className="bg-white rounded-2xl shadow-sm border">
           <div className="flex items-center justify-between px-5 py-4 border-b">
             <div className="flex items-center gap-2">
-              <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-gray-100"><ChevronLeft className="h-4 w-4" /></button>
-              <span className="text-sm font-semibold w-36 text-center">{MONATE[month - 1]} {year}</span>
-              <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-gray-100"><ChevronRight className="h-4 w-4" /></button>
+              <button onClick={() => setYear(y => y - 1)} className="p-1.5 rounded-lg hover:bg-gray-100"><ChevronLeft className="h-4 w-4" /></button>
+              <span className="text-sm font-semibold w-20 text-center">{year}</span>
+              <button onClick={() => setYear(y => y + 1)} className="p-1.5 rounded-lg hover:bg-gray-100"><ChevronRight className="h-4 w-4" /></button>
             </div>
             <button onClick={() => setShowAdd(true)}
               className="flex items-center gap-1.5 bg-primary text-white rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-primary/90">
@@ -204,7 +198,7 @@ export default function AbteilungsfremdePersonen() {
           {isLoading ? (
             <div className="flex justify-center items-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
           ) : eintraege.length === 0 ? (
-            <div className="py-12 text-center text-gray-400 text-sm">Keine Einträge für {MONATE[month - 1]} {year}</div>
+            <div className="py-12 text-center text-gray-400 text-sm">Keine Einträge für {year}</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -222,10 +216,10 @@ export default function AbteilungsfremdePersonen() {
                   {eintraege.map(e => (
                     <tr key={e.id} className="hover:bg-gray-50/50">
                       <td className="px-4 py-3 font-medium text-gray-900">{e.name}</td>
-                      <td className="px-4 py-3 text-gray-600">{e.firmaAbteilung || "—"}</td>
+                      <td className="px-4 py-3 text-gray-600">{e.firma_abteilung || "—"}</td>
                       <td className="px-4 py-3 text-gray-600">{e.datum ? new Date(e.datum).toLocaleDateString("de-DE") : "—"}</td>
                       <td className="px-4 py-3 text-gray-600">{e.unterschrift || "—"}</td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">{e.eingetragenVon || "—"}</td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">{e.eingetragen_von || "—"}</td>
                       <td className="px-4 py-3 text-right">
                         <button onClick={() => deleteEintrag(e.id)} disabled={deleting === e.id}
                           className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors">
