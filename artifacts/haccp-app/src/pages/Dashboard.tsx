@@ -1,8 +1,8 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
-  ShieldCheck, ArrowRight, Activity, ClipboardList, CheckSquare,
-  RefreshCw, BarChart3, Lock, Clock, Users, UserCog, KeyRound, Package,
+  ShieldCheck, ArrowRight, Activity,
+  Lock, Users, UserCog, KeyRound, Package, ClipboardList,
 } from "lucide-react";
 import { Link } from "wouter";
 import { FaelligkeitenWidget } from "@/components/FaelligkeitenWidget";
@@ -26,7 +26,7 @@ const MODULES: ModuleCard[] = [
     icon: ShieldCheck,
     title: "HACCP",
     description: "Lebensmittelhygiene, Temperaturkontrollen, Reinigungspläne und Betriebsbegehungen für alle Filialen.",
-    href: "/category/1",
+    href: "/haccp",
     color: "text-[#1a3a6b]",
     bgColor: "bg-[#1a3a6b]/10",
     available: true,
@@ -42,39 +42,6 @@ const MODULES: ModuleCard[] = [
     bgColor: "bg-orange-50",
     available: true,
     badge: "Aktiv",
-  },
-  {
-    id: "todos",
-    icon: CheckSquare,
-    title: "To-Do Listen",
-    description: "Aufgabenverwaltung für Marktleiter und Teams. Erstellen, zuweisen und verfolgen Sie Aufgaben.",
-    href: "#",
-    color: "text-emerald-600",
-    bgColor: "bg-emerald-50",
-    available: false,
-    badge: "Bald verfügbar",
-  },
-  {
-    id: "revisionen",
-    icon: ClipboardList,
-    title: "Revisionen",
-    description: "Prüfprotokolle, Revisionsberichte und Nachverfolgung von Maßnahmen.",
-    href: "#",
-    color: "text-violet-600",
-    bgColor: "bg-violet-50",
-    available: false,
-    badge: "Geplant",
-  },
-  {
-    id: "berichte",
-    icon: BarChart3,
-    title: "Berichte & Analysen",
-    description: "Auswertungen, Statistiken und exportierbare Reports über alle Module.",
-    href: "#",
-    color: "text-amber-600",
-    bgColor: "bg-amber-50",
-    available: false,
-    badge: "Geplant",
   },
   {
     id: "mitarbeiter",
