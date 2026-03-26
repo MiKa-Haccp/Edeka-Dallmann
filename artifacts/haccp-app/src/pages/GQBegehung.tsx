@@ -407,17 +407,6 @@ export default function GQBegehung() {
   const CY = now.getFullYear();
   const isFuture = year > CY || (year === CY && quartal > CQ);
 
-  const prevQ = () => {
-    if (quartal === 1) { setYear(y => y - 1); setQuartal(4); }
-    else setQuartal(q => q - 1);
-  };
-  const nextQ = () => {
-    let ny = year, nq = quartal;
-    if (nq === 4) { ny += 1; nq = 1; } else { nq += 1; }
-    const wouldBeFuture = ny > CY || (ny === CY && nq > CQ);
-    if (!wouldBeFuture) { setYear(ny); setQuartal(nq); }
-  };
-
   const isCurrentQ = year === CY && quartal === CQ;
   const { end: qEnd } = getQuartalRange(year, quartal);
   const daysLeft = Math.ceil((qEnd.getTime() - now.getTime()) / 86400000);
@@ -429,33 +418,68 @@ export default function GQBegehung() {
 
   return (
     <AppLayout>
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-2xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-            <ClipboardCheck className="w-5 h-5 text-blue-600" />
+      <div className="max-w-3xl mx-auto space-y-4 pb-8">
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 md:p-7 text-white shadow-lg">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
+              <ClipboardCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs text-blue-200 font-medium tracking-wide uppercase">Sektion 3.8</p>
+              <h1 className="text-xl md:text-2xl font-bold">GQ-Betriebsbegehung</h1>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-gray-900 leading-tight">3.8 GQ-Betriebsbegehung</h1>
-            <p className="text-xs text-gray-500">GQ-Frischeartikel und Rindfleischetikettierung – quartalsweise</p>
-          </div>
-        </div>
+          <p className="text-blue-100 text-sm mb-4">GQ-Frischeartikel und Rindfleischetikettierung – quartalsweise</p>
 
-        <div className="flex items-center gap-3 mb-6">
-          <button onClick={prevQ} className="w-9 h-9 rounded-xl border bg-white hover:bg-gray-50 flex items-center justify-center">
-            <ChevronLeft className="w-5 h-5 text-gray-600" />
-          </button>
-          <div className="flex-1 text-center">
-            <span className="text-base font-bold text-gray-900">Q{quartal} / {year}</span>
-            {isCurrentQ && (
-              <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
-                aktuelles Quartal
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1 bg-white/10 rounded-xl p-1">
+              {[1, 2, 3, 4].map((q) => {
+                const future = year > CY || (year === CY && q > CQ);
+                return (
+                  <button
+                    key={q}
+                    type="button"
+                    onClick={() => !future && setQuartal(q)}
+                    disabled={future}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${quartal === q ? "bg-white text-[#1a3a6b] shadow" : "text-white/70 hover:text-white hover:bg-white/10"}`}
+                  >
+                    Q{q}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-1 bg-white/10 rounded-xl px-2 py-1">
+              <button type="button" onClick={() => setYear(y => y - 1)} className="p-1 hover:bg-white/10 rounded">
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="font-bold text-lg px-2 min-w-[4rem] text-center">{year}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (year < CY) {
+                    const ny = year + 1;
+                    setYear(ny);
+                    if (ny === CY && quartal > CQ) setQuartal(CQ);
+                  }
+                }}
+                disabled={year >= CY}
+                className="p-1 hover:bg-white/10 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {existing ? (
+              <span className="text-xs bg-green-500/20 text-green-200 border border-green-400/30 px-3 py-1.5 rounded-lg font-medium">
+                ✓ Gespeichert
               </span>
-            )}
+            ) : !isFuture ? (
+              <span className="text-xs bg-white/10 text-blue-200 border border-white/20 px-3 py-1.5 rounded-lg">
+                Neuer Bericht
+              </span>
+            ) : null}
           </div>
-          <button onClick={nextQ} disabled={isFuture}
-            className="w-9 h-9 rounded-xl border bg-white hover:bg-gray-50 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed">
-            <ChevronRight className="w-5 h-5 text-gray-600" />
-          </button>
         </div>
 
         {isFuture ? (
