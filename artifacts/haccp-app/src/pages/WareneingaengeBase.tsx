@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, createContext, useContext } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, createContext, useContext } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
@@ -591,10 +591,17 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
   const days       = daysInMonth(year,month);
   const byDay      = useMemo(()=>new Map(entries.map(e=>[e.day,e])),[entries]);
   const [detailDay,setDetailDay] = useState<number|null>(null);
+  const todayRef = useRef<HTMLDivElement>(null);
 
   const now    = new Date();
   const todayDay=now.getDate(), todayMonth=now.getMonth()+1, todayYear=now.getFullYear();
   const isCurrentMonth=year===todayYear&&month===todayMonth;
+
+  useEffect(()=>{
+    if(isCurrentMonth&&todayRef.current){
+      setTimeout(()=>todayRef.current?.scrollIntoView({block:"center",behavior:"smooth"}),150);
+    }
+  },[type.id,year,month]);
 
   const deliveryDays=Array.from({length:days},(_,i)=>i+1).filter(d=>{
     const n=new Date();n.setHours(0,0,0,0);
@@ -615,7 +622,9 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
     if(st==="ausgefallen")return<span className="text-gray-500 text-xs font-semibold flex items-center gap-1"><CircleMinus className="w-3 h-3"/>Lieferung ausgefallen</span>;
     const total=checkCrit.length;
     const ok=checkCrit.filter(c=>e.criteriaValues[c.key]==="io").length;
-    const abw=checkCrit.filter(c=>e.criteriaValues[c.key]==="abweichung").length;
+    const checkAbw=checkCrit.filter(c=>e.criteriaValues[c.key]==="abweichung").length;
+    const tempAbw=enabled.filter(c=>c.type==="temp").filter(c=>e.criteriaValues[c.key]&&!isTempOk(c,e.criteriaValues[c.key])).length;
+    const abw=checkAbw+tempAbw;
     if(st==="full")return<span className="text-green-700 text-xs font-semibold flex items-center gap-1"><Check className="w-3 h-3"/>{total>0?`${ok}/${total} Krit. i.O.`:"Vollstaendig"}</span>;
     if(st==="abweichung")return<span className="text-red-600 text-xs font-semibold flex items-center gap-1"><TriangleAlert className="w-3 h-3"/>{abw} Abweichung{abw!==1?"en":""}{e.notizen?" Notiz":""}</span>;
     return<span className="text-amber-600 text-xs font-semibold">{ok}/{total} eingetragen</span>;
@@ -669,7 +678,7 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
             }
 
             return(
-              <div key={day}
+              <div key={day} ref={today?todayRef:undefined}
                 className={`flex items-center gap-0 rounded-xl border overflow-hidden transition-shadow hover:shadow-sm ${TC_BG[tc]} ${today?"ring-2 ring-blue-400/40":""}`}>
                 <div className={`w-1.5 self-stretch shrink-0 ${TC_STRIPE[tc]}`}/>
                 <div className="flex items-center gap-2.5 px-3 py-2.5 w-20 shrink-0">
