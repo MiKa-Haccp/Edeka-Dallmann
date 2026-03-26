@@ -44,6 +44,7 @@ import hygienebelehrungAbtRouter from "./hygienebelehrungAbt";
 import tuevJahresberichtRouter from "./tuevJahresbericht";
 import emailSettingsRouter from "./emailSettings";
 import notificationsRouter from "./notifications";
+import schulungsAnforderungenRouter from "./schulungsAnforderungen";
 
 const router: IRouter = Router();
 
@@ -92,5 +93,6 @@ router.use(hygienebelehrungAbtRouter);
 router.use(tuevJahresberichtRouter);
 router.use(emailSettingsRouter);
 router.use(notificationsRouter);
+router.use(schulungsAnforderungenRouter);
 
 export default router;

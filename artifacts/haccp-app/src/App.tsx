@@ -81,6 +81,7 @@ import SystemAdminHub from "./pages/SystemAdminHub";
 import EmailEinstellungen from "./pages/EmailEinstellungen";
 import RollenKonfiguration from "./pages/RollenKonfiguration";
 import BenachrichtigungsEinstellungen from "./pages/BenachrichtigungsEinstellungen";
+import SchulungsAnforderungen from "./pages/SchulungsAnforderungen";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
@@ -147,6 +148,7 @@ function Router() {
       <Route path="/admin/rollen" component={RollenKonfiguration} />
       <Route path="/admin/email" component={EmailEinstellungen} />
       <Route path="/admin/benachrichtigungen" component={BenachrichtigungsEinstellungen} />
+      <Route path="/verwaltung/schulungsanforderungen" component={SchulungsAnforderungen} />
       <Route component={NotFound} />
     </Switch>
   );
