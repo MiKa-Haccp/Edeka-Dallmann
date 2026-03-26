@@ -155,7 +155,7 @@ function PinStep({onVerified,onBack,loading,setLoading}:{
 function TempModal({art,day,year,month,editEntry,onConfirm,onClose}:{
   art:"reifeschrank"|"kaesekühlschrank"; day:number; year:number; month:number;
   editEntry?:KontrolleEntry|null;
-  onConfirm:(data:{temperatur:string;luftfeuchtigkeit?:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean})=>void;
+  onConfirm:(data:{temperatur:string;luftfeuchtigkeit?:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean;aenderungsgrund?:string})=>void;
   onClose:()=>void;
 }){
   const isEdit=!!editEntry;
@@ -163,13 +163,14 @@ function TempModal({art,day,year,month,editEntry,onConfirm,onClose}:{
   const [temp,setTemp]=useState(()=>editEntry?.temperatur??"");
   const [feuchte,setFeuchte]=useState(()=>editEntry?.luftfeuchtigkeit??"");
   const [massnahme,setMassnahme]=useState(()=>editEntry?.massnahme??"");
+  const [aenderungsgrund,setAenderungsgrund]=useState("");
   const [loading,setLoading]=useState(false);
   const [defektMode,setDefektMode]=useState(()=>editEntry?.defekt??false);
   const [defektGrund,setDefektGrund]=useState(()=>editEntry?.defekt?(editEntry.massnahme??""):"");
 
   const tempSpec=art==="reifeschrank"?"Soll: 2°C (±1°C)":"Soll: max. 7°C";
   const tStatus=tempStatus(temp,art);
-  const hStatus=humidityStatus(feuchte);
+  const hStatus=art==="reifeschrank"?humidityStatus(feuchte):"none";
   const hasWarn=tStatus==="warn"||hStatus==="warn";
   const dayStr=`${String(day).padStart(2,"0")}.${String(month).padStart(2,"0")}.${year}`;
   const artLabel=art==="reifeschrank"?"Reifeschrank":"Käsekühlschrank";
@@ -177,9 +178,9 @@ function TempModal({art,day,year,month,editEntry,onConfirm,onClose}:{
 
   const handlePinVerified=(_name:string,userId:number,kuerzel:string)=>{
     if(defektMode){
-      onConfirm({temperatur:"",massnahme:defektGrund||"Defekt / nicht in Betrieb",kuerzel,userId,defekt:true});
+      onConfirm({temperatur:"",massnahme:defektGrund||"Defekt / nicht in Betrieb",kuerzel,userId,defekt:true,...(isEdit?{aenderungsgrund:aenderungsgrund||defektGrund}:{})});
     } else {
-      onConfirm({temperatur:temp,...(art==="reifeschrank"?{luftfeuchtigkeit:feuchte}:{}),massnahme,kuerzel,userId,defekt:false});
+      onConfirm({temperatur:temp,...(art==="reifeschrank"?{luftfeuchtigkeit:feuchte}:{}),massnahme,kuerzel,userId,defekt:false,...(isEdit?{aenderungsgrund}:{})});
     }
   };
 
@@ -219,12 +220,19 @@ function TempModal({art,day,year,month,editEntry,onConfirm,onClose}:{
               <textarea rows={2} placeholder={hasWarn?"Getroffene Massnahme beschreiben...":"Ggf. Massnahme (optional)..."} value={massnahme} onChange={e=>setMassnahme(e.target.value)}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 resize-none ${hasWarn?"border-red-300 focus:ring-red-400":"focus:ring-primary"}`}/>
             </div>
+            {isEdit&&(
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-1.5">
+                <label className="text-xs font-semibold text-amber-700 block">Grund der Änderung <span className="text-red-500">* Pflicht</span></label>
+                <textarea rows={2} placeholder="Warum wird dieser Eintrag geändert?" value={aenderungsgrund} onChange={e=>setAenderungsgrund(e.target.value)}
+                  className="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none bg-white"/>
+              </div>
+            )}
             <div className="flex gap-2 pt-1">
-              <button onClick={()=>{setDefektMode(true);setStep("defektPin");}} className="flex items-center gap-1.5 border border-orange-300 text-orange-700 bg-orange-50 rounded-lg px-3 py-2 text-sm hover:bg-orange-100 transition-colors">
+              {!isEdit&&<button onClick={()=>{setDefektMode(true);setStep("defektPin");}} className="flex items-center gap-1.5 border border-orange-300 text-orange-700 bg-orange-50 rounded-lg px-3 py-2 text-sm hover:bg-orange-100 transition-colors">
                 <AlertTriangle className="w-4 h-4"/>Defekt
-              </button>
+              </button>}
               <button onClick={onClose} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Abbrechen</button>
-              <button onClick={()=>setStep("pin")} disabled={!temp||(hasWarn&&!massnahme.trim())}
+              <button onClick={()=>setStep("pin")} disabled={!temp||(hasWarn&&!massnahme.trim())||(isEdit&&!aenderungsgrund.trim())}
                 className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50">Weiter</button>
             </div>
           </div>
@@ -464,14 +472,14 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
 
   const tempSpec=art==="reifeschrank"?"Soll: 2°C (±1°C)":"Soll: max. 7°C";
 
-  type TempData={temperatur:string;luftfeuchtigkeit?:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean};
+  type TempData={temperatur:string;luftfeuchtigkeit?:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean;aenderungsgrund?:string};
   const handleCreate=async(day:number,data:TempData)=>{
     await fetch(`${BASE}/kaesetheke-kontrolle`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marketId,year,month,day,kontrolleArt:art,temperatur:data.temperatur,luftfeuchtigkeit:data.luftfeuchtigkeit||null,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:data.defekt})});
     setModal(null);onSaved();
     window.dispatchEvent(new Event("kaesetheke-updated"));
   };
   const handleUpdate=async(id:number,data:TempData)=>{
-    await fetch(`${BASE}/kaesetheke-kontrolle/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({temperatur:data.temperatur,luftfeuchtigkeit:data.luftfeuchtigkeit||null,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:data.defekt})});
+    await fetch(`${BASE}/kaesetheke-kontrolle/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({temperatur:data.temperatur,luftfeuchtigkeit:data.luftfeuchtigkeit||null,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:data.defekt,aenderungsgrund:data.aenderungsgrund||""})});
     setEditEntry(null);onSaved();
     window.dispatchEvent(new Event("kaesetheke-updated"));
   };
@@ -505,7 +513,7 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
               const weekend=isWeekend(year,month,day);
               if(wt==="So")return null;
               const tSt=tempStatus(latestEntry?.temperatur??null,art);
-              const hSt=humidityStatus(latestEntry?.luftfeuchtigkeit??null);
+              const hSt=art==="reifeschrank"?humidityStatus(latestEntry?.luftfeuchtigkeit??null):"none";
               const hasWarn=(tSt==="warn"||hSt==="warn")&&!latestEntry?.defekt;
               const clickable=!future;
 
@@ -578,13 +586,14 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
 // ─── Modal: Heiße Theke Eintrag bearbeiten ────────────────────────────────────
 function HeisseThekeEditModal({entry,onConfirm,onClose}:{
   entry:KontrolleEntry;
-  onConfirm:(data:{kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null})=>void;
+  onConfirm:(data:{kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null;aenderungsgrund:string})=>void;
   onClose:()=>void;
 }){
   const [step,setStep]=useState<"form"|"pin">("form");
   const [kernTemp,setKernTemp]=useState(entry.kern_temp_garen??"");
   const [heissTemp,setHeissTemp]=useState(entry.temp_heisshalten??"");
   const [massnahme,setMassnahme]=useState(entry.massnahme??"");
+  const [aenderungsgrund,setAenderungsgrund]=useState("");
   const [pin,setPin]=useState("");const[loading,setLoading]=useState(false);const[error,setError]=useState("");
 
   const gSt=garenStatus(kernTemp,entry.produkt);
@@ -597,7 +606,7 @@ function HeisseThekeEditModal({entry,onConfirm,onClose}:{
     try{
       const res=await fetch(`${BASE}/users/verify-pin`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin,tenantId:1})});
       const data=await res.json();
-      if(data.valid){onConfirm({kernTempGaren:kernTemp,tempHeisshalten:heissTemp,massnahme,kuerzel:data.initials,userId:data.userId});}
+      if(data.valid){onConfirm({kernTempGaren:kernTemp,tempHeisshalten:heissTemp,massnahme,kuerzel:data.initials,userId:data.userId,aenderungsgrund});}
       else setError("PIN ungueltig.");
     }catch{setError("Verbindungsfehler.");}
     finally{setLoading(false);}
@@ -632,13 +641,18 @@ function HeisseThekeEditModal({entry,onConfirm,onClose}:{
               </div>
             </div>
             <div>
-              <label className={`text-xs font-medium block mb-1 ${hasWarn?"text-red-600":"text-muted-foreground"}`}>Massnahme {hasWarn&&<span className="text-red-400">* Pflicht</span>}</label>
+              <label className={`text-xs font-medium block mb-1 ${hasWarn?"text-red-600":"text-muted-foreground"}`}>Massnahme {hasWarn&&<span className="text-red-400">* Pflicht bei Abweichung</span>}</label>
               <textarea rows={2} value={massnahme} onChange={e=>setMassnahme(e.target.value)} placeholder={hasWarn?"Massnahme eingeben...":"Optional..."}
                 className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 resize-none ${hasWarn?"border-red-300 focus:ring-red-400":"focus:ring-primary"}`}/>
             </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-1.5">
+              <label className="text-xs font-semibold text-amber-700 block">Grund der Änderung <span className="text-red-500">* Pflicht</span></label>
+              <textarea rows={2} placeholder="Warum wird dieser Eintrag geändert?" value={aenderungsgrund} onChange={e=>setAenderungsgrund(e.target.value)}
+                className="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none bg-white"/>
+            </div>
             <div className="flex gap-2">
               <button onClick={onClose} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Abbrechen</button>
-              <button onClick={()=>setStep("pin")} disabled={!kernTemp||(hasWarn&&!massnahme.trim())} className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50">Weiter</button>
+              <button onClick={()=>setStep("pin")} disabled={!kernTemp||(hasWarn&&!massnahme.trim())||!aenderungsgrund.trim()} className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50">Weiter</button>
             </div>
           </div>
         ):(
@@ -706,8 +720,8 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
     setModal(null);onSaved();
     window.dispatchEvent(new Event("kaesetheke-updated"));
   };
-  const handleUpdate=async(id:number,data:{kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null})=>{
-    await fetch(`${BASE}/kaesetheke-kontrolle/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({kernTempGaren:data.kernTempGaren,tempHeisshalten:data.tempHeisshalten,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:false})});
+  const handleUpdate=async(id:number,data:{kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null;aenderungsgrund:string})=>{
+    await fetch(`${BASE}/kaesetheke-kontrolle/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({kernTempGaren:data.kernTempGaren,tempHeisshalten:data.tempHeisshalten,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:false,aenderungsgrund:data.aenderungsgrund})});
     setEditEntry(null);onSaved();
     window.dispatchEvent(new Event("kaesetheke-updated"));
   };
@@ -726,7 +740,6 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
           const today=isToday(year,month,day);
           const weekend=isWeekend(year,month,day);
           if(wt==="So")return null;
-          if(future&&dayEntries.length===0&&wt!=="Sa")return null;
           return(
             <div key={day} ref={today?todayCardRef:null} className={["border rounded-xl overflow-hidden",today?"border-blue-200 shadow-sm":"",weekend&&!today?"bg-muted/10":""].filter(Boolean).join(" ")}>
               <div className={`flex items-center justify-between px-4 py-2.5 border-b ${today?"bg-blue-50":"bg-muted/30"}`}>

@@ -73,15 +73,16 @@ router.post("/kaesetheke-kontrolle", async (req, res) => {
 // PATCH: Eintrag aktualisieren (Bearbeitung mit PIN)
 router.patch("/kaesetheke-kontrolle/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const { temperatur, luftfeuchtigkeit, kernTempGaren, tempHeisshalten, massnahme, kuerzel, userId, defekt } = req.body;
+  const { temperatur, luftfeuchtigkeit, kernTempGaren, tempHeisshalten, massnahme, kuerzel, userId, defekt, aenderungsgrund } = req.body;
   if (!kuerzel) { res.status(400).json({ error: "kuerzel required" }); return; }
+  if (!aenderungsgrund?.trim()) { res.status(400).json({ error: "Aenderungsgrund ist Pflicht" }); return; }
   const { rows } = await pool.query(
     `UPDATE kaesetheke_kontrolle
      SET temperatur=$1, luftfeuchtigkeit=$2, kern_temp_garen=$3, temp_heisshalten=$4,
-         massnahme=$5, kuerzel=$6, user_id=$7, defekt=$8
-     WHERE id=$9 RETURNING *`,
+         massnahme=$5, kuerzel=$6, user_id=$7, defekt=$8, aenderungsgrund=$9
+     WHERE id=$10 RETURNING *`,
     [temperatur||null, luftfeuchtigkeit||null, kernTempGaren||null, tempHeisshalten||null,
-     massnahme||null, kuerzel, userId||null, !!defekt, id]
+     massnahme||null, kuerzel, userId||null, !!defekt, aenderungsgrund.trim(), id]
   );
   if (!rows.length) { res.status(404).json({ error: "Not found" }); return; }
   res.json(rows[0]);
