@@ -9,6 +9,9 @@ import { JaehrlicheErinnerung } from "@/components/JaehrlicheErinnerung";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 const CURRENT_YEAR = new Date().getFullYear();
+const CURRENT_QUARTAL = Math.ceil((new Date().getMonth() + 1) / 3);
+const TODAY = new Date().toISOString().split("T")[0];
+const isFutureQuartal = (y: number, q: number) => y > CURRENT_YEAR || (y === CURRENT_YEAR && q > CURRENT_QUARTAL);
 
 type CheckStatus = "ok" | "mangel" | "na" | "";
 
@@ -426,16 +429,20 @@ export default function Betriebsbegehung() {
 
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1 bg-white/10 rounded-xl p-1">
-              {[1, 2, 3, 4].map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  onClick={() => setQuartal(q)}
-                  className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${quartal === q ? "bg-white text-[#1a3a6b] shadow" : "text-white/70 hover:text-white hover:bg-white/10"}`}
-                >
-                  Q{q}
-                </button>
-              ))}
+              {[1, 2, 3, 4].map((q) => {
+                const future = isFutureQuartal(year, q);
+                return (
+                  <button
+                    key={q}
+                    type="button"
+                    onClick={() => !future && setQuartal(q)}
+                    disabled={future}
+                    className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${quartal === q ? "bg-white text-[#1a3a6b] shadow" : "text-white/70 hover:text-white hover:bg-white/10"}`}
+                  >
+                    Q{q}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="flex items-center gap-1 bg-white/10 rounded-xl px-2 py-1">
@@ -443,7 +450,18 @@ export default function Betriebsbegehung() {
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <span className="font-bold text-lg px-2 min-w-[4rem] text-center">{year}</span>
-              <button type="button" onClick={() => setYear((y) => y + 1)} className="p-1 hover:bg-white/10 rounded">
+              <button
+                type="button"
+                onClick={() => {
+                  if (year < CURRENT_YEAR) {
+                    const newYear = year + 1;
+                    setYear(newYear);
+                    if (newYear === CURRENT_YEAR && quartal > CURRENT_QUARTAL) setQuartal(CURRENT_QUARTAL);
+                  }
+                }}
+                disabled={year >= CURRENT_YEAR}
+                className="p-1 hover:bg-white/10 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+              >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
@@ -487,6 +505,7 @@ export default function Betriebsbegehung() {
                 type="date"
                 value={durchgefuehrtAm}
                 onChange={(e) => setDurchgefuehrtAm(e.target.value)}
+                max={TODAY}
                 className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
               />
             </div>
