@@ -185,6 +185,9 @@ export default function Produktfehlermeldung() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [showDruck, setShowDruck] = useState(false);
   const [showPinModal, setShowPinModal] = useState(false);
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const fotoInputRef = useRef<HTMLInputElement>(null);
 
   const getMarktDefaults = () => {
@@ -322,6 +325,36 @@ export default function Produktfehlermeldung() {
     setView("list");
     setCurrentReport(null);
     await loadReports();
+  };
+
+  const handleSendEmail = async () => {
+    if (!currentReport) return;
+    setEmailSending(true);
+    setEmailError(null);
+    setEmailSent(false);
+    const marktInfo = selectedMarketId ? MARKT_STAMMDATEN[selectedMarketId] : null;
+    try {
+      const res = await fetch(`${BASE}/send-produktfehlermeldung-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportId: currentReport.id,
+          tenantId: currentReport.tenantId,
+          formData: form,
+          marktName: marktInfo?.name || form.markt || "Unbekannt",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setEmailError(data.error || "E-Mail konnte nicht gesendet werden.");
+      } else {
+        setEmailSent(true);
+      }
+    } catch {
+      setEmailError("Netzwerkfehler beim Senden.");
+    } finally {
+      setEmailSending(false);
+    }
   };
 
   return (
@@ -774,21 +807,54 @@ export default function Produktfehlermeldung() {
                 </div>
 
                 {/* Weiterleitungsinfo */}
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                  <p className="text-xs font-bold text-amber-800 mb-2 flex items-center gap-1.5">
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                  <p className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
                     <Send className="w-3.5 h-3.5" /> Weiterleitung an EDEKA QM-Abteilung
                   </p>
-                  <div className="flex flex-wrap gap-3">
+
+                  {/* E-Mail Senden Button */}
+                  {currentReport ? (
+                    <div className="space-y-2">
+                      <button
+                        onClick={handleSendEmail}
+                        disabled={emailSending || emailSent}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold border transition-all w-full justify-center ${
+                          emailSent
+                            ? "bg-green-100 border-green-400 text-green-700"
+                            : "bg-white border-amber-400 text-amber-800 hover:bg-amber-100 disabled:opacity-60"
+                        }`}
+                      >
+                        {emailSending ? (
+                          <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Wird gesendet…</>
+                        ) : emailSent ? (
+                          <><Check className="w-3.5 h-3.5" /> E-Mail erfolgreich gesendet</>
+                        ) : (
+                          <><Mail className="w-3.5 h-3.5" /> Per E-Mail an EDEKA QM senden</>
+                        )}
+                      </button>
+                      {emailError && (
+                        <p className="text-xs text-red-600 flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-2 py-1.5">
+                          <X className="w-3.5 h-3.5 flex-shrink-0" /> {emailError}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-amber-700">
+                      Bitte erst speichern, um die Meldung per E-Mail zu senden.
+                    </p>
+                  )}
+
+                  <div className="flex flex-wrap gap-3 border-t border-amber-200 pt-2">
                     <a
                       href="mailto:qm.suedbayern@edeka.de?subject=Produktfehlermeldung 3.14"
-                      className="flex items-center gap-1.5 text-xs font-bold text-amber-800 underline hover:text-amber-900"
+                      className="flex items-center gap-1.5 text-xs text-amber-700 underline hover:text-amber-900"
                     >
-                      <Mail className="w-3.5 h-3.5" /> qm.suedbayern@edeka.de
+                      <Mail className="w-3 h-3" /> qm.suedbayern@edeka.de
                     </a>
-                    <span className="text-xs text-amber-700">|</span>
-                    <span className="text-xs font-bold text-amber-800">📠 Fax: 08458/62-510</span>
+                    <span className="text-xs text-amber-600">|</span>
+                    <span className="text-xs text-amber-700">📠 Fax: 08458/62-510</span>
                   </div>
-                  <p className="text-xs text-amber-700 mt-1.5">
+                  <p className="text-xs text-amber-700">
                     Formblatt muss 3 Jahre von der Marktleitung archiviert werden.
                   </p>
                 </div>

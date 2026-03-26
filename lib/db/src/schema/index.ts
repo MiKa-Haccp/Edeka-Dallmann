@@ -35,3 +35,4 @@ export * from "./gqBegehung";
 export * from "./hygienebelehrungAbt";
 export * from "./registeredDevices";
 export * from "./tuevJahresbericht";
+export * from "./emailSettings";

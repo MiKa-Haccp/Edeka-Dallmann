@@ -1,7 +1,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import { Link, useLocation } from "wouter";
-import { ShieldCheck, Smartphone, ArrowRight, ShieldAlert } from "lucide-react";
+import { ShieldCheck, Smartphone, ArrowRight, ShieldAlert, Mail } from "lucide-react";
 import { useEffect } from "react";
 
 export default function SystemAdminHub() {
@@ -57,6 +57,24 @@ export default function SystemAdminHub() {
               <h3 className="text-lg font-bold text-foreground mb-1">Geräteverwaltung</h3>
               <p className="text-sm text-muted-foreground leading-relaxed mb-4">
                 Autorisierte Geräte anzeigen, sperren und freigeben. Gerätenamen und Tokens verwalten.
+              </p>
+              <div className="flex items-center gap-1.5 text-sm font-bold text-purple-600 group-hover:gap-3 transition-all duration-200">
+                Öffnen <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/admin/email">
+            <div className="group bg-white rounded-2xl border border-purple-200 shadow-sm hover:shadow-md hover:border-purple-400 transition-all duration-200 p-6 cursor-pointer">
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Mail className="w-6 h-6 text-purple-600" />
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-100 text-purple-700">System</span>
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-1">E-Mail Einstellungen</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                SMTP-Zugangsdaten für den automatischen E-Mail-Versand konfigurieren und testen.
               </p>
               <div className="flex items-center gap-1.5 text-sm font-bold text-purple-600 group-hover:gap-3 transition-all duration-200">
                 Öffnen <ArrowRight className="w-4 h-4" />
