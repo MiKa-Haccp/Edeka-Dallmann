@@ -3,12 +3,41 @@ import { pool } from "@workspace/db";
 
 const router = Router();
 
-// GET all schulungs_pflichten for a tenant
+// GET available kategorien and subbereiche (from both schulungsnachweise and pflichten)
+router.get("/schulungs-kategorien", async (req, res) => {
+  const tenantId = Number(req.query.tenantId) || 1;
+  try {
+    const [katRes, subRes] = await Promise.all([
+      pool.query(
+        `SELECT DISTINCT schulung_kategorie as kat FROM schulungs_pflichten WHERE tenant_id=$1
+         UNION
+         SELECT DISTINCT kategorie as kat FROM schulungsnachweise WHERE tenant_id=$1 AND kategorie IS NOT NULL
+         ORDER BY kat`,
+        [tenantId]
+      ),
+      pool.query(
+        `SELECT DISTINCT subbereich as sub FROM schulungs_pflichten WHERE tenant_id=$1 AND subbereich IS NOT NULL
+         UNION
+         SELECT DISTINCT bezeichnung as sub FROM schulungsnachweise WHERE tenant_id=$1 AND bezeichnung IS NOT NULL
+         ORDER BY sub`,
+        [tenantId]
+      ),
+    ]);
+    res.json({
+      kategorien: katRes.rows.map((r: any) => r.kat).filter(Boolean),
+      subbereiche: subRes.rows.map((r: any) => r.sub).filter(Boolean),
+    });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// GET all schulungs_pflichten for a tenant (flat list with parent info)
 router.get("/schulungs-pflichten", async (req, res) => {
   const tenantId = Number(req.query.tenantId) || 1;
   try {
     const result = await pool.query(
-      `SELECT * FROM schulungs_pflichten WHERE tenant_id = $1 ORDER BY id`,
+      `SELECT * FROM schulungs_pflichten WHERE tenant_id = $1 ORDER BY COALESCE(parent_pflicht_id, id), id`,
       [tenantId]
     );
     res.json(result.rows);
@@ -19,12 +48,21 @@ router.get("/schulungs-pflichten", async (req, res) => {
 
 // POST create
 router.post("/schulungs-pflichten", async (req, res) => {
-  const { tenantId, schulungKategorie, bezeichnung, gueltigeGruppen, intervallMonate, personSpezifisch, subbereich } = req.body;
+  const { tenantId, schulungKategorie, bezeichnung, gueltigeGruppen, intervallMonate, personSpezifisch, subbereich, parentPflichtId } = req.body;
   try {
     const result = await pool.query(
-      `INSERT INTO schulungs_pflichten (tenant_id, schulung_kategorie, bezeichnung, gueltige_gruppen, intervall_monate, person_spezifisch, subbereich)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [tenantId || 1, schulungKategorie, bezeichnung, personSpezifisch ? [] : (gueltigeGruppen || []), intervallMonate || 12, personSpezifisch || false, subbereich || null]
+      `INSERT INTO schulungs_pflichten (tenant_id, schulung_kategorie, bezeichnung, gueltige_gruppen, intervall_monate, person_spezifisch, subbereich, parent_pflicht_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [
+        tenantId || 1,
+        schulungKategorie,
+        bezeichnung,
+        personSpezifisch ? [] : (gueltigeGruppen || []),
+        intervallMonate || 12,
+        personSpezifisch || false,
+        subbereich || null,
+        parentPflichtId || null,
+      ]
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -84,7 +122,7 @@ router.get("/schulungs-compliance", async (req, res) => {
         [tenantId]
       ),
       pool.query(
-        `SELECT * FROM schulungs_pflichten WHERE tenant_id=$1 AND is_active=true ORDER BY id`,
+        `SELECT * FROM schulungs_pflichten WHERE tenant_id=$1 AND is_active=true ORDER BY COALESCE(parent_pflicht_id, id), id`,
         [tenantId]
       ),
       pool.query(
@@ -116,119 +154,61 @@ router.get("/schulungs-compliance", async (req, res) => {
 
       for (const p of pflichten) {
         const ausnahme = ausnahmen.find(
-          (a) => a.user_id === emp.id && a.schulungs_pflicht_id === p.id
+          (a: any) => a.user_id === emp.id && a.schulungs_pflicht_id === p.id
         );
 
-        // --- PERSONENSPEZIFISCH: nur für Mitarbeiter mit passendem Nachweis ---
         if (p.person_spezifisch) {
-          // Finde alle Nachweise für diesen Mitarbeiter mit dieser Kategorie
-          const empNachweise = nachweise.filter((n) => {
+          const empNachweise = nachweise.filter((n: any) => {
             const nameMatch = n.mitarbeiter_name?.trim().toLowerCase() === emp.name?.trim().toLowerCase();
             const katMatch = n.kategorie?.trim().toLowerCase() === p.schulung_kategorie?.trim().toLowerCase();
             const subMatch = !p.subbereich || n.bezeichnung?.toLowerCase().includes(p.subbereich.toLowerCase());
             return nameMatch && katMatch && subMatch;
           });
 
-          // Kein Nachweis → Training nicht relevant für diesen Mitarbeiter
           if (empNachweise.length === 0) continue;
 
           if (ausnahme) {
-            trainings.push({
-              pflichtId: p.id,
-              bezeichnung: p.bezeichnung,
-              kategorie: p.schulung_kategorie,
-              subbereich: p.subbereich || null,
-              personSpezifisch: true,
-              intervallMonate: p.intervall_monate,
-              status: "ausnahme",
-              naechsteSchulung: null,
-              ausnahme: { id: ausnahme.id, begruendung: ausnahme.begruendung },
-            });
+            trainings.push({ pflichtId: p.id, bezeichnung: p.bezeichnung, kategorie: p.schulung_kategorie, subbereich: p.subbereich || null, personSpezifisch: true, parentPflichtId: p.parent_pflicht_id || null, intervallMonate: p.intervall_monate, status: "ausnahme", naechsteSchulung: null, ausnahme: { id: ausnahme.id, begruendung: ausnahme.begruendung } });
             continue;
           }
 
-          // Bester Nachweis (weitestes naechste_schulung)
-          const best = empNachweise.reduce((a, b) => {
+          const best = empNachweise.reduce((a: any, b: any) => {
             const da = a.naechste_schulung ? new Date(a.naechste_schulung) : new Date(0);
             const db = b.naechste_schulung ? new Date(b.naechste_schulung) : new Date(0);
             return da > db ? a : b;
           });
 
           const nextDate = best.naechste_schulung ? new Date(best.naechste_schulung) : null;
-          const status = calcStatus(nextDate, best.schulungs_datum, p.intervall_monate, today, soon);
-
-          trainings.push({
-            pflichtId: p.id,
-            bezeichnung: p.bezeichnung,
-            kategorie: p.schulung_kategorie,
-            subbereich: p.subbereich || null,
-            personSpezifisch: true,
-            intervallMonate: p.intervall_monate,
-            status,
-            naechsteSchulung: best.naechste_schulung || null,
-            ausnahme: null,
-          });
+          trainings.push({ pflichtId: p.id, bezeichnung: p.bezeichnung, kategorie: p.schulung_kategorie, subbereich: p.subbereich || null, personSpezifisch: true, parentPflichtId: p.parent_pflicht_id || null, intervallMonate: p.intervall_monate, status: calcStatus(nextDate, best.schulungs_datum, p.intervall_monate, today, soon), naechsteSchulung: best.naechste_schulung || null, ausnahme: null });
 
         } else {
-          // --- GRUPPENBASIERT ---
           if (!Array.isArray(p.gueltige_gruppen) || !p.gueltige_gruppen.includes(empGruppe)) continue;
 
           if (ausnahme) {
-            trainings.push({
-              pflichtId: p.id,
-              bezeichnung: p.bezeichnung,
-              kategorie: p.schulung_kategorie,
-              subbereich: p.subbereich || null,
-              personSpezifisch: false,
-              intervallMonate: p.intervall_monate,
-              status: "ausnahme",
-              naechsteSchulung: null,
-              ausnahme: { id: ausnahme.id, begruendung: ausnahme.begruendung },
-            });
+            trainings.push({ pflichtId: p.id, bezeichnung: p.bezeichnung, kategorie: p.schulung_kategorie, subbereich: p.subbereich || null, personSpezifisch: false, parentPflichtId: p.parent_pflicht_id || null, intervallMonate: p.intervall_monate, status: "ausnahme", naechsteSchulung: null, ausnahme: { id: ausnahme.id, begruendung: ausnahme.begruendung } });
             continue;
           }
 
-          const empNachweise = nachweise.filter((n) => {
+          const empNachweise = nachweise.filter((n: any) => {
             const nameMatch = n.mitarbeiter_name?.trim().toLowerCase() === emp.name?.trim().toLowerCase();
             const katMatch = n.kategorie?.trim().toLowerCase() === p.schulung_kategorie?.trim().toLowerCase();
-            return nameMatch && katMatch;
+            const subMatch = !p.subbereich || n.bezeichnung?.toLowerCase().includes(p.subbereich.toLowerCase());
+            return nameMatch && katMatch && subMatch;
           });
 
           if (empNachweise.length === 0) {
-            trainings.push({
-              pflichtId: p.id,
-              bezeichnung: p.bezeichnung,
-              kategorie: p.schulung_kategorie,
-              subbereich: null,
-              personSpezifisch: false,
-              intervallMonate: p.intervall_monate,
-              status: "fehlend",
-              naechsteSchulung: null,
-              ausnahme: null,
-            });
+            trainings.push({ pflichtId: p.id, bezeichnung: p.bezeichnung, kategorie: p.schulung_kategorie, subbereich: null, personSpezifisch: false, parentPflichtId: p.parent_pflicht_id || null, intervallMonate: p.intervall_monate, status: "fehlend", naechsteSchulung: null, ausnahme: null });
             continue;
           }
 
-          const best = empNachweise.reduce((a, b) => {
+          const best = empNachweise.reduce((a: any, b: any) => {
             const da = a.naechste_schulung ? new Date(a.naechste_schulung) : new Date(0);
             const db = b.naechste_schulung ? new Date(b.naechste_schulung) : new Date(0);
             return da > db ? a : b;
           });
 
           const nextDate = best.naechste_schulung ? new Date(best.naechste_schulung) : null;
-          const status = calcStatus(nextDate, best.schulungs_datum, p.intervall_monate, today, soon);
-
-          trainings.push({
-            pflichtId: p.id,
-            bezeichnung: p.bezeichnung,
-            kategorie: p.schulung_kategorie,
-            subbereich: null,
-            personSpezifisch: false,
-            intervallMonate: p.intervall_monate,
-            status,
-            naechsteSchulung: best.naechste_schulung || null,
-            ausnahme: null,
-          });
+          trainings.push({ pflichtId: p.id, bezeichnung: p.bezeichnung, kategorie: p.schulung_kategorie, subbereich: null, personSpezifisch: false, parentPflichtId: p.parent_pflicht_id || null, intervallMonate: p.intervall_monate, status: calcStatus(nextDate, best.schulungs_datum, p.intervall_monate, today, soon), naechsteSchulung: best.naechste_schulung || null, ausnahme: null });
         }
       }
 
