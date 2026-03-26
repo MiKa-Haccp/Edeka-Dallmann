@@ -43,6 +43,7 @@ import gqBegehungRouter from "./gqBegehung";
 import hygienebelehrungAbtRouter from "./hygienebelehrungAbt";
 import tuevJahresberichtRouter from "./tuevJahresbericht";
 import emailSettingsRouter from "./emailSettings";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -90,5 +91,6 @@ router.use(gqBegehungRouter);
 router.use(hygienebelehrungAbtRouter);
 router.use(tuevJahresberichtRouter);
 router.use(emailSettingsRouter);
+router.use(notificationsRouter);
 
 export default router;

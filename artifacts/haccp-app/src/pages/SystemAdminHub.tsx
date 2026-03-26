@@ -1,7 +1,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import { Link, useLocation } from "wouter";
-import { ShieldCheck, Smartphone, ArrowRight, ShieldAlert, Mail, ChevronLeft, Settings2 } from "lucide-react";
+import { ShieldCheck, Smartphone, ArrowRight, ShieldAlert, Mail, ChevronLeft, Settings2, Bell } from "lucide-react";
 import { useEffect } from "react";
 
 interface AdminCardProps {
@@ -83,6 +83,12 @@ export default function SystemAdminHub() {
             icon={<Mail className="w-6 h-6 text-purple-600" />}
             title="E-Mail Einstellungen"
             description="SMTP-Zugangsdaten für den automatischen E-Mail-Versand konfigurieren und testen."
+          />
+          <AdminCard
+            href="/admin/benachrichtigungen"
+            icon={<Bell className="w-6 h-6 text-purple-600" />}
+            title="Benachrichtigungen"
+            description="Automatische Hinweise bei fehlenden Einträgen konfigurieren. Per E-Mail oder Telegram."
           />
         </div>
       </div>
