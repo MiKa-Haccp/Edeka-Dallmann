@@ -632,24 +632,6 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
 
   return(
     <div className="space-y-3">
-      <div className="bg-white rounded-xl border border-border/60 px-4 py-3 space-y-2">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="text-xs">
-            <span className="text-muted-foreground">Liefertage erledigt: </span>
-            <span className="font-bold">{effectiveDone}/{deliveryDays.length} ({progress}%)</span>
-            {!hasLiefertage&&<span className="ml-2 text-amber-600 text-[10px]">Liefertage konfigurieren (Verwaltung)</span>}
-          </div>
-          {isCurrentMonth&&!byDay.has(todayDay)&&getLieferstatus(type,year,month,todayDay,holidays)==="erwartet"&&(
-            <button onClick={onTodayEntry} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1a3a6b] text-white text-xs font-bold hover:bg-[#2d5aa0] shrink-0">
-              <PenLine className="w-3.5 h-3.5"/> Heute eintragen
-            </button>
-          )}
-        </div>
-        <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <div className="h-full rounded-full transition-all duration-500" style={{width:`${progress}%`,background:progress>=100?"#22c55e":progress>=70?"#f59e0b":"#ef4444"}}/>
-        </div>
-      </div>
-
       {loading?(
         <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground"/></div>
       ):(
