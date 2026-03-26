@@ -11,6 +11,7 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  ChevronLeft,
   AlertTriangle,
   Lock,
   Settings,
@@ -107,14 +108,22 @@ export default function AdminUserManagement() {
     <AppLayout>
       <div className="max-w-6xl mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-              <Settings className="h-7 w-7 text-primary" />
-              Benutzerverwaltung
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Rollen und Berechtigungen für alle Mitarbeiter verwalten
-            </p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/admin/system")}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
+                <Settings className="h-7 w-7 text-primary" />
+                Benutzerverwaltung
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1">
+                Rollen und Berechtigungen für alle Mitarbeiter verwalten
+              </p>
+            </div>
           </div>
           <button
             onClick={() => navigate("/admin/geraete")}

@@ -1,6 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Link } from "wouter";
-import { Package, ArrowRight, ShoppingCart, Truck, CalendarCheck } from "lucide-react";
+import { Package, ArrowRight, ShoppingCart, Truck, CalendarCheck, ChevronLeft } from "lucide-react";
 
 interface BereichCard {
   id: string; icon: React.ElementType; title: string; description: string;
@@ -46,14 +46,17 @@ const BEREICHE: BereichCard[] = [
 export default function Ware() {
   return (
     <AppLayout>
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
 
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-600 to-orange-400 p-6 sm:p-10 text-white shadow-lg">
           <div className="absolute top-0 right-0 -mr-12 -mt-12 opacity-10 pointer-events-none hidden sm:block">
             <Package className="w-72 h-72" />
           </div>
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white/90 text-xs font-bold uppercase tracking-wider mb-4">
+            <Link href="/" className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm mb-4 transition-colors">
+              <ChevronLeft className="w-4 h-4" /> Zurück
+            </Link>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white/90 text-xs font-bold uppercase tracking-wider mb-4 ml-3">
               <Package className="w-3.5 h-3.5" /> Warenmanagement
             </div>
             <h1 className="text-2xl sm:text-4xl font-bold mb-2 leading-tight">Ware</h1>

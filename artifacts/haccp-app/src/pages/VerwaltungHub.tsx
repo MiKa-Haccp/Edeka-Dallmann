@@ -1,7 +1,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import { Link, useLocation } from "wouter";
-import { Users, KeyRound, ArrowRight, ShieldAlert, UserCog } from "lucide-react";
+import { Users, KeyRound, ArrowRight, ShieldAlert, UserCog, ChevronLeft } from "lucide-react";
 import { useEffect } from "react";
 
 const ALLOWED_ROLES = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER"];
@@ -20,10 +20,15 @@ export default function VerwaltungHub() {
 
   return (
     <AppLayout>
-      <div className="max-w-3xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground mb-1">Verwaltung</h1>
-          <p className="text-muted-foreground text-sm">Mitarbeiterstammdaten, Kürzel und PIN-Verwaltung für Ihr Team.</p>
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+          <div>
+            <h1 className="text-xl font-bold text-foreground mb-0.5">Verwaltung</h1>
+            <p className="text-muted-foreground text-sm">Mitarbeiterstammdaten, Kürzel und PIN-Verwaltung für Ihr Team.</p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
