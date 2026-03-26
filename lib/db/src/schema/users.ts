@@ -9,6 +9,9 @@ export type UserRole = typeof USER_ROLES[number];
 export const USER_STATUSES = ["onboarding", "aktiv", "inaktiv"] as const;
 export type UserStatus = typeof USER_STATUSES[number];
 
+export const USER_GRUPPEN = ["gesamter_markt", "markt", "metzgerei"] as const;
+export type UserGruppe = typeof USER_GRUPPEN[number];
+
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull().references(() => tenantsTable.id),
@@ -20,6 +23,7 @@ export const usersTable = pgTable("users", {
   birthDate: date("birth_date"),
   role: text("role").notNull().default("USER"),
   status: text("status").notNull().default("aktiv"),
+  gruppe: text("gruppe"),
   initials: text("initials"),
   pin: text("pin"),
   isRegistered: boolean("is_registered").notNull().default(false),

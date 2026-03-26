@@ -232,6 +232,7 @@ router.post("/users/admin-create", async (req, res) => {
     initials?: string;
     pin?: string;
     status?: string;
+    gruppe?: string;
   };
 
   if (!body.firstName?.trim() || !body.lastName?.trim()) {
@@ -270,6 +271,7 @@ router.post("/users/admin-create", async (req, res) => {
     }
   }
 
+  const VALID_GRUPPEN = ["gesamter_markt", "markt", "metzgerei"];
   const [user] = await db.insert(usersTable).values({
     tenantId: body.tenantId,
     firstName: body.firstName.trim(),
@@ -280,6 +282,7 @@ router.post("/users/admin-create", async (req, res) => {
     pin: body.pin || null,
     role: "USER",
     status: body.status || "aktiv",
+    gruppe: body.gruppe && VALID_GRUPPEN.includes(body.gruppe) ? body.gruppe : null,
     isRegistered: true,
   }).returning();
 
@@ -289,14 +292,16 @@ router.post("/users/admin-create", async (req, res) => {
 // Admin updates basic employee info
 router.put("/users/:userId", async (req, res) => {
   const userId = Number(req.params.userId);
-  const body = req.body as { firstName?: string; lastName?: string; birthDate?: string; status?: string; initials?: string };
+  const body = req.body as { firstName?: string; lastName?: string; birthDate?: string; status?: string; initials?: string; gruppe?: string | null };
 
+  const VALID_GRUPPEN = ["gesamter_markt", "markt", "metzgerei"];
   const updates: Record<string, any> = {};
   if (body.firstName) { updates.firstName = body.firstName.trim(); updates.name = `${body.firstName.trim()} ${body.lastName || ""}`; }
   if (body.lastName) { updates.lastName = body.lastName.trim(); }
   if (body.firstName && body.lastName) { updates.name = `${body.firstName.trim()} ${body.lastName.trim()}`; }
   if (body.birthDate !== undefined) updates.birthDate = body.birthDate || null;
   if (body.status) updates.status = body.status;
+  if ("gruppe" in body) updates.gruppe = body.gruppe && VALID_GRUPPEN.includes(body.gruppe) ? body.gruppe : null;
 
   if (body.initials) {
     const init = body.initials.toUpperCase().trim();

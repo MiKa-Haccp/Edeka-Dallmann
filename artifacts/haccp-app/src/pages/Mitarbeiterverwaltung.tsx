@@ -11,6 +11,13 @@ import {
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 type Status = "onboarding" | "aktiv" | "inaktiv";
+type Gruppe = "gesamter_markt" | "markt" | "metzgerei" | null;
+
+const GRUPPE_CONFIG: Record<string, { label: string; color: string; bg: string; border: string }> = {
+  gesamter_markt: { label: "Gesamter Markt", color: "text-violet-700", bg: "bg-violet-100", border: "border-violet-200" },
+  markt:          { label: "Markt",          color: "text-sky-700",    bg: "bg-sky-100",    border: "border-sky-200" },
+  metzgerei:      { label: "Metzgerei",      color: "text-orange-700", bg: "bg-orange-100", border: "border-orange-200" },
+};
 
 interface Employee {
   id: number;
@@ -22,6 +29,7 @@ interface Employee {
   initials: string | null;
   pin: string | null;
   status: Status;
+  gruppe: Gruppe;
   role: string;
   createdAt: string;
   hasPin?: boolean;
@@ -38,6 +46,17 @@ function StatusBadge({ status }: { status: Status }) {
   return (
     <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${c.bg} ${c.color} border ${c.border}`}>
       {c.icon} {c.label}
+    </span>
+  );
+}
+
+function GruppeBadge({ gruppe }: { gruppe: Gruppe }) {
+  if (!gruppe) return null;
+  const c = GRUPPE_CONFIG[gruppe];
+  if (!c) return null;
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${c.bg} ${c.color} border ${c.border}`}>
+      {c.label}
     </span>
   );
 }
@@ -61,6 +80,7 @@ function NeuerMitarbeiterForm({ onSave, onCancel, existingInitials }: {
   const [lastName, setLastName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [status, setStatus] = useState<Status>("aktiv");
+  const [gruppe, setGruppe] = useState<string>("");
   const [initials, setInitials] = useState("");
   const [initialsManual, setInitialsManual] = useState(false);
   const [pin, setPin] = useState("");
@@ -91,7 +111,7 @@ function NeuerMitarbeiterForm({ onSave, onCancel, existingInitials }: {
     if (pin && !/^\d{4}$/.test(pin)) { setError("PIN muss genau 4 Ziffern enthalten."); return; }
     setSaving(true);
     setError("");
-    const res = await onSave({ firstName, lastName, birthDate, status, initials: initials || undefined, pin: pin || undefined });
+    const res = await onSave({ firstName, lastName, birthDate, status, gruppe: gruppe || null, initials: initials || undefined, pin: pin || undefined });
     if (res.error) setError(res.error);
     setSaving(false);
   };
@@ -123,6 +143,32 @@ function NeuerMitarbeiterForm({ onSave, onCancel, existingInitials }: {
             <option value="onboarding">Onboarding</option>
             <option value="inaktiv">Inaktiv</option>
           </select>
+        </div>
+        <div className="flex flex-col gap-1 sm:col-span-2">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Abteilungsgruppe</label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: "gesamter_markt", label: "Gesamter Markt" },
+              { value: "markt",          label: "Markt" },
+              { value: "metzgerei",      label: "Metzgerei" },
+            ].map((opt) => {
+              const cfg = GRUPPE_CONFIG[opt.value];
+              const active = gruppe === opt.value;
+              return (
+                <button key={opt.value} type="button" onClick={() => setGruppe(active ? "" : opt.value)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${active ? `${cfg.bg} ${cfg.color} ${cfg.border}` : "bg-white border-border/60 text-muted-foreground hover:border-[#1a3a6b]/30"}`}>
+                  {opt.label}
+                </button>
+              );
+            })}
+            {gruppe && (
+              <button type="button" onClick={() => setGruppe("")}
+                className="px-3 py-1.5 rounded-xl text-xs font-medium text-muted-foreground hover:text-red-500">
+                × Keine
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">Bestimmt welche Schulungen relevant sind</p>
         </div>
       </div>
 
@@ -192,6 +238,7 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange }: {
   const [lastName, setLastName] = useState(emp.lastName);
   const [birthDate, setBirthDate] = useState(emp.birthDate || "");
   const [status, setStatus] = useState<Status>(emp.status);
+  const [gruppe, setGruppe] = useState<string>(emp.gruppe || "");
   const [initials, setInitials] = useState(emp.initials || "");
   const [newPin, setNewPin] = useState("");
   const [showNewPin, setShowNewPin] = useState(false);
@@ -200,7 +247,7 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange }: {
 
   const handleSaveEdit = async () => {
     setSaving(true); setError("");
-    const res = await onUpdate(emp.id, { firstName, lastName, birthDate, status, initials });
+    const res = await onUpdate(emp.id, { firstName, lastName, birthDate, status, gruppe: gruppe || null, initials });
     if (res.error) { setError(res.error); } else { setEditing(false); }
     setSaving(false);
   };
@@ -230,7 +277,8 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange }: {
             {emp.birthDate && <> · geb. {new Date(emp.birthDate).toLocaleDateString("de-DE")}</>}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
+          <GruppeBadge gruppe={emp.gruppe} />
           <StatusBadge status={emp.status} />
           <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${emp.hasPin ? "bg-[#1a3a6b]/10 text-[#1a3a6b]" : "bg-red-50 text-red-500 border border-red-200"}`}>
             <Lock className="w-3 h-3" /> {emp.hasPin ? "PIN gesetzt" : "Kein PIN"}
@@ -300,6 +348,31 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange }: {
                   <input value={initials} onChange={(e) => setInitials(e.target.value.toUpperCase().slice(0,3))}
                     maxLength={3} className="w-24 px-3 py-2 rounded-lg border border-border/60 bg-white text-sm font-bold uppercase focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
                 </div>
+                <div className="flex flex-col gap-1 col-span-2">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Abteilungsgruppe</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: "gesamter_markt", label: "Gesamter Markt" },
+                      { value: "markt",          label: "Markt" },
+                      { value: "metzgerei",      label: "Metzgerei" },
+                    ].map((opt) => {
+                      const cfg = GRUPPE_CONFIG[opt.value];
+                      const active = gruppe === opt.value;
+                      return (
+                        <button key={opt.value} type="button" onClick={() => setGruppe(active ? "" : opt.value)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${active ? `${cfg.bg} ${cfg.color} ${cfg.border}` : "bg-white border-border/60 text-muted-foreground hover:border-[#1a3a6b]/30"}`}>
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                    {gruppe && (
+                      <button type="button" onClick={() => setGruppe("")}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-red-500">
+                        × Keine
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
               {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
               <div className="flex gap-2">
@@ -307,7 +380,7 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange }: {
                   className="flex items-center gap-1.5 px-4 py-2 bg-[#1a3a6b] text-white rounded-lg text-xs font-bold hover:bg-[#2d5aa0] disabled:opacity-40">
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Speichern
                 </button>
-                <button onClick={() => { setEditing(false); setError(""); setFirstName(emp.firstName); setLastName(emp.lastName); setBirthDate(emp.birthDate || ""); setStatus(emp.status); setInitials(emp.initials || ""); }}
+                <button onClick={() => { setEditing(false); setError(""); setFirstName(emp.firstName); setLastName(emp.lastName); setBirthDate(emp.birthDate || ""); setStatus(emp.status); setGruppe(emp.gruppe || ""); setInitials(emp.initials || ""); }}
                   className="px-4 py-2 bg-white border border-border/60 rounded-lg text-xs font-semibold text-muted-foreground">Abbrechen</button>
               </div>
             </div>
