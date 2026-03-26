@@ -334,6 +334,12 @@ export default function SectionDetail() {
   const { selectedMarketId, selectedYear, selectedMonth, setDate } = useAppStore();
   const queryClient = useQueryClient();
 
+  // Beim Mounten immer auf aktuelles Jahr/Monat zuruecksetzen
+  useEffect(() => {
+    const now = new Date();
+    setDate(now.getFullYear(), now.getMonth() + 1);
+  }, []);
+
   const [dialogState, setDialogState] = useState<{isOpen: boolean, definition: any, date: string, entry?: any}>({
     isOpen: false,
     definition: null,

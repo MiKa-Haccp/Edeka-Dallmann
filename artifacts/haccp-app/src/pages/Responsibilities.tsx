@@ -42,6 +42,12 @@ export default function Responsibilities() {
   const selectedMarket = markets?.find((m) => m.id === selectedMarketId);
   const currentYear = new Date().getFullYear();
 
+  // Beim Mounten immer auf aktuelles Jahr zuruecksetzen
+  useEffect(() => {
+    const now = new Date();
+    setDate(now.getFullYear(), now.getMonth() + 1);
+  }, []);
+
   const { data: responsibilities, refetch: refetchResponsibilities } = useListResponsibilities(
     selectedMarketId || 0,
     { year: selectedYear },
