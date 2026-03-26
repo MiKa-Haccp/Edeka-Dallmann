@@ -1,7 +1,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useListSections, useListCategories } from "@workspace/api-client-react";
 import { useRoute, Link } from "wouter";
-import { FileText, ChevronLeft, ShieldCheck, ShoppingCart, Beef, ArrowRight } from "lucide-react";
+import { ChevronLeft, ShieldCheck, ShoppingCart, Beef } from "lucide-react";
 import {
   useWarenzustandOGStatus, useReinigungTaeglichStatus, useWareneingaengeStatus,
   useMetzgereiWareneingaengeStatus, useMetzgereiReinigungStatus, useKaesethekeStatus,
@@ -10,10 +10,10 @@ import {
   type TrafficLight,
 } from "@/hooks/useWarenzustandStatus";
 
-const CATEGORY_META: Record<number, { label: string; icon: React.ElementType; color: string; bgColor: string; nummer: string; borderColor: string }> = {
-  1: { label: "Allgemein", icon: ShieldCheck,  color: "text-[#1a3a6b]",  bgColor: "bg-[#1a3a6b]/10", borderColor: "border-[#1a3a6b]/20", nummer: "HACCP 1" },
-  2: { label: "Markt",     icon: ShoppingCart, color: "text-gray-800",    bgColor: "bg-gray-100",      borderColor: "border-gray-200",      nummer: "HACCP 2" },
-  3: { label: "Metzgerei", icon: Beef,         color: "text-gray-800",    bgColor: "bg-gray-100",      borderColor: "border-gray-200",      nummer: "HACCP 3" },
+const CATEGORY_META: Record<number, { label: string; icon: React.ElementType; color: string; bgColor: string; nummer: string }> = {
+  1: { label: "Allgemein", icon: ShieldCheck,  color: "text-[#1a3a6b]", bgColor: "bg-[#1a3a6b]/10", nummer: "HACCP 1" },
+  2: { label: "Markt",     icon: ShoppingCart, color: "text-gray-700",   bgColor: "bg-gray-100",      nummer: "HACCP 2" },
+  3: { label: "Metzgerei", icon: Beef,         color: "text-gray-700",   bgColor: "bg-gray-100",      nummer: "HACCP 3" },
 };
 
 const SECTION_HREFS: Record<string, string> = {
@@ -46,25 +46,14 @@ const SECTION_HREFS: Record<string, string> = {
 
 const STATUS_ORDER: Record<TrafficLight, number> = { red: 0, yellow: 1, none: 2, green: 3 };
 
-function StatusDot({ status }: { status: TrafficLight }) {
-  if (status === "none") return <span className="w-2 h-2 rounded-full bg-gray-300 inline-block" />;
-  const cfg = {
-    green:  "bg-green-500",
-    yellow: "bg-amber-400",
-    red:    "bg-red-500",
-  }[status];
-  return <span className={`w-2 h-2 rounded-full ${cfg} inline-block`} />;
-}
-
-function StatusStrip({ status }: { status: TrafficLight }) {
-  const cfg = {
-    red:    "bg-red-500",
-    yellow: "bg-amber-400",
-    green:  "bg-green-500",
-    none:   "bg-gray-200",
-  }[status];
-  return <div className={`absolute inset-x-0 top-0 h-1 rounded-t-2xl ${cfg}`} />;
-}
+const STATUS_CFG: Record<TrafficLight, {
+  strip: string; dot: string; border: string; hoverBorder: string; numColor: string;
+}> = {
+  red:    { strip: "bg-red-500",    dot: "bg-red-500",    border: "border-red-200",    hoverBorder: "hover:border-red-400",    numColor: "text-red-400" },
+  yellow: { strip: "bg-amber-400",  dot: "bg-amber-400",  border: "border-amber-200",  hoverBorder: "hover:border-amber-400",  numColor: "text-amber-400" },
+  green:  { strip: "bg-green-500",  dot: "bg-green-500",  border: "border-green-200",  hoverBorder: "hover:border-green-400",  numColor: "text-green-500" },
+  none:   { strip: "bg-gray-200",   dot: "bg-gray-300",   border: "border-gray-200",   hoverBorder: "hover:border-gray-300",   numColor: "text-gray-400" },
+};
 
 function AmpelBadge({ status, label }: { status: TrafficLight; label: string }) {
   if (status === "none") return null;
@@ -133,18 +122,13 @@ export default function CategoryView() {
     const sb = sectionStatus[b.number] ?? "none";
     const diff = STATUS_ORDER[sa] - STATUS_ORDER[sb];
     if (diff !== 0) return diff;
-    const na = parseFloat(a.number.replace(",", "."));
-    const nb = parseFloat(b.number.replace(",", "."));
-    return na - nb;
+    return parseFloat(a.number) - parseFloat(b.number);
   });
 
-  const trackedStatuses = visible
-    .map(s => sectionStatus[s.number] ?? "none")
-    .filter(s => s !== "none");
+  const trackedStatuses = visible.map(s => sectionStatus[s.number] ?? "none").filter(s => s !== "none");
   const greenCount  = trackedStatuses.filter(s => s === "green").length;
   const yellowCount = trackedStatuses.filter(s => s === "yellow").length;
   const redCount    = trackedStatuses.filter(s => s === "red").length;
-  const hasStatus   = trackedStatuses.length > 0;
 
   return (
     <AppLayout>
@@ -167,7 +151,7 @@ export default function CategoryView() {
         </div>
 
         {/* Ampel-Zusammenfassung */}
-        {hasStatus && (
+        {trackedStatuses.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
             {redCount    > 0 && <AmpelBadge status="red"    label={`${redCount} fehlt`} />}
             {yellowCount > 0 && <AmpelBadge status="yellow" label={`${yellowCount} offen`} />}
@@ -182,7 +166,7 @@ export default function CategoryView() {
         {isLoading ? (
           <div className="grid grid-cols-2 gap-3">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-gray-100 rounded-2xl h-28 animate-pulse" />
+              <div key={i} className="bg-gray-100 rounded-2xl h-32 animate-pulse" />
             ))}
           </div>
         ) : sorted.length === 0 ? (
@@ -192,64 +176,34 @@ export default function CategoryView() {
             {sorted.map((section) => {
               const href   = SECTION_HREFS[section.number] ?? `/section/${section.id}`;
               const status = sectionStatus[section.number] ?? "none";
-
-              const cardBorder =
-                status === "red"    ? "border-red-200 hover:border-red-300" :
-                status === "yellow" ? "border-amber-200 hover:border-amber-300" :
-                status === "green"  ? "border-green-200 hover:border-green-300" :
-                "border-gray-200 hover:border-gray-300";
-
-              const cardBg =
-                status === "red"    ? "hover:bg-red-50/30" :
-                status === "yellow" ? "hover:bg-amber-50/30" :
-                status === "green"  ? "hover:bg-green-50/30" :
-                "hover:bg-gray-50";
-
-              const numBadgeBg =
-                status === "red"    ? "bg-red-100 text-red-600" :
-                status === "yellow" ? "bg-amber-100 text-amber-600" :
-                status === "green"  ? "bg-green-100 text-green-600" :
-                (meta?.bgColor ?? "bg-primary/10") + " " + (meta?.color ?? "text-primary");
+              const cfg    = STATUS_CFG[status];
 
               return (
                 <Link
                   key={section.id}
                   href={href}
-                  className={`group relative flex flex-col bg-white rounded-2xl border shadow-sm p-4 transition-all duration-200 hover:shadow-md ${cardBorder} ${cardBg} overflow-hidden`}
+                  className={`group relative flex flex-col bg-white rounded-2xl border shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md ${cfg.border} ${cfg.hoverBorder}`}
                 >
-                  <StatusStrip status={status} />
+                  {/* Farbstreifen oben */}
+                  <div className={`h-1.5 w-full ${cfg.strip}`} />
 
-                  {/* Nummer + Status */}
-                  <div className="flex items-center justify-between mb-3 pt-0.5">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${numBadgeBg}`}>
-                      {section.number}
-                    </span>
-                    <StatusDot status={status} />
-                  </div>
+                  {/* Inhalt */}
+                  <div className="flex flex-col flex-1 px-3.5 pt-3 pb-3.5 gap-3">
 
-                  {/* Icon + Titel */}
-                  <div className="flex-1 flex flex-col gap-2">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      status === "red"    ? "bg-red-100" :
-                      status === "yellow" ? "bg-amber-100" :
-                      status === "green"  ? "bg-green-100" :
-                      (meta?.bgColor ?? "bg-primary/10")
-                    }`}>
-                      <FileText className={`w-4 h-4 ${
-                        status === "red"    ? "text-red-500" :
-                        status === "yellow" ? "text-amber-500" :
-                        status === "green"  ? "text-green-600" :
-                        (meta?.color ?? "text-primary")
-                      }`} />
+                    {/* Status-Dot oben rechts */}
+                    <div className="flex justify-end">
+                      <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
                     </div>
-                    <h3 className="text-sm font-semibold text-gray-800 leading-tight line-clamp-3 group-hover:text-gray-900">
-                      {section.title}
-                    </h3>
-                  </div>
 
-                  {/* Pfeil */}
-                  <div className="flex justify-end mt-2">
-                    <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                    {/* Titel – prominent */}
+                    <p className="text-sm font-bold text-gray-800 leading-snug group-hover:text-gray-900 flex-1">
+                      {section.title}
+                    </p>
+
+                    {/* Nummer – zentriert unten */}
+                    <p className={`text-xs font-semibold text-center ${cfg.numColor} tracking-wide`}>
+                      {section.number}
+                    </p>
                   </div>
                 </Link>
               );
