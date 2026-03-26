@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
@@ -35,6 +35,10 @@ function isPast(year: number, month: number, day: number) {
 }
 function todayStr() {
   return new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/Berlin"}).format(new Date());
+}
+function tomorrowStr() {
+  const d = new Date(); d.setDate(d.getDate()+1);
+  return new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/Berlin"}).format(d);
 }
 function mhdAbgelaufen(verbrauchsdatum: string | null): boolean {
   if (!verbrauchsdatum) return false;
@@ -75,21 +79,17 @@ function EintragModal({
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [identified, setIdentified] = useState<{name:string;userId:number;kuerzel:string}|null>(null);
 
   const handleVerifyPin = async () => {
     setError(""); setLoading(true);
     try {
       const res = await fetch(`${BASE}/users/verify-pin`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin,tenantId:1})});
       const data = await res.json();
-      if (data.valid) setIdentified({name:data.userName,userId:data.userId,kuerzel:data.initials});
-      else setError("PIN ungueltig.");
+      if (data.valid) {
+        onConfirm({artikelBezeichnung:artikel.trim(),verbrauchsdatum:verbrauch,eigenherstellung,kuerzel:data.initials,userId:data.userId});
+      } else setError("PIN ungueltig.");
     } catch { setError("Verbindungsfehler."); }
     finally { setLoading(false); }
-  };
-
-  const handleConfirm = () => {
-    if (identified) onConfirm({artikelBezeichnung:artikel.trim(),verbrauchsdatum:verbrauch,eigenherstellung,kuerzel:identified.kuerzel,userId:identified.userId});
   };
 
   const wd = WOCHENTAGE[new Date(year,month-1,day).getDay()];
@@ -134,7 +134,7 @@ function EintragModal({
               Weiter zur PIN-Eingabe
             </button>
           </div>
-        ):!identified?(
+        ):(
           <div className="space-y-3">
             <div className="p-3 bg-slate-50 rounded-xl border text-xs text-muted-foreground space-y-1">
               <p><span className="font-medium">Artikel:</span> {artikel}</p>
@@ -153,23 +153,7 @@ function EintragModal({
             {error&&<p className="text-xs text-red-500 flex items-center gap-1.5"><X className="w-3 h-3"/>{error}</p>}
             <button onClick={handleVerifyPin} disabled={loading||pin.length<4}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0] transition-colors">
-              {loading?<Loader2 className="w-4 h-4 animate-spin"/>:<Lock className="w-4 h-4"/>} PIN pruefen
-            </button>
-          </div>
-        ):(
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl border border-green-200">
-              <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-                <Check className="w-5 h-5 text-white"/>
-              </div>
-              <div>
-                <p className="text-sm font-bold text-green-800">{identified.name}</p>
-                <p className="text-xs text-green-600">Kuerzel: <span className="font-mono font-bold">{identified.kuerzel}</span></p>
-              </div>
-            </div>
-            <button onClick={handleConfirm}
-              className="w-full py-2.5 rounded-xl bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
-              <Check className="w-4 h-4"/> Eintrag speichern
+              {loading?<Loader2 className="w-4 h-4 animate-spin"/>:<Lock className="w-4 h-4"/>} PIN pruefen &amp; speichern
             </button>
           </div>
         )}
@@ -356,6 +340,8 @@ export default function OeffnungSalate() {
   const [markingId, setMarkingId] = useState<number|null>(null);
   const [aufgebrauchtEntry, setAufgebrauchtEntry] = useState<SalateEntry|null>(null);
 
+  const todayRef = useRef<HTMLTableRowElement>(null);
+
   const totalDays = daysInMonth(year, month);
   const holidays = useMemo(()=>getBavarianHolidays(year),[year]);
 
@@ -375,7 +361,19 @@ export default function OeffnungSalate() {
 
   useEffect(()=>{ load(); },[load]);
 
+  // Auto-scroll to today after loading
+  const isCurrentMonth = year===now.getFullYear()&&month===now.getMonth()+1;
+  useEffect(()=>{
+    if (!loading && isCurrentMonth && todayRef.current) {
+      todayRef.current.scrollIntoView({behavior:"smooth",block:"center"});
+    }
+  },[loading,isCurrentMonth]);
+
   const dayEntries = (day:number) => entries.filter(e=>e.day===day);
+
+  const mhdMorgenEntries = useMemo(()=>
+    entries.filter(e=>e.verbrauchsdatum===tomorrowStr()&&!e.aufgebrauchtAm)
+  ,[entries]);
 
   const handleSave = async(data:{artikelBezeichnung:string;verbrauchsdatum:string;eigenherstellung:boolean;kuerzel:string;userId:number|null})=>{
     if (activeDay===null||!selectedMarketId) return;
@@ -483,6 +481,30 @@ export default function OeffnungSalate() {
           </div>
         </div>
 
+        {/* MHD läuft morgen ab */}
+        {mhdMorgenEntries.length > 0 && (
+          <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex items-start gap-3 shadow-sm">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5"/>
+            <div>
+              <p className="text-sm font-bold text-amber-800">MHD laeuft morgen ab!</p>
+              <ul className="mt-1.5 space-y-0.5">
+                {mhdMorgenEntries.map(e=>(
+                  <li key={e.id} className="text-xs text-amber-700 flex items-center gap-1.5">
+                    <span className="font-mono font-bold w-5 text-amber-500">
+                      {String(e.day).padStart(2,"0")}.
+                    </span>
+                    <span>{e.artikelBezeichnung}</span>
+                    <span className="text-amber-400">·</span>
+                    <span className="font-mono">{new Date(e.verbrauchsdatum+"T00:00:00").toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</span>
+                    {e.eigenherstellung&&<span className="px-1 rounded text-[10px] font-bold bg-green-200 text-green-800">EH</span>}
+                    <span className="text-amber-500">({e.kuerzel})</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
         {/* TABELLE */}
         {!selectedMarketId?(
           <div className="bg-white rounded-2xl border border-border p-12 text-center">
@@ -517,7 +539,7 @@ export default function OeffnungSalate() {
                     const hasAbgelaufen = de.some(e=>mhdAbgelaufen(e.verbrauchsdatum)&&!e.aufgebrauchtAm);
 
                     return (
-                      <tr key={day} className={[
+                      <tr key={day} ref={today?todayRef:null} className={[
                         "border-t border-border/40 transition-colors align-top",
                         isClosed?"bg-slate-100/80 opacity-60":"",
                         !isClosed&&today?"bg-amber-50/70 border-l-4 border-l-amber-500":"",
