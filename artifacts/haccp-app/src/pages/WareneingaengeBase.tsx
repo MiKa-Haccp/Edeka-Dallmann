@@ -413,10 +413,13 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
     setConfirmDel(false);
   },[existingEntry,type.id,day]);
 
+  const [showValidation, setShowValidation] = useState(false);
   const toggle=(k:string,v:string)=>setVals(p=>({...p,[k]:p[k]===v?"":v}));
   const setVal=(k:string,v:string)=>setVals(p=>({...p,[k]:v}));
   const hasAbw=!ausgefallen&&enabled.some(c=>vals[c.key]==="abweichung");
   const badTemp=!ausgefallen&&enabled.filter(c=>c.type==="temp").some(c=>vals[c.key]&&!isTempOk(c,vals[c.key]));
+  const missingTemps=ausgefallen?[]:enabled.filter(c=>c.type==="temp").filter(c=>!vals[c.key]);
+  const hasMissingTemps=missingTemps.length>0;
   const grouped=critGroups.map(g=>({group:g,items:enabled.filter(c=>c.group===g)})).filter(g=>g.items.length>0);
 
   const doSave = async (id:{name:string;userId:number;kuerzel:string}) => {
@@ -485,15 +488,35 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
                     <NematList value={vals[c.key]??""} onChange={v=>setVal(c.key,v)}/>
                   </div>
                 ):(
-                  <div className="flex items-center gap-2">
-                    <p className="flex-1 text-sm">{c.label}</p>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <input type="number" step="0.1"
-                        className={`w-20 border-2 rounded-lg px-2 py-1.5 text-sm font-mono text-center focus:outline-none ${vals[c.key]&&!isTempOk(c,vals[c.key])?"border-red-400 bg-red-50":"border-border focus:border-primary/50"}`}
-                        placeholder="C" value={vals[c.key]??""} onChange={e=>setVal(c.key,e.target.value)}/>
-                      <span className="text-xs text-muted-foreground">C</span>
-                      {vals[c.key]&&<span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isTempOk(c,vals[c.key])?"bg-green-100 text-green-700":"bg-red-100 text-red-700"}`}>{isTempOk(c,vals[c.key])?"i.O.":"!"}</span>}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <p className="flex-1 text-sm">
+                        {c.label}
+                        <span className="text-red-500 ml-0.5 font-bold">*</span>
+                      </p>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <input type="number" step="0.1"
+                          className={`w-20 border-2 rounded-lg px-2 py-1.5 text-sm font-mono text-center focus:outline-none transition-colors ${
+                            vals[c.key]&&!isTempOk(c,vals[c.key])
+                              ? "border-red-400 bg-red-50 focus:border-red-400"
+                              : showValidation&&!vals[c.key]
+                                ? "border-red-400 bg-red-50 focus:border-red-400"
+                                : "border-border focus:border-primary/50"
+                          }`}
+                          placeholder="°C" value={vals[c.key]??""} onChange={e=>setVal(c.key,e.target.value)}/>
+                        <span className="text-xs text-muted-foreground">°C</span>
+                        {vals[c.key]&&<span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isTempOk(c,vals[c.key])?"bg-green-100 text-green-700":"bg-red-100 text-red-700"}`}>{isTempOk(c,vals[c.key])?"i.O.":"!"}</span>}
+                      </div>
                     </div>
+                    {vals[c.key]&&!isTempOk(c,vals[c.key])&&(
+                      <div className="flex items-center gap-1.5 text-[11px] text-red-600 font-semibold bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5">
+                        <TriangleAlert className="w-3.5 h-3.5 shrink-0"/>
+                        Temperaturgrenzwert ueberschritten!{c.maxVal!==undefined&&c.minVal===undefined?` Erlaubt: max. ${c.maxVal} C`:c.minVal!==undefined&&c.maxVal!==undefined?` Erlaubt: ${c.minVal}–${c.maxVal} C`:""} – Massnahme erforderlich.
+                      </div>
+                    )}
+                    {showValidation&&!vals[c.key]&&(
+                      <p className="text-[11px] text-red-500 font-semibold pl-0.5">Pflichtfeld – bitte Temperatur eintragen.</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -539,7 +562,13 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
             {saving?<Loader2 className="w-4 h-4 animate-spin"/>:<><Trash2 className="w-4 h-4"/>Loeschen</>}
           </button>
         )}
-        <button onClick={()=>setShowPin(true)} disabled={saving}
+        {showValidation&&hasMissingTemps&&!ausgefallen&&(
+          <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-red-500"/>
+            Alle Temperaturfelder sind Pflichtfelder. Bitte alle Temperaturen eintragen.
+          </div>
+        )}
+        <button onClick={()=>{if(hasMissingTemps&&!ausgefallen){setShowValidation(true);}else{setShowPin(true);}}} disabled={saving}
           className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0]">
           {saving?<Loader2 className="w-4 h-4 animate-spin"/>:<Check className="w-4 h-4"/>}
           {existingEntry?"Aktualisieren":"Eintrag speichern"}
