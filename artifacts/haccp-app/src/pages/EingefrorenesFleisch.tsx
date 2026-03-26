@@ -103,12 +103,14 @@ function NeuerArtikelModal({year,onConfirm,onClose}:{
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium text-muted-foreground block mb-1">VKP (EUR)</label>
-                <input type="text" inputMode="decimal" placeholder="z.B. 12,99" value={vkp} onChange={e=>setVkp(e.target.value)}
+                <input type="text" inputMode="decimal" placeholder="z.B. 12,99" value={vkp}
+                  onChange={e=>setVkp(e.target.value.replace(/[^0-9.,]/g,""))}
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground block mb-1">Menge (kg)</label>
-                <input type="text" inputMode="decimal" placeholder="z.B. 2,5" value={mengeKg} onChange={e=>setMengeKg(e.target.value)}
+                <input type="text" inputMode="decimal" placeholder="z.B. 2,5" value={mengeKg}
+                  onChange={e=>setMengeKg(e.target.value.replace(/[^0-9.,]/g,""))}
                   className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>
               </div>
             </div>
@@ -155,6 +157,12 @@ function NeuerArtikelModal({year,onConfirm,onClose}:{
   );
 }
 
+// ─── Hilfsfunktion: deutsche Dezimalzahl parsen ───────────────────────────────
+function parseKg(s: string | null): number {
+  if (!s) return 0;
+  return parseFloat(s.replace(",", ".")) || 0;
+}
+
 // ─── Entnahme / Aufgebraucht Modal ────────────────────────────────────────────
 function EntnahmeModal({entry,onSaved,onClose}:{
   entry:FleischEntry;
@@ -171,6 +179,13 @@ function EntnahmeModal({entry,onSaved,onClose}:{
   const [loading,setLoading]=useState(false);
   const [identified,setIdentified]=useState<{name:string;userId:number;kuerzel:string}|null>(null);
 
+  // Restmengen-Berechnung
+  const gesamtKg = parseKg(entry.menge_kg);
+  const bereitsEntnommen = parseKg(entry.entnahme_1_kg) + parseKg(entry.entnahme_2_kg) + parseKg(entry.entnahme_3_kg) + parseKg(entry.entnahme_4_kg);
+  const restKg = gesamtKg > 0 ? Math.max(0, gesamtKg - bereitsEntnommen) : null;
+  const neueEntnahme = parseKg(menge);
+  const ueberschritten = restKg !== null && menge.trim() !== "" && neueEntnahme > restKg;
+
   const handleConfirm=async()=>{
     if(!identified)return;
     const body:Record<string,string>={};
@@ -181,6 +196,9 @@ function EntnahmeModal({entry,onSaved,onClose}:{
   };
 
   const formatDate=(s:string|null)=>s?s.split("-").reverse().join("."):"";
+  const fmtKg=(n:number)=>n.toLocaleString("de-DE",{minimumFractionDigits:0,maximumFractionDigits:3});
+
+  const canProceed = nextSlot==="full" ? aufgebraucht : (aufgebraucht || (menge.trim()!==""&&!ueberschritten));
 
   return(
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -192,22 +210,50 @@ function EntnahmeModal({entry,onSaved,onClose}:{
 
         {step==="form"&&(
           <div className="space-y-4">
-            <div className="bg-muted/30 rounded-lg p-3 text-sm space-y-1">
-              {entry.menge_kg&&<p><span className="text-muted-foreground">Gesamtmenge:</span> <strong>{entry.menge_kg} kg</strong></p>}
-              <p><span className="text-muted-foreground">Eingefroren:</span> {formatDate(entry.eingefroren_am)}</p>
-              {entry.eingefroren_durch&&<p><span className="text-muted-foreground">Durch:</span> {entry.eingefroren_durch}</p>}
-              <div className="flex flex-wrap gap-2 pt-1">
-                {[entry.entnahme_1_kg,entry.entnahme_2_kg,entry.entnahme_3_kg,entry.entnahme_4_kg].map((e,i)=>e&&(
-                  <span key={i} className="bg-orange-100 text-orange-700 text-xs font-medium px-2 py-0.5 rounded">Entnahme {i+1}: {e} kg</span>
-                ))}
-              </div>
+            {/* Info-Box mit Restmenge */}
+            <div className="bg-muted/30 rounded-lg p-3 text-sm space-y-1.5">
+              <p><span className="text-muted-foreground">Eingefroren:</span> {formatDate(entry.eingefroren_am)}{entry.eingefroren_durch&&<span className="text-muted-foreground"> · {entry.eingefroren_durch}</span>}</p>
+              {gesamtKg > 0 && (
+                <div className="grid grid-cols-3 gap-1 pt-1">
+                  <div className="bg-white border rounded-lg px-2 py-1.5 text-center">
+                    <div className="text-[10px] text-muted-foreground">Gesamt</div>
+                    <div className="font-bold text-sm">{fmtKg(gesamtKg)} kg</div>
+                  </div>
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg px-2 py-1.5 text-center">
+                    <div className="text-[10px] text-orange-600">Entnommen</div>
+                    <div className="font-bold text-sm text-orange-700">{fmtKg(bereitsEntnommen)} kg</div>
+                  </div>
+                  <div className={`rounded-lg px-2 py-1.5 text-center border ${restKg===0?"bg-red-50 border-red-200":"bg-green-50 border-green-200"}`}>
+                    <div className={`text-[10px] ${restKg===0?"text-red-600":"text-green-600"}`}>Noch verfügbar</div>
+                    <div className={`font-bold text-sm ${restKg===0?"text-red-700":"text-green-700"}`}>{restKg!==null?fmtKg(restKg):"—"} kg</div>
+                  </div>
+                </div>
+              )}
+              {[entry.entnahme_1_kg,entry.entnahme_2_kg,entry.entnahme_3_kg,entry.entnahme_4_kg].some(Boolean)&&(
+                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                  {[entry.entnahme_1_kg,entry.entnahme_2_kg,entry.entnahme_3_kg,entry.entnahme_4_kg].map((e,i)=>e&&(
+                    <span key={i} className="bg-orange-100 text-orange-700 text-xs font-medium px-2 py-0.5 rounded">E{i+1}: {e} kg</span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {nextSlot!=="full"&&(
               <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">Entnahme {nextSlot} (kg)</label>
-                <input type="text" inputMode="decimal" placeholder="z.B. 0,5" value={menge} onChange={e=>setMenge(e.target.value)} autoFocus
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">
+                  Entnahme {nextSlot} (kg)
+                  {restKg!==null&&<span className="ml-1 text-green-600 font-normal">· max. {fmtKg(restKg)} kg</span>}
+                </label>
+                <input type="text" inputMode="decimal" placeholder="z.B. 0,5" value={menge}
+                  onChange={e=>setMenge(e.target.value.replace(/[^0-9.,]/g,""))}
+                  autoFocus
+                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ${ueberschritten?"border-red-400 focus:ring-red-400":"focus:ring-primary"}`}/>
+                {ueberschritten&&(
+                  <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 shrink-0"/>
+                    Entnahme ({fmtKg(neueEntnahme)} kg) überschreitet die verfügbare Menge ({fmtKg(restKg!)} kg).
+                  </p>
+                )}
               </div>
             )}
 
@@ -216,7 +262,7 @@ function EntnahmeModal({entry,onSaved,onClose}:{
                 onClick={()=>setAufgebraucht(v=>!v)}>
                 {aufgebraucht&&<Check className="w-3 h-3 text-white"/>}
               </div>
-              <span className="text-sm">Vollstaendig aufgebraucht</span>
+              <span className="text-sm">Vollständig aufgebraucht</span>
             </label>
             {aufgebraucht&&(
               <div>
@@ -228,7 +274,7 @@ function EntnahmeModal({entry,onSaved,onClose}:{
 
             <div className="flex gap-2 pt-1">
               <button onClick={onClose} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Abbrechen</button>
-              <button onClick={()=>setStep("pin")} disabled={nextSlot==="full"&&!aufgebraucht}
+              <button onClick={()=>setStep("pin")} disabled={!canProceed}
                 className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50">Weiter</button>
             </div>
           </div>
@@ -242,8 +288,10 @@ function EntnahmeModal({entry,onSaved,onClose}:{
           <div className="space-y-4 text-center">
             <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto"><Check className="w-6 h-6 text-green-600"/></div>
             <p className="font-medium">{identified.name}</p>
+            {menge&&<p className="text-sm text-muted-foreground">Entnahme: <strong>{menge} kg</strong></p>}
+            {aufgebraucht&&<p className="text-sm text-green-600 font-medium">Vollständig aufgebraucht</p>}
             <div className="flex gap-2">
-              <button onClick={()=>setIdentified(null)} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurueck</button>
+              <button onClick={()=>setIdentified(null)} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurück</button>
               <button onClick={handleConfirm} className="flex-1 bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-green-700">Speichern</button>
             </div>
           </div>
@@ -392,7 +440,7 @@ export default function EingefrorenesFleisch() {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-0.5">
               <Snowflake className="w-5 h-5 text-primary"/>
-              <h1 className="text-xl font-bold">3.6 Eingefrorenes Fleisch (FB 9.3)</h1>
+              <h1 className="text-xl font-bold">3.6 Eingefrorenes Fleisch</h1>
             </div>
             <p className="text-xs text-muted-foreground">Bestandsliste eingefrorenes Fleisch – Formblatt 9.3</p>
           </div>
