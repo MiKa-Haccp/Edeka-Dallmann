@@ -4,6 +4,33 @@ import { getBavarianHolidays } from "@/utils/holidays";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
+// Temperaturgrenzwerte fuer Abweichungserkennung im Status-Hook
+const TEMP_LIMITS: Record<string, { min?: number; max?: number }> = {
+  temp_arznei:         { min: 15, max: 25 },
+  temp_kuehl_molkerei: { max: 7  },
+  temp_kuehl_og:       { max: 7  },
+  temp_tk:             { max: -18 },
+  temp_hackfleisch:    { max: 2  },
+  temp_innereien:      { max: 3  },
+  temp_gefluegel:      { max: 4  },
+  temp_fleisch:        { max: 7  },
+  temp_frischfisch:    { max: 2  },
+  temp_fischverarbeit: { max: 7  },
+  temp_muscheln:       { max: 10 },
+};
+function isTempInRange(key: string, val: string): boolean {
+  const n = parseFloat(val);
+  if (isNaN(n)) return true;
+  const lim = TEMP_LIMITS[key];
+  if (!lim) return true;
+  if (lim.min !== undefined && n < lim.min) return false;
+  if (lim.max !== undefined && n > lim.max) return false;
+  return true;
+}
+function hasEntryAbweichung(cv: Record<string, string>): boolean {
+  return Object.entries(cv).some(([k, v]) => v === "abweichung" || (!!v && !isTempInRange(k, v)));
+}
+
 const SLOT_WINDOWS = [
   { key: "s1", startHour: 6,  endHour: 9  },
   { key: "s2", startHour: 9,  endHour: 12 },
@@ -167,6 +194,8 @@ export function useWareneingaengeStatus(): TrafficLight {
           if (!isLiefertag || lt.length === 0) continue;
           anyExpected = true;
           if (!row.criteria_values || Object.keys(row.criteria_values).length === 0) { anyRed = true; }
+          else if (row.criteria_values._ausgefallen === "ja") { anyGreen = true; }
+          else if (hasEntryAbweichung(row.criteria_values)) { anyYellow = true; }
           else { anyGreen = true; }
         }
         if (!anyExpected) { setStatus("none"); return; }
@@ -206,7 +235,7 @@ export function useMetzgereiWareneingaengeStatus(): TrafficLight {
         if (cancelled) return;
         const wd = now.getDay();
         const ds = dateStrHook(now.getFullYear(), now.getMonth() + 1, now.getDate());
-        let anyRed = false, anyGreen = false, anyExpected = false;
+        let anyRed = false, anyYellow = false, anyGreen = false, anyExpected = false;
         for (const row of rows) {
           const lt = row.liefertage ?? [];
           const aus = row.liefertage_ausnahmen ?? {};
@@ -216,10 +245,13 @@ export function useMetzgereiWareneingaengeStatus(): TrafficLight {
           if (!isLiefertag || lt.length === 0) continue;
           anyExpected = true;
           if (!row.criteria_values || Object.keys(row.criteria_values).length === 0) { anyRed = true; }
+          else if (row.criteria_values._ausgefallen === "ja") { anyGreen = true; }
+          else if (hasEntryAbweichung(row.criteria_values)) { anyYellow = true; }
           else { anyGreen = true; }
         }
         if (!anyExpected) { setStatus("none"); return; }
         if (anyRed) { setStatus("red"); return; }
+        if (anyYellow) { setStatus("yellow"); return; }
         setStatus(anyGreen ? "green" : "none");
       })
       .catch(() => { if (!cancelled) setStatus("none"); });
