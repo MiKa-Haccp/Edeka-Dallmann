@@ -152,27 +152,24 @@ export default function CategoryView() {
 
         {/* Ampel-Zusammenfassung */}
         {trackedStatuses.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            {redCount    > 0 && <AmpelBadge status="red"    label={`${redCount} fehlt`} />}
-            {yellowCount > 0 && <AmpelBadge status="yellow" label={`${yellowCount} offen`} />}
-            {greenCount  > 0 && <AmpelBadge status="green"  label={`${greenCount} ok`} />}
-            <span className="text-xs text-muted-foreground ml-auto">
-              {greenCount}/{trackedStatuses.length} erledigt
-            </span>
+          <div className="flex items-center gap-3">
+            {redCount    > 0 && <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-500 inline-block"/><span className="text-sm font-bold text-red-500">{redCount}</span></span>}
+            {yellowCount > 0 && <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"/><span className="text-sm font-bold text-amber-500">{yellowCount}</span></span>}
+            {greenCount  > 0 && <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"/><span className="text-sm font-bold text-green-600">{greenCount}</span></span>}
           </div>
         )}
 
         {/* Kacheln */}
         {isLoading ? (
-          <div className="grid grid-cols-3 gap-2.5">
-            {[...Array(9)].map((_, i) => (
-              <div key={i} className="bg-gray-100 rounded-xl h-20 animate-pulse" />
+          <div className="grid grid-cols-2 gap-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-gray-100 rounded-2xl h-32 animate-pulse" />
             ))}
           </div>
         ) : sorted.length === 0 ? (
           <div className="py-16 text-center text-gray-400 text-sm">Keine Formulare in dieser Kategorie.</div>
         ) : (
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-2 gap-3">
             {sorted.map((section) => {
               const href   = SECTION_HREFS[section.number] ?? `/section/${section.id}`;
               const status = sectionStatus[section.number] ?? "none";
@@ -182,18 +179,29 @@ export default function CategoryView() {
                 <Link
                   key={section.id}
                   href={href}
-                  className={`group relative flex flex-col items-center justify-center bg-white rounded-xl border shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md py-4 px-2 gap-2 ${cfg.border} ${cfg.hoverBorder}`}
+                  className={`group relative flex flex-col bg-white rounded-2xl border shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md ${cfg.border} ${cfg.hoverBorder}`}
                 >
                   {/* Farbstreifen oben */}
-                  <div className={`absolute top-0 left-0 right-0 h-1 ${cfg.strip}`} />
+                  <div className={`h-1.5 w-full ${cfg.strip}`} />
 
-                  {/* Status-Dot */}
-                  <span className={`w-3 h-3 rounded-full ${cfg.dot} shrink-0`} />
+                  {/* Inhalt */}
+                  <div className="flex flex-col flex-1 px-3.5 pt-3 pb-3.5 gap-3">
 
-                  {/* Nummer */}
-                  <p className={`text-base font-bold text-center ${cfg.numColor} tracking-wide leading-none`}>
-                    {section.number}
-                  </p>
+                    {/* Status-Dot oben rechts */}
+                    <div className="flex justify-end">
+                      <span className={`w-2 h-2 rounded-full ${cfg.dot}`} />
+                    </div>
+
+                    {/* Titel – prominent */}
+                    <p className="text-sm font-bold text-gray-800 leading-snug group-hover:text-gray-900 flex-1">
+                      {section.title}
+                    </p>
+
+                    {/* Nummer – zentriert unten */}
+                    <p className={`text-xs font-semibold text-center ${cfg.numColor} tracking-wide`}>
+                      {section.number}
+                    </p>
+                  </div>
                 </Link>
               );
             })}
