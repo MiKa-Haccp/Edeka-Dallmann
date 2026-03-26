@@ -516,11 +516,14 @@ export function useKaesethekeStatus(): TrafficLight {
 
     fetch(`${BASE}/kaesetheke-kontrolle?marketId=${selectedMarketId}&year=${year}&month=${month}`)
       .then(r => r.json())
-      .then((entries: { day: number; kontrolle_art: string }[]) => {
+      .then((entries: { day: number; kontrolle_art: string; temperatur?: string|null; luftfeuchtigkeit?: string|null; kern_temp_garen?: string|null; temp_heisshalten?: string|null; defekt?: boolean; produkt?: string|null }[]) => {
         if (cancelled) return;
 
-        // Vergangene Tage prüfen (alle 3 Arten müssen vorhanden sein)
+        const isSunday = (d: number) => new Date(year, month - 1, d).getDay() === 0;
+
+        // Vergangene Tage prüfen – Sonntage überspringen
         for (let d = 1; d < today; d++) {
+          if (isSunday(d)) continue;
           for (const art of KAESETHEKE_ARTEN) {
             if (!entries.some(e => e.day === d && e.kontrolle_art === art)) {
               setStatus("red");
@@ -528,6 +531,31 @@ export function useKaesethekeStatus(): TrafficLight {
             }
           }
         }
+
+        // Abweichungen prüfen – wenn Messungen vorhanden aber Werte außerhalb Soll
+        const hasDeviation = entries.some(e => {
+          if (e.defekt) return false;
+          if (e.kontrolle_art === "reifeschrank" || e.kontrolle_art === "kaesekühlschrank") {
+            const t = e.temperatur ? parseFloat(e.temperatur.replace(",", ".")) : NaN;
+            if (!isNaN(t)) {
+              if (e.kontrolle_art === "reifeschrank" && (t < 1 || t > 3)) return true;
+              if (e.kontrolle_art === "kaesekühlschrank" && t > 7) return true;
+            }
+            if (e.kontrolle_art === "reifeschrank" && e.luftfeuchtigkeit) {
+              const h = parseFloat(e.luftfeuchtigkeit.replace(",", "."));
+              if (!isNaN(h) && (h < 75 || h > 85)) return true;
+            }
+          }
+          if (e.kontrolle_art === "heisse_theke") {
+            const g = e.kern_temp_garen ? parseFloat(e.kern_temp_garen.replace(",", ".")) : NaN;
+            const min = e.produkt === "Fisch" ? 60 : 72;
+            if (!isNaN(g) && g < min) return true;
+            const h = e.temp_heisshalten ? parseFloat(e.temp_heisshalten.replace(",", ".")) : NaN;
+            if (!isNaN(h) && h < 60) return true;
+          }
+          return false;
+        });
+        if (hasDeviation) { setStatus("red"); return; }
 
         // Heute prüfen
         const todayComplete = KAESETHEKE_ARTEN.every(art =>
