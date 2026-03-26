@@ -403,16 +403,22 @@ export default function GQBegehung() {
     setEditing(true);
   };
 
+  const CQ = currentQuartal();
+  const CY = now.getFullYear();
+  const isFuture = year > CY || (year === CY && quartal > CQ);
+
   const prevQ = () => {
     if (quartal === 1) { setYear(y => y - 1); setQuartal(4); }
     else setQuartal(q => q - 1);
   };
   const nextQ = () => {
-    if (quartal === 4) { setYear(y => y + 1); setQuartal(1); }
-    else setQuartal(q => q + 1);
+    let ny = year, nq = quartal;
+    if (nq === 4) { ny += 1; nq = 1; } else { nq += 1; }
+    const wouldBeFuture = ny > CY || (ny === CY && nq > CQ);
+    if (!wouldBeFuture) { setYear(ny); setQuartal(nq); }
   };
 
-  const isCurrentQ = year === now.getFullYear() && quartal === currentQuartal();
+  const isCurrentQ = year === CY && quartal === CQ;
   const { end: qEnd } = getQuartalRange(year, quartal);
   const daysLeft = Math.ceil((qEnd.getTime() - now.getTime()) / 86400000);
 
@@ -446,12 +452,23 @@ export default function GQBegehung() {
               </span>
             )}
           </div>
-          <button onClick={nextQ} className="w-9 h-9 rounded-xl border bg-white hover:bg-gray-50 flex items-center justify-center">
+          <button onClick={nextQ} disabled={isFuture}
+            className="w-9 h-9 rounded-xl border bg-white hover:bg-gray-50 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed">
             <ChevronRight className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
-        {loading ? (
+        {isFuture ? (
+          <div className="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-5 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <Lock className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-amber-900 text-sm">Dieses Quartal liegt in der Zukunft</p>
+              <p className="text-amber-700 text-xs mt-0.5">Q{quartal} / {year} kann noch nicht ausgefüllt werden.</p>
+            </div>
+          </div>
+        ) : loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
@@ -480,6 +497,7 @@ export default function GQBegehung() {
                 <div>
                   <label className="text-xs font-medium text-gray-500 block mb-1">Durchgeführt am</label>
                   <input type="date" value={durchgefuehrtAm} onChange={e => setDurchgefuehrtAm(e.target.value)}
+                    max={now.toISOString().slice(0, 10)}
                     className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                 </div>
               </div>
