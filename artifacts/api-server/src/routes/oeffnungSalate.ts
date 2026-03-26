@@ -20,6 +20,8 @@ function mapRow(r: Record<string, unknown>) {
     userId: r.user_id,
     createdAt: r.created_at,
     aufgebrauchtAm: r.aufgebraucht_am,
+    aufgebrauchtKuerzel: r.aufgebraucht_kuerzel ?? null,
+    aufgebrauchtUserId: r.aufgebraucht_user_id ?? null,
   };
 }
 
@@ -70,14 +72,21 @@ router.post("/oeffnung-salate", async (req, res) => {
 
 router.patch("/oeffnung-salate/:id/aufgebraucht", async (req, res) => {
   const id = Number(req.params.id);
+  const { kuerzel, userId } = req.body;
   const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date());
-  await pool.query(`UPDATE oeffnung_salate SET aufgebraucht_am=$1 WHERE id=$2`, [today, id]);
+  await pool.query(
+    `UPDATE oeffnung_salate SET aufgebraucht_am=$1, aufgebraucht_kuerzel=$2, aufgebraucht_user_id=$3 WHERE id=$4`,
+    [today, kuerzel || null, userId || null, id]
+  );
   res.json({ ok: true });
 });
 
 router.patch("/oeffnung-salate/:id/aufgebraucht-rueckgaengig", async (req, res) => {
   const id = Number(req.params.id);
-  await pool.query(`UPDATE oeffnung_salate SET aufgebraucht_am=NULL WHERE id=$1`, [id]);
+  await pool.query(
+    `UPDATE oeffnung_salate SET aufgebraucht_am=NULL, aufgebraucht_kuerzel=NULL, aufgebraucht_user_id=NULL WHERE id=$1`,
+    [id]
+  );
   res.json({ ok: true });
 });
 
