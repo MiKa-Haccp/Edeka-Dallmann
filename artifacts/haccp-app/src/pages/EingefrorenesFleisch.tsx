@@ -78,11 +78,9 @@ function NeuerArtikelModal({year,onConfirm,onClose}:{
   });
   const [eingefrorenDurch,setEingefrorenDurch]=useState("");
   const [loading,setLoading]=useState(false);
-  const [identified,setIdentified]=useState<{name:string;userId:number;kuerzel:string}|null>(null);
 
-  const handleConfirm=()=>{
-    if(!identified)return;
-    onConfirm({artikel,vkp,mengeKg,eingefrorenAm,eingefrorenDurch:eingefrorenDurch||identified.name,kuerzel:identified.kuerzel,userId:identified.userId});
+  const handleVerified=(_name:string,userId:number,kuerzel:string)=>{
+    onConfirm({artikel,vkp,mengeKg,eingefrorenAm,eingefrorenDurch:eingefrorenDurch||_name,kuerzel,userId});
   };
 
   return(
@@ -132,25 +130,8 @@ function NeuerArtikelModal({year,onConfirm,onClose}:{
           </div>
         )}
 
-        {step==="pin"&&!identified&&(
-          <PinStep onVerified={(name,userId,kuerzel)=>setIdentified({name,userId,kuerzel})} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
-        )}
-
-        {identified&&(
-          <div className="space-y-3 text-center">
-            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto"><Check className="w-6 h-6 text-green-600"/></div>
-            <p className="font-medium">{identified.name}</p>
-            <div className="text-left bg-muted/30 rounded-lg p-3 text-sm space-y-1">
-              <p><span className="text-muted-foreground">Artikel:</span> <strong>{artikel}</strong></p>
-              {vkp&&<p><span className="text-muted-foreground">VKP:</span> {vkp} EUR</p>}
-              {mengeKg&&<p><span className="text-muted-foreground">Menge:</span> {mengeKg} kg</p>}
-              <p><span className="text-muted-foreground">Eingefroren am:</span> {eingefrorenAm.split("-").reverse().join(".")}</p>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={()=>setIdentified(null)} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurueck</button>
-              <button onClick={handleConfirm} className="flex-1 bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-green-700">Speichern</button>
-            </div>
-          </div>
+        {step==="pin"&&(
+          <PinStep onVerified={handleVerified} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
         )}
       </div>
     </div>
@@ -177,7 +158,6 @@ function EntnahmeModal({entry,onSaved,onClose}:{
     const n=new Date();return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`;
   });
   const [loading,setLoading]=useState(false);
-  const [identified,setIdentified]=useState<{name:string;userId:number;kuerzel:string}|null>(null);
 
   // Restmengen-Berechnung
   const gesamtKg = parseKg(entry.menge_kg);
@@ -186,8 +166,7 @@ function EntnahmeModal({entry,onSaved,onClose}:{
   const neueEntnahme = parseKg(menge);
   const ueberschritten = restKg !== null && menge.trim() !== "" && neueEntnahme > restKg;
 
-  const handleConfirm=async()=>{
-    if(!identified)return;
+  const handleVerified=async(_name:string,_userId:number,_kuerzel:string)=>{
     const body:Record<string,string>={};
     if(nextSlot!=="full"&&menge) body[`entnahme${nextSlot}Kg`]=menge;
     if(aufgebraucht) body.aufgebrauchtAm=aufgebrauchtDatum;
@@ -280,21 +259,8 @@ function EntnahmeModal({entry,onSaved,onClose}:{
           </div>
         )}
 
-        {step==="pin"&&!identified&&(
-          <PinStep onVerified={(name,userId,kuerzel)=>setIdentified({name,userId,kuerzel})} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
-        )}
-
-        {identified&&(
-          <div className="space-y-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto"><Check className="w-6 h-6 text-green-600"/></div>
-            <p className="font-medium">{identified.name}</p>
-            {menge&&<p className="text-sm text-muted-foreground">Entnahme: <strong>{menge} kg</strong></p>}
-            {aufgebraucht&&<p className="text-sm text-green-600 font-medium">Vollständig aufgebraucht</p>}
-            <div className="flex gap-2">
-              <button onClick={()=>setIdentified(null)} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurück</button>
-              <button onClick={handleConfirm} className="flex-1 bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-green-700">Speichern</button>
-            </div>
-          </div>
+        {step==="pin"&&(
+          <PinStep onVerified={handleVerified} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
         )}
       </div>
     </div>
