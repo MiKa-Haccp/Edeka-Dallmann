@@ -31,7 +31,8 @@ const SECTIONS: Section[] = [
   {
     id: "vorb", label: "Vorbereitungsräume / Produktionsräume", short: "Vorber.",
     items: [
-      { key:"vorb_fussboden",  label:"Fußboden, Abflüsse (Gullys)",                tTyp:"R", wTyp:"D",   bemerkung:"Pfützenbildung vermeiden!" },
+      { key:"vorb_fussboden",   label:"Fußboden, Abflüsse (Gullys)", sublabel:"täglich reinigen",          tTyp:"R", bemerkung:"Pfützenbildung vermeiden!" },
+      { key:"vorb_fussboden_w", label:"Fußboden, Abflüsse (Gullys)", sublabel:"wöchentlich desinfizieren", wTyp:"D" },
       { key:"vorb_waende",     label:"Wände (Fliesen), Türen",                     wTyp:"R+D" },
       { key:"vorb_tuergriffe", label:"Türgriffe, Lichtschalter",                   tTyp:"R+D" },
       { key:"vorb_arbeits",
@@ -61,7 +62,8 @@ const SECTIONS: Section[] = [
   {
     id: "theke", label: "Theke", short: "Theke",
     items: [
-      { key:"theke_fussboden",  label:"Fußboden, Abflüsse (Gullys)",                        tTyp:"R", wTyp:"D" },
+      { key:"theke_fussboden",   label:"Fußboden, Abflüsse (Gullys)", sublabel:"täglich reinigen",          tTyp:"R" },
+      { key:"theke_fussboden_w", label:"Fußboden, Abflüsse (Gullys)", sublabel:"wöchentlich desinfizieren", wTyp:"D" },
       { key:"theke_tueren",     label:"Türen",                                               tTyp:"R" },
       { key:"theke_tuergriffe", label:"Türgriffe, Lichtschalter",                            tTyp:"R+D" },
       { key:"theke_arbeits",    label:"Arbeitstische, Schneidebretter, Schränke, Waschbecken", tTyp:"R+D", bemerkung:"Alle Flächen regelmäßig zwischenreinigen, Bretter abschleifen" },
@@ -70,7 +72,8 @@ const SECTIONS: Section[] = [
       { key:"theke_hackfleisch",label:"Hackfleischwolf",                                     tTyp:"R+D", bemerkung:"2x täglich (mittags und abends): Gehäuse und Innenbauteile" },
       { key:"theke_warmhalte",  label:"Warmhaltegeräte",                                     tTyp:"R" },
       { key:"theke_waagen",     label:"Waagen, Arbeitsgeräte, Maschinen, Reinigungsgeräte", tTyp:"R+D", bemerkung:"Mehrmals täglich zwischenreinigen" },
-      { key:"theke_verkauf",    label:"Verkaufstheke: Glas, Thekenwanne, restliche Flächen", tTyp:"R", wTyp:"D" },
+      { key:"theke_verkauf",   label:"Verkaufstheke: Glas, Thekenwannen, restliche Flächen", sublabel:"täglich reinigen",          tTyp:"R" },
+      { key:"theke_verkauf_w", label:"Verkaufstheke: Glas, Thekenwannen, restliche Flächen", sublabel:"wöchentlich desinfizieren", wTyp:"D" },
       { key:"theke_fisch",      label:"Fischtheke: Glas, Thekenwannen, restliche Flächen",  tTyp:"R+D" },
       { key:"theke_hygiene",    label:"Papier-/Handhygienespender",                          tTyp:"R" },
       { key:"theke_preise",     label:"Preisschilder, Dekomaterialien",                      tTyp:"R+D", bemerkung:"Kontakt mit offenen Lebensmitteln vermeiden" },
@@ -141,13 +144,8 @@ function weekDates(kw: number, year: number): Date[] {
 const TAGS = ["Mo","Di","Mi","Do","Fr","Sa"];
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
-const TYP_STYLE: Record<string,string> = {
-  "R":   "bg-red-100 text-red-700 border-red-200",
-  "D":   "bg-blue-100 text-blue-700 border-blue-200",
-  "R+D": "bg-purple-100 text-purple-700 border-purple-200",
-};
 function Badge({typ,prefix}:{typ:string;prefix:string}) {
-  return <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${TYP_STYLE[typ]||"bg-gray-100 text-gray-600"}`}>{prefix}·{typ}</span>;
+  return <span className="text-[10px] font-bold px-1.5 py-0.5 rounded border bg-gray-100 text-gray-600 border-gray-300">{prefix}{prefix?"·":""}{typ}</span>;
 }
 
 // ─── PIN-Modal ─────────────────────────────────────────────────────────────────
@@ -290,15 +288,28 @@ export default function MetzgereiReinigung() {
     return m;
   },[jEntries]);
 
-  // Statuszählung
+  // Statuszählung — aktiver Bereich
   const stats = useMemo(()=>{
     const section = SECTIONS[activeSection];
     const today = dates.find(d=>toIso(d)===todayStr);
     if(!today) return { done:0, total:0 };
-    const total = section.items.filter(i=>i.tTyp||i.wTyp).length;
-    const done  = section.items.filter(i=>entryMap.has(`${i.key}__${toIso(today)}`)).length;
+    const dailyItems = section.items.filter(i=>i.tTyp);
+    const total = dailyItems.length;
+    const done  = dailyItems.filter(i=>entryMap.has(`${i.key}__${toIso(today)}`)).length;
     return { done, total };
   },[activeSection, dates, entryMap, todayStr]);
+
+  // Statuszählung — alle Bereiche (für Sektion-Tabs)
+  const sectionStats = useMemo(()=>{
+    const today = dates.find(d=>toIso(d)===todayStr);
+    return SECTIONS.map(s=>{
+      if(!today) return { done:0, total:0 };
+      const dailyItems = s.items.filter(i=>i.tTyp);
+      const total = dailyItems.length;
+      const done  = dailyItems.filter(i=>entryMap.has(`${i.key}__${toIso(today)}`)).length;
+      return { done, total };
+    });
+  },[dates, entryMap, todayStr]);
 
   // KW Navigation
   const prevWeek = () => {
@@ -383,16 +394,23 @@ export default function MetzgereiReinigung() {
         </div>
 
         {/* ── Tabs ─────────────────────────────────────────────────────────── */}
-        <div className="flex gap-2 print:hidden">
+        <div className="grid grid-cols-2 gap-3 print:hidden">
           {([
-            {t:"woche", l:"Wochenplan",  status:wocheStatus},
-            {t:"jahr",  l:"Jahresplan",  status:jahrStatus},
-          ] as {t:"woche"|"jahr"; l:string; status:TrafficLight}[]).map(({t,l,status})=>(
+            {t:"woche", l:"Wochenplan",  sub:"Tägliche & wöchentliche Reinigung", status:wocheStatus},
+            {t:"jahr",  l:"Jahresplan",  sub:"Quartals- & Jahresaufgaben",         status:jahrStatus},
+          ] as {t:"woche"|"jahr"; l:string; sub:string; status:TrafficLight}[]).map(({t,l,sub,status})=>(
             <button key={t} onClick={()=>setTab(t)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors ${tab===t?"bg-[#1a3a6b] text-white":"bg-white border border-border text-muted-foreground hover:bg-secondary"}`}>
-              {t==="woche"?<CalendarDays className="w-4 h-4"/>:<ListChecks className="w-4 h-4"/>}
-              {l}
-              <StatusDot status={status} active={tab===t}/>
+              className={`flex items-center gap-3 px-5 py-4 rounded-2xl text-left font-bold transition-all border-2 ${tab===t?"bg-[#1a3a6b] text-white border-[#1a3a6b] shadow-md":"bg-white border-border text-foreground hover:border-[#1a3a6b]/40 hover:shadow-sm"}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tab===t?"bg-white/20":"bg-[#1a3a6b]/10"}`}>
+                {t==="woche"?<CalendarDays className={`w-5 h-5 ${tab===t?"text-white":"text-[#1a3a6b]"}`}/>:<ListChecks className={`w-5 h-5 ${tab===t?"text-white":"text-[#1a3a6b]"}`}/>}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{l}</span>
+                  <StatusDot status={status} active={tab===t}/>
+                </div>
+                <p className={`text-xs font-normal mt-0.5 truncate ${tab===t?"text-white/70":"text-muted-foreground"}`}>{sub}</p>
+              </div>
             </button>
           ))}
         </div>
@@ -424,13 +442,27 @@ export default function MetzgereiReinigung() {
             </div>
 
             {/* Section Tabs */}
-            <div className="flex gap-2 overflow-x-auto print:hidden">
-              {SECTIONS.map((s,i)=>(
-                <button key={s.id} onClick={()=>setAS(i)}
-                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${activeSection===i?"bg-[#b91c1c] text-white":"bg-white border border-border text-muted-foreground hover:bg-secondary"}`}>
-                  <ClipboardList className="w-4 h-4"/>{s.short}
-                </button>
-              ))}
+            <div className="grid grid-cols-3 gap-2 print:hidden">
+              {SECTIONS.map((s,i)=>{
+                const st = sectionStats[i];
+                const allDone = st.total>0 && st.done===st.total;
+                const active = activeSection===i;
+                return (
+                  <button key={s.id} onClick={()=>setAS(i)}
+                    className={`flex flex-col items-start gap-1 px-4 py-3 rounded-xl font-semibold transition-all border-2 ${active?"bg-[#b91c1c] text-white border-[#b91c1c] shadow-md":"bg-white border-border text-foreground hover:border-[#b91c1c]/40"}`}>
+                    <div className="flex items-center gap-1.5 w-full">
+                      <ClipboardList className="w-4 h-4 shrink-0"/>
+                      <span className="text-sm flex-1 text-left">{s.short}</span>
+                      {allDone && <Check className="w-3.5 h-3.5 text-green-400 shrink-0"/>}
+                    </div>
+                    {st.total>0 && (
+                      <span className={`text-xs font-normal ${active?"text-white/70":"text-muted-foreground"}`}>
+                        {st.done}/{st.total} heute
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
 
             {/* Hinweis */}
@@ -502,17 +534,23 @@ export default function MetzgereiReinigung() {
                               const allFut   = toIso(dates[0]) > todayStr;
                               const lastDay  = [...dates].reverse().find(d=>toIso(d)<=todayStr);
                               const signDatum = lastDay ? toIso(lastDay) : toIso(dates[0]);
+                              // Mo (=1) oder Su (=0): noch kein Druck; ab Di (≥2) gelb wenn offen
+                              const todayDow = new Date().getDay();
+                              const isCurrentWeek = vonDate<=todayStr && todayStr<=bisDate;
+                              const showYellow = isCurrentWeek && !weekEntry && todayDow>=2;
+                              const wColor = weekEntry
+                                ? "bg-green-50 border-green-300 cursor-default"
+                                : allFut
+                                  ? "bg-gray-50 border-gray-200 opacity-40 cursor-not-allowed"
+                                  : showYellow
+                                    ? "bg-amber-50 border-amber-300 hover:bg-amber-100 cursor-pointer"
+                                    : "bg-gray-50 border-dashed border-gray-300 hover:bg-gray-100 cursor-pointer";
                               return (
                                 <td key="wonly" colSpan={6} className="px-3 py-1.5 align-middle">
                                   <button
                                     disabled={allFut || !!weekEntry}
                                     onClick={()=>!allFut&&!weekEntry&&setSigning({itemKey:item.key,datum:signDatum,label:item.label})}
-                                    className={`w-full h-9 rounded-lg flex items-center justify-center border border-dashed transition-all
-                                      ${weekEntry
-                                        ? "bg-green-50 border-green-200 cursor-default"
-                                        : allFut
-                                          ? "bg-gray-50 border-gray-200 opacity-40 cursor-not-allowed"
-                                          : "bg-red-50 border-red-200 hover:bg-red-100 active:scale-[0.99] cursor-pointer"}`}>
+                                    className={`w-full h-9 rounded-lg flex items-center justify-center border transition-all active:scale-[0.99] ${wColor}`}>
                                     {weekEntry ? (
                                       <span className="flex items-center gap-2 text-xs font-semibold text-green-700">
                                         <Check className="w-3.5 h-3.5"/>
@@ -522,6 +560,10 @@ export default function MetzgereiReinigung() {
                                       </span>
                                     ) : allFut ? (
                                       <span className="text-xs text-gray-400">Noch nicht freigegeben</span>
+                                    ) : showYellow ? (
+                                      <span className="text-xs text-amber-700 font-semibold flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block"/>Woche noch offen — abzeichnen
+                                      </span>
                                     ) : (
                                       <span className="text-xs text-gray-400 flex items-center gap-1.5">
                                         <span className="text-gray-300">+</span> Woche abzeichnen
