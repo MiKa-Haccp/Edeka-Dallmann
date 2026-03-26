@@ -6,6 +6,11 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useWarenzustandOGStatus, useReinigungTaeglichStatus, useWareneingaengeStatus, useMetzgereiWareneingaengeStatus, useMetzgereiReinigungStatus, useKaesethekeStatus, useOeffnungSalateStatus, useGQBegehungStatus, useSchulungsnachweiseStatus, useResponsibilitiesStatus, useAnnualCleaningPlanStatus, useBetriebsbegehungStatus, type TrafficLight } from "@/hooks/useWarenzustandStatus";
+import { useAppStore } from "@/store/use-app-store";
+
+const MARKET_SECTION_TITLE_OVERRIDES: Record<number, Record<string, string>> = {
+  3: { "2.4": "Zugangsdaten Hauser-Portal" },
+};
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -20,6 +25,7 @@ const STORAGE_KEY = "haccp-sidebar-width";
 function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNavigate?: () => void }) {
   const { data: sections, isLoading } = useListSections(categoryId);
   const [location] = useLocation();
+  const selectedMarketId = useAppStore(s => s.selectedMarketId);
   const ogStatus               = useWarenzustandOGStatus();
   const reinigungStatus        = useReinigungTaeglichStatus();
   const wareneingaengeStatus   = useWareneingaengeStatus();
@@ -69,7 +75,7 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
             )}
           >
             <FileText className={cn("h-4 w-4 flex-shrink-0", iconColor)} />
-            <span className="truncate">{section.number} {section.title}</span>
+            <span className="truncate">{section.number} {(selectedMarketId && MARKET_SECTION_TITLE_OVERRIDES[selectedMarketId]?.[section.number]) || section.title}</span>
           </Link>
         );
       })}
