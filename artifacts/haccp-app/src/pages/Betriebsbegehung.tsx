@@ -406,6 +406,8 @@ export default function Betriebsbegehung() {
     .filter((r) => r.year === CURRENT_YEAR)
     .map((r) => r.quartal);
 
+  const isFuture = isFutureQuartal(year, quartal);
+
   return (
     <AppLayout>
       <div className="max-w-full space-y-4 pb-8">
@@ -494,6 +496,20 @@ export default function Betriebsbegehung() {
           </div>
         </div>
 
+        {isFuture && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <span className="text-lg">🔒</span>
+            </div>
+            <div>
+              <p className="font-semibold text-amber-900 text-sm">Dieses Quartal liegt in der Zukunft</p>
+              <p className="text-amber-700 text-xs mt-0.5">Q{quartal} {year} kann noch nicht ausgefüllt werden.</p>
+            </div>
+          </div>
+        )}
+
+        {!isFuture && (
+        <div className="contents">
         <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
           <div className="bg-secondary/30 border-b border-border/60 px-6 py-4">
             <h2 className="font-semibold text-foreground text-sm">Allgemeine Angaben</h2>
@@ -661,6 +677,8 @@ export default function Betriebsbegehung() {
             </button>
           </div>
         </div>
+        </div>
+        )}
 
         {reports.length > 1 && (
           <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
