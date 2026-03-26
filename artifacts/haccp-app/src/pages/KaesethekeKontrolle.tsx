@@ -207,7 +207,7 @@ function TempModal({art,day,year,month,editEntry,onConfirm,onClose}:{
             </div>
             {art==="reifeschrank"&&(
               <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">Luftfeuchtigkeit (% rH) <span className="text-muted-foreground/60">Soll: 75–85%</span></label>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Luftfeuchtigkeit (% rH) <span className="text-muted-foreground/60">Soll: 75–85%</span> <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <input type="text" inputMode="decimal" placeholder="z.B. 80,0" value={feuchte} onChange={e=>setFeuchte(e.target.value)}
                     className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${hStatus==="warn"?"border-red-400 bg-red-50":hStatus==="ok"?"border-green-400 bg-green-50":""}`}/>
@@ -232,7 +232,7 @@ function TempModal({art,day,year,month,editEntry,onConfirm,onClose}:{
                 <AlertTriangle className="w-4 h-4"/>Defekt
               </button>}
               <button onClick={onClose} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Abbrechen</button>
-              <button onClick={()=>setStep("pin")} disabled={!temp||(hasWarn&&!massnahme.trim())||(isEdit&&!aenderungsgrund.trim())}
+              <button onClick={()=>setStep("pin")} disabled={!temp||(art==="reifeschrank"&&!feuchte.trim())||(hasWarn&&!massnahme.trim())||(isEdit&&!aenderungsgrund.trim())}
                 className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50">Weiter</button>
             </div>
           </div>
@@ -286,7 +286,7 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
 
   const hSt=heisshaltenStatus(sharedHeissTemp);
 
-  const canProceed=selected.length>0&&selected.every(p=>{
+  const canProceed=selected.length>0&&!!sharedHeissTemp.trim()&&selected.every(p=>{
     const inp=inputs[p];
     if(p==="Sonstiges")return inp.customName.trim()&&inp.kernTemp;
     return inp.kernTemp;
@@ -380,7 +380,7 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
               {selected.length>0&&(
                 <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                   <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium text-amber-800 w-36 shrink-0">Heisshalten Theke <span className="text-amber-600/70">≥60°C</span></label>
+                    <label className="text-xs font-medium text-amber-800 w-36 shrink-0">Heisshalten Theke <span className="text-amber-600/70">≥60°C</span> <span className="text-red-500">*</span></label>
                     <div className="relative flex-1">
                       <input type="text" inputMode="decimal" placeholder="z.B. 65,0" value={sharedHeissTemp} onChange={e=>setSharedHeissTemp(e.target.value)}
                         className={`w-full border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 pr-16 ${hSt==="warn"?"border-red-400 bg-red-50":hSt==="ok"?"border-green-400 bg-green-50":"border-amber-300"}`}/>
@@ -633,7 +633,7 @@ function HeisseThekeEditModal({entry,onConfirm,onClose}:{
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">Heisshalten <span className="text-muted-foreground/60">≥60°C</span></label>
+              <label className="text-xs font-medium text-muted-foreground block mb-1">Heisshalten <span className="text-muted-foreground/60">≥60°C</span> <span className="text-red-500">*</span></label>
               <div className="relative">
                 <input type="text" inputMode="decimal" placeholder="z.B. 65,0" value={heissTemp} onChange={e=>setHeissTemp(e.target.value)}
                   className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${hSt==="warn"?"border-red-400 bg-red-50":hSt==="ok"?"border-green-400 bg-green-50":""}`}/>
@@ -652,7 +652,7 @@ function HeisseThekeEditModal({entry,onConfirm,onClose}:{
             </div>
             <div className="flex gap-2">
               <button onClick={onClose} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Abbrechen</button>
-              <button onClick={()=>setStep("pin")} disabled={!kernTemp||(hasWarn&&!massnahme.trim())||!aenderungsgrund.trim()} className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50">Weiter</button>
+              <button onClick={()=>setStep("pin")} disabled={!kernTemp||!heissTemp.trim()||(hasWarn&&!massnahme.trim())||!aenderungsgrund.trim()} className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50">Weiter</button>
             </div>
           </div>
         ):(
