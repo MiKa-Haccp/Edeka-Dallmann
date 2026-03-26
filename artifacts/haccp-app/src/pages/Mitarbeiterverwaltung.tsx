@@ -40,6 +40,8 @@ interface ComplianceTraining {
   pflichtId: number;
   bezeichnung: string;
   kategorie: string;
+  subbereich: string | null;
+  personSpezifisch: boolean;
   intervallMonate: number;
   status: "ok" | "bald_fällig" | "überfällig" | "fehlend" | "ausnahme";
   naechsteSchulung: string | null;

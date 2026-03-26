@@ -4,7 +4,7 @@ import { useAppStore } from "@/store/use-app-store";
 import {
   GraduationCap, Plus, Pencil, Trash2, Save, X, AlertTriangle,
   CheckCircle2, Clock, ChevronLeft, Loader2, ToggleLeft, ToggleRight,
-  Users, ShieldAlert, AlarmClock,
+  Users, ShieldAlert, AlarmClock, UserCheck,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -24,6 +24,8 @@ interface Pflicht {
   gueltige_gruppen: string[];
   intervall_monate: number;
   is_active: boolean;
+  person_spezifisch: boolean;
+  subbereich: string | null;
 }
 
 interface ComplianceEntry {
@@ -38,6 +40,8 @@ interface ComplianceEntry {
     pflichtId: number;
     bezeichnung: string;
     kategorie: string;
+    subbereich: string | null;
+    personSpezifisch: boolean;
     intervallMonate: number;
     status: "ok" | "bald_fällig" | "überfällig" | "fehlend" | "ausnahme";
     naechsteSchulung: string | null;
@@ -92,6 +96,8 @@ function PflichtForm({ initial, onSave, onCancel }: {
   const [bezeichnung, setBezeichnung] = useState(initial?.bezeichnung || "");
   const [gruppen, setGruppen] = useState<string[]>(initial?.gueltige_gruppen || []);
   const [intervall, setIntervall] = useState(initial?.intervall_monate || 12);
+  const [personSpezifisch, setPersonSpezifisch] = useState(initial?.person_spezifisch || false);
+  const [subbereich, setSubbereich] = useState(initial?.subbereich || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -100,8 +106,12 @@ function PflichtForm({ initial, onSave, onCancel }: {
   };
 
   const handleSave = async () => {
-    if (!kategorie.trim() || !bezeichnung.trim() || gruppen.length === 0) {
-      setError("Bitte alle Felder ausfüllen und mindestens eine Gruppe wählen.");
+    if (!kategorie.trim() || !bezeichnung.trim()) {
+      setError("Bitte Kategorie und Anzeigename ausfüllen.");
+      return;
+    }
+    if (!personSpezifisch && gruppen.length === 0) {
+      setError("Bitte mindestens eine Gruppe wählen oder auf Personenspezifisch umschalten.");
       return;
     }
     setSaving(true);
@@ -110,9 +120,11 @@ function PflichtForm({ initial, onSave, onCancel }: {
       tenantId,
       schulungKategorie: kategorie.trim(),
       bezeichnung: bezeichnung.trim(),
-      gueltigeGruppen: gruppen,
+      gueltigeGruppen: personSpezifisch ? [] : gruppen,
       intervallMonate: intervall,
       isActive: initial?.is_active ?? true,
+      personSpezifisch,
+      subbereich: subbereich.trim() || null,
     });
     setSaving(false);
   };
@@ -135,21 +147,60 @@ function PflichtForm({ initial, onSave, onCancel }: {
         </div>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Gilt für Gruppen</label>
-        <div className="flex flex-wrap gap-2">
-          {GRUPPEN_OPTS.map((g) => {
-            const active = gruppen.includes(g.value);
-            return (
-              <button key={g.value} type="button" onClick={() => toggleGruppe(g.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${active ? `${g.bg} ${g.color}` : "bg-white border-border/60 text-muted-foreground hover:border-[#1a3a6b]/30"}`}>
-                {g.label}
-              </button>
-            );
-          })}
+      {/* Personenspezifisch Toggle */}
+      <div className="flex flex-col gap-2">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Zuordnungsart</label>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setPersonSpezifisch(false)}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${!personSpezifisch ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "bg-white text-muted-foreground border-border/60 hover:border-[#1a3a6b]/30"}`}>
+            <Users className="w-3.5 h-3.5" /> Gruppenbasiert
+          </button>
+          <button type="button" onClick={() => setPersonSpezifisch(true)}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${personSpezifisch ? "bg-teal-600 text-white border-teal-600" : "bg-white text-muted-foreground border-border/60 hover:border-teal-400"}`}>
+            <UserCheck className="w-3.5 h-3.5" /> Personenspezifisch
+          </button>
         </div>
+        {personSpezifisch ? (
+          <p className="text-xs text-teal-700 bg-teal-50 border border-teal-200 rounded-lg px-3 py-2">
+            <strong>Personenspezifisch:</strong> Gilt automatisch für alle Mitarbeiter, die bereits einen Nachweis dieser Kategorie im Schulungsordner haben. Ideal für Ersthelfer, Brandschutzbeauftragte, Strohschwein-Schulungen etc.
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">Schulung gilt verpflichtend für alle Mitarbeiter der gewählten Gruppen.</p>
+        )}
       </div>
 
+      {/* Gruppen (nur wenn gruppenbasiert) */}
+      {!personSpezifisch && (
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Gilt für Gruppen</label>
+          <div className="flex flex-wrap gap-2">
+            {GRUPPEN_OPTS.map((g) => {
+              const active = gruppen.includes(g.value);
+              return (
+                <button key={g.value} type="button" onClick={() => toggleGruppe(g.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${active ? `${g.bg} ${g.color}` : "bg-white border-border/60 text-muted-foreground hover:border-[#1a3a6b]/30"}`}>
+                  {g.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Subbereich */}
+      <div className="flex flex-col gap-1">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          Subbereich <span className="text-muted-foreground font-normal normal-case">(optional)</span>
+        </label>
+        <input value={subbereich} onChange={(e) => setSubbereich(e.target.value)}
+          placeholder="z.B. Feuerwerk, Fleischhygiene"
+          className="px-3 py-2 rounded-lg border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+        <p className="text-xs text-muted-foreground">
+          Wenn gesetzt, wird auch das Feld „Bezeichnung" im Schulungsnachweis abgeglichen (enthält den Subbereich).
+        </p>
+      </div>
+
+      {/* Intervall */}
       <div className="flex flex-col gap-1">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Wiederholungsintervall</label>
         <div className="flex flex-wrap gap-2">
@@ -246,6 +297,8 @@ export default function SchulungsAnforderungen() {
         gueltigeGruppen: p.gueltige_gruppen,
         intervallMonate: p.intervall_monate,
         isActive: !p.is_active,
+        personSpezifisch: p.person_spezifisch,
+        subbereich: p.subbereich,
       }),
     });
     await loadPflichten();
@@ -265,7 +318,7 @@ export default function SchulungsAnforderungen() {
   const withProblems = compliance.filter((e) => e.hasProblems || e.warningCount > 0);
   const problemOnly = compliance.filter((e) => e.hasProblems);
   const warnOnly = compliance.filter((e) => !e.hasProblems && e.warningCount > 0);
-  const okOnly = compliance.filter((e) => !e.hasProblems && e.warningCount === 0);
+  const okOnly = compliance.filter((e) => !e.hasProblems && e.warningCount === 0 && e.trainings.length > 0);
 
   return (
     <AppLayout>
@@ -308,6 +361,11 @@ export default function SchulungsAnforderungen() {
               )}
             </div>
 
+            {/* Hinweis-Box personenspezifische Schulungen */}
+            <div className="bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 text-xs text-teal-800 leading-relaxed">
+              <strong>Personenspezifische Schulungen</strong> (z.B. Ersthelfer, Brandschutz, Strohschwein) erscheinen automatisch bei den Mitarbeitern, die einen entsprechenden Nachweis im Schulungsordner hinterlegt haben — unabhängig von der Gruppe.
+            </div>
+
             {showForm && (
               <PflichtForm
                 onSave={handleCreate}
@@ -320,7 +378,7 @@ export default function SchulungsAnforderungen() {
             ) : (
               <div className="space-y-3">
                 {pflichten.map((p) => (
-                  <div key={p.id} className={`bg-white rounded-2xl border-2 overflow-hidden transition-all ${p.is_active ? "border-border/40" : "border-slate-200 opacity-60"}`}>
+                  <div key={p.id} className={`bg-white rounded-2xl border-2 overflow-hidden transition-all ${p.is_active ? (p.person_spezifisch ? "border-teal-200" : "border-border/40") : "border-slate-200 opacity-60"}`}>
                     {editingId === p.id ? (
                       <div className="p-4">
                         <PflichtForm
@@ -335,20 +393,28 @@ export default function SchulungsAnforderungen() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <p className="text-sm font-bold text-foreground">{p.bezeichnung}</p>
+                              {p.person_spezifisch && (
+                                <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-100 border border-teal-200 text-teal-700">
+                                  <UserCheck className="w-3 h-3" /> Personenspezifisch
+                                </span>
+                              )}
                               {!p.is_active && (
                                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">Inaktiv</span>
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground mt-0.5">
                               Kategorie: <span className="font-semibold text-foreground">{p.schulung_kategorie}</span>
+                              {p.subbereich && <> · Subbereich: <span className="font-semibold text-foreground">{p.subbereich}</span></>}
                               {" · "}
                               <Clock className="w-3 h-3 inline" /> {INTERVALL_LABEL[p.intervall_monate] || `Alle ${p.intervall_monate} Monate`}
                             </p>
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {(p.gueltige_gruppen || []).map((g) => (
-                                <GruppePill key={g} value={g} />
-                              ))}
-                            </div>
+                            {!p.person_spezifisch && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {(p.gueltige_gruppen || []).map((g) => (
+                                  <GruppePill key={g} value={g} />
+                                ))}
+                              </div>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <button onClick={() => handleToggleActive(p)} title={p.is_active ? "Deaktivieren" : "Aktivieren"}
@@ -391,7 +457,6 @@ export default function SchulungsAnforderungen() {
               <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
             ) : (
               <>
-                {/* Summary stats */}
                 <div className="grid grid-cols-3 gap-3">
                   <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-center">
                     <p className="text-2xl font-bold text-red-700">{problemOnly.length}</p>
@@ -414,7 +479,6 @@ export default function SchulungsAnforderungen() {
                   </div>
                 )}
 
-                {/* Employees with issues first */}
                 {withProblems.length > 0 && (
                   <div className="space-y-2">
                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Handlungsbedarf / Bald fällig</p>
@@ -459,11 +523,14 @@ function ComplianceCard({ entry, compact }: { entry: ComplianceEntry; compact?: 
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-foreground">{entry.name}</p>
-          {gruppe && (
-            <span className={`inline-flex items-center text-xs font-semibold px-1.5 py-0.5 rounded-full border ${gruppe.bg} ${gruppe.color}`}>
-              {gruppe.label}
-            </span>
-          )}
+          <div className="flex items-center gap-2 flex-wrap mt-0.5">
+            {gruppe && (
+              <span className={`inline-flex items-center text-xs font-semibold px-1.5 py-0.5 rounded-full border ${gruppe.bg} ${gruppe.color}`}>
+                {gruppe.label}
+              </span>
+            )}
+            <span className="text-xs text-muted-foreground">{entry.trainings.length} Schulung{entry.trainings.length !== 1 ? "en" : ""} relevant</span>
+          </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {entry.hasProblems && (
@@ -476,7 +543,7 @@ function ComplianceCard({ entry, compact }: { entry: ComplianceEntry; compact?: 
               <AlarmClock className="w-3 h-3" /> {entry.warningCount} bald
             </span>
           )}
-          {!entry.hasProblems && entry.warningCount === 0 && (
+          {!entry.hasProblems && entry.warningCount === 0 && entry.trainings.length > 0 && (
             <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 border border-green-200 text-green-700">
               <CheckCircle2 className="w-3 h-3" /> OK
             </span>
@@ -489,7 +556,12 @@ function ComplianceCard({ entry, compact }: { entry: ComplianceEntry; compact?: 
           {entry.trainings.map((t) => (
             <div key={t.pflichtId} className="flex items-center gap-3 py-1.5 border-b border-border/20 last:border-0">
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-foreground">{t.bezeichnung}</p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="text-xs font-semibold text-foreground">{t.bezeichnung}</p>
+                  {t.personSpezifisch && (
+                    <span className="text-xs text-teal-600 font-medium">· Extern</span>
+                  )}
+                </div>
                 {t.naechsteSchulung && (
                   <p className="text-xs text-muted-foreground mt-0.5">
                     Nächste Schulung: {new Date(t.naechsteSchulung).toLocaleDateString("de-DE")}
