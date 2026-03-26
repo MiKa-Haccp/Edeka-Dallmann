@@ -458,7 +458,7 @@ export default function ReinigungTaeglich() {
               <ClipboardCheck className="w-6 h-6 text-[#1a3a6b]" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-foreground">2.2 Reinigungsdokumentation</h1>
+              <h1 className="text-xl font-bold text-foreground">2.3 Reinigungsdokumentation</h1>
               <p className="text-sm text-muted-foreground">{selectedMarketName || "Kein Markt"} &mdash; tägliche Kontrolle</p>
             </div>
           </div>

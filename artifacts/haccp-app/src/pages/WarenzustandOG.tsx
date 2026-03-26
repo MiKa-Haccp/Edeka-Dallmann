@@ -191,7 +191,7 @@ function QuickCheckPanel({
 
         {/* Titel */}
         <div className="text-center space-y-1">
-          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">2.1 · Warenzustand Obst & Gemüse</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">2.2 · Warenzustand Obst & Gemüse</p>
           <h2 className="text-xl font-bold text-gray-900">Zustand geprüft?</h2>
           <p className="text-sm text-gray-500">
             {day}. {MONTH_NAMES[month - 1]} {year} &mdash; <span className="font-semibold text-gray-700">{slot.label}</span>
@@ -446,7 +446,7 @@ export default function WarenzustandOG() {
                 <Salad className="w-6 h-6 text-green-700" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">2.1 Warenzustand Obst & Gemüse</h1>
+                <h1 className="text-xl font-bold text-foreground">2.2 Warenzustand Obst & Gemüse</h1>
                 <p className="text-xs text-muted-foreground mt-0.5">EDEKA Formblatt 3.7 &mdash; Kontrolle je Zeitfenster</p>
               </div>
             </div>

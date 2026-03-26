@@ -32,7 +32,7 @@ export default function CarrierPortal() {
             <Globe className="w-6 h-6 text-[#1a3a6b]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">2.3 Zugangsdaten Carrier-Portal</h1>
+            <h1 className="text-xl font-bold text-foreground">2.4 Zugangsdaten Carrier-Portal</h1>
             <p className="text-sm text-muted-foreground">Online-Serviceportal für Kühlsysteme</p>
           </div>
         </div>
