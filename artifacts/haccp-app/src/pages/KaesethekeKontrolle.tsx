@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
@@ -146,7 +146,6 @@ function TempModal({art,day,year,month,onConfirm,onClose}:{
   const [step,setStep]=useState<"form"|"pin"|"defektPin">("form");
   const [temp,setTemp]=useState("");const[feuchte,setFeuchte]=useState("");
   const [massnahme,setMassnahme]=useState("");const[loading,setLoading]=useState(false);
-  const [identified,setIdentified]=useState<{name:string;userId:number;kuerzel:string}|null>(null);
   const [defektMode,setDefektMode]=useState(false);
   const [defektGrund,setDefektGrund]=useState("");
 
@@ -157,15 +156,11 @@ function TempModal({art,day,year,month,onConfirm,onClose}:{
   const dayStr=`${String(day).padStart(2,"0")}.${String(month).padStart(2,"0")}.${year}`;
   const artLabel=art==="reifeschrank"?"Reifeschrank":"Kaesekühlschrank";
 
-  const handlePinVerified=(name:string,userId:number,kuerzel:string)=>{
-    setIdentified({name,userId,kuerzel});
-  };
-  const handleConfirm=()=>{
-    if(!identified)return;
+  const handlePinVerified=(_name:string,userId:number,kuerzel:string)=>{
     if(defektMode){
-      onConfirm({temperatur:"",massnahme:defektGrund||"Defekt / nicht in Betrieb",kuerzel:identified.kuerzel,userId:identified.userId,defekt:true});
+      onConfirm({temperatur:"",massnahme:defektGrund||"Defekt / nicht in Betrieb",kuerzel,userId,defekt:true});
     } else {
-      onConfirm({temperatur:temp,...(art==="reifeschrank"?{luftfeuchtigkeit:feuchte}:{}),massnahme,kuerzel:identified.kuerzel,userId:identified.userId,defekt:false});
+      onConfirm({temperatur:temp,...(art==="reifeschrank"?{luftfeuchtigkeit:feuchte}:{}),massnahme,kuerzel,userId,defekt:false});
     }
   };
 
@@ -213,7 +208,7 @@ function TempModal({art,day,year,month,onConfirm,onClose}:{
           </div>
         )}
 
-        {step==="defektPin"&&!identified&&(
+        {step==="defektPin"&&(
           <div className="space-y-3">
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
               <div className="flex items-center gap-2 text-orange-700 font-medium text-sm mb-2"><AlertTriangle className="w-4 h-4"/>Defekt / nicht in Betrieb</div>
@@ -224,20 +219,8 @@ function TempModal({art,day,year,month,onConfirm,onClose}:{
           </div>
         )}
 
-        {step==="pin"&&!identified&&(
+        {step==="pin"&&(
           <PinStep onVerified={handlePinVerified} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
-        )}
-
-        {identified&&(
-          <div className="space-y-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto"><Check className="w-6 h-6 text-green-600"/></div>
-            <p className="font-medium">{identified.name}</p>
-            {defektMode&&<p className="text-sm text-orange-600 font-medium">Wird als Defekt / nicht in Betrieb gespeichert</p>}
-            <div className="flex gap-2">
-              <button onClick={()=>{setIdentified(null);}} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurueck</button>
-              <button onClick={handleConfirm} className="flex-1 bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-green-700">Speichern</button>
-            </div>
-          </div>
         )}
       </div>
     </div>
@@ -279,7 +262,7 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
   const hasAnyWarn=selected.some(p=>{
     const inp=inputs[p];
     const gSt=garenStatus(inp.kernTemp,p);
-    const hSt=isSpecial(p)?heisshaltenStatus(inp.heissTemp):"ok";
+    const hSt=heisshaltenStatus(inp.heissTemp);
     return gSt==="warn"||hSt==="warn";
   });
 
@@ -292,7 +275,7 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
         const items=selected.map(p=>{
           const inp=inputs[p];
           const finalProdukt=p==="Sonstiges"?inp.customName.trim():p;
-          return{produkt:finalProdukt,kernTempGaren:inp.kernTemp,tempHeisshalten:isSpecial(p)?inp.heissTemp:"",massnahme,kuerzel:data.initials,userId:data.userId,defekt:false};
+          return{produkt:finalProdukt,kernTempGaren:inp.kernTemp,tempHeisshalten:inp.heissTemp,massnahme,kuerzel:data.initials,userId:data.userId,defekt:false};
         });
         onConfirm(items);
       }else setError("PIN ungueltig.");
@@ -326,7 +309,6 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
                         {inp.selected&&<Check className="w-3 h-3 text-white"/>}
                       </div>
                       <span className={`text-sm font-medium ${inp.selected?"text-primary":"text-foreground"}`}>{p}</span>
-                      {isSpecial(p)&&<span className="ml-auto text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold">Sonder</span>}
                     </div>
                     {inp.selected&&(
                       <div className="px-3 pb-3 space-y-2 border-t border-primary/20 pt-2">
@@ -342,16 +324,14 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
                             {gSt!=="none"&&<span className={`absolute right-2 top-1.5 text-[10px] font-bold ${gSt==="ok"?"text-green-600":"text-red-600"}`}>{gSt==="ok"?"i.O.":"ABWEICH."}</span>}
                           </div>
                         </div>
-                        {isSpecial(p)&&(
-                          <div className="flex items-center gap-2">
-                            <label className="text-xs text-muted-foreground w-36 shrink-0">Heisshalten <span className="text-muted-foreground/60">≥60°C</span></label>
-                            <div className="relative flex-1">
-                              <input type="text" inputMode="decimal" placeholder="z.B. 65,0" value={inp.heissTemp} onChange={e=>setHT(p,e.target.value)}
-                                className={`w-full border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary pr-16 ${hSt==="warn"?"border-red-400 bg-red-50":hSt==="ok"?"border-green-400 bg-green-50":""}`}/>
-                              {hSt!=="none"&&<span className={`absolute right-2 top-1.5 text-[10px] font-bold ${hSt==="ok"?"text-green-600":"text-red-600"}`}>{hSt==="ok"?"i.O.":"ABWEICH."}</span>}
-                            </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-muted-foreground w-36 shrink-0">Heisshalten <span className="text-muted-foreground/60">≥60°C</span></label>
+                          <div className="relative flex-1">
+                            <input type="text" inputMode="decimal" placeholder="z.B. 65,0" value={inp.heissTemp} onChange={e=>setHT(p,e.target.value)}
+                              className={`w-full border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary pr-16 ${hSt==="warn"?"border-red-400 bg-red-50":hSt==="ok"?"border-green-400 bg-green-50":""}`}/>
+                            {hSt!=="none"&&<span className={`absolute right-2 top-1.5 text-[10px] font-bold ${hSt==="ok"?"text-green-600":"text-red-600"}`}>{hSt==="ok"?"i.O.":"ABWEICH."}</span>}
                           </div>
-                        )}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -409,6 +389,7 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
   const {d:todayD,y:ty,m:tm}=todayBerlin();
   const isCurrentMonth=year===ty&&month===tm;
   const [modal,setModal]=useState<number|null>(null);
+  const todayRowRef=useRef<HTMLTableRowElement>(null);
 
   useEffect(()=>{
     if(openTodayModal&&isCurrentMonth){
@@ -417,6 +398,12 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
       onTodayModalHandled();
     }
   },[openTodayModal]);
+
+  useEffect(()=>{
+    if(isCurrentMonth&&todayRowRef.current){
+      setTimeout(()=>todayRowRef.current?.scrollIntoView({behavior:"smooth",block:"center"}),100);
+    }
+  },[isCurrentMonth,entries.length]);
 
   const days=daysInMonth(year,month);
   const byDay=useMemo(()=>{
@@ -439,9 +426,10 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
         <span>{tempSpec}{art==="reifeschrank"?" | Luftfeuchtigkeit: 75–85% rH":""} | Auf einen Tag tippen zum Eintragen.</span>
       </div>
       <div className="border rounded-xl overflow-hidden">
+        <div className="overflow-y-auto max-h-[70vh]">
         <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-muted/50 border-b">
+          <thead className="sticky top-0 z-10">
+            <tr className="bg-slate-100 border-b">
               <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground w-16">Tag</th>
               <th className="text-left px-2 py-2.5 text-xs font-semibold text-muted-foreground w-8">WT</th>
               <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Temp.</th>
@@ -465,7 +453,7 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
               const clickable=!future;
 
               return(
-                <tr key={day} onClick={()=>clickable&&setModal(day)}
+                <tr key={day} ref={today?todayRowRef:null} onClick={()=>clickable&&setModal(day)}
                   className={["border-b last:border-0 transition-colors",
                     today?"bg-blue-50/70":weekend?"bg-muted/20":"",
                     hasWarn?"bg-red-50/50":"",
@@ -514,6 +502,7 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
             })}
           </tbody>
         </table>
+        </div>{/* scroll container */}
       </div>
       {modal!==null&&(
         <TempModal art={art} day={modal} year={year} month={month}
@@ -532,6 +521,7 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
   const {d:todayD,y:ty,m:tm}=todayBerlin();
   const isCurrentMonth=year===ty&&month===tm;
   const [modal,setModal]=useState<number|null>(null);
+  const todayCardRef=useRef<HTMLDivElement>(null);
 
   useEffect(()=>{
     if(openTodayModal&&isCurrentMonth){
@@ -540,6 +530,12 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
       onTodayModalHandled();
     }
   },[openTodayModal]);
+
+  useEffect(()=>{
+    if(isCurrentMonth&&todayCardRef.current){
+      setTimeout(()=>todayCardRef.current?.scrollIntoView({behavior:"smooth",block:"center"}),100);
+    }
+  },[isCurrentMonth,entries.length]);
 
   const days=daysInMonth(year,month);
   const byDay=useMemo(()=>{
@@ -571,7 +567,7 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
           if(wt==="So")return null;
           if(future&&dayEntries.length===0)return null;
           return(
-            <div key={day} className={["border rounded-xl overflow-hidden",today?"border-blue-200 shadow-sm":"",weekend&&!today?"bg-muted/10":""].filter(Boolean).join(" ")}>
+            <div key={day} ref={today?todayCardRef:null} className={["border rounded-xl overflow-hidden",today?"border-blue-200 shadow-sm":"",weekend&&!today?"bg-muted/10":""].filter(Boolean).join(" ")}>
               <div className={`flex items-center justify-between px-4 py-2.5 border-b ${today?"bg-blue-50":"bg-muted/30"}`}>
                 <div className="flex items-center gap-2">
                   <span className="font-mono font-bold text-base">{String(day).padStart(2,"0")}.</span>
