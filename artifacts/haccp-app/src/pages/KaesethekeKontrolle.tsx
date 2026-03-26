@@ -228,7 +228,7 @@ function TempModal({art,day,year,month,onConfirm,onClose}:{
 }
 
 // ─── Modal: Heiße Theke (Mehrfachauswahl) ────────────────────────────────────
-type ProduktInput = { selected: boolean; kernTemp: string; heissTemp: string; customName: string };
+type ProduktInput = { selected: boolean; kernTemp: string; customName: string };
 
 function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
   day:number; year:number; month:number;
@@ -238,20 +238,21 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
   const [step,setStep]=useState<"form"|"pin">("form");
   const [inputs,setInputs]=useState<Record<string,ProduktInput>>(()=>{
     const init:Record<string,ProduktInput>={};
-    HEISSE_THEKE_PRODUKTE.forEach(p=>{init[p]={selected:false,kernTemp:"",heissTemp:"",customName:""};});
+    HEISSE_THEKE_PRODUKTE.forEach(p=>{init[p]={selected:false,kernTemp:"",customName:""};});
     return init;
   });
+  const [sharedHeissTemp,setSharedHeissTemp]=useState("");
   const [massnahme,setMassnahme]=useState("");
   const [pin,setPin]=useState("");
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
 
-  const isSpecial=(p:string)=>HEISSE_THEKE_SPECIAL.includes(p);
   const selected=HEISSE_THEKE_PRODUKTE.filter(p=>inputs[p].selected);
   const toggle=(p:string)=>setInputs(prev=>({...prev,[p]:{...prev[p],selected:!prev[p].selected}}));
   const setKT=(p:string,v:string)=>setInputs(prev=>({...prev,[p]:{...prev[p],kernTemp:v}}));
-  const setHT=(p:string,v:string)=>setInputs(prev=>({...prev,[p]:{...prev[p],heissTemp:v}}));
   const setCN=(p:string,v:string)=>setInputs(prev=>({...prev,[p]:{...prev[p],customName:v}}));
+
+  const hSt=heisshaltenStatus(sharedHeissTemp);
 
   const canProceed=selected.length>0&&selected.every(p=>{
     const inp=inputs[p];
@@ -260,11 +261,9 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
   });
 
   const hasAnyWarn=selected.some(p=>{
-    const inp=inputs[p];
-    const gSt=garenStatus(inp.kernTemp,p);
-    const hSt=heisshaltenStatus(inp.heissTemp);
-    return gSt==="warn"||hSt==="warn";
-  });
+    const gSt=garenStatus(inputs[p].kernTemp,p);
+    return gSt==="warn";
+  })||(hSt==="warn");
 
   const handleVerifyPin=async()=>{
     setError("");setLoading(true);
@@ -275,7 +274,7 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
         const items=selected.map(p=>{
           const inp=inputs[p];
           const finalProdukt=p==="Sonstiges"?inp.customName.trim():p;
-          return{produkt:finalProdukt,kernTempGaren:inp.kernTemp,tempHeisshalten:inp.heissTemp,massnahme,kuerzel:data.initials,userId:data.userId,defekt:false};
+          return{produkt:finalProdukt,kernTempGaren:inp.kernTemp,tempHeisshalten:sharedHeissTemp,massnahme,kuerzel:data.initials,userId:data.userId,defekt:false};
         });
         onConfirm(items);
       }else setError("PIN ungueltig.");
@@ -296,11 +295,10 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
         {step==="form"?(
           <div className="flex flex-col flex-1 overflow-hidden">
             <div className="overflow-y-auto flex-1 px-6 py-4 space-y-1">
-              <p className="text-xs text-muted-foreground mb-3">Produkte auswaehlen und Temperaturen eintragen:</p>
+              <p className="text-xs text-muted-foreground mb-3">Produkte auswaehlen und Kerntemperatur eintragen:</p>
               {HEISSE_THEKE_PRODUKTE.map(p=>{
                 const inp=inputs[p];
                 const gSt=garenStatus(inp.kernTemp,p);
-                const hSt=heisshaltenStatus(inp.heissTemp);
                 const minT=p==="Fisch"?"60":"72";
                 return(
                   <div key={p} className={["rounded-xl border transition-all",inp.selected?"border-primary/40 bg-primary/5":"border-border"].join(" ")}>
@@ -324,19 +322,27 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
                             {gSt!=="none"&&<span className={`absolute right-2 top-1.5 text-[10px] font-bold ${gSt==="ok"?"text-green-600":"text-red-600"}`}>{gSt==="ok"?"i.O.":"ABWEICH."}</span>}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <label className="text-xs text-muted-foreground w-36 shrink-0">Heisshalten <span className="text-muted-foreground/60">≥60°C</span></label>
-                          <div className="relative flex-1">
-                            <input type="text" inputMode="decimal" placeholder="z.B. 65,0" value={inp.heissTemp} onChange={e=>setHT(p,e.target.value)}
-                              className={`w-full border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary pr-16 ${hSt==="warn"?"border-red-400 bg-red-50":hSt==="ok"?"border-green-400 bg-green-50":""}`}/>
-                            {hSt!=="none"&&<span className={`absolute right-2 top-1.5 text-[10px] font-bold ${hSt==="ok"?"text-green-600":"text-red-600"}`}>{hSt==="ok"?"i.O.":"ABWEICH."}</span>}
-                          </div>
-                        </div>
                       </div>
                     )}
                   </div>
                 );
               })}
+
+              {/* Gemeinsame Heißhalten-Temperatur für alle Produkte */}
+              {selected.length>0&&(
+                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-medium text-amber-800 w-36 shrink-0">Heisshalten Theke <span className="text-amber-600/70">≥60°C</span></label>
+                    <div className="relative flex-1">
+                      <input type="text" inputMode="decimal" placeholder="z.B. 65,0" value={sharedHeissTemp} onChange={e=>setSharedHeissTemp(e.target.value)}
+                        className={`w-full border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 pr-16 ${hSt==="warn"?"border-red-400 bg-red-50":hSt==="ok"?"border-green-400 bg-green-50":"border-amber-300"}`}/>
+                      {hSt!=="none"&&<span className={`absolute right-2 top-1.5 text-[10px] font-bold ${hSt==="ok"?"text-green-600":"text-red-600"}`}>{hSt==="ok"?"i.O.":"ABWEICH."}</span>}
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-amber-600 mt-1.5">Gilt fuer alle ausgewaehlten Produkte</p>
+                </div>
+              )}
+
               {hasAnyWarn&&(
                 <div className="pt-2">
                   <label className="text-xs font-medium text-red-600 block mb-1">Massnahme <span className="text-red-400">* Pflicht bei Abweichung</span></label>
