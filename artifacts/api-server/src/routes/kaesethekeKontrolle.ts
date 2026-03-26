@@ -79,10 +79,11 @@ router.patch("/kaesetheke-kontrolle/:id", async (req, res) => {
   const { rows } = await pool.query(
     `UPDATE kaesetheke_kontrolle
      SET temperatur=$1, luftfeuchtigkeit=$2, kern_temp_garen=$3, temp_heisshalten=$4,
-         massnahme=$5, kuerzel=$6, user_id=$7, defekt=$8, aenderungsgrund=$9
-     WHERE id=$10 RETURNING *`,
+         massnahme=$5, defekt=$6, aenderungsgrund=$7,
+         edited_by=$8, edited_at=NOW()
+     WHERE id=$9 RETURNING *`,
     [temperatur||null, luftfeuchtigkeit||null, kernTempGaren||null, tempHeisshalten||null,
-     massnahme||null, kuerzel, userId||null, !!defekt, aenderungsgrund.trim(), id]
+     massnahme||null, !!defekt, aenderungsgrund.trim(), kuerzel, id]
   );
   if (!rows.length) { res.status(404).json({ error: "Not found" }); return; }
   res.json(rows[0]);

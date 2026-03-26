@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import {
   Thermometer, ChevronLeft, ChevronRight, Loader2, Check,
   X, Printer, Lock, Plus, Trash2, Wind, Flame, Snowflake,
-  AlertTriangle, ArrowLeft, Pencil,
+  AlertTriangle, ArrowLeft, Pencil, History,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -29,6 +29,9 @@ type KontrolleEntry = {
   massnahme: string | null;
   kuerzel: string;
   defekt: boolean;
+  aenderungsgrund: string | null;
+  edited_by: string | null;
+  edited_at: string | null;
 };
 
 const HEISSE_THEKE_STANDARD = ["Geflügel","Hackbraten","Fleischpflanzerl","Leberkäse","Schweinebraten","Kasselerbraten"];
@@ -111,6 +114,26 @@ function heisshaltenStatus(val:string|null):"ok"|"warn"|"none"{
 function TempBadge({val,status}:{val:string|null;status:"ok"|"warn"|"none"}){
   if(!val)return<span className="text-muted-foreground/40">—</span>;
   return<span className={`font-mono font-semibold text-sm ${status==="ok"?"text-green-600":status==="warn"?"text-red-600":"text-foreground"}`}>{val}°C</span>;
+}
+
+function formatEditedAt(ts:string|null):string{
+  if(!ts)return"";
+  const d=new Date(ts);
+  return d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})+" "+d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})+" Uhr";
+}
+
+function EditInfo({entry}:{entry:KontrolleEntry}){
+  if(!entry.edited_by&&!entry.aenderungsgrund)return null;
+  return(
+    <div className="flex items-start gap-1.5 px-3 py-1.5 bg-amber-50 border-t border-amber-100 text-[11px] text-amber-800">
+      <History className="w-3 h-3 shrink-0 mt-0.5 text-amber-500"/>
+      <span>
+        <span className="font-semibold">{entry.edited_by}</span>
+        {entry.edited_at&&<span className="text-amber-600/80"> · {formatEditedAt(entry.edited_at)}</span>}
+        {entry.aenderungsgrund&&<span> — {entry.aenderungsgrund}</span>}
+      </span>
+    </div>
+  );
 }
 
 // ─── PIN-Schritt ─────────────────────────────────────────────────────────────
@@ -518,7 +541,7 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
               const clickable=!future;
 
               return(
-                <tr key={day} ref={today?todayRowRef:null}
+                <React.Fragment key={day}><tr ref={today?todayRowRef:null}
                   onClick={()=>{if(!clickable)return;if(latestEntry)setEditEntry(latestEntry);else setModal(day);}}
                   className={["border-b last:border-0 transition-colors",
                     today?"bg-blue-50/70":weekend?"bg-muted/20":"",
@@ -564,6 +587,19 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
                     </div>
                   </td>
                 </tr>
+                {latestEntry?.edited_by&&(
+                  <tr className="border-b last:border-0 bg-amber-50/70">
+                    <td colSpan={art==="reifeschrank"?6:5} className="px-3 py-1.5" onClick={e=>e.stopPropagation()}>
+                      <div className="flex items-center gap-1.5 text-[11px] text-amber-800">
+                        <History className="w-3 h-3 shrink-0 text-amber-500"/>
+                        <span>Geändert von <span className="font-semibold">{latestEntry.edited_by}</span></span>
+                        {latestEntry.edited_at&&<span className="text-amber-600/70">· {formatEditedAt(latestEntry.edited_at)}</span>}
+                        {latestEntry.aenderungsgrund&&<span className="text-amber-900">— {latestEntry.aenderungsgrund}</span>}
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
               );
             })}
           </tbody>
@@ -762,7 +798,8 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
                     const hSt=heisshaltenStatus(entry.temp_heisshalten);
                     const hasWarn=(gSt==="warn"||hSt==="warn")&&!entry.defekt;
                     return(
-                      <div key={entry.id} className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 ${hasWarn?"bg-red-50/60":""}`}>
+                      <React.Fragment key={entry.id}>
+                      <div className={`flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2.5 ${hasWarn?"bg-red-50/60":""}`}>
                         {entry.defekt?(
                           <span className="flex items-center gap-1 text-sm font-semibold text-orange-600"><AlertTriangle className="w-4 h-4"/>Defekt / nicht in Betrieb</span>
                         ):<span className="font-semibold text-sm w-32 truncate">{entry.produkt}</span>}
@@ -779,6 +816,15 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
                           {adminSession&&<button onClick={()=>fetch(`${BASE}/kaesetheke-kontrolle/${entry.id}`,{method:"DELETE"}).then(()=>onDeleted(entry.id))} className="text-muted-foreground hover:text-red-500 p-1 rounded hover:bg-red-50 transition-colors"><Trash2 className="w-3.5 h-3.5"/></button>}
                         </div>
                       </div>
+                      {entry.edited_by&&(
+                        <div className="flex items-center gap-1.5 px-4 py-1.5 bg-amber-50 border-t border-amber-100 text-[11px] text-amber-800">
+                          <History className="w-3 h-3 shrink-0 text-amber-500"/>
+                          <span>Geändert von <span className="font-semibold">{entry.edited_by}</span></span>
+                          {entry.edited_at&&<span className="text-amber-600/70">· {formatEditedAt(entry.edited_at)}</span>}
+                          {entry.aenderungsgrund&&<span className="text-amber-900">— {entry.aenderungsgrund}</span>}
+                        </div>
+                      )}
+                      </React.Fragment>
                     );
                   })}
                 </div>
