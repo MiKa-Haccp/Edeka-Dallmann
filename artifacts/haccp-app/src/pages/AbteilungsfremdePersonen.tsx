@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
-import { Users, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Lock } from "lucide-react";
+import { Users, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Lock, RotateCcw } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -48,6 +48,100 @@ function PinStep({ onVerified, onBack }: { onVerified: (name: string, userId: nu
   );
 }
 
+// ─── Signature Pad ────────────────────────────────────────────────────────────
+function SignaturePad({ onChange }: { onChange: (dataUrl: string | null) => void }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawing = useRef(false);
+  const isEmpty = useRef(true);
+
+  const getPos = (e: MouseEvent | Touch, canvas: HTMLCanvasElement) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (("clientX" in e ? e.clientX : e.clientX) - rect.left) * scaleX,
+      y: (("clientY" in e ? e.clientY : e.clientY) - rect.top) * scaleY,
+    };
+  };
+
+  const startDraw = useCallback((e: MouseEvent | TouchEvent) => {
+    e.preventDefault();
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext("2d"); if (!ctx) return;
+    drawing.current = true;
+    const pos = getPos("touches" in e ? e.touches[0] : e, canvas);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  }, []);
+
+  const draw = useCallback((e: MouseEvent | TouchEvent) => {
+    e.preventDefault();
+    if (!drawing.current) return;
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext("2d"); if (!ctx) return;
+    const pos = getPos("touches" in e ? e.touches[0] : e, canvas);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.strokeStyle = "#1a1a2e";
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.stroke();
+    isEmpty.current = false;
+    onChange(canvas.toDataURL("image/png"));
+  }, [onChange]);
+
+  const endDraw = useCallback(() => { drawing.current = false; }, []);
+
+  const clear = () => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const ctx = canvas.getContext("2d"); if (!ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    isEmpty.current = true;
+    onChange(null);
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current; if (!canvas) return;
+    canvas.addEventListener("mousedown", startDraw);
+    canvas.addEventListener("mousemove", draw);
+    canvas.addEventListener("mouseup", endDraw);
+    canvas.addEventListener("mouseleave", endDraw);
+    canvas.addEventListener("touchstart", startDraw, { passive: false });
+    canvas.addEventListener("touchmove", draw, { passive: false });
+    canvas.addEventListener("touchend", endDraw);
+    return () => {
+      canvas.removeEventListener("mousedown", startDraw);
+      canvas.removeEventListener("mousemove", draw);
+      canvas.removeEventListener("mouseup", endDraw);
+      canvas.removeEventListener("mouseleave", endDraw);
+      canvas.removeEventListener("touchstart", startDraw);
+      canvas.removeEventListener("touchmove", draw);
+      canvas.removeEventListener("touchend", endDraw);
+    };
+  }, [startDraw, draw, endDraw]);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1">
+        <label className="text-xs font-medium text-gray-500">Unterschrift der Person</label>
+        <button type="button" onClick={clear}
+          className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 transition-colors">
+          <RotateCcw className="w-3 h-3" /> Löschen
+        </button>
+      </div>
+      <div className="border-2 border-dashed border-gray-200 rounded-lg bg-gray-50 overflow-hidden touch-none select-none">
+        <canvas
+          ref={canvasRef}
+          width={500}
+          height={140}
+          className="w-full h-[140px] cursor-crosshair"
+        />
+      </div>
+      <p className="text-xs text-gray-400 mt-1">Mit Maus oder Finger unterschreiben</p>
+    </div>
+  );
+}
+
 interface Eintrag {
   id: number;
   name: string;
@@ -64,7 +158,7 @@ function AddModal({ marketId, tenantId, onClose }: { marketId: number | null; te
   const [name, setName] = useState("");
   const [firma, setFirma] = useState("");
   const [datum, setDatum] = useState(new Date().toISOString().split("T")[0]);
-  const [unterschrift, setUnterschrift] = useState("");
+  const [unterschrift, setUnterschrift] = useState<string | null>(null);
 
   const save = useMutation({
     mutationFn: async (user: { name: string; userId: number; kuerzel: string }) => {
@@ -94,7 +188,7 @@ function AddModal({ marketId, tenantId, onClose }: { marketId: number | null; te
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <h2 className="text-lg font-bold text-gray-900 mb-4">Neuen Eintrag hinzufügen</h2>
         <div className="space-y-3">
           <div>
@@ -112,14 +206,10 @@ function AddModal({ marketId, tenantId, onClose }: { marketId: number | null; te
           <div>
             <label className="text-xs font-medium text-gray-500 block mb-1">Datum <span className="text-red-500">*</span></label>
             <input type="date" value={datum} onChange={e => setDatum(e.target.value)}
+              max={new Date().toISOString().split("T")[0]}
               className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
           </div>
-          <div>
-            <label className="text-xs font-medium text-gray-500 block mb-1">Unterschrift (Name)</label>
-            <input value={unterschrift} onChange={e => setUnterschrift(e.target.value)}
-              placeholder="Unterschrift bestätigt durch Name"
-              className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
-          </div>
+          <SignaturePad onChange={setUnterschrift} />
         </div>
         <p className="text-xs text-gray-500 mt-3 bg-blue-50 rounded-lg p-2">
           Die Person bestätigt, über die Personalhygienevorschriften der EDEKA Handelsgesellschaft Südbayern mbH gemäß §&nbsp;43 Abs.&nbsp;1 IfSG aufgeklärt worden zu sein.
@@ -134,6 +224,15 @@ function AddModal({ marketId, tenantId, onClose }: { marketId: number | null; te
       </div>
     </div>
   );
+}
+
+// ─── Unterschrift-Zelle in Tabelle ────────────────────────────────────────────
+function UnterschriftCell({ value }: { value: string | null }) {
+  if (!value) return <span className="text-gray-400">—</span>;
+  if (value.startsWith("data:image")) {
+    return <img src={value} alt="Unterschrift" className="h-8 max-w-[120px] object-contain" />;
+  }
+  return <span className="text-gray-600">{value}</span>;
 }
 
 export default function AbteilungsfremdePersonen() {
@@ -218,7 +317,7 @@ export default function AbteilungsfremdePersonen() {
                       <td className="px-4 py-3 font-medium text-gray-900">{e.name}</td>
                       <td className="px-4 py-3 text-gray-600">{e.firma_abteilung || "—"}</td>
                       <td className="px-4 py-3 text-gray-600">{e.datum ? new Date(e.datum).toLocaleDateString("de-DE") : "—"}</td>
-                      <td className="px-4 py-3 text-gray-600">{e.unterschrift || "—"}</td>
+                      <td className="px-4 py-3"><UnterschriftCell value={e.unterschrift} /></td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{e.eingetragen_von || "—"}</td>
                       <td className="px-4 py-3 text-right">
                         <button onClick={() => deleteEintrag(e.id)} disabled={deleting === e.id}
