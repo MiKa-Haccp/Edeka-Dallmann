@@ -22,17 +22,17 @@ function AmpelSummary({ statuses }: { statuses: TrafficLight[] }) {
     <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-black/5 flex-wrap">
       {red > 0 && (
         <span className="flex items-center gap-1 text-xs font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />Rot {red}
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />{red}
         </span>
       )}
       {yellow > 0 && (
         <span className="flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />Orange {yellow}
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />{yellow}
         </span>
       )}
       {green > 0 && (
         <span className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />Grün {green}
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />{green}
         </span>
       )}
     </div>
