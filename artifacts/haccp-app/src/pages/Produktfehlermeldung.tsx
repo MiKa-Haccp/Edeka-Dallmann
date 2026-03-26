@@ -4,12 +4,19 @@ import { useAppStore } from "@/store/use-app-store";
 import {
   AlertTriangle, ChevronLeft, ChevronRight, Save, Plus, Trash2,
   Loader2, Check, X, PackageX, ListFilter, Printer, Camera,
-  Mail, Send, ImagePlus, XCircle,
+  Mail, Send, ImagePlus, XCircle, KeyRound, UserCheck,
 } from "lucide-react";
 import { DruckformularPFM } from "@/components/DruckformularPFM";
 import { UnterschriftPad } from "@/components/UnterschriftPad";
+import { PinVerification } from "@/components/PinVerification";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
+
+const MARKT_STAMMDATEN: Record<number, { name: string; telefon: string; email: string }> = {
+  1: { name: "Leeder",        telefon: "08243/9609041", email: "markt@edeka-dallmann.de"        },
+  2: { name: "Buching",       telefon: "08368/9148741", email: "markt-buching@edeka-dallmann.de" },
+  3: { name: "Marktoberdorf", telefon: "08342/9193006", email: "markt-mod@edeka-dallmann.de"     },
+};
 
 type JaNein = true | false | null;
 
@@ -164,7 +171,7 @@ function compressImage(file: File, maxPx = 1400, quality = 0.75): Promise<string
 }
 
 export default function Produktfehlermeldung() {
-  const { adminSession } = useAppStore();
+  const { adminSession, selectedMarketId } = useAppStore();
   const isAdmin = !!adminSession;
 
   const [page, setPage] = useState<1 | 2>(1);
@@ -177,7 +184,15 @@ export default function Produktfehlermeldung() {
   const [saved, setSaved] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [showDruck, setShowDruck] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
   const fotoInputRef = useRef<HTMLInputElement>(null);
+
+  const getMarktDefaults = () => {
+    const info = selectedMarketId ? MARKT_STAMMDATEN[selectedMarketId] : null;
+    return info
+      ? { markt: info.name, telefon: info.telefon, email: info.email }
+      : {};
+  };
 
   // Entwurf-Verwaltung
   const [draftRestored, setDraftRestored] = useState(false);
@@ -218,7 +233,7 @@ export default function Produktfehlermeldung() {
       } catch {}
     }
     setCurrentReport(null);
-    setForm({ ...emptyForm(), datumUnterschrift: new Date().toLocaleDateString("de-DE") });
+    setForm({ ...emptyForm(), datumUnterschrift: new Date().toLocaleDateString("de-DE"), ...getMarktDefaults() });
     setPage(1);
     setView("form");
     setSaved(false);
@@ -240,7 +255,7 @@ export default function Produktfehlermeldung() {
     setPendingDraft(null);
     setShowDraftPrompt(false);
     setCurrentReport(null);
-    setForm({ ...emptyForm(), datumUnterschrift: new Date().toLocaleDateString("de-DE") });
+    setForm({ ...emptyForm(), datumUnterschrift: new Date().toLocaleDateString("de-DE"), ...getMarktDefaults() });
     setPage(1);
     setView("form");
     setSaved(false);
@@ -449,7 +464,36 @@ export default function Produktfehlermeldung() {
                 <SectionCard title="Marktdaten">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <FormInput label="Markt" value={form.markt} onChange={set("markt")} required />
-                    <FormInput label="Ansprechpartner" value={form.ansprechpartner} onChange={set("ansprechpartner")} />
+
+                    {/* Ansprechpartner per PIN */}
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        Ansprechpartner
+                      </label>
+                      {form.ansprechpartner ? (
+                        <div className="flex items-center gap-2 px-3 py-2 border border-green-300 bg-green-50 rounded-xl">
+                          <UserCheck className="w-4 h-4 text-green-600 flex-shrink-0" />
+                          <span className="text-sm font-medium text-green-800 flex-1">{form.ansprechpartner}</span>
+                          <button
+                            type="button"
+                            onClick={() => set("ansprechpartner")("")}
+                            className="text-green-500 hover:text-green-700"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setShowPinModal(true)}
+                          className="flex items-center gap-2 px-3 py-2 border border-dashed border-border/60 rounded-xl text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors text-left"
+                        >
+                          <KeyRound className="w-4 h-4 flex-shrink-0" />
+                          Mit PIN eintragen …
+                        </button>
+                      )}
+                    </div>
+
                     <FormInput label="E-Mail Adresse" value={form.email} onChange={set("email")} type="email" />
                     <FormInput label="Telefon" value={form.telefon} onChange={set("telefon")} type="tel" />
                     <FormInput label="Telefax" value={form.telefax} onChange={set("telefax")} />
@@ -822,6 +866,16 @@ export default function Produktfehlermeldung() {
         )}
 
       </div>
+
+      {/* PIN-Modal für Ansprechpartner */}
+      <PinVerification
+        open={showPinModal}
+        onVerified={(_userId, userName) => {
+          set("ansprechpartner")(userName);
+          setShowPinModal(false);
+        }}
+        onCancel={() => setShowPinModal(false)}
+      />
 
       {showDruck && (
         <DruckformularPFM form={form} onClose={() => setShowDruck(false)} />
