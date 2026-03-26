@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
+import { Link } from "wouter";
 import {
   Users, UserPlus, Pencil, Trash2, Save, X, KeyRound,
   CheckCircle2, Clock, UserX, Loader2, Search, Printer,
   ShieldCheck, AlertTriangle, Lock, RefreshCcw, Eye, EyeOff,
-  Building2, ChevronDown, ChevronUp, GraduationCap, AlarmClock, ShieldAlert,
+  Building2, ChevronDown, ChevronUp, ChevronLeft, GraduationCap, AlarmClock, ShieldAlert,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -780,6 +781,9 @@ export default function Mitarbeiterverwaltung() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <Link href="/verwaltung" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
+              <ChevronLeft className="w-5 h-5" />
+            </Link>
             <div className="w-10 h-10 bg-[#1a3a6b]/10 rounded-2xl flex items-center justify-center">
               <Users className="w-5 h-5 text-[#1a3a6b]" />
             </div>

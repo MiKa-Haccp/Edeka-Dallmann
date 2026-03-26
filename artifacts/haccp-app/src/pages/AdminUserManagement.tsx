@@ -8,16 +8,12 @@ import {
   ShieldCheck,
   MapPin,
   Check,
-  X,
   ChevronDown,
   ChevronRight,
   ChevronLeft,
-  AlertTriangle,
   Lock,
-  Settings,
   Store,
   Activity,
-  Smartphone,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -27,18 +23,6 @@ const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 function cn(...inputs: (string | boolean | undefined | null)[]) {
   return twMerge(clsx(inputs));
-}
-
-interface PermissionArea {
-  key: string;
-  label: string;
-  group: string;
-}
-
-interface PermissionsConfig {
-  areas: PermissionArea[];
-  roles: string[];
-  roleDefaults: Record<string, string[]>;
 }
 
 const ROLE_LABELS: Record<string, string> = {
@@ -106,90 +90,32 @@ export default function AdminUserManagement() {
 
   return (
     <AppLayout>
-      <div className="max-w-6xl mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate("/admin/system")}
-              className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                <Settings className="h-7 w-7 text-primary" />
-                Benutzerverwaltung
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Rollen und Berechtigungen für alle Mitarbeiter verwalten
-              </p>
-            </div>
-          </div>
+      <div className="max-w-3xl mx-auto p-6 space-y-6">
+        <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate("/admin/geraete")}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-white hover:bg-secondary text-sm font-medium text-foreground shadow-sm transition-colors"
+            onClick={() => navigate("/admin/system")}
+            className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
           >
-            <Smartphone className="w-4 h-4 text-muted-foreground" />
-            Geräteverwaltung
+            <ChevronLeft className="h-5 w-5" />
           </button>
+          <div>
+            <h1 className="text-xl font-bold text-foreground">Benutzerverwaltung</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Rollen für registrierte Mitarbeiter zuweisen.
+            </p>
+          </div>
         </div>
 
-        <RoleOverview />
-        <UserPermissionsList />
+        <UserRoleList />
       </div>
     </AppLayout>
   );
 }
 
-function RoleOverview() {
-  const roles = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER", "USER"];
-
-  const roleDescriptions: Record<string, string> = {
-    SUPERADMIN: "Voller Zugriff auf alle Funktionen, alle Märkte und Systemeinstellungen. Ebene 1.",
-    ADMIN: "Übergreifender Zugriff auf alle Märkte, Mitarbeiterverwaltung und Berichte. Ebene 2.",
-    BEREICHSLEITUNG: "Erweiterte Rechte: Daten einsehen und teilweise ändern. Abteilungsübergreifend. Ebene 3.",
-    MARKTLEITER: "Zugriff auf zugewiesene Märkte, Aufgaben erstellen und Checklisten verwalten. Ebene 4.",
-    USER: "Einträge per PIN bestätigen. Standardrolle für alle Mitarbeiter. Ebene 5.",
-  };
-
-  return (
-    <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
-      <div className="bg-[#1a3a6b] text-white px-6 py-3 flex items-center gap-3">
-        <Shield className="h-5 w-5" />
-        <h2 className="text-lg font-bold">Rollenübersicht</h2>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 p-5">
-        {roles.map((role) => {
-          const Icon = ROLE_ICONS[role];
-          return (
-            <div key={role} className={cn("rounded-xl border-2 p-3 space-y-1.5", ROLE_COLORS[role])}>
-              <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4" />
-                <span className="font-bold text-xs">{ROLE_LABELS[role]}</span>
-              </div>
-              <p className="text-xs opacity-75 leading-relaxed">{roleDescriptions[role]}</p>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function UserPermissionsList() {
+function UserRoleList() {
   const { data: users, refetch } = useListUsers({ tenantId: 1 });
   const { data: markets } = useListMarkets();
-  const [config, setConfig] = useState<PermissionsConfig | null>(null);
   const [expandedUser, setExpandedUser] = useState<number | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState("");
-
-  useEffect(() => {
-    fetch(`${API_BASE}/permissions/areas`)
-      .then((r) => r.json())
-      .then(setConfig)
-      .catch(() => {});
-  }, []);
 
   const registeredUsers = users?.filter((u) => u.isRegistered) || [];
 
@@ -198,26 +124,25 @@ function UserPermissionsList() {
       <div className="bg-[#1a3a6b] text-white px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Users className="h-5 w-5" />
-          <h2 className="text-lg font-bold">Mitarbeiter & Berechtigungen</h2>
+          <h2 className="text-lg font-bold">Registrierte Benutzer</h2>
         </div>
         <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
-          {registeredUsers.length} Mitarbeiter
+          {registeredUsers.length} Benutzer
         </span>
       </div>
 
       {registeredUsers.length === 0 ? (
         <div className="p-12 text-center">
           <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-muted-foreground text-sm">Noch keine Mitarbeiter registriert.</p>
+          <p className="text-muted-foreground text-sm">Noch keine Benutzer registriert.</p>
         </div>
       ) : (
         <div className="divide-y divide-border/40">
           {registeredUsers.map((user) => (
-            <UserPermissionRow
+            <UserRoleRow
               key={user.id}
               user={user}
               markets={markets || []}
-              config={config}
               isExpanded={expandedUser === user.id}
               onToggle={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
               onSaved={() => refetch()}
@@ -229,24 +154,21 @@ function UserPermissionsList() {
   );
 }
 
-function UserPermissionRow({
+function UserRoleRow({
   user,
   markets,
-  config,
   isExpanded,
   onToggle,
   onSaved,
 }: {
   user: any;
   markets: any[];
-  config: PermissionsConfig | null;
   isExpanded: boolean;
   onToggle: () => void;
   onSaved: () => void;
 }) {
   const [role, setRole] = useState(user.role);
   const [status, setStatus] = useState<string>(user.status || "aktiv");
-  const [permissions, setPermissions] = useState<string[]>([]);
   const [assignedMarkets, setAssignedMarkets] = useState<number[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -258,18 +180,12 @@ function UserPermissionRow({
       fetch(`${API_BASE}/permissions/user/${user.id}`)
         .then((r) => r.json())
         .then((data) => {
-          const perms = data.permissions?.map((p: any) => p.permissionType) || [];
-          if (perms.length === 0 && config?.roleDefaults[user.role]) {
-            setPermissions([...config.roleDefaults[user.role]]);
-          } else {
-            setPermissions(perms);
-          }
           setAssignedMarkets(data.marketAssignments || []);
           setLoaded(true);
         })
         .catch(() => setLoaded(true));
     }
-  }, [isExpanded, loaded, user.id, user.role, config]);
+  }, [isExpanded, loaded, user.id]);
 
   const handleRoleChange = async (newRole: string) => {
     setSaving(true);
@@ -282,10 +198,7 @@ function UserPermissionRow({
       });
       if (resp.ok) {
         setRole(newRole);
-        if (config?.roleDefaults[newRole]) {
-          setPermissions([...config.roleDefaults[newRole]]);
-        }
-        setSaveMsg("Rolle geändert");
+        setSaveMsg("Rolle gespeichert");
         onSaved();
         setTimeout(() => setSaveMsg(""), 2000);
       }
@@ -314,33 +227,25 @@ function UserPermissionRow({
     }
   };
 
-  const togglePermission = (perm: string) => {
-    setPermissions((prev) =>
-      prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]
-    );
-  };
-
   const toggleMarket = (marketId: number) => {
     setAssignedMarkets((prev) =>
       prev.includes(marketId) ? prev.filter((id) => id !== marketId) : [...prev, marketId]
     );
   };
 
-  const savePermissions = async () => {
+  const saveMarkets = async () => {
     setSaving(true);
-    setSaveMsg("");
     try {
-      const resp = await fetch(`${API_BASE}/permissions/user/${user.id}`, {
+      await fetch(`${API_BASE}/permissions/user/${user.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ permissions, marketIds: assignedMarkets }),
+        body: JSON.stringify({ marketIds: assignedMarkets }),
       });
-      if (resp.ok) {
-        setSaveMsg("Gespeichert!");
-        setTimeout(() => setSaveMsg(""), 2000);
-      }
+      setSaveMsg("Märkte gespeichert");
+      onSaved();
+      setTimeout(() => setSaveMsg(""), 2000);
     } catch {
-      setSaveMsg("Fehler beim Speichern");
+      setSaveMsg("Fehler");
     } finally {
       setSaving(false);
     }
@@ -349,10 +254,6 @@ function UserPermissionRow({
   const Icon = ROLE_ICONS[role] || Users;
   const isSuperAdmin = role === "SUPERADMIN";
   const showMarkets = role === "MARKTLEITER";
-
-  const groups = config
-    ? [...new Set(config.areas.map((a) => a.group))]
-    : [];
 
   return (
     <div>
@@ -377,49 +278,22 @@ function UserPermissionRow({
           <div className="text-xs text-muted-foreground">{user.email || "Kein E-Mail"}</div>
         </div>
 
-        <span
-          className={cn(
-            "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border",
-            STATUS_COLORS[status] || STATUS_COLORS["aktiv"]
-          )}
-        >
+        <span className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border", STATUS_COLORS[status] || STATUS_COLORS["aktiv"])}>
           {STATUS_LABELS[status] || status}
         </span>
-        <span
-          className={cn(
-            "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border",
-            ROLE_COLORS[role] || ROLE_COLORS["USER"]
-          )}
-        >
+        <span className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border", ROLE_COLORS[role] || ROLE_COLORS["USER"])}>
           <Icon className="h-3.5 w-3.5" />
           {ROLE_LABELS[role] || role}
         </span>
-
-        {assignedMarkets.length > 0 && showMarkets && (
-          <div className="flex items-center gap-1">
-            {assignedMarkets.map((mId) => {
-              const market = markets.find((m) => m.id === mId);
-              return market ? (
-                <span
-                  key={mId}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full"
-                >
-                  <MapPin className="h-3 w-3" />
-                  {market.code}
-                </span>
-              ) : null;
-            })}
-          </div>
-        )}
       </button>
 
       {isExpanded && (
-        <div className="px-6 pb-6 pl-16 space-y-6">
+        <div className="px-6 pb-6 pl-16 space-y-5 border-t border-border/30 pt-4">
           {isSuperAdmin ? (
             <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl flex items-center gap-3 text-sm text-purple-700">
               <ShieldCheck className="h-5 w-5 flex-shrink-0" />
               <div>
-                <span className="font-bold">Superadmin</span> — Hat automatisch vollen Zugriff auf alle Bereiche und Märkte. Berechtigungen können nicht eingeschränkt werden.
+                <span className="font-bold">Superadmin</span> — Hat automatisch vollen Zugriff auf alle Bereiche und Märkte.
               </div>
             </div>
           ) : (
@@ -427,7 +301,7 @@ function UserPermissionRow({
               <div>
                 <label className="block text-sm font-bold text-foreground mb-2 flex items-center gap-2">
                   <Activity className="h-4 w-4 text-muted-foreground" />
-                  Mitarbeiterstatus
+                  Kontostatus
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {(["onboarding", "aktiv", "inaktiv"] as const).map((s) => (
@@ -446,42 +320,46 @@ function UserPermissionRow({
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Inaktive Mitarbeiter können sich nicht mehr per PIN einloggen. Ihre Daten bleiben erhalten.
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Inaktive Benutzer können sich nicht mehr anmelden. Daten bleiben erhalten.
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-foreground mb-2">
-                  Rolle ändern
+                <label className="block text-sm font-bold text-foreground mb-2 flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-blue-600" />
+                  Rolle
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {(["ADMIN", "BEREICHSLEITUNG", "MARKTLEITER", "USER"] as const).map((r) => {
-                      const RIcon = ROLE_ICONS[r] || Users;
-                      return (
-                        <button
-                          key={r}
-                          onClick={() => handleRoleChange(r)}
-                          disabled={saving}
-                          className={cn(
-                            "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all",
-                            role === r
-                              ? ROLE_COLORS[r] + " ring-2 ring-offset-1 ring-primary/30"
-                              : "bg-white text-muted-foreground border-border hover:border-primary/50"
-                          )}
-                        >
-                          <RIcon className="h-4 w-4" />
-                          {ROLE_LABELS[r]}
-                        </button>
-                      );
-                    })}
+                    const RIcon = ROLE_ICONS[r] || Users;
+                    return (
+                      <button
+                        key={r}
+                        onClick={() => handleRoleChange(r)}
+                        disabled={saving}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all",
+                          role === r
+                            ? ROLE_COLORS[r] + " ring-2 ring-offset-1 ring-primary/30"
+                            : "bg-white text-muted-foreground border-border hover:border-primary/50"
+                        )}
+                      >
+                        <RIcon className="h-4 w-4" />
+                        {ROLE_LABELS[r]}
+                      </button>
+                    );
+                  })}
                 </div>
                 {saveMsg && (
-                  <p className="mt-2 text-xs text-green-600 font-medium flex items-center gap-1">
+                  <p className="mt-1.5 text-xs text-green-600 font-medium flex items-center gap-1">
                     <Check className="h-3.5 w-3.5" />
                     {saveMsg}
                   </p>
                 )}
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Die Berechtigungen je Rolle werden zentral unter Systemverwaltung → Rollen & Berechtigungen verwaltet.
+                </p>
               </div>
 
               {showMarkets && (
@@ -505,77 +383,21 @@ function UserPermissionRow({
                             : "bg-white text-muted-foreground border-border hover:border-emerald-300"
                         )}
                       >
-                        {assignedMarkets.includes(market.id) ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <MapPin className="h-4 w-4" />
-                        )}
+                        <MapPin className="h-4 w-4" />
                         {market.name} ({market.code})
                       </button>
                     ))}
                   </div>
+                  <button
+                    onClick={saveMarkets}
+                    disabled={saving}
+                    className="mt-3 flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                  >
+                    <Check className="h-4 w-4" />
+                    {saving ? "Speichert..." : "Märkte speichern"}
+                  </button>
                 </div>
               )}
-
-              <div>
-                <label className="block text-sm font-bold text-foreground mb-2 flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-blue-600" />
-                  Berechtigungen
-                </label>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Aktivieren oder deaktivieren Sie einzelne Berechtigungen per Häkchen.
-                </p>
-                <div className="space-y-4">
-                  {groups.map((group) => {
-                    const groupAreas = config!.areas.filter((a) => a.group === group);
-                    return (
-                      <div key={group}>
-                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                          {group}
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {groupAreas.map((area) => (
-                            <label
-                              key={area.key}
-                              className={cn(
-                                "flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all",
-                                permissions.includes(area.key)
-                                  ? "bg-blue-50 border-blue-200"
-                                  : "bg-white border-border hover:border-blue-200"
-                              )}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={permissions.includes(area.key)}
-                                onChange={() => togglePermission(area.key)}
-                                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/20"
-                              />
-                              <span className="text-sm font-medium text-foreground">{area.label}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  onClick={savePermissions}
-                  disabled={saving}
-                  className="bg-primary text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
-                >
-                  <Check className="h-4 w-4" />
-                  {saving ? "Wird gespeichert..." : "Berechtigungen speichern"}
-                </button>
-                {saveMsg && (
-                  <span className="text-sm text-green-600 font-medium flex items-center gap-1">
-                    <Check className="h-4 w-4" />
-                    {saveMsg}
-                  </span>
-                )}
-              </div>
             </>
           )}
         </div>

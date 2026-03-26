@@ -1,7 +1,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import { Link, useLocation } from "wouter";
-import { Users, KeyRound, ArrowRight, UserCog, ChevronLeft, Smartphone, GraduationCap } from "lucide-react";
+import { Users, KeyRound, ArrowRight, UserCog, ChevronLeft, GraduationCap } from "lucide-react";
 import { useEffect } from "react";
 
 const ALLOWED_ROLES = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER"];
@@ -17,8 +17,6 @@ export default function VerwaltungHub() {
   }, [adminSession, navigate]);
 
   if (!adminSession || !ALLOWED_ROLES.includes(adminSession.role)) return null;
-
-  const isSuperAdmin = adminSession.role === "SUPERADMIN";
 
   return (
     <AppLayout>
@@ -88,25 +86,6 @@ export default function VerwaltungHub() {
             </div>
           </Link>
 
-          {isSuperAdmin && (
-            <Link href="/admin/geraete">
-              <div className="group bg-white rounded-2xl border border-border/60 shadow-sm hover:shadow-md hover:border-purple-300 transition-all duration-200 p-6 cursor-pointer">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Smartphone className="w-6 h-6 text-purple-600" />
-                  </div>
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-100 text-purple-700">System</span>
-                </div>
-                <h3 className="text-lg font-bold text-foreground mb-1">Geräteverwaltung</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                  Autorisierte Tablets und Geräte verwalten, sperren und freigeben.
-                </p>
-                <div className="flex items-center gap-1.5 text-sm font-bold text-purple-600 group-hover:gap-3 transition-all duration-200">
-                  Öffnen <ArrowRight className="w-4 h-4" />
-                </div>
-              </div>
-            </Link>
-          )}
         </div>
       </div>
     </AppLayout>
