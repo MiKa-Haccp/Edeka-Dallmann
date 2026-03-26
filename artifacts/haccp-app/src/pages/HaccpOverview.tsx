@@ -20,24 +20,19 @@ function AmpelSummary({ statuses }: { statuses: TrafficLight[] }) {
 
   return (
     <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-black/5 flex-wrap">
-      {green > 0 && (
-        <span className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />{green} ok
+      {red > 0 && (
+        <span className="flex items-center gap-1 text-xs font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
+          <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />Rot {red}
         </span>
       )}
       {yellow > 0 && (
         <span className="flex items-center gap-1 text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />{yellow} offen
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />Orange {yellow}
         </span>
       )}
-      {red > 0 && (
-        <span className="flex items-center gap-1 text-xs font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
-          <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />{red} fehlt
-        </span>
-      )}
-      {active.length > 0 && (
-        <span className="text-[11px] text-muted-foreground ml-auto">
-          {green}/{active.length} erledigt
+      {green > 0 && (
+        <span className="flex items-center gap-1 text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />Grün {green}
         </span>
       )}
     </div>
