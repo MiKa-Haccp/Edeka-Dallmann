@@ -3,9 +3,10 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   Salad, ChevronLeft, ChevronRight, Loader2, Check,
-  X, Printer, Lock,
+  X, Printer, Lock, ClipboardCheck,
 } from "lucide-react";
 import { getBavarianHolidays, getHolidayName } from "@/utils/holidays";
+import { useLocation } from "wouter";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -45,6 +46,15 @@ function isPast(year: number, month: number, day: number) {
   now.setHours(0, 0, 0, 0);
   const d = new Date(year, month - 1, day);
   return d < now;
+}
+
+function getCurrentSlot(): typeof SLOTS[number] | null {
+  const hour = new Date().getHours();
+  let current: typeof SLOTS[number] | null = null;
+  for (const s of SLOTS) {
+    if (hour >= s.startHour) current = s;
+  }
+  return current;
 }
 
 // ===== PIN MODAL (ohne Doppelbestätigung) =====
@@ -129,10 +139,122 @@ function PinModal({
   );
 }
 
+// ===== SCHNELLKONTROLLE PANEL =====
+function QuickCheckPanel({
+  slot, day, month, year, selectedMarketId, onConfirm, onBack,
+}: {
+  slot: typeof SLOTS[number];
+  day: number; month: number; year: number;
+  selectedMarketId: number | null;
+  onConfirm: (kuerzel: string, userId: number | null) => Promise<void>;
+  onBack: () => void;
+}) {
+  const [pin, setPin] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
+
+  const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+
+  const handleVerify = async () => {
+    if (pin.length < 4) return;
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch(`${BASE}/users/verify-pin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin, tenantId: 1 }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setDone(true);
+        await onConfirm(data.initials, data.userId);
+      } else {
+        setError("PIN ungültig. Bitte erneut versuchen.");
+      }
+    } catch {
+      setError("Verbindungsfehler. Bitte erneut versuchen.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AppLayout>
+      <div className="max-w-sm mx-auto px-4 py-10 flex flex-col items-center gap-6">
+
+        {/* Icon */}
+        <div className="w-16 h-16 rounded-2xl bg-green-100 flex items-center justify-center">
+          <ClipboardCheck className="w-8 h-8 text-green-700" />
+        </div>
+
+        {/* Titel */}
+        <div className="text-center space-y-1">
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-400">2.1 · Warenzustand Obst & Gemüse</p>
+          <h2 className="text-xl font-bold text-gray-900">Zustand geprüft?</h2>
+          <p className="text-sm text-gray-500">
+            {day}. {MONTH_NAMES[month - 1]} {year} &mdash; <span className="font-semibold text-gray-700">{slot.label}</span>
+          </p>
+        </div>
+
+        {/* PIN Eingabe */}
+        {!done ? (
+          <div className="w-full bg-white rounded-2xl border border-border shadow-sm p-5 space-y-4">
+            <p className="text-sm text-gray-600 text-center">Bitte PIN eingeben zum Abzeichnen</p>
+            <input
+              type="password"
+              inputMode="numeric"
+              value={pin}
+              onChange={e => { setPin(e.target.value.replace(/\D/g, "").slice(0, 6)); setError(""); }}
+              placeholder="PIN"
+              className="w-full text-center text-2xl tracking-[0.5em] border border-border rounded-xl px-4 py-3 font-bold focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+              onKeyDown={e => e.key === "Enter" && handleVerify()}
+              autoFocus
+            />
+            {error && (
+              <p className="text-xs text-red-600 text-center flex items-center justify-center gap-1">
+                <X className="w-3.5 h-3.5" /> {error}
+              </p>
+            )}
+            <button
+              onClick={handleVerify}
+              disabled={loading || pin.length < 4}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0] transition-colors"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              Abzeichnen
+            </button>
+          </div>
+        ) : (
+          <div className="w-full bg-green-50 border border-green-200 rounded-2xl p-5 flex flex-col items-center gap-2">
+            <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
+              <Check className="w-5 h-5 text-white" />
+            </div>
+            <p className="text-sm font-bold text-green-700">Erfolgreich abgezeichnet</p>
+          </div>
+        )}
+
+        {/* Zurück */}
+        {!done && (
+          <button
+            onClick={onBack}
+            className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" /> Zurück ohne Kontrolle
+          </button>
+        )}
+
+      </div>
+    </AppLayout>
+  );
+}
+
 // ===== HAUPTSEITE =====
 export default function WarenzustandOG() {
   const { selectedMarketId, selectedMarketName, adminSession } = useAppStore();
   const isAdmin = !!adminSession;
+  const [, navigate] = useLocation();
 
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -144,6 +266,10 @@ export default function WarenzustandOG() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
+
+  // Schnellkontrolle: null = noch unbekannt, true = zeigen, false = nicht zeigen
+  const [showQuickCheck, setShowQuickCheck] = useState<null | boolean>(null);
+  const currentSlot = useMemo(() => getCurrentSlot(), []);
 
   // Refs für Scroll-Management
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -175,6 +301,16 @@ export default function WarenzustandOG() {
   }, [selectedMarketId, year, month]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Schnellkontrolle: nach dem ersten Laden prüfen ob aktueller Slot schon abgezeichnet ist
+  useEffect(() => {
+    if (!initialLoadDone || showQuickCheck !== null) return;
+    if (!currentSlot) { setShowQuickCheck(false); return; }
+    const isCurrentMonthYear = month === now.getMonth() + 1 && year === now.getFullYear();
+    if (!isCurrentMonthYear) { setShowQuickCheck(false); return; }
+    const alreadyChecked = entries.some(e => e.day === now.getDate() && e.slot === currentSlot.key);
+    setShowQuickCheck(!alreadyChecked);
+  }, [initialLoadDone, entries, currentSlot, month, year, showQuickCheck]);
 
   // Auto-Scroll zu heute nach erstem Laden
   useEffect(() => {
@@ -253,6 +389,50 @@ export default function WarenzustandOG() {
     e => e.day === now.getDate() && month === now.getMonth() + 1 && year === now.getFullYear()
   ).length;
   const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear();
+
+  // Schnellkontrolle: Slot abzeichnen und dann normale Ansicht zeigen
+  const handleQuickConfirm = async (kuerzel: string, userId: number | null) => {
+    if (!selectedMarketId || !currentSlot) return;
+    await fetch(`${BASE}/warencheck-og`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        marketId: selectedMarketId,
+        year, month,
+        day: now.getDate(),
+        slot: currentSlot.key,
+        kuerzel, userId,
+      }),
+    });
+    await load();
+    setShowQuickCheck(false);
+  };
+
+  // Während geladen wird oder Quick-Check noch nicht bestimmt → Ladeindikator
+  if (showQuickCheck === null && !initialLoadDone) {
+    return (
+      <AppLayout>
+        <div className="flex justify-center py-32">
+          <Loader2 className="w-7 h-7 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  // Schnellkontrolle anzeigen
+  if (showQuickCheck === true && currentSlot) {
+    return (
+      <QuickCheckPanel
+        slot={currentSlot}
+        day={now.getDate()}
+        month={month}
+        year={year}
+        selectedMarketId={selectedMarketId}
+        onConfirm={handleQuickConfirm}
+        onBack={() => navigate("/category/2")}
+      />
+    );
+  }
 
   return (
     <AppLayout>
