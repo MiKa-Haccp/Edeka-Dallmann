@@ -31,10 +31,9 @@ type KontrolleEntry = {
   defekt: boolean;
 };
 
-const HEISSE_THEKE_PRODUKTE = [
-  "Geflügel","Hackbraten","Fleischpflanzerl","Leberkäse",
-  "Schweinebraten","Kasselerbraten","Fisch","Sonstiges",
-];
+const HEISSE_THEKE_STANDARD = ["Geflügel","Hackbraten","Fleischpflanzerl","Leberkäse","Schweinebraten","Kasselerbraten"];
+const HEISSE_THEKE_SPECIAL  = ["Fisch","Sonstiges"]; // Heisshalten erforderlich
+const HEISSE_THEKE_PRODUKTE = [...HEISSE_THEKE_STANDARD, ...HEISSE_THEKE_SPECIAL];
 
 // ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
 function daysInMonth(year: number, month: number) { return new Date(year, month, 0).getDate(); }
@@ -49,18 +48,24 @@ function todayBerlin() {
 }
 
 // ─── Ampellogik ──────────────────────────────────────────────────────────────
+function isSundayDate(year: number, month: number, day: number) { return new Date(year, month-1, day).getDay() === 0; }
+
 function getTabStatus(entries: KontrolleEntry[], art: KontrolleArt, year: number, month: number): TrafficLight {
   const { y, m, d } = todayBerlin();
   if (year !== y || month !== m) return "none";
   const tabEntries = entries.filter(e => e.kontrolle_art === art);
   const daysWithEntries = new Set(tabEntries.map(e => e.day));
+  const todayIsSunday = isSundayDate(y, m, d);
   const todayHasEntry = daysWithEntries.has(d);
   let hasMissingPast = false;
-  for (let i = 1; i < d; i++) { if (!daysWithEntries.has(i)) { hasMissingPast = true; break; } }
+  for (let i = 1; i < d; i++) {
+    if (!isSundayDate(y, m, i) && !daysWithEntries.has(i)) { hasMissingPast = true; break; }
+  }
+  if (todayIsSunday) return hasMissingPast ? "red" : "green";
   if (todayHasEntry && !hasMissingPast) return "green";
   if (!todayHasEntry && hasMissingPast) return "red";
   if (!todayHasEntry) return "yellow";
-  return "red"; // today done but past missing
+  return "red";
 }
 
 function TrafficDot({ status }: { status: TrafficLight }) {
@@ -239,108 +244,153 @@ function TempModal({art,day,year,month,onConfirm,onClose}:{
   );
 }
 
-// ─── Modal: Heiße Theke ───────────────────────────────────────────────────────
+// ─── Modal: Heiße Theke (Mehrfachauswahl) ────────────────────────────────────
+type ProduktInput = { selected: boolean; kernTemp: string; heissTemp: string; customName: string };
+
 function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
   day:number; year:number; month:number;
-  onConfirm:(data:{produkt:string;kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean})=>void;
+  onConfirm:(items:{produkt:string;kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean}[])=>void;
   onClose:()=>void;
 }){
-  const [step,setStep]=useState<"form"|"pin"|"defektPin">("form");
-  const [produkt,setProdukt]=useState("");const[customProdukt,setCustomProdukt]=useState("");
-  const [garenTemp,setGarenTemp]=useState("");const[heissTemp,setHeissTemp]=useState("");
-  const [massnahme,setMassnahme]=useState("");const[loading,setLoading]=useState(false);
-  const [identified,setIdentified]=useState<{name:string;userId:number;kuerzel:string}|null>(null);
-  const [defektMode,setDefektMode]=useState(false);
-  const [defektGrund,setDefektGrund]=useState("");
+  const [step,setStep]=useState<"form"|"pin">("form");
+  const [inputs,setInputs]=useState<Record<string,ProduktInput>>(()=>{
+    const init:Record<string,ProduktInput>={};
+    HEISSE_THEKE_PRODUKTE.forEach(p=>{init[p]={selected:false,kernTemp:"",heissTemp:"",customName:""};});
+    return init;
+  });
+  const [massnahme,setMassnahme]=useState("");
+  const [pin,setPin]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState("");
 
-  const finalProdukt=produkt==="Sonstiges"?customProdukt:produkt;
-  const gStatus=garenStatus(garenTemp,produkt);
-  const hStatus=heisshaltenStatus(heissTemp);
-  const hasWarn=gStatus==="warn"||hStatus==="warn";
-  const minTemp=produkt==="Fisch"?"60°C":"72°C";
-  const dayStr=`${String(day).padStart(2,"0")}.${String(month).padStart(2,"0")}.${year}`;
+  const isSpecial=(p:string)=>HEISSE_THEKE_SPECIAL.includes(p);
+  const selected=HEISSE_THEKE_PRODUKTE.filter(p=>inputs[p].selected);
+  const toggle=(p:string)=>setInputs(prev=>({...prev,[p]:{...prev[p],selected:!prev[p].selected}}));
+  const setKT=(p:string,v:string)=>setInputs(prev=>({...prev,[p]:{...prev[p],kernTemp:v}}));
+  const setHT=(p:string,v:string)=>setInputs(prev=>({...prev,[p]:{...prev[p],heissTemp:v}}));
+  const setCN=(p:string,v:string)=>setInputs(prev=>({...prev,[p]:{...prev[p],customName:v}}));
 
-  const handleConfirm=()=>{
-    if(!identified)return;
-    if(defektMode){
-      onConfirm({produkt:"Defekt",kernTempGaren:"",tempHeisshalten:"",massnahme:defektGrund||"Defekt / nicht in Betrieb",kuerzel:identified.kuerzel,userId:identified.userId,defekt:true});
-    } else {
-      onConfirm({produkt:finalProdukt,kernTempGaren:garenTemp,tempHeisshalten:heissTemp,massnahme,kuerzel:identified.kuerzel,userId:identified.userId,defekt:false});
-    }
+  const canProceed=selected.length>0&&selected.every(p=>{
+    const inp=inputs[p];
+    if(p==="Sonstiges")return inp.customName.trim()&&inp.kernTemp;
+    return inp.kernTemp;
+  });
+
+  const hasAnyWarn=selected.some(p=>{
+    const inp=inputs[p];
+    const gSt=garenStatus(inp.kernTemp,p);
+    const hSt=isSpecial(p)?heisshaltenStatus(inp.heissTemp):"ok";
+    return gSt==="warn"||hSt==="warn";
+  });
+
+  const handleVerifyPin=async()=>{
+    setError("");setLoading(true);
+    try{
+      const res=await fetch(`${BASE}/users/verify-pin`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin,tenantId:1})});
+      const data=await res.json();
+      if(data.valid){
+        const items=selected.map(p=>{
+          const inp=inputs[p];
+          const finalProdukt=p==="Sonstiges"?inp.customName.trim():p;
+          return{produkt:finalProdukt,kernTempGaren:inp.kernTemp,tempHeisshalten:isSpecial(p)?inp.heissTemp:"",massnahme,kuerzel:data.initials,userId:data.userId,defekt:false};
+        });
+        onConfirm(items);
+      }else setError("PIN ungueltig.");
+    }catch{setError("Verbindungsfehler.");}
+    finally{setLoading(false);}
   };
 
+  const dayStr=`${String(day).padStart(2,"0")}.${String(month).padStart(2,"0")}.${year}`;
+
   return(
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
-        <div className="flex items-center justify-between">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b">
           <h3 className="font-bold text-lg">Heisse Theke – {dayStr}</h3>
           <button onClick={onClose}><X className="w-5 h-5 text-muted-foreground"/></button>
         </div>
 
-        {step==="form"&&!defektMode&&(
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">Produkt</label>
-              <select value={produkt} onChange={e=>{setProdukt(e.target.value);setCustomProdukt("");}} autoFocus
-                className="w-full border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary">
-                <option value="">Produkt waehlen...</option>
-                {HEISSE_THEKE_PRODUKTE.map(p=><option key={p} value={p}>{p}</option>)}
-              </select>
-              {produkt==="Sonstiges"&&<input type="text" placeholder="Produktbezeichnung..." value={customProdukt} onChange={e=>setCustomProdukt(e.target.value)} className="mt-2 w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>}
+        {step==="form"?(
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <div className="overflow-y-auto flex-1 px-6 py-4 space-y-1">
+              <p className="text-xs text-muted-foreground mb-3">Produkte auswaehlen und Temperaturen eintragen:</p>
+              {HEISSE_THEKE_PRODUKTE.map(p=>{
+                const inp=inputs[p];
+                const gSt=garenStatus(inp.kernTemp,p);
+                const hSt=heisshaltenStatus(inp.heissTemp);
+                const minT=p==="Fisch"?"60":"72";
+                return(
+                  <div key={p} className={["rounded-xl border transition-all",inp.selected?"border-primary/40 bg-primary/5":"border-border"].join(" ")}>
+                    <div className="flex items-center gap-3 px-3 py-2.5 cursor-pointer" onClick={()=>toggle(p)}>
+                      <div className={["w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-all",inp.selected?"bg-primary border-primary":"border-border"].join(" ")}>
+                        {inp.selected&&<Check className="w-3 h-3 text-white"/>}
+                      </div>
+                      <span className={`text-sm font-medium ${inp.selected?"text-primary":"text-foreground"}`}>{p}</span>
+                      {isSpecial(p)&&<span className="ml-auto text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-semibold">Sonder</span>}
+                    </div>
+                    {inp.selected&&(
+                      <div className="px-3 pb-3 space-y-2 border-t border-primary/20 pt-2">
+                        {p==="Sonstiges"&&(
+                          <input type="text" placeholder="Produktbezeichnung..." value={inp.customName} onChange={e=>setCN(p,e.target.value)}
+                            className="w-full border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary" autoFocus/>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <label className="text-xs text-muted-foreground w-36 shrink-0">Kerntemp. Garen <span className="text-muted-foreground/60">≥{minT}°C</span></label>
+                          <div className="relative flex-1">
+                            <input type="text" inputMode="decimal" placeholder="z.B. 75,0" value={inp.kernTemp} onChange={e=>setKT(p,e.target.value)}
+                              className={`w-full border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary pr-16 ${gSt==="warn"?"border-red-400 bg-red-50":gSt==="ok"?"border-green-400 bg-green-50":""}`}/>
+                            {gSt!=="none"&&<span className={`absolute right-2 top-1.5 text-[10px] font-bold ${gSt==="ok"?"text-green-600":"text-red-600"}`}>{gSt==="ok"?"i.O.":"ABWEICH."}</span>}
+                          </div>
+                        </div>
+                        {isSpecial(p)&&(
+                          <div className="flex items-center gap-2">
+                            <label className="text-xs text-muted-foreground w-36 shrink-0">Heisshalten <span className="text-muted-foreground/60">≥60°C</span></label>
+                            <div className="relative flex-1">
+                              <input type="text" inputMode="decimal" placeholder="z.B. 65,0" value={inp.heissTemp} onChange={e=>setHT(p,e.target.value)}
+                                className={`w-full border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary pr-16 ${hSt==="warn"?"border-red-400 bg-red-50":hSt==="ok"?"border-green-400 bg-green-50":""}`}/>
+                              {hSt!=="none"&&<span className={`absolute right-2 top-1.5 text-[10px] font-bold ${hSt==="ok"?"text-green-600":"text-red-600"}`}>{hSt==="ok"?"i.O.":"ABWEICH."}</span>}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              {hasAnyWarn&&(
+                <div className="pt-2">
+                  <label className="text-xs font-medium text-red-600 block mb-1">Massnahme <span className="text-red-400">* Pflicht bei Abweichung</span></label>
+                  <textarea rows={2} placeholder="Massnahme beschreiben..." value={massnahme} onChange={e=>setMassnahme(e.target.value)}
+                    className="w-full border border-red-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"/>
+                </div>
+              )}
             </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">Kerntemperatur Garen <span className="text-muted-foreground/60">mind. {minTemp||"72°C"}</span></label>
-              <div className="relative">
-                <input type="text" inputMode="decimal" placeholder="z.B. 75,0" value={garenTemp} onChange={e=>setGarenTemp(e.target.value)}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${gStatus==="warn"?"border-red-400 bg-red-50":gStatus==="ok"?"border-green-400 bg-green-50":""}`}/>
-                {gStatus!=="none"&&<span className={`absolute right-2 top-2 text-xs font-semibold ${gStatus==="ok"?"text-green-600":"text-red-600"}`}>{gStatus==="ok"?"i.O.":"ABWEICHUNG"}</span>}
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">Temp. Heisshalten <span className="text-muted-foreground/60">mind. 60°C, max. 3 Std.</span></label>
-              <div className="relative">
-                <input type="text" inputMode="decimal" placeholder="z.B. 65,0" value={heissTemp} onChange={e=>setHeissTemp(e.target.value)}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${hStatus==="warn"?"border-red-400 bg-red-50":hStatus==="ok"?"border-green-400 bg-green-50":""}`}/>
-                {hStatus!=="none"&&<span className={`absolute right-2 top-2 text-xs font-semibold ${hStatus==="ok"?"text-green-600":"text-red-600"}`}>{hStatus==="ok"?"i.O.":"ABWEICHUNG"}</span>}
-              </div>
-            </div>
-            <div>
-              <label className={`text-xs font-medium block mb-1 ${hasWarn?"text-red-600":"text-muted-foreground"}`}>Massnahme {hasWarn&&<span className="text-red-400">* Pflicht</span>}</label>
-              <textarea rows={2} placeholder={hasWarn?"Massnahme beschreiben...":"Ggf. Massnahme (optional)..."} value={massnahme} onChange={e=>setMassnahme(e.target.value)}
-                className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 resize-none ${hasWarn?"border-red-300 focus:ring-red-400":"focus:ring-primary"}`}/>
-            </div>
-            <div className="flex gap-2 pt-1">
-              <button onClick={()=>{setDefektMode(true);setStep("defektPin");}} className="flex items-center gap-1.5 border border-orange-300 text-orange-700 bg-orange-50 rounded-lg px-3 py-2 text-sm hover:bg-orange-100 transition-colors">
-                <AlertTriangle className="w-4 h-4"/>Defekt
+            <div className="px-6 pb-6 pt-3 border-t flex gap-2">
+              <button onClick={onClose} className="flex-1 border rounded-lg px-4 py-2.5 text-sm hover:bg-secondary">Abbrechen</button>
+              <button onClick={()=>setStep("pin")} disabled={!canProceed||(hasAnyWarn&&!massnahme.trim())}
+                className="flex-1 bg-primary text-white rounded-lg px-4 py-2.5 text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
+                Weiter ({selected.length} Produkt{selected.length!==1?"e":""})
               </button>
-              <button onClick={onClose} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Abbrechen</button>
-              <button onClick={()=>setStep("pin")} disabled={!finalProdukt.trim()||!garenTemp||!heissTemp||(hasWarn&&!massnahme.trim())}
-                className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50">Weiter</button>
             </div>
           </div>
-        )}
-
-        {step==="defektPin"&&!identified&&(
-          <div className="space-y-3">
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-              <div className="flex items-center gap-2 text-orange-700 font-medium text-sm mb-2"><AlertTriangle className="w-4 h-4"/>Defekt / nicht in Betrieb</div>
-              <textarea rows={2} placeholder="Grund (optional)..." value={defektGrund} onChange={e=>setDefektGrund(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 resize-none bg-white"/>
+        ):(
+          <div className="px-6 py-5 space-y-4">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2"><Lock className="w-6 h-6 text-primary"/></div>
+              <p className="text-sm text-muted-foreground">PIN eingeben zur Bestaetigung</p>
+              <p className="text-xs text-muted-foreground/70 mt-0.5">{selected.length} Produkt{selected.length!==1?"e":""} werden gespeichert</p>
             </div>
-            <PinStep onVerified={(name,userId,kuerzel)=>setIdentified({name,userId,kuerzel})} onBack={()=>{setDefektMode(false);setStep("form");}} loading={loading} setLoading={setLoading}/>
-          </div>
-        )}
-        {step==="pin"&&!identified&&(
-          <PinStep onVerified={(name,userId,kuerzel)=>setIdentified({name,userId,kuerzel})} onBack={()=>setStep("form")} loading={loading} setLoading={setLoading}/>
-        )}
-        {identified&&(
-          <div className="space-y-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto"><Check className="w-6 h-6 text-green-600"/></div>
-            <p className="font-medium">{identified.name}</p>
-            {defektMode&&<p className="text-sm text-orange-600 font-medium">Wird als Defekt / nicht in Betrieb gespeichert</p>}
+            <input type="password" inputMode="numeric" maxLength={6} placeholder="PIN" value={pin}
+              onChange={e=>setPin(e.target.value.replace(/\D/g,""))}
+              onKeyDown={e=>e.key==="Enter"&&pin.length>=3&&handleVerifyPin()}
+              className="w-full border rounded-lg px-3 py-2 text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary" autoFocus/>
+            {error&&<p className="text-red-500 text-sm text-center">{error}</p>}
             <div className="flex gap-2">
-              <button onClick={()=>setIdentified(null)} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurueck</button>
-              <button onClick={handleConfirm} className="flex-1 bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-green-700">Speichern</button>
+              <button onClick={()=>setStep("form")} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurueck</button>
+              <button onClick={handleVerifyPin} disabled={pin.length<3||loading}
+                className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
+                {loading?<Loader2 className="w-4 h-4 animate-spin"/>:<Check className="w-4 h-4"/>}Speichern
+              </button>
             </div>
           </div>
         )}
@@ -408,6 +458,7 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
               const future=isFuture(year,month,day);
               const today=isToday(year,month,day);
               const weekend=isWeekend(year,month,day);
+              if(wt==="So")return null;
               const tSt=tempStatus(latestEntry?.temperatur??null,art);
               const hSt=humidityStatus(latestEntry?.luftfeuchtigkeit??null);
               const hasWarn=(tSt==="warn"||hSt==="warn")&&!latestEntry?.defekt;
@@ -497,8 +548,10 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
     return m;
   },[entries]);
 
-  const handleSave=async(day:number,data:{produkt:string;kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean})=>{
-    await fetch(`${BASE}/kaesetheke-kontrolle`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marketId,year,month,day,kontrolleArt:"heisse_theke",produkt:data.produkt,kernTempGaren:data.kernTempGaren,tempHeisshalten:data.tempHeisshalten,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:data.defekt})});
+  const handleSave=async(day:number,items:{produkt:string;kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean}[])=>{
+    await Promise.all(items.map(data=>
+      fetch(`${BASE}/kaesetheke-kontrolle`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marketId,year,month,day,kontrolleArt:"heisse_theke",produkt:data.produkt,kernTempGaren:data.kernTempGaren,tempHeisshalten:data.tempHeisshalten,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:data.defekt})})
+    ));
     setModal(null);onSaved();
   };
 
@@ -515,6 +568,7 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
           const future=isFuture(year,month,day);
           const today=isToday(year,month,day);
           const weekend=isWeekend(year,month,day);
+          if(wt==="So")return null;
           if(future&&dayEntries.length===0)return null;
           return(
             <div key={day} className={["border rounded-xl overflow-hidden",today?"border-blue-200 shadow-sm":"",weekend&&!today?"bg-muted/10":""].filter(Boolean).join(" ")}>
