@@ -429,7 +429,7 @@ export default function WarenzustandOG() {
         year={year}
         selectedMarketId={selectedMarketId}
         onConfirm={handleQuickConfirm}
-        onBack={() => navigate("/category/2")}
+        onBack={() => setShowQuickCheck(false)}
       />
     );
   }
