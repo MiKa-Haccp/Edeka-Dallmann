@@ -3,12 +3,19 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ChevronLeft, Save, Plus, Trash2, Loader2, Check, X,
-  FlaskConical, Printer, Camera, Mail, ImagePlus, FileText, Send,
+  FlaskConical, Printer, Camera, Mail, ImagePlus, FileText, Send, KeyRound,
 } from "lucide-react";
 import { UnterschriftPad } from "@/components/UnterschriftPad";
+import { PinVerification } from "@/components/PinVerification";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 const DRAFT_KEY = "haccp-probe-draft-v1";
+
+const MARKT_STAMMDATEN: Record<number, { name: string; adresse: string; telefon: string }> = {
+  1: { name: "EDEKA Leeder",        adresse: "Lechaschauer Str. 1, 86929 Leeder",            telefon: "08243/9609041" },
+  2: { name: "EDEKA Buching",       adresse: "Buchinger Str. 10, 86971 Peiting-Buching",      telefon: "08368/9148741" },
+  3: { name: "EDEKA Marktoberdorf", adresse: "Kaufbeurer Str. 30, 87616 Marktoberdorf",       telefon: "08342/9193006" },
+};
 
 interface FormData {
   markt: string;
@@ -161,7 +168,7 @@ function ToggleGroup<T extends string>({ label, value, onChange, options }: {
 }
 
 export default function Probeentnahme() {
-  const { adminSession } = useAppStore();
+  const { adminSession, selectedMarketId } = useAppStore();
   const isAdmin = !!adminSession;
 
   const [view, setView] = useState<"list" | "form">("list");
@@ -177,6 +184,18 @@ export default function Probeentnahme() {
   const [draftRestored, setDraftRestored] = useState(false);
   const [showDruckMenu, setShowDruckMenu] = useState(false);
   const fotoRef = useRef<HTMLInputElement>(null);
+
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [verifiedUserName, setVerifiedUserName] = useState<string | null>(null);
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+
+  const getMarktDefault = () => {
+    const info = selectedMarketId ? MARKT_STAMMDATEN[selectedMarketId] : null;
+    if (!info) return "";
+    return `${info.name}, ${info.adresse}, Tel. ${info.telefon}`;
+  };
 
   const set = (k: keyof FormData) => (v: string) => setForm((p) => ({ ...p, [k]: v }));
 
@@ -206,13 +225,23 @@ export default function Probeentnahme() {
         return;
       } catch {}
     }
-    setCurrent(null); setForm(emptyForm()); setView("form"); setSaved(false);
+    const marktDefault = getMarktDefault();
+    setCurrent(null);
+    setForm({ ...emptyForm(), markt: marktDefault });
+    setVerifiedUserName(null);
+    setEmailSent(false);
+    setEmailError(null);
+    setView("form");
+    setSaved(false);
   };
 
   const handleOpen = (r: ProbeRecord) => {
     setCurrent(r);
     const { id, tenantId, createdAt, updatedAt, ...fields } = r;
     setForm(fields as FormData);
+    setVerifiedUserName(null);
+    setEmailSent(false);
+    setEmailError(null);
     setView("form"); setSaved(false); setDraftRestored(false);
   };
 
@@ -237,6 +266,33 @@ export default function Probeentnahme() {
     await fetch(`${BASE}/probeentnahme/${current.id}`, { method: "DELETE" });
     setDeleteConfirm(false); setView("list"); setCurrent(null);
     await loadRecords();
+  };
+
+  const handleSendEmail = async () => {
+    if (!current) return;
+    setEmailSending(true);
+    setEmailError(null);
+    setEmailSent(false);
+    const marktInfo = selectedMarketId ? MARKT_STAMMDATEN[selectedMarketId] : null;
+    try {
+      const res = await fetch(`${BASE}/send-probeentnahme-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recordId: current.id,
+          marketId: selectedMarketId || undefined,
+          formData: form,
+          marktName: marktInfo?.name || form.markt || "Unbekannt",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) setEmailError(data.error || "E-Mail konnte nicht gesendet werden.");
+      else setEmailSent(true);
+    } catch {
+      setEmailError("Netzwerkfehler beim Senden.");
+    } finally {
+      setEmailSending(false);
+    }
   };
 
   const handleFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -378,7 +434,33 @@ export default function Probeentnahme() {
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FInput label="Markt (Name, Adresse, Telefon)" value={form.markt} onChange={set("markt")} />
-                <FInput label="Ansprechpartner im Markt" value={form.ansprechpartner} onChange={set("ansprechpartner")} />
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ansprechpartner im Markt</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={form.ansprechpartner}
+                      onChange={(e) => set("ansprechpartner")(e.target.value)}
+                      placeholder="Name des Ansprechpartners"
+                      className="flex-1 px-3 py-2 rounded-xl border border-border/60 bg-white text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 focus:border-[#1a3a6b]/40 transition-all"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPinModal(true)}
+                      title="Mitarbeiter per PIN bestätigen"
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-[#1a3a6b]/30 bg-[#1a3a6b]/5 text-[#1a3a6b] text-xs font-bold hover:bg-[#1a3a6b]/10 transition-all flex-shrink-0"
+                    >
+                      <KeyRound className="w-3.5 h-3.5" />
+                      PIN
+                    </button>
+                  </div>
+                  {verifiedUserName && (
+                    <p className="text-xs text-green-600 font-semibold flex items-center gap-1 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+                      Bestätigt: {verifiedUserName}
+                    </p>
+                  )}
+                </div>
               </div>
               <FInput label="Bezeichnung der Behörde (z.B. Stadt München, Landratsamt Freising)" value={form.behoerdeBezeichnung} onChange={set("behoerdeBezeichnung")} />
 
@@ -446,10 +528,49 @@ export default function Probeentnahme() {
                 <FInput label="Durchschrift gefaxt durch (Name)" value={form.durchschriftGefaxtDurch} onChange={set("durchschriftGefaxtDurch")} />
                 <FInput label="Gefaxt am" value={form.durchschriftGefaxtAm} onChange={set("durchschriftGefaxtAm")} />
               </div>
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
-                <strong>Ausgefüllten Probenahmebogen und amtlichen Durchschlag</strong> bitte umgehend weiterleiten an die QM-Abteilung der EDEKA Südbayern mbH:<br />
-                📠 Fax: <strong>08458/62-510</strong> &nbsp;|&nbsp; ✉️ <strong>qm.suedbayern@edeka.de</strong><br />
-                <span className="text-amber-700">Der Hersteller wird von der Abteilung QM informiert.</span>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+                <p className="text-xs font-bold text-amber-800 flex items-center gap-1.5">
+                  <Send className="w-3.5 h-3.5" /> Weiterleitung an EDEKA QM-Abteilung
+                </p>
+                <p className="text-xs text-amber-800">
+                  <strong>Ausgefüllten Probenahmebogen und amtlichen Durchschlag</strong> bitte umgehend weiterleiten an die QM-Abteilung der EDEKA Südbayern mbH.
+                </p>
+
+                {current ? (
+                  <div className="space-y-2">
+                    <button
+                      onClick={handleSendEmail}
+                      disabled={emailSending || emailSent}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold border transition-all w-full justify-center ${
+                        emailSent
+                          ? "bg-green-100 border-green-400 text-green-700"
+                          : "bg-white border-amber-400 text-amber-800 hover:bg-amber-100 disabled:opacity-60"
+                      }`}
+                    >
+                      {emailSending ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Wird gesendet…</>
+                      ) : emailSent ? (
+                        <><Check className="w-3.5 h-3.5" /> E-Mail erfolgreich gesendet</>
+                      ) : (
+                        <><Mail className="w-3.5 h-3.5" /> Per E-Mail an EDEKA QM senden</>
+                      )}
+                    </button>
+                    {emailError && (
+                      <p className="text-xs text-red-600 flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-lg px-2 py-1.5">
+                        <X className="w-3.5 h-3.5 flex-shrink-0" /> {emailError}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-xs text-amber-700">Bitte erst speichern, um per E-Mail zu senden.</p>
+                )}
+
+                <div className="flex flex-wrap gap-3 border-t border-amber-200 pt-2 text-xs text-amber-700">
+                  <span>📠 Fax: <strong>08458/62-510</strong></span>
+                  <span>|</span>
+                  <span>✉️ <strong>qm.suedbayern@edeka.de</strong></span>
+                </div>
+                <p className="text-xs text-amber-700">Der Hersteller wird von der Abteilung QM informiert.</p>
               </div>
             </SectionCard>
 
@@ -664,6 +785,17 @@ export default function Probeentnahme() {
           </div>
         </div>
       )}
+
+      {/* PIN Modal */}
+      <PinVerification
+        open={showPinModal}
+        onVerified={(_userId, userName, _initials) => {
+          setVerifiedUserName(userName);
+          setForm((p) => ({ ...p, ansprechpartner: userName }));
+          setShowPinModal(false);
+        }}
+        onCancel={() => setShowPinModal(false)}
+      />
 
       {/* Print Styles */}
       <style>{`
