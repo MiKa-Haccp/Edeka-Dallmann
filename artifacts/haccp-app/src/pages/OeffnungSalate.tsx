@@ -173,14 +173,13 @@ function AufgebrauchtPinModal({
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [identified, setIdentified] = useState<{name:string;userId:number;kuerzel:string}|null>(null);
 
   const handleVerifyPin = async () => {
     setError(""); setLoading(true);
     try {
       const res = await fetch(`${BASE}/users/verify-pin`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin,tenantId:1})});
       const data = await res.json();
-      if (data.valid) setIdentified({name:data.userName,userId:data.userId,kuerzel:data.initials});
+      if (data.valid) onConfirm(data.initials, data.userId);
       else setError("PIN ungueltig.");
     } catch { setError("Verbindungsfehler."); }
     finally { setLoading(false); }
@@ -197,43 +196,25 @@ function AufgebrauchtPinModal({
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted"><X className="w-4 h-4"/></button>
         </div>
 
-        {!identified ? (
-          <div className="space-y-3">
-            <div className="p-3 bg-green-50 rounded-xl border border-green-200 text-xs text-green-800 flex items-center gap-2">
-              <Check className="w-4 h-4 text-green-600 shrink-0"/>
-              <span>Bitte PIN eingeben, um zu bestaetigen dass dieser Artikel aufgebraucht ist.</span>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">PIN eingeben</label>
-              <input type="password" inputMode="numeric" autoFocus maxLength={6}
-                className="w-full border border-border rounded-lg px-3 py-3 text-center text-lg tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/30"
-                placeholder="&#9679;&#9679;&#9679;&#9679;"
-                value={pin} onChange={e=>setPin(e.target.value.replace(/\D/g,""))}
-                onKeyDown={e=>e.key==="Enter"&&pin.length>=4&&handleVerifyPin()}/>
-            </div>
-            {error&&<p className="text-xs text-red-500 flex items-center gap-1.5"><X className="w-3 h-3"/>{error}</p>}
-            <button onClick={handleVerifyPin} disabled={loading||pin.length<4}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0] transition-colors">
-              {loading?<Loader2 className="w-4 h-4 animate-spin"/>:<Lock className="w-4 h-4"/>} PIN pruefen
-            </button>
+        <div className="space-y-3">
+          <div className="p-3 bg-green-50 rounded-xl border border-green-200 text-xs text-green-800 flex items-center gap-2">
+            <Check className="w-4 h-4 text-green-600 shrink-0"/>
+            <span>PIN eingeben, um als aufgebraucht zu markieren.</span>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl border border-green-200">
-              <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-                <Check className="w-5 h-5 text-white"/>
-              </div>
-              <div>
-                <p className="text-sm font-bold text-green-800">{identified.name}</p>
-                <p className="text-xs text-green-600">Kuerzel: <span className="font-mono font-bold">{identified.kuerzel}</span></p>
-              </div>
-            </div>
-            <button onClick={()=>onConfirm(identified.kuerzel, identified.userId)}
-              className="w-full py-2.5 rounded-xl bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
-              <Check className="w-4 h-4"/> Als aufgebraucht markieren
-            </button>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">PIN eingeben</label>
+            <input type="password" inputMode="numeric" autoFocus maxLength={6}
+              className="w-full border border-border rounded-lg px-3 py-3 text-center text-lg tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/30"
+              placeholder="&#9679;&#9679;&#9679;&#9679;"
+              value={pin} onChange={e=>setPin(e.target.value.replace(/\D/g,""))}
+              onKeyDown={e=>e.key==="Enter"&&pin.length>=4&&handleVerifyPin()}/>
           </div>
-        )}
+          {error&&<p className="text-xs text-red-500 flex items-center gap-1.5"><X className="w-3 h-3"/>{error}</p>}
+          <button onClick={handleVerifyPin} disabled={loading||pin.length<4}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-600 text-white text-sm font-bold disabled:opacity-50 hover:bg-green-700 transition-colors">
+            {loading?<Loader2 className="w-4 h-4 animate-spin"/>:<Check className="w-4 h-4"/>} PIN pruefen &amp; aufgebraucht
+          </button>
+        </div>
       </div>
     </div>
   );
