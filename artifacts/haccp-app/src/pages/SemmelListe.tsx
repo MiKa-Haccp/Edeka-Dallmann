@@ -98,16 +98,12 @@ function SemmelModal({ day, year, month, existingEntries, itemConfigs, onConfirm
   const [step, setStep] = useState<"form" | "pin">("form");
   const [values, setValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [identified, setIdentified] = useState<{ name: string; userId: number; kuerzel: string } | null>(null);
   const dayStr = `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}.${year}`;
 
-  const hasValues = itemConfigs.some(ic => parseInt(values[ic.label] || "0") > 0);
-
-  const handleConfirm = () => {
-    if (!identified) return;
+  const handleVerified = (_name: string, userId: number, kuerzel: string) => {
     const semmel = values[itemConfigs[0]?.label] || "";
     const sandwich = itemConfigs[1] ? values[itemConfigs[1].label] || "" : "";
-    onConfirm({ items: values, semmel, sandwich, kuerzel: identified.kuerzel, userId: identified.userId });
+    onConfirm({ items: values, semmel, sandwich, kuerzel, userId });
   };
 
   return (
@@ -166,24 +162,8 @@ function SemmelModal({ day, year, month, existingEntries, itemConfigs, onConfirm
           </div>
         )}
 
-        {step === "pin" && !identified && (
-          <PinStep onVerified={(name, userId, kuerzel) => setIdentified({ name, userId, kuerzel })} onBack={() => setStep("form")} loading={loading} setLoading={setLoading} />
-        )}
-
-        {identified && (
-          <div className="space-y-4 text-center">
-            <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto"><Check className="w-6 h-6 text-green-600" /></div>
-            <p className="font-medium">{identified.name}</p>
-            {itemConfigs.map((ic, idx) => {
-              const v = parseInt(values[ic.label] || "0");
-              return v > 0 ? <p key={ic.label} className="text-sm text-muted-foreground">{ic.label}: <strong>+{v}</strong></p> : null;
-            })}
-            {!hasValues && <p className="text-sm text-muted-foreground italic">Kein Zusatzkontingent</p>}
-            <div className="flex gap-2">
-              <button onClick={() => setIdentified(null)} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurück</button>
-              <button onClick={handleConfirm} className="flex-1 bg-green-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-green-700">Speichern</button>
-            </div>
-          </div>
+        {step === "pin" && (
+          <PinStep onVerified={handleVerified} onBack={() => setStep("form")} loading={loading} setLoading={setLoading} />
         )}
       </div>
     </div>
