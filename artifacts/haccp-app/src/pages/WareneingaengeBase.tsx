@@ -598,10 +598,10 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
   const isCurrentMonth=year===todayYear&&month===todayMonth;
 
   useEffect(()=>{
-    if(isCurrentMonth&&todayRef.current){
+    if(isCurrentMonth&&!loading&&todayRef.current){
       setTimeout(()=>todayRef.current?.scrollIntoView({block:"center",behavior:"smooth"}),150);
     }
-  },[type.id,year,month]);
+  },[type.id,year,month,loading,isCurrentMonth]);
 
   const deliveryDays=Array.from({length:days},(_,i)=>i+1).filter(d=>{
     const n=new Date();n.setHours(0,0,0,0);
