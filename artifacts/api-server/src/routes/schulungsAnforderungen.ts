@@ -44,22 +44,31 @@ router.get("/schulungs-themen-katalog", async (_req, res) => {
 router.get("/schulungs-kategorien", async (req, res) => {
   const tenantId = Number(req.query.tenantId) || 1;
   try {
-    const [katRes, subRes] = await Promise.all([
+    const [schulKatRes, beschKatRes, subRes] = await Promise.all([
       pool.query(
-        `SELECT DISTINCT schulung_kategorie as kat FROM schulungs_pflichten WHERE tenant_id=$1
-         UNION SELECT DISTINCT kategorie FROM schulungsnachweise WHERE tenant_id=$1 AND kategorie IS NOT NULL
+        `SELECT DISTINCT schulung_kategorie as kat FROM schulungs_pflichten
+         WHERE tenant_id=$1 AND typ='schulung' AND schulung_kategorie IS NOT NULL
          ORDER BY kat`,
         [tenantId]
       ),
       pool.query(
-        `SELECT DISTINCT subbereich as sub FROM schulungs_pflichten WHERE tenant_id=$1 AND subbereich IS NOT NULL
-         UNION SELECT DISTINCT bezeichnung FROM schulungsnachweise WHERE tenant_id=$1 AND bezeichnung IS NOT NULL
-         ORDER BY sub`,
+        `SELECT DISTINCT schulung_kategorie as kat FROM schulungs_pflichten
+         WHERE tenant_id=$1 AND typ='bescheinigung' AND schulung_kategorie IS NOT NULL
+         ORDER BY kat`,
+        [tenantId]
+      ),
+      pool.query(
+        `SELECT DISTINCT subbereich as sub FROM schulungs_pflichten
+         WHERE tenant_id=$1 AND subbereich IS NOT NULL ORDER BY sub`,
         [tenantId]
       ),
     ]);
+    const schulungsKategorien = schulKatRes.rows.map((r: any) => r.kat).filter(Boolean);
+    const bescheinigungenKategorien = beschKatRes.rows.map((r: any) => r.kat).filter(Boolean);
     res.json({
-      kategorien: katRes.rows.map((r: any) => r.kat).filter(Boolean),
+      kategorien: schulungsKategorien,
+      schulungsKategorien,
+      bescheinigungenKategorien,
       subbereiche: subRes.rows.map((r: any) => r.sub).filter(Boolean),
     });
   } catch (err) {

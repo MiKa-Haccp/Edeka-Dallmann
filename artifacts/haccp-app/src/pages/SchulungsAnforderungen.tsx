@@ -11,6 +11,17 @@ import { Link } from "wouter";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
+const PREDEFINED_SCHULUNGS_KATEGORIEN = [
+  "HACCP Grundschulung",
+  "Arbeitssicherheit",
+  "Spezialschulungen Lebensmittel",
+  "Krisenmanagement",
+  "Feuerwerksverkauf",
+  "Strohschwein",
+  "Taraschulung",
+  "Wareneingangskontrolle",
+];
+
 const GRUPPEN_OPTS = [
   { value: "gesamter_markt", label: "Gesamter Markt", color: "text-violet-700", bg: "bg-violet-100 border-violet-200" },
   { value: "markt",          label: "Markt",          color: "text-sky-700",    bg: "bg-sky-100 border-sky-200" },
@@ -210,9 +221,10 @@ function ZuordnungBadge({ modus }: { modus: string }) {
 }
 
 // ── Pflicht-Form ─────────────────────────────────────────────────────────────
-function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche, mitarbeiter, topics, onSave, onCancel }: {
+function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, schulungsKategorien, bescheinigungenKategorien, subbereiche, mitarbeiter, topics, onSave, onCancel }: {
   initial?: Partial<Pflicht>; typ?: "schulung" | "bescheinigung"; parentId?: number;
-  kategorien: string[]; subbereiche: string[]; mitarbeiter: Mitarbeiter[]; topics: TrainingTopic[];
+  kategorien?: string[]; schulungsKategorien?: string[]; bescheinigungenKategorien?: string[];
+  subbereiche: string[]; mitarbeiter: Mitarbeiter[]; topics: TrainingTopic[];
   onSave: (data: any) => Promise<void>; onCancel: () => void;
 }) {
   const { adminSession } = useAppStore();
@@ -234,6 +246,10 @@ function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche
 
   const selectedTopic = topics.find((t) => t.id === trainingTopicId);
   const toggleGruppe = (g: string) => setGruppen((p) => p.includes(g) ? p.filter((x) => x !== g) : [...p, g]);
+
+  const aktivKategorien = typ === "schulung"
+    ? [...new Set([...PREDEFINED_SCHULUNGS_KATEGORIEN, ...(schulungsKategorien || kategorien || [])])]
+    : (bescheinigungenKategorien || kategorien || []);
 
   const handleSave = async () => {
     if (!bezeichnung.trim()) { setError("Anzeigename ausfüllen."); return; }
@@ -276,25 +292,31 @@ function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche
         </div>
       )}
 
-      {/* Schulungsthema verknüpfen (nur bei Schulung) */}
+      {/* Schulungsthema / Subkategorie (nur bei Schulung) */}
       {typ === "schulung" && !parentId && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-              <Link2 className="w-3 h-3" /> Schulungsthema aus Protokoll verknüpfen
-              <span className="font-normal normal-case text-muted-foreground">(optional)</span>
+            <label className="text-xs font-semibold text-[#1a3a6b] uppercase tracking-wide flex items-center gap-1.5">
+              <BookOpen className="w-3.5 h-3.5" /> Schulungsthema (Subkategorie)
             </label>
             <button type="button" onClick={() => setShowTopicPicker((x) => !x)}
               className="text-xs font-semibold text-[#1a3a6b] hover:underline">
-              {showTopicPicker ? "Schließen" : (trainingTopicId ? "Ändern" : "Auswählen")}
+              {showTopicPicker ? "Schließen" : (trainingTopicId ? "Ändern" : "Thema auswählen")}
             </button>
           </div>
+          {!trainingTopicId && !showTopicPicker && (
+            <button type="button" onClick={() => setShowTopicPicker(true)}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed border-[#1a3a6b]/30 text-xs text-[#1a3a6b]/70 hover:border-[#1a3a6b]/60 hover:text-[#1a3a6b] transition-colors">
+              <Search className="w-3.5 h-3.5" />
+              Schulungsthema auswählen — z.B. Hygieneschulung, IfSG, Bio/Öko …
+            </button>
+          )}
           {selectedTopic && !showTopicPicker && (
             <div className="flex items-start gap-2 p-2.5 bg-[#1a3a6b]/5 border border-[#1a3a6b]/20 rounded-lg">
-              <Link2 className="w-3.5 h-3.5 text-[#1a3a6b] shrink-0 mt-0.5" />
+              <BookOpen className="w-3.5 h-3.5 text-[#1a3a6b] shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold text-foreground leading-snug">{selectedTopic.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Compliance wird aus Schulungsprotokoll berechnet.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Compliance wird aus Schulungsprotokoll geprüft.</p>
               </div>
               <button type="button" onClick={() => setTrainingTopicId(null)} className="text-muted-foreground hover:text-red-500">
                 <X className="w-3.5 h-3.5" />
@@ -310,9 +332,12 @@ function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Kategorie</label>
-          <Combobox value={kategorie} onChange={setKategorie} options={kategorien} placeholder="z.B. Hygieneschulung" />
-          <p className="text-xs text-muted-foreground">Muss mit Kategorie im Schulungsordner übereinstimmen.</p>
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            {typ === "schulung" ? "Hauptkategorie" : "Kategorie"}
+          </label>
+          <Combobox value={kategorie} onChange={setKategorie} options={aktivKategorien}
+            placeholder={typ === "schulung" ? "z.B. HACCP Grundschulung" : "z.B. Brandschutz"} />
+          {typ === "schulung" && <p className="text-xs text-muted-foreground">Übergeordnete Schulungsgruppe (z.B. HACCP, Arbeitssicherheit).</p>}
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Anzeigename</label>
@@ -424,9 +449,10 @@ function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche
 }
 
 // ── Pflicht-Karte ─────────────────────────────────────────────────────────────
-function PflichtCard({ p, children, kategorien, subbereiche, mitarbeiter, topics, onUpdate, onDelete, onToggle, onAddChild }: {
+function PflichtCard({ p, children, kategorien, schulungsKategorien, bescheinigungenKategorien, subbereiche, mitarbeiter, topics, onUpdate, onDelete, onToggle, onAddChild }: {
   p: Pflicht; children?: Pflicht[];
-  kategorien: string[]; subbereiche: string[]; mitarbeiter: Mitarbeiter[]; topics: TrainingTopic[];
+  kategorien?: string[]; schulungsKategorien?: string[]; bescheinigungenKategorien?: string[];
+  subbereiche: string[]; mitarbeiter: Mitarbeiter[]; topics: TrainingTopic[];
   onUpdate: (id: number, data: any) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
   onToggle: (p: Pflicht) => Promise<void>;
@@ -443,7 +469,7 @@ function PflichtCard({ p, children, kategorien, subbereiche, mitarbeiter, topics
       <div className={`bg-white rounded-2xl border-2 overflow-hidden ${p.is_active ? borderColor : "border-slate-200 opacity-60"}`}>
         {editing ? (
           <div className="p-4">
-            <PflichtForm initial={p} kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
+            <PflichtForm initial={p} schulungsKategorien={schulungsKategorien} bescheinigungenKategorien={bescheinigungenKategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
               onSave={async (d) => { await onUpdate(p.id, d); setEditing(false); }} onCancel={() => setEditing(false)} />
           </div>
         ) : (
@@ -523,7 +549,7 @@ function PflichtCard({ p, children, kategorien, subbereiche, mitarbeiter, topics
 
       {addingSub && (
         <div className="ml-6">
-          <PflichtForm parentId={p.id} typ={p.typ} kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
+          <PflichtForm parentId={p.id} typ={p.typ} schulungsKategorien={schulungsKategorien} bescheinigungenKategorien={bescheinigungenKategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
             onSave={async (d) => { await onAddChild(p.id, d); setAddingSub(false); }} onCancel={() => setAddingSub(false)} />
         </div>
       )}
@@ -535,7 +561,7 @@ function PflichtCard({ p, children, kategorien, subbereiche, mitarbeiter, topics
             <div className="w-3 h-px bg-blue-200" />
           </div>
           <div className="flex-1">
-            <PflichtCard p={child} kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
+            <PflichtCard p={child} schulungsKategorien={schulungsKategorien} bescheinigungenKategorien={bescheinigungenKategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
               onUpdate={onUpdate} onDelete={onDelete} onToggle={onToggle} onAddChild={onAddChild} />
           </div>
         </div>
@@ -552,7 +578,8 @@ export default function SchulungsAnforderungen() {
   const [tab, setTab] = useState<"anforderungen" | "uebersicht">("anforderungen");
   const [uebersichtTyp, setUebersichtTyp] = useState<"schulungen" | "bescheinigungen">("schulungen");
   const [pflichten, setPflichten] = useState<Pflicht[]>([]);
-  const [kategorien, setKategorien] = useState<string[]>([]);
+  const [schulungsKategorien, setSchulungsKategorien] = useState<string[]>([]);
+  const [bescheinigungenKategorien, setBescheinigungenKategorien] = useState<string[]>([]);
   const [subbereiche, setSubbereiche] = useState<string[]>([]);
   const [mitarbeiter, setMitarbeiter] = useState<Mitarbeiter[]>([]);
   const [topics, setTopics] = useState<TrainingTopic[]>([]);
@@ -571,7 +598,8 @@ export default function SchulungsAnforderungen() {
       fetch(`${BASE}/schulungs-themen-katalog`).then((r) => r.json()),
     ]);
     setPflichten(pRes);
-    setKategorien(kRes.kategorien || []);
+    setSchulungsKategorien(kRes.schulungsKategorien || kRes.kategorien || []);
+    setBescheinigungenKategorien(kRes.bescheinigungenKategorien || []);
     setSubbereiche(kRes.subbereiche || []);
     setMitarbeiter(mRes);
     setTopics(tRes);
@@ -690,13 +718,13 @@ export default function SchulungsAnforderungen() {
                   </div>
 
                   {showFormTyp === "schulung" && (
-                    <PflichtForm typ="schulung" kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
+                    <PflichtForm typ="schulung" schulungsKategorien={schulungsKategorien} bescheinigungenKategorien={bescheinigungenKategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
                       onSave={handleCreate} onCancel={() => setShowFormTyp(null)} />
                   )}
 
                   {schulungen.map((p) => (
                     <PflichtCard key={p.id} p={p} children={childrenOf(p.id)}
-                      kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
+                      schulungsKategorien={schulungsKategorien} bescheinigungenKategorien={bescheinigungenKategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
                       onUpdate={handleUpdate} onDelete={handleDelete} onToggle={handleToggle} onAddChild={handleAddChild} />
                   ))}
 
@@ -730,13 +758,13 @@ export default function SchulungsAnforderungen() {
                   </div>
 
                   {showFormTyp === "bescheinigung" && (
-                    <PflichtForm typ="bescheinigung" kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
+                    <PflichtForm typ="bescheinigung" schulungsKategorien={schulungsKategorien} bescheinigungenKategorien={bescheinigungenKategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
                       onSave={handleCreate} onCancel={() => setShowFormTyp(null)} />
                   )}
 
                   {bescheinigungen.map((p) => (
                     <PflichtCard key={p.id} p={p} children={childrenOf(p.id)}
-                      kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
+                      schulungsKategorien={schulungsKategorien} bescheinigungenKategorien={bescheinigungenKategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
                       onUpdate={handleUpdate} onDelete={handleDelete} onToggle={handleToggle} onAddChild={handleAddChild} />
                   ))}
 
