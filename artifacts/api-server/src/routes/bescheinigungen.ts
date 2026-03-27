@@ -7,26 +7,27 @@ const router = Router();
 
 router.get("/bescheinigungen", async (req, res) => {
   const tenantId = Number(req.query.tenantId) || 1;
+  const marketId = req.query.marketId ? Number(req.query.marketId) : null;
   const kategorie = req.query.kategorie as string | undefined;
 
-  let query = db
+  const conditions = [eq(bescheinigungenTable.tenantId, tenantId)];
+  if (marketId) conditions.push(eq(bescheinigungenTable.marketId, marketId));
+  if (kategorie) conditions.push(eq(bescheinigungenTable.kategorie, kategorie));
+
+  const query = db
     .select()
     .from(bescheinigungenTable)
-    .where(
-      kategorie
-        ? and(eq(bescheinigungenTable.tenantId, tenantId), eq(bescheinigungenTable.kategorie, kategorie))
-        : eq(bescheinigungenTable.tenantId, tenantId)
-    )
+    .where(and(...conditions))
     .orderBy(bescheinigungenTable.mitarbeiterName);
 
   res.json(await query);
 });
 
 router.post("/bescheinigungen", async (req, res) => {
-  const { tenantId = 1, ...fields } = req.body;
+  const { tenantId = 1, marketId, ...fields } = req.body;
   const row = await db
     .insert(bescheinigungenTable)
-    .values({ tenantId, ...fields })
+    .values({ tenantId, marketId: marketId || null, ...fields })
     .returning();
   res.json(row[0]);
 });

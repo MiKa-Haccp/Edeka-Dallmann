@@ -7,10 +7,13 @@ const router = Router();
 
 router.get("/produktfehlermeldung", async (req, res) => {
   const tenantId = Number(req.query.tenantId) || 1;
+  const marketId = req.query.marketId ? Number(req.query.marketId) : null;
+  const conditions = [eq(produktfehlermeldungTable.tenantId, tenantId)];
+  if (marketId) conditions.push(eq(produktfehlermeldungTable.marketId, marketId));
   const results = await db
     .select()
     .from(produktfehlermeldungTable)
-    .where(eq(produktfehlermeldungTable.tenantId, tenantId))
+    .where(and(...conditions))
     .orderBy(produktfehlermeldungTable.createdAt);
   res.json(results);
 });

@@ -382,7 +382,7 @@ function BescheinigungKarte({ z, tab, onDelete, isAdmin }: {
 
 // ===== HAUPTSEITE =====
 export default function Bescheinigungen() {
-  const { adminSession } = useAppStore();
+  const { adminSession, selectedMarketId } = useAppStore();
   const isAdmin = !!adminSession;
 
   const [aktiveTab, setAktiveTab] = useState<Kategorie>("gesundheitszeugnis");
@@ -395,11 +395,11 @@ export default function Bescheinigungen() {
   const loadKategorie = useCallback(async (k: Kategorie) => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/bescheinigungen?tenantId=1&kategorie=${k}`);
+      const res = await fetch(`${BASE}/bescheinigungen?tenantId=1&kategorie=${k}${selectedMarketId ? `&marketId=${selectedMarketId}` : ""}`);
       const rows = await res.json();
       setDaten((p) => ({ ...p, [k]: rows }));
     } finally { setLoading(false); }
-  }, []);
+  }, [selectedMarketId]);
 
   useEffect(() => { loadKategorie(aktiveTab); }, [aktiveTab, loadKategorie]);
 
@@ -412,7 +412,7 @@ export default function Bescheinigungen() {
     const res = await fetch(`${BASE}/bescheinigungen`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenantId: 1, ...fields }),
+      body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || null, ...fields }),
     });
     const neu = await res.json();
     setDaten((p) => ({

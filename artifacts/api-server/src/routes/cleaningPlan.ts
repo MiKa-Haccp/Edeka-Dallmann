@@ -6,24 +6,27 @@ const router: IRouter = Router();
 
 router.get("/cleaning-plan", async (req, res) => {
   const tenantId = Number(req.query.tenantId) || 1;
+  const marketId = req.query.marketId ? Number(req.query.marketId) : null;
   const year = Number(req.query.year) || new Date().getFullYear();
+
+  const conditions = [
+    eq(cleaningPlanConfirmationsTable.tenantId, tenantId),
+    eq(cleaningPlanConfirmationsTable.year, year),
+  ];
+  if (marketId) conditions.push(eq(cleaningPlanConfirmationsTable.marketId, marketId));
 
   const confirmations = await db
     .select()
     .from(cleaningPlanConfirmationsTable)
-    .where(
-      and(
-        eq(cleaningPlanConfirmationsTable.tenantId, tenantId),
-        eq(cleaningPlanConfirmationsTable.year, year)
-      )
-    );
+    .where(and(...conditions));
 
   res.json(confirmations);
 });
 
 router.post("/cleaning-plan/confirm", async (req, res) => {
-  const { tenantId, itemKey, year, month, pin } = req.body as {
+  const { tenantId, marketId, itemKey, year, month, pin } = req.body as {
     tenantId: number;
+    marketId?: number;
     itemKey: string;
     year: number;
     month: number;
@@ -50,17 +53,18 @@ router.post("/cleaning-plan/confirm", async (req, res) => {
     return;
   }
 
+  const dupConditions = [
+    eq(cleaningPlanConfirmationsTable.tenantId, tenantId),
+    eq(cleaningPlanConfirmationsTable.itemKey, itemKey),
+    eq(cleaningPlanConfirmationsTable.year, year),
+    eq(cleaningPlanConfirmationsTable.month, month),
+  ];
+  if (marketId) dupConditions.push(eq(cleaningPlanConfirmationsTable.marketId, marketId));
+
   const existing = await db
     .select()
     .from(cleaningPlanConfirmationsTable)
-    .where(
-      and(
-        eq(cleaningPlanConfirmationsTable.tenantId, tenantId),
-        eq(cleaningPlanConfirmationsTable.itemKey, itemKey),
-        eq(cleaningPlanConfirmationsTable.year, year),
-        eq(cleaningPlanConfirmationsTable.month, month)
-      )
-    );
+    .where(and(...dupConditions));
 
   if (existing.length > 0) {
     res.status(409).json({ error: "Dieser Monat wurde bereits bestätigt." });
@@ -71,6 +75,7 @@ router.post("/cleaning-plan/confirm", async (req, res) => {
     .insert(cleaningPlanConfirmationsTable)
     .values({
       tenantId,
+      marketId: marketId || null,
       itemKey,
       year,
       month,

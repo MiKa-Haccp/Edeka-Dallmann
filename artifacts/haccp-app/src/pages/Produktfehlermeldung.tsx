@@ -205,13 +205,13 @@ export default function Produktfehlermeldung() {
   const loadReports = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/produktfehlermeldung?tenantId=1`);
+      const res = await fetch(`${BASE}/produktfehlermeldung?tenantId=1${selectedMarketId ? `&marketId=${selectedMarketId}` : ""}`);
       const data = await res.json();
       setReports(data);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedMarketId]);
 
   useEffect(() => { loadReports(); }, [loadReports]);
 
@@ -277,7 +277,7 @@ export default function Produktfehlermeldung() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const body = { tenantId: 1, ...form };
+      const body = { tenantId: 1, marketId: selectedMarketId || null, ...form };
       let res: Response;
       if (currentReport) {
         res = await fetch(`${BASE}/produktfehlermeldung/${currentReport.id}`, {

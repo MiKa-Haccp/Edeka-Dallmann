@@ -13,6 +13,7 @@ export type KontrollberichtKategorie = typeof KONTROLLBERICHT_KATEGORIEN[number]
 export const kontrollberichteTable = pgTable("kontrollberichte", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull(),
+  marketId: integer("market_id"),
   kategorie: text("kategorie").notNull(),
   bezeichnung: text("bezeichnung").notNull(),
   kontrollstelle: text("kontrollstelle"),

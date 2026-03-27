@@ -7,10 +7,15 @@ const router = Router();
 
 router.get("/betriebsbegehung", async (req, res) => {
   const tenantId = Number(req.query.tenantId) || 1;
+  const marketId = req.query.marketId ? Number(req.query.marketId) : null;
   const results = await db
     .select()
     .from(betriebsbegehungTable)
-    .where(eq(betriebsbegehungTable.tenantId, tenantId));
+    .where(
+      marketId
+        ? and(eq(betriebsbegehungTable.tenantId, tenantId), eq(betriebsbegehungTable.marketId, marketId))
+        : eq(betriebsbegehungTable.tenantId, tenantId)
+    );
   res.json(results);
 });
 
@@ -25,10 +30,10 @@ router.get("/betriebsbegehung/:id", async (req, res) => {
 });
 
 router.post("/betriebsbegehung", async (req, res) => {
-  const { tenantId = 1, quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan } = req.body;
+  const { tenantId = 1, marketId, quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan } = req.body;
   const result = await db
     .insert(betriebsbegehungTable)
-    .values({ tenantId, quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan })
+    .values({ tenantId, marketId: marketId || null, quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan })
     .returning();
   res.json(result[0]);
 });

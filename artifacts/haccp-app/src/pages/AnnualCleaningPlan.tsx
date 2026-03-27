@@ -270,7 +270,7 @@ export default function AnnualCleaningPlan() {
   const fetchConfirmations = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/api/cleaning-plan?tenantId=1&year=${year}`);
+      const res = await fetch(`${BASE}/api/cleaning-plan?tenantId=1&year=${year}${selectedMarketId ? `&marketId=${selectedMarketId}` : ""}`);
       const data = await res.json();
       setConfirmations(data);
     } catch {
@@ -278,7 +278,7 @@ export default function AnnualCleaningPlan() {
     } finally {
       setLoading(false);
     }
-  }, [year, BASE]);
+  }, [year, BASE, selectedMarketId]);
 
   useEffect(() => {
     fetchConfirmations();
@@ -317,7 +317,7 @@ export default function AnnualCleaningPlan() {
       const res = await fetch(`${BASE}/api/cleaning-plan/confirm`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenantId: 1, itemKey: dialog.itemKey, year, month: dialog.month, pin }),
+        body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || null, itemKey: dialog.itemKey, year, month: dialog.month, pin }),
       });
       if (res.ok) {
         const data = await res.json();

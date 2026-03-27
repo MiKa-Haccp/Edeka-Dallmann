@@ -13,6 +13,7 @@ export type BescheinigungKategorie = typeof BESCHEINIGUNG_KATEGORIEN[number];
 export const bescheinigungenTable = pgTable("bescheinigungen", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull(),
+  marketId: integer("market_id"),
   kategorie: text("kategorie").notNull(),
   mitarbeiterName: text("mitarbeiter_name").notNull(),
   bezeichnung: text("bezeichnung"),

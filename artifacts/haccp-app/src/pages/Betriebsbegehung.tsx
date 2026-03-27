@@ -267,7 +267,7 @@ function StatusButton({
 }
 
 export default function Betriebsbegehung() {
-  const { adminSession } = useAppStore();
+  const { adminSession, selectedMarketId } = useAppStore();
   const isAdmin = !!adminSession;
 
   const [quartal, setQuartal] = useState(Math.ceil((new Date().getMonth() + 1) / 3));
@@ -290,13 +290,13 @@ export default function Betriebsbegehung() {
   const loadReports = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/betriebsbegehung?tenantId=1`);
+      const res = await fetch(`${BASE}/betriebsbegehung?tenantId=1${selectedMarketId ? `&marketId=${selectedMarketId}` : ""}`);
       const data = await res.json();
       setReports(data);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedMarketId]);
 
   useEffect(() => { loadReports(); }, [loadReports]);
 
@@ -335,7 +335,7 @@ export default function Betriebsbegehung() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const body = { tenantId: 1, quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan };
+      const body = { tenantId: 1, marketId: selectedMarketId || null, quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan };
       let res: Response;
       if (currentReport) {
         res = await fetch(`${BASE}/betriebsbegehung/${currentReport.id}`, {

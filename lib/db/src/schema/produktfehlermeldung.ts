@@ -3,6 +3,7 @@ import { pgTable, serial, integer, text, boolean, timestamp } from "drizzle-orm/
 export const produktfehlermeldungTable = pgTable("produktfehlermeldung", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull(),
+  marketId: integer("market_id"),
 
   // Marktdaten
   markt: text("markt"),

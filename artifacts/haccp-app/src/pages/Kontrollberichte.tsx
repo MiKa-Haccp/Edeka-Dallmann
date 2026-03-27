@@ -841,7 +841,7 @@ function BerichtKarte({ b, tab, onDelete, isAdmin }: {
 
 // ===== HAUPTSEITE =====
 export default function Kontrollberichte() {
-  const { adminSession } = useAppStore();
+  const { adminSession, selectedMarketId } = useAppStore();
   const isAdmin = !!adminSession;
 
   const currentYear = new Date().getFullYear();
@@ -857,11 +857,11 @@ export default function Kontrollberichte() {
     if (k === "tuev") return;
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/kontrollberichte?tenantId=1&kategorie=${k}`);
+      const res = await fetch(`${BASE}/kontrollberichte?tenantId=1&kategorie=${k}${selectedMarketId ? `&marketId=${selectedMarketId}` : ""}`);
       const rows: Kontrollbericht[] = await res.json();
       setDaten((p) => ({ ...p, [k]: rows }));
     } finally { setLoading(false); }
-  }, []);
+  }, [selectedMarketId]);
 
   useEffect(() => { loadKategorie(aktiveTab); }, [aktiveTab, loadKategorie]);
 
@@ -879,7 +879,7 @@ export default function Kontrollberichte() {
     const res = await fetch(`${BASE}/kontrollberichte`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenantId: 1, ...fields }),
+      body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || null, ...fields }),
     });
     const neu = await res.json();
     setDaten((p) => ({

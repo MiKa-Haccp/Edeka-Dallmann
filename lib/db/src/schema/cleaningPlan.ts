@@ -4,6 +4,7 @@ import { usersTable } from "./users";
 export const cleaningPlanConfirmationsTable = pgTable("cleaning_plan_confirmations", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull(),
+  marketId: integer("market_id"),
   itemKey: text("item_key").notNull(),
   year: integer("year").notNull(),
   month: integer("month").notNull(),
@@ -11,7 +12,7 @@ export const cleaningPlanConfirmationsTable = pgTable("cleaning_plan_confirmatio
   userId: integer("user_id").references(() => usersTable.id),
   confirmedAt: timestamp("confirmed_at").defaultNow().notNull(),
 }, (table) => [
-  uniqueIndex("cleaning_plan_unique").on(table.tenantId, table.itemKey, table.year, table.month),
+  uniqueIndex("cleaning_plan_unique").on(table.tenantId, table.marketId, table.itemKey, table.year, table.month),
 ]);
 
 export type CleaningPlanConfirmation = typeof cleaningPlanConfirmationsTable.$inferSelect;
