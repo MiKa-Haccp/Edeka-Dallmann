@@ -864,22 +864,19 @@ export default function MarktPlan() {
                         draggable={false}
                         style={{ display: "block", width: "100%", height: "auto", userSelect: "none" }}
                       />
-                      {/* Overlay exakt auf dem Bild — Marker-% beziehen sich auf Bildgrösse */}
-                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, pointerEvents: "none" }}>
-                        {markers.map(m => (
-                          <MarkerPin
-                            key={m.id}
-                            marker={m}
-                            onEdit={openEdit}
-                            moveMode={moveMode}
-                            onPointerDown={handlePointerDown}
-                            onPointerMove={handlePointerMove}
-                            onPointerUp={handlePointerUp}
-                            isDragging={draggingId === m.id}
-                            mapRotated={rotateMap}
-                          />
-                        ))}
-                      </div>
+                      {markers.map(m => (
+                        <MarkerPin
+                          key={m.id}
+                          marker={m}
+                          onEdit={openEdit}
+                          moveMode={moveMode}
+                          onPointerDown={handlePointerDown}
+                          onPointerMove={handlePointerMove}
+                          onPointerUp={handlePointerUp}
+                          isDragging={draggingId === m.id}
+                          mapRotated={rotateMap}
+                        />
+                      ))}
                     </div>
                   </TransformComponent>
                 </div>
