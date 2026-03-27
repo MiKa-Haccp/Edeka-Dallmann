@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
+import { useGetMarketInfo } from "@workspace/api-client-react";
 import {
   ChevronLeft, Save, Plus, Trash2, Loader2, Check, X,
   FlaskConical, Printer, Camera, Mail, ImagePlus, FileText, Send, KeyRound,
@@ -11,10 +12,10 @@ import { PinVerification } from "@/components/PinVerification";
 const BASE = import.meta.env.VITE_API_URL || "/api";
 const DRAFT_KEY = "haccp-probe-draft-v1";
 
-const MARKT_STAMMDATEN: Record<number, { name: string; adresse: string; telefon: string }> = {
-  1: { name: "EDEKA Leeder",        adresse: "Lechaschauer Str. 1, 86929 Leeder",            telefon: "08243/9609041" },
-  2: { name: "EDEKA Buching",       adresse: "Buchinger Str. 10, 86971 Peiting-Buching",      telefon: "08368/9148741" },
-  3: { name: "EDEKA Marktoberdorf", adresse: "Kaufbeurer Str. 30, 87616 Marktoberdorf",       telefon: "08342/9193006" },
+const MARKT_META: Record<number, { name: string; telefon: string }> = {
+  1: { name: "EDEKA Leeder",        telefon: "08243/9609041" },
+  2: { name: "EDEKA Buching",       telefon: "08368/9148741" },
+  3: { name: "EDEKA Marktoberdorf", telefon: "08342/9193006" },
 };
 
 interface FormData {
@@ -170,6 +171,13 @@ function ToggleGroup<T extends string>({ label, value, onChange, options }: {
 export default function Probeentnahme() {
   const { adminSession, selectedMarketId } = useAppStore();
   const isAdmin = !!adminSession;
+  const currentYear = new Date().getFullYear();
+
+  const { data: marketInfo } = useGetMarketInfo(
+    selectedMarketId ?? 0,
+    { year: currentYear },
+    { query: { enabled: !!selectedMarketId } }
+  );
 
   const [view, setView] = useState<"list" | "form">("list");
   const [records, setRecords] = useState<ProbeRecord[]>([]);
@@ -192,9 +200,15 @@ export default function Probeentnahme() {
   const [emailError, setEmailError] = useState<string | null>(null);
 
   const getMarktDefault = () => {
-    const info = selectedMarketId ? MARKT_STAMMDATEN[selectedMarketId] : null;
-    if (!info) return "";
-    return `${info.name}, ${info.adresse}, Tel. ${info.telefon}`;
+    if (!selectedMarketId) return "";
+    const meta = MARKT_META[selectedMarketId];
+    if (!meta) return "";
+    const street = marketInfo?.street || "";
+    const plzOrt = marketInfo?.plzOrt || "";
+    const adresse = [street, plzOrt].filter(Boolean).join(", ");
+    return adresse
+      ? `${meta.name}, ${adresse}, Tel. ${meta.telefon}`
+      : `${meta.name}, Tel. ${meta.telefon}`;
   };
 
   const set = (k: keyof FormData) => (v: string) => setForm((p) => ({ ...p, [k]: v }));
@@ -276,7 +290,7 @@ export default function Probeentnahme() {
     setEmailSending(true);
     setEmailError(null);
     setEmailSent(false);
-    const marktInfo = selectedMarketId ? MARKT_STAMMDATEN[selectedMarketId] : null;
+    const marktMeta = selectedMarketId ? MARKT_META[selectedMarketId] : null;
     try {
       const res = await fetch(`${BASE}/send-probeentnahme-email`, {
         method: "POST",
@@ -285,7 +299,7 @@ export default function Probeentnahme() {
           recordId: current.id,
           marketId: selectedMarketId || undefined,
           formData: form,
-          marktName: marktInfo?.name || form.markt || "Unbekannt",
+          marktName: marktMeta?.name || form.markt || "Unbekannt",
         }),
       });
       const data = await res.json();
@@ -773,13 +787,17 @@ export default function Probeentnahme() {
             )}
             <div className="flex flex-col gap-2">
               <button
-                onClick={() => { setForm(pendingDraft!); setPendingDraft(null); setShowDraftPrompt(false); setCurrent(null); setView("form"); setDraftRestored(true); }}
+                onClick={() => {
+                  const draft = pendingDraft!;
+                  setForm({ ...draft, markt: draft.markt || getMarktDefault() });
+                  setPendingDraft(null); setShowDraftPrompt(false); setCurrent(null); setView("form"); setDraftRestored(true);
+                }}
                 className="w-full px-4 py-3 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors"
               >
                 📋 Entwurf wiederherstellen
               </button>
               <button
-                onClick={() => { localStorage.removeItem(DRAFT_KEY); setPendingDraft(null); setShowDraftPrompt(false); setCurrent(null); setForm(emptyForm()); setView("form"); }}
+                onClick={() => { localStorage.removeItem(DRAFT_KEY); setPendingDraft(null); setShowDraftPrompt(false); setCurrent(null); setForm({ ...emptyForm(), markt: getMarktDefault() }); setView("form"); }}
                 className="w-full px-4 py-2.5 border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground"
               >
                 Neu beginnen (Entwurf verwerfen)
