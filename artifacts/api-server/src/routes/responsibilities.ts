@@ -11,7 +11,7 @@ import {
   UpsertMarketInfoParams,
   UpsertMarketInfoBody,
 } from "@workspace/api-zod";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and, asc, desc } from "drizzle-orm";
 
 const router: IRouter = Router();
 
@@ -83,9 +83,23 @@ router.get("/markets/:marketId/info", async (req, res) => {
     );
 
   if (results.length === 0) {
+    // Vorjahreswerte als Vorlage holen (market_number, street, plz_ort bleiben gleich)
+    const previous = await db
+      .select()
+      .from(marketInfoTable)
+      .where(eq(marketInfoTable.marketId, params.marketId))
+      .orderBy(desc(marketInfoTable.year))
+      .limit(1);
+    const template = previous[0] ?? {};
     const [created] = await db
       .insert(marketInfoTable)
-      .values({ marketId: params.marketId, year })
+      .values({
+        marketId: params.marketId,
+        year,
+        marketNumber: template.marketNumber ?? null,
+        street: template.street ?? null,
+        plzOrt: template.plzOrt ?? null,
+      })
       .returning();
     res.json(created);
     return;
