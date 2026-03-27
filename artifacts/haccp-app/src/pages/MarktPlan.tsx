@@ -851,6 +851,7 @@ export default function MarktPlan() {
                         position: "relative",
                         display: "block",
                         width: "100%",
+                        alignSelf: "flex-start",
                         lineHeight: 0,
                         transform: rotateMap ? "rotate(90deg)" : undefined,
                         transformOrigin: "center center",
