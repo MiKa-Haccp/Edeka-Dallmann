@@ -5,7 +5,7 @@ import {
   GraduationCap, Plus, Pencil, Trash2, Save, X, AlertTriangle,
   CheckCircle2, ChevronLeft, Loader2, ToggleRight, ToggleLeft,
   Users, ShieldAlert, AlarmClock, UserCheck, ChevronDown,
-  GitBranch, Award, BookOpen, Search,
+  GitBranch, Award, BookOpen, Search, Link2, CalendarCheck, EyeOff,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -27,21 +27,23 @@ const INTERVALL_LABEL: Record<number, string> = {
 };
 
 interface Mitarbeiter { id: number; name: string; gruppe: string; }
+interface TrainingTopic { id: number; title: string; responsible: string; }
 
 interface Pflicht {
   id: number; schulung_kategorie: string; bezeichnung: string;
   gueltige_gruppen: string[]; intervall_monate: number; is_active: boolean;
   typ: "schulung" | "bescheinigung"; zuordnung_modus: "gruppe" | "personen" | "auto";
-  subbereich: string | null; parent_pflicht_id: number | null;
-  person_spezifisch: boolean;
+  subbereich: string | null; parent_pflicht_id: number | null; person_spezifisch: boolean;
+  pruef_modus: "zeitbasiert" | "vorhanden";
+  training_topic_id: number | null; training_topic_title: string | null;
   personen: { userId: number; name: string; gruppe: string }[];
 }
 
 interface BeschComplianceEntry {
   pflichtId: number; bezeichnung: string; kategorie: string;
-  intervallMonate: number; zuordnungModus: string;
+  intervallMonate: number; zuordnungModus: string; pruefModus: string;
   personen: { userId: number; name: string }[];
-  entries: { name: string; gruppe: string | null; gueltigBis: string | null; status: string }[];
+  entries: { name: string; gruppe: string | null; gueltigBis: string | null; status: string; ausnahme: any }[];
   hasProblems: boolean; problemCount: number; warningCount: number;
 }
 
@@ -51,6 +53,7 @@ interface SchulComplianceEntry {
   trainings: {
     pflichtId: number; bezeichnung: string; status: string;
     naechsteSchulung: string | null; zuordnungModus: string; parentPflichtId: number | null;
+    pruefModus: string; trainingTopicTitle: string | null;
     ausnahme: { id: number; begruendung: string } | null;
   }[];
 }
@@ -119,7 +122,7 @@ function PersonPicker({ mitarbeiter, selected, onChange }: {
           className="flex-1 bg-transparent text-sm focus:outline-none" />
         <button type="button" onClick={() => onChange(allSelected ? [] : mitarbeiter.map((m) => m.id))}
           className="text-xs font-semibold text-[#1a3a6b] hover:underline shrink-0">
-          {allSelected ? "Alle abwählen" : "Alle wählen"}
+          {allSelected ? "Alle abwählen" : "Alle"}
         </button>
       </div>
       <div className="max-h-44 overflow-y-auto divide-y divide-border/20">
@@ -127,9 +130,9 @@ function PersonPicker({ mitarbeiter, selected, onChange }: {
           const g = GRUPPEN_OPTS.find((x) => x.value === m.gruppe);
           const checked = selected.includes(m.id);
           return (
-            <label key={m.id} className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/20 transition-colors ${checked ? "bg-[#1a3a6b]/5" : ""}`}>
+            <label key={m.id} className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/20 ${checked ? "bg-[#1a3a6b]/5" : ""}`}>
               <input type="checkbox" checked={checked} onChange={() => toggle(m.id)} className="rounded" />
-              <span className="flex-1 text-sm font-medium text-foreground">{m.name}</span>
+              <span className="flex-1 text-sm font-medium">{m.name}</span>
               {g && <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full border ${g.bg} ${g.color}`}>{g.label}</span>}
             </label>
           );
@@ -140,14 +143,46 @@ function PersonPicker({ mitarbeiter, selected, onChange }: {
   );
 }
 
-// ── GruppePill ───────────────────────────────────────────────────────────────
+// ── Training-Topic-Picker ────────────────────────────────────────────────────
+function TopicPicker({ topics, selectedId, onChange }: {
+  topics: TrainingTopic[]; selectedId: number | null; onChange: (id: number | null) => void;
+}) {
+  const [filter, setFilter] = useState("");
+  const shown = topics.filter((t) => t.title.toLowerCase().includes(filter.toLowerCase()));
+
+  return (
+    <div className="border border-border/60 rounded-xl overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40 bg-muted/20">
+        <Search className="w-3.5 h-3.5 text-muted-foreground" />
+        <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Thema suchen…"
+          className="flex-1 bg-transparent text-sm focus:outline-none" />
+        {selectedId && (
+          <button type="button" onClick={() => onChange(null)} className="text-xs font-semibold text-red-500 hover:underline shrink-0">
+            Entfernen
+          </button>
+        )}
+      </div>
+      <div className="max-h-52 overflow-y-auto divide-y divide-border/20">
+        {shown.map((t) => (
+          <button key={t.id} type="button" onClick={() => onChange(t.id === selectedId ? null : t.id)}
+            className={`w-full text-left px-3 py-2.5 hover:bg-muted/20 transition-colors ${selectedId === t.id ? "bg-[#1a3a6b]/5 border-l-2 border-[#1a3a6b]" : ""}`}>
+            <p className="text-xs font-semibold text-foreground leading-snug">{t.title}</p>
+            {t.responsible && <p className="text-xs text-muted-foreground mt-0.5">{t.responsible}</p>}
+          </button>
+        ))}
+        {shown.length === 0 && <p className="px-3 py-3 text-xs text-muted-foreground">Kein Thema gefunden</p>}
+      </div>
+    </div>
+  );
+}
+
+// ── Small helpers ─────────────────────────────────────────────────────────────
 function GruppePill({ value }: { value: string }) {
   const g = GRUPPEN_OPTS.find((x) => x.value === value);
   if (!g) return null;
   return <span className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full border ${g.bg} ${g.color}`}>{g.label}</span>;
 }
 
-// ── StatusChip ───────────────────────────────────────────────────────────────
 function StatusChip({ status }: { status: string }) {
   const m: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
     ok:          { label: "OK",         color: "text-green-700", bg: "bg-green-100 border-green-200",  icon: <CheckCircle2 className="w-3 h-3" /> },
@@ -160,7 +195,6 @@ function StatusChip({ status }: { status: string }) {
   return <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${c.bg} ${c.color}`}>{c.icon}{c.label}</span>;
 }
 
-// ── Zuordnungs-Badge ─────────────────────────────────────────────────────────
 function ZuordnungBadge({ modus }: { modus: string }) {
   if (modus === "personen") return (
     <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 border border-indigo-200 text-indigo-700">
@@ -176,9 +210,9 @@ function ZuordnungBadge({ modus }: { modus: string }) {
 }
 
 // ── Pflicht-Form ─────────────────────────────────────────────────────────────
-function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche, mitarbeiter, onSave, onCancel }: {
+function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche, mitarbeiter, topics, onSave, onCancel }: {
   initial?: Partial<Pflicht>; typ?: "schulung" | "bescheinigung"; parentId?: number;
-  kategorien: string[]; subbereiche: string[]; mitarbeiter: Mitarbeiter[];
+  kategorien: string[]; subbereiche: string[]; mitarbeiter: Mitarbeiter[]; topics: TrainingTopic[];
   onSave: (data: any) => Promise<void>; onCancel: () => void;
 }) {
   const { adminSession } = useAppStore();
@@ -192,21 +226,30 @@ function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche
   const [selectedPersonen, setSelectedPersonen] = useState<number[]>((initial?.personen || []).map((p) => p.userId));
   const [subbereich, setSubbereich] = useState(initial?.subbereich || "");
   const [intervall, setIntervall] = useState(initial?.intervall_monate || 12);
+  const [pruefModus, setPruefModus] = useState<"zeitbasiert"|"vorhanden">(initial?.pruef_modus || "zeitbasiert");
+  const [trainingTopicId, setTrainingTopicId] = useState<number|null>(initial?.training_topic_id || null);
+  const [showTopicPicker, setShowTopicPicker] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  const selectedTopic = topics.find((t) => t.id === trainingTopicId);
   const toggleGruppe = (g: string) => setGruppen((p) => p.includes(g) ? p.filter((x) => x !== g) : [...p, g]);
 
   const handleSave = async () => {
-    if (!kategorie.trim() || !bezeichnung.trim()) { setError("Kategorie und Name ausfüllen."); return; }
+    if (!bezeichnung.trim()) { setError("Anzeigename ausfüllen."); return; }
+    if (!trainingTopicId && !kategorie.trim()) { setError("Kategorie oder Schulungsthema wählen."); return; }
     if (modus === "gruppe" && gruppen.length === 0) { setError("Mindestens eine Gruppe wählen."); return; }
     if (modus === "personen" && selectedPersonen.length === 0) { setError("Mindestens eine Person auswählen."); return; }
     setSaving(true); setError("");
     await onSave({
-      tenantId, schulungKategorie: kategorie.trim(), bezeichnung: bezeichnung.trim(),
+      tenantId,
+      schulungKategorie: kategorie.trim() || selectedTopic?.title || "",
+      bezeichnung: bezeichnung.trim(),
       gueltigeGruppen: modus === "gruppe" ? gruppen : [],
-      intervallMonate: intervall, subbereich: subbereich.trim() || null,
-      typ, zuordnungModus: modus,
+      intervallMonate: intervall,
+      subbereich: subbereich.trim() || null,
+      typ, zuordnungModus: modus, pruefModus,
+      trainingTopicId: trainingTopicId || null,
       personSpezifisch: modus === "auto",
       parentPflichtId: parentId || null,
       isActive: initial?.is_active ?? true,
@@ -233,6 +276,38 @@ function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche
         </div>
       )}
 
+      {/* Schulungsthema verknüpfen (nur bei Schulung) */}
+      {typ === "schulung" && !parentId && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+              <Link2 className="w-3 h-3" /> Schulungsthema aus Protokoll verknüpfen
+              <span className="font-normal normal-case text-muted-foreground">(optional)</span>
+            </label>
+            <button type="button" onClick={() => setShowTopicPicker((x) => !x)}
+              className="text-xs font-semibold text-[#1a3a6b] hover:underline">
+              {showTopicPicker ? "Schließen" : (trainingTopicId ? "Ändern" : "Auswählen")}
+            </button>
+          </div>
+          {selectedTopic && !showTopicPicker && (
+            <div className="flex items-start gap-2 p-2.5 bg-[#1a3a6b]/5 border border-[#1a3a6b]/20 rounded-lg">
+              <Link2 className="w-3.5 h-3.5 text-[#1a3a6b] shrink-0 mt-0.5" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-foreground leading-snug">{selectedTopic.title}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Compliance wird aus Schulungsprotokoll berechnet.</p>
+              </div>
+              <button type="button" onClick={() => setTrainingTopicId(null)} className="text-muted-foreground hover:text-red-500">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+          {showTopicPicker && (
+            <TopicPicker topics={topics} selectedId={trainingTopicId}
+              onChange={(id) => { setTrainingTopicId(id); const t = topics.find((x) => x.id === id); if (t && !bezeichnung) setBezeichnung(t.title.slice(0, 60)); setShowTopicPicker(false); }} />
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Kategorie</label>
@@ -246,6 +321,24 @@ function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche
         </div>
       </div>
 
+      {/* Prüf-Modus */}
+      <div className="flex flex-col gap-2">
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prüfmodus</label>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setPruefModus("zeitbasiert")}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all ${pruefModus === "zeitbasiert" ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "bg-white text-muted-foreground border-border/60"}`}>
+            <CalendarCheck className="w-3.5 h-3.5" /> Zeitbasiert
+          </button>
+          <button type="button" onClick={() => setPruefModus("vorhanden")}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all ${pruefModus === "vorhanden" ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-muted-foreground border-border/60"}`}>
+            <EyeOff className="w-3.5 h-3.5" /> Nur Vorhandensein
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {pruefModus === "zeitbasiert" ? "Prüft ob die Schulung innerhalb des Intervalls stattgefunden hat." : "Prüft nur ob überhaupt ein Nachweis vorhanden ist — kein Ablaufdatum."}
+        </p>
+      </div>
+
       {/* Zuordnungsmodus */}
       <div className="flex flex-col gap-2">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Zuordnung</label>
@@ -256,19 +349,18 @@ function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche
             { key: "auto",     icon: <Award className="w-3.5 h-3.5" />,     label: "Aus Ordner",cls: "bg-teal-600 text-white border-teal-600" },
           ].map(({ key, icon, label, cls }) => (
             <button key={key} type="button" onClick={() => setModus(key as any)}
-              className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${modus === key ? cls : "bg-white text-muted-foreground border-border/60 hover:border-gray-300"}`}>
+              className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${modus === key ? cls : "bg-white text-muted-foreground border-border/60"}`}>
               {icon} {label}
             </button>
           ))}
         </div>
         <p className="text-xs text-muted-foreground">
           {modus === "gruppe" && "Verpflichtend für alle Mitarbeiter der gewählten Gruppen."}
-          {modus === "personen" && "Nur die explizit ausgewählten Personen müssen diese Schulung absolvieren."}
-          {modus === "auto" && "Automatisch relevant für jeden, der bereits einen Nachweis in dieser Kategorie hat (z.B. Ersthelfer, Brandschutz)."}
+          {modus === "personen" && "Nur die explizit ausgewählten Personen."}
+          {modus === "auto" && "Automatisch für jeden, der bereits einen Nachweis in dieser Kategorie hat."}
         </p>
       </div>
 
-      {/* Gruppen (nur bei 'gruppe') */}
       {modus === "gruppe" && (
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Gilt für</label>
@@ -286,7 +378,6 @@ function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche
         </div>
       )}
 
-      {/* Person Picker (nur bei 'personen') */}
       {modus === "personen" && (
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -296,27 +387,26 @@ function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche
         </div>
       )}
 
-      {/* Subbereich */}
       <div className="flex flex-col gap-1">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Subbereich <span className="font-normal normal-case text-muted-foreground">(optional)</span>
         </label>
         <Combobox value={subbereich} onChange={setSubbereich} options={subbereiche} placeholder="z.B. Feuerwerk, Fleischhygiene" />
-        <p className="text-xs text-muted-foreground">Wird gegen Bezeichnung im Schulungsnachweis abgeglichen.</p>
       </div>
 
-      {/* Intervall */}
-      <div className="flex flex-col gap-1">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Wiederholungsintervall</label>
-        <div className="flex flex-wrap gap-2">
-          {INTERVALL_OPTS.map((o) => (
-            <button key={o.value} type="button" onClick={() => setIntervall(o.value)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${intervall === o.value ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "bg-white border-border/60 text-muted-foreground"}`}>
-              {o.label}
-            </button>
-          ))}
+      {pruefModus === "zeitbasiert" && (
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Wiederholungsintervall</label>
+          <div className="flex flex-wrap gap-2">
+            {INTERVALL_OPTS.map((o) => (
+              <button key={o.value} type="button" onClick={() => setIntervall(o.value)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${intervall === o.value ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "bg-white border-border/60 text-muted-foreground"}`}>
+                {o.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
 
@@ -333,10 +423,10 @@ function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche
   );
 }
 
-// ── Pflicht-Karte ────────────────────────────────────────────────────────────
-function PflichtCard({ p, children, kategorien, subbereiche, mitarbeiter, onUpdate, onDelete, onToggle, onAddChild }: {
+// ── Pflicht-Karte ─────────────────────────────────────────────────────────────
+function PflichtCard({ p, children, kategorien, subbereiche, mitarbeiter, topics, onUpdate, onDelete, onToggle, onAddChild }: {
   p: Pflicht; children?: Pflicht[];
-  kategorien: string[]; subbereiche: string[]; mitarbeiter: Mitarbeiter[];
+  kategorien: string[]; subbereiche: string[]; mitarbeiter: Mitarbeiter[]; topics: TrainingTopic[];
   onUpdate: (id: number, data: any) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
   onToggle: (p: Pflicht) => Promise<void>;
@@ -346,16 +436,15 @@ function PflichtCard({ p, children, kategorien, subbereiche, mitarbeiter, onUpda
   const [addingSub, setAddingSub] = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const isDesc = p.typ === "bescheinigung";
-  const borderColor = isDesc ? "border-amber-300" : (p.zuordnung_modus === "personen" ? "border-indigo-200" : p.zuordnung_modus === "auto" ? "border-teal-200" : "border-border/40");
+  const borderColor = isDesc ? "border-amber-300" : p.zuordnung_modus === "personen" ? "border-indigo-200" : p.zuordnung_modus === "auto" ? "border-teal-200" : "border-border/40";
 
   return (
     <div className="space-y-1">
       <div className={`bg-white rounded-2xl border-2 overflow-hidden ${p.is_active ? borderColor : "border-slate-200 opacity-60"}`}>
         {editing ? (
           <div className="p-4">
-            <PflichtForm initial={p} kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter}
-              onSave={async (data) => { await onUpdate(p.id, data); setEditing(false); }}
-              onCancel={() => setEditing(false)} />
+            <PflichtForm initial={p} kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
+              onSave={async (d) => { await onUpdate(p.id, d); setEditing(false); }} onCancel={() => setEditing(false)} />
           </div>
         ) : (
           <div className="px-5 py-4">
@@ -364,31 +453,40 @@ function PflichtCard({ p, children, kategorien, subbereiche, mitarbeiter, onUpda
                 <div className="flex items-center flex-wrap gap-1.5 mb-1">
                   <p className="text-sm font-bold text-foreground">{p.bezeichnung}</p>
                   {isDesc && <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-amber-700"><Award className="w-3 h-3" /> Bescheinigung</span>}
+                  {p.training_topic_title && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-[#1a3a6b]/10 border border-[#1a3a6b]/20 text-[#1a3a6b]">
+                      <Link2 className="w-3 h-3" /> Schulungsprotokoll
+                    </span>
+                  )}
+                  {p.pruef_modus === "vorhanden" && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700">
+                      <EyeOff className="w-3 h-3" /> Nur Vorhandensein
+                    </span>
+                  )}
                   <ZuordnungBadge modus={p.zuordnung_modus} />
                   {(children?.length ?? 0) > 0 && (
                     <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 border border-blue-200 text-blue-700">
-                      <GitBranch className="w-3 h-3" /> {children!.length} Unterpunkt{children!.length !== 1 ? "e" : ""}
+                      <GitBranch className="w-3 h-3" /> {children!.length} Unterpkt.
                     </span>
                   )}
                   {!p.is_active && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">Inaktiv</span>}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Kat: <span className="font-semibold text-foreground">{p.schulung_kategorie}</span>
+                  {p.training_topic_title
+                    ? <span className="text-[#1a3a6b]/70 italic truncate block max-w-xs">{p.training_topic_title.slice(0, 70)}{p.training_topic_title.length > 70 ? "…" : ""}</span>
+                    : <>Kat: <span className="font-semibold text-foreground">{p.schulung_kategorie}</span></>}
                   {p.subbereich && <> · <span className="font-semibold text-blue-700">{p.subbereich}</span></>}
-                  {" · "}{INTERVALL_LABEL[p.intervall_monate] || `${p.intervall_monate}M`}
+                  {p.pruef_modus === "zeitbasiert" && <> · {INTERVALL_LABEL[p.intervall_monate] || `${p.intervall_monate}M`}</>}
                 </p>
                 {p.zuordnung_modus === "gruppe" && p.gueltige_gruppen.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-1.5">
-                    {p.gueltige_gruppen.map((g) => <GruppePill key={g} value={g} />)}
-                  </div>
+                  <div className="flex flex-wrap gap-1 mt-1.5">{p.gueltige_gruppen.map((g) => <GruppePill key={g} value={g} />)}</div>
                 )}
                 {p.zuordnung_modus === "personen" && p.personen.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
-                    {p.personen.map((per) => (
-                      <span key={per.userId} className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700">
-                        {per.name}
-                      </span>
+                    {p.personen.slice(0, 4).map((per) => (
+                      <span key={per.userId} className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700">{per.name}</span>
                     ))}
+                    {p.personen.length > 4 && <span className="text-xs text-muted-foreground px-1">+{p.personen.length - 4}</span>}
                   </div>
                 )}
               </div>
@@ -423,16 +521,13 @@ function PflichtCard({ p, children, kategorien, subbereiche, mitarbeiter, onUpda
         )}
       </div>
 
-      {/* Unterpunkt-Formular */}
       {addingSub && (
         <div className="ml-6">
-          <PflichtForm parentId={p.id} typ={p.typ} kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter}
-            onSave={async (data) => { await onAddChild(p.id, data); setAddingSub(false); }}
-            onCancel={() => setAddingSub(false)} />
+          <PflichtForm parentId={p.id} typ={p.typ} kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
+            onSave={async (d) => { await onAddChild(p.id, d); setAddingSub(false); }} onCancel={() => setAddingSub(false)} />
         </div>
       )}
 
-      {/* Child cards */}
       {(children || []).map((child) => (
         <div key={child.id} className="flex gap-0 ml-6">
           <div className="flex flex-col items-center w-4 shrink-0 pt-3">
@@ -440,7 +535,7 @@ function PflichtCard({ p, children, kategorien, subbereiche, mitarbeiter, onUpda
             <div className="w-3 h-px bg-blue-200" />
           </div>
           <div className="flex-1">
-            <PflichtCard p={child} kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter}
+            <PflichtCard p={child} kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
               onUpdate={onUpdate} onDelete={onDelete} onToggle={onToggle} onAddChild={onAddChild} />
           </div>
         </div>
@@ -449,7 +544,7 @@ function PflichtCard({ p, children, kategorien, subbereiche, mitarbeiter, onUpda
   );
 }
 
-// ── Hauptseite ───────────────────────────────────────────────────────────────
+// ── Hauptseite ────────────────────────────────────────────────────────────────
 export default function SchulungsAnforderungen() {
   const { adminSession } = useAppStore();
   const tenantId = adminSession?.tenantId || 1;
@@ -460,6 +555,7 @@ export default function SchulungsAnforderungen() {
   const [kategorien, setKategorien] = useState<string[]>([]);
   const [subbereiche, setSubbereiche] = useState<string[]>([]);
   const [mitarbeiter, setMitarbeiter] = useState<Mitarbeiter[]>([]);
+  const [topics, setTopics] = useState<TrainingTopic[]>([]);
   const [schulCompliance, setSchulCompliance] = useState<SchulComplianceEntry[]>([]);
   const [beschCompliance, setBeschCompliance] = useState<BeschComplianceEntry[]>([]);
   const [loadingP, setLoadingP] = useState(true);
@@ -468,15 +564,17 @@ export default function SchulungsAnforderungen() {
 
   const reload = useCallback(async () => {
     setLoadingP(true);
-    const [pRes, kRes, mRes] = await Promise.all([
+    const [pRes, kRes, mRes, tRes] = await Promise.all([
       fetch(`${BASE}/schulungs-pflichten?tenantId=${tenantId}`).then((r) => r.json()),
       fetch(`${BASE}/schulungs-kategorien?tenantId=${tenantId}`).then((r) => r.json()),
       fetch(`${BASE}/mitarbeiter-fuer-picker?tenantId=${tenantId}`).then((r) => r.json()),
+      fetch(`${BASE}/schulungs-themen-katalog`).then((r) => r.json()),
     ]);
     setPflichten(pRes);
     setKategorien(kRes.kategorien || []);
     setSubbereiche(kRes.subbereiche || []);
     setMitarbeiter(mRes);
+    setTopics(tRes);
     setLoadingP(false);
   }, [tenantId]);
 
@@ -531,12 +629,12 @@ export default function SchulungsAnforderungen() {
   const handleToggle = async (p: Pflicht) => {
     await fetch(`${BASE}/schulungs-pflichten/${p.id}`, {
       method: "PUT", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ schulungKategorie: p.schulung_kategorie, bezeichnung: p.bezeichnung, gueltigeGruppen: p.gueltige_gruppen, intervallMonate: p.intervall_monate, isActive: !p.is_active, subbereich: p.subbereich, typ: p.typ, zuordnungModus: p.zuordnung_modus }),
+      body: JSON.stringify({ schulungKategorie: p.schulung_kategorie, bezeichnung: p.bezeichnung, gueltigeGruppen: p.gueltige_gruppen, intervallMonate: p.intervall_monate, isActive: !p.is_active, subbereich: p.subbereich, typ: p.typ, zuordnungModus: p.zuordnung_modus, pruefModus: p.pruef_modus, trainingTopicId: p.training_topic_id }),
     });
     await reload();
   };
 
-  const handleAddChild = async (parentId: number, data: any) => { await handleCreate({ ...data, parentPflichtId: parentId }); };
+  const handleAddChild = async (_parentId: number, data: any) => { await handleCreate(data); };
 
   const schulungen = pflichten.filter((p) => p.typ === "schulung" && !p.parent_pflicht_id);
   const bescheinigungen = pflichten.filter((p) => p.typ === "bescheinigung" && !p.parent_pflicht_id);
@@ -556,11 +654,10 @@ export default function SchulungsAnforderungen() {
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-1 p-1 bg-muted/40 rounded-2xl border border-border/30">
           {[
             { key: "anforderungen", label: "Anforderungen", icon: <GraduationCap className="w-4 h-4" /> },
-            { key: "uebersicht", label: "Mitarbeiter-Übersicht", icon: <Users className="w-4 h-4" /> },
+            { key: "uebersicht",    label: "Mitarbeiter-Übersicht", icon: <Users className="w-4 h-4" /> },
           ].map(({ key, label, icon }) => (
             <button key={key} onClick={() => setTab(key as any)}
               className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${tab === key ? "bg-white shadow-sm border border-border/40 text-[#1a3a6b]" : "text-muted-foreground"}`}>
@@ -569,14 +666,14 @@ export default function SchulungsAnforderungen() {
           ))}
         </div>
 
-        {/* ===== TAB: ANFORDERUNGEN ===== */}
+        {/* ===== ANFORDERUNGEN ===== */}
         {tab === "anforderungen" && (
           <div className="space-y-6">
             {loadingP ? (
               <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
             ) : (
               <>
-                {/* ── Schulungen ── */}
+                {/* Schulungen */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -593,13 +690,13 @@ export default function SchulungsAnforderungen() {
                   </div>
 
                   {showFormTyp === "schulung" && (
-                    <PflichtForm typ="schulung" kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter}
+                    <PflichtForm typ="schulung" kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
                       onSave={handleCreate} onCancel={() => setShowFormTyp(null)} />
                   )}
 
                   {schulungen.map((p) => (
                     <PflichtCard key={p.id} p={p} children={childrenOf(p.id)}
-                      kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter}
+                      kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
                       onUpdate={handleUpdate} onDelete={handleDelete} onToggle={handleToggle} onAddChild={handleAddChild} />
                   ))}
 
@@ -610,7 +707,7 @@ export default function SchulungsAnforderungen() {
                   )}
                 </div>
 
-                {/* ── Bescheinigungen ── */}
+                {/* Bescheinigungen */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -627,18 +724,19 @@ export default function SchulungsAnforderungen() {
                   </div>
 
                   <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-xs text-amber-800">
-                    <strong>Aus Ordner:</strong> Automatisch für jeden, der eine Bescheinigung dieser Art im Archiv hat.&nbsp;
-                    <strong>Personen:</strong> Nur explizit ausgewählte Personen werden überwacht.
+                    <strong>Aus Ordner:</strong> Automatisch für jeden mit Bescheinigung im Archiv.&nbsp;
+                    <strong>Personen:</strong> Nur explizit ausgewählte Personen.&nbsp;
+                    <strong>Nur Vorhandensein:</strong> Kein Ablaufdatum — nur prüfen ob vorhanden.
                   </div>
 
                   {showFormTyp === "bescheinigung" && (
-                    <PflichtForm typ="bescheinigung" kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter}
+                    <PflichtForm typ="bescheinigung" kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
                       onSave={handleCreate} onCancel={() => setShowFormTyp(null)} />
                   )}
 
                   {bescheinigungen.map((p) => (
                     <PflichtCard key={p.id} p={p} children={childrenOf(p.id)}
-                      kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter}
+                      kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
                       onUpdate={handleUpdate} onDelete={handleDelete} onToggle={handleToggle} onAddChild={handleAddChild} />
                   ))}
 
@@ -653,10 +751,9 @@ export default function SchulungsAnforderungen() {
           </div>
         )}
 
-        {/* ===== TAB: ÜBERSICHT ===== */}
+        {/* ===== ÜBERSICHT ===== */}
         {tab === "uebersicht" && (
           <div className="space-y-4">
-            {/* Sub-Tabs */}
             <div className="flex gap-1 p-1 bg-muted/30 rounded-xl border border-border/20">
               <button onClick={() => setUebersichtTyp("schulungen")}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${uebersichtTyp === "schulungen" ? "bg-white shadow-sm text-[#1a3a6b]" : "text-muted-foreground"}`}>
@@ -672,14 +769,8 @@ export default function SchulungsAnforderungen() {
               <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
             ) : (
               <>
-                {/* Schulungen-Übersicht */}
-                {uebersichtTyp === "schulungen" && (
-                  <SchulComplianceView entries={schulCompliance} />
-                )}
-                {/* Bescheinigungen-Übersicht */}
-                {uebersichtTyp === "bescheinigungen" && (
-                  <BeschComplianceView entries={beschCompliance} />
-                )}
+                {uebersichtTyp === "schulungen" && <SchulComplianceView entries={schulCompliance} />}
+                {uebersichtTyp === "bescheinigungen" && <BeschComplianceView entries={beschCompliance} />}
               </>
             )}
           </div>
@@ -689,7 +780,7 @@ export default function SchulungsAnforderungen() {
   );
 }
 
-// ── Schulungen-Compliance-View ────────────────────────────────────────────────
+// ── Schulungen-Compliance ────────────────────────────────────────────────────
 function SchulComplianceView({ entries }: { entries: SchulComplianceEntry[] }) {
   const problems = entries.filter((e) => e.hasProblems);
   const warnings = entries.filter((e) => !e.hasProblems && e.warningCount > 0);
@@ -721,16 +812,15 @@ function SchulComplianceView({ entries }: { entries: SchulComplianceEntry[] }) {
 
       {[...problems, ...warnings, ...ok].map((emp) => {
         const gruppe = GRUPPEN_OPTS.find((g) => g.value === emp.gruppe);
-        return <SchulEmpCard key={emp.employeeId} emp={emp} gruppe={gruppe} />;
+        const border = emp.hasProblems ? "border-red-300" : emp.warningCount > 0 ? "border-amber-300" : "border-border/40";
+        return <SchulEmpCard key={emp.employeeId} emp={emp} gruppe={gruppe} border={border} />;
       })}
     </div>
   );
 }
 
-function SchulEmpCard({ emp, gruppe }: { emp: SchulComplianceEntry; gruppe: any }) {
+function SchulEmpCard({ emp, gruppe, border }: { emp: SchulComplianceEntry; gruppe: any; border: string }) {
   const [expanded, setExpanded] = useState(false);
-  const border = emp.hasProblems ? "border-red-300" : emp.warningCount > 0 ? "border-amber-300" : "border-border/40";
-
   return (
     <div className={`bg-white rounded-2xl border-2 overflow-hidden ${border}`}>
       <button onClick={() => setExpanded((x) => !x)} className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/10">
@@ -755,11 +845,10 @@ function SchulEmpCard({ emp, gruppe }: { emp: SchulComplianceEntry; gruppe: any 
           {emp.trainings.map((t) => (
             <div key={t.pflichtId} className={`flex items-center gap-3 py-1.5 border-b border-border/10 last:border-0 ${t.parentPflichtId ? "ml-4 pl-2 border-l-2 border-blue-200" : ""}`}>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {t.parentPflichtId && <GitBranch className="w-3 h-3 text-blue-400 shrink-0" />}
+                  {t.trainingTopicTitle && <Link2 className="w-3 h-3 text-[#1a3a6b]/50 shrink-0" />}
                   <p className="text-xs font-semibold">{t.bezeichnung}</p>
-                  {t.zuordnungModus === "personen" && <span className="text-xs text-indigo-600">· Individuell</span>}
-                  {t.zuordnungModus === "auto" && <span className="text-xs text-teal-600">· Extern</span>}
                 </div>
                 {t.naechsteSchulung && <p className="text-xs text-muted-foreground">Nächste: {new Date(t.naechsteSchulung).toLocaleDateString("de-DE")}</p>}
                 {t.ausnahme?.begruendung && <p className="text-xs text-muted-foreground italic">Begr.: {t.ausnahme.begruendung}</p>}
@@ -773,7 +862,7 @@ function SchulEmpCard({ emp, gruppe }: { emp: SchulComplianceEntry; gruppe: any 
   );
 }
 
-// ── Bescheinigungen-Compliance-View ──────────────────────────────────────────
+// ── Bescheinigungen-Compliance ───────────────────────────────────────────────
 function BeschComplianceView({ entries }: { entries: BeschComplianceEntry[] }) {
   if (entries.length === 0) return (
     <div className="text-center py-10 border-2 border-dashed border-amber-200 rounded-2xl">
@@ -782,11 +871,7 @@ function BeschComplianceView({ entries }: { entries: BeschComplianceEntry[] }) {
     </div>
   );
 
-  return (
-    <div className="space-y-4">
-      {entries.map((b) => <BeschCard key={b.pflichtId} b={b} />)}
-    </div>
-  );
+  return <div className="space-y-4">{entries.map((b) => <BeschCard key={b.pflichtId} b={b} />)}</div>;
 }
 
 function BeschCard({ b }: { b: BeschComplianceEntry }) {
@@ -800,11 +885,17 @@ function BeschCard({ b }: { b: BeschComplianceEntry }) {
           <Award className="w-4 h-4 text-amber-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold">{b.bezeichnung}</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-sm font-bold">{b.bezeichnung}</p>
+            {b.pruefModus === "vorhanden" && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700">
+                <EyeOff className="w-2.5 h-2.5" /> Nur Vorhandensein
+              </span>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground mt-0.5">
             {b.entries.length} Person{b.entries.length !== 1 ? "en" : ""} ·{" "}
-            {INTERVALL_LABEL[b.intervallMonate] || `${b.intervallMonate}M`} ·{" "}
-            {b.zuordnungModus === "auto" ? "Aus Ordner" : "Explizit"}
+            {b.zuordnungModus === "auto" ? "Aus Ordner" : b.zuordnungModus === "personen" ? "Explizit" : "Gruppe"}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -816,17 +907,22 @@ function BeschCard({ b }: { b: BeschComplianceEntry }) {
       </button>
       {expanded && (
         <div className="px-4 pb-4 border-t border-border/20 pt-3 space-y-1.5">
-          {b.entries.length === 0 && <p className="text-xs text-muted-foreground">Noch keine Nachweise im Archiv für diese Bescheinigung.</p>}
+          {b.entries.length === 0 && <p className="text-xs text-muted-foreground">Noch keine Nachweise im Archiv.</p>}
           {b.entries.map((e, i) => {
             const gruppe = GRUPPEN_OPTS.find((g) => g.value === e.gruppe);
             return (
               <div key={i} className="flex items-center gap-3 py-1.5 border-b border-border/10 last:border-0">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <p className="text-xs font-semibold">{e.name}</p>
                     {gruppe && <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full border ${gruppe.bg} ${gruppe.color}`}>{gruppe.label}</span>}
                   </div>
-                  {e.gueltigBis && <p className="text-xs text-muted-foreground">Gültig bis: {new Date(e.gueltigBis).toLocaleDateString("de-DE")}</p>}
+                  {e.status !== "ausnahme" && e.gueltigBis && b.pruefModus !== "vorhanden" && (
+                    <p className="text-xs text-muted-foreground">Gültig bis: {new Date(e.gueltigBis).toLocaleDateString("de-DE")}</p>
+                  )}
+                  {e.status === "ausnahme" && e.ausnahme?.begruendung && (
+                    <p className="text-xs text-muted-foreground italic">Begr.: {e.ausnahme.begruendung}</p>
+                  )}
                 </div>
                 <StatusChip status={e.status} />
               </div>
