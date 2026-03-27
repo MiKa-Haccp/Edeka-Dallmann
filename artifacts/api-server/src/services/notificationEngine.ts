@@ -3,17 +3,18 @@ import nodemailer from "nodemailer";
 import cron from "node-cron";
 
 export const MONITORABLE_SECTIONS = [
-  { key: "2.1",  label: "Wareneingänge SBF",        group: "HACCP 2 – SBF",     periodType: "daily",     description: "Wareneingänge Selbstbedienungsfrischfleisch" },
-  { key: "2.2",  label: "Warencheck OG",             group: "HACCP 2 – SBF",     periodType: "daily",     description: "Warenzustand OG Kontrolle" },
-  { key: "2.3",  label: "Reinigung täglich",         group: "HACCP 2 – SBF",     periodType: "daily",     description: "Tägliche Reinigungskontrolle" },
-  { key: "3.1",  label: "Metzgerei Wareneingänge",  group: "HACCP 3 – Metzgerei", periodType: "daily",   description: "Wareneingänge Metzgerei" },
-  { key: "3.2",  label: "Reinigungsplan Metzgerei", group: "HACCP 3 – Metzgerei", periodType: "monthly", description: "Monatlicher Reinigungsplan Metzgerei" },
-  { key: "3.3",  label: "Öffnung Salate",           group: "HACCP 3 – Metzgerei", periodType: "daily",   description: "Öffnungsdokumentation Salate" },
-  { key: "3.4",  label: "Käsetheke Kontrolle",      group: "HACCP 3 – Metzgerei", periodType: "daily",   description: "Käsetheke Temperaturkontrolle" },
-  { key: "3.5",  label: "Semmelliste",              group: "HACCP 3 – Metzgerei", periodType: "daily",   description: "Semmelliste Kontingent" },
-  { key: "1.5",  label: "Jahresreinigungsplan",     group: "HACCP 1 – Allgemein", periodType: "monthly", description: "Monatliche Bestätigungen Jahresreinigungsplan" },
-  { key: "1.6",  label: "Betriebsbegehung",         group: "HACCP 1 – Allgemein", periodType: "quarterly", description: "Vierteljährliche Betriebsbegehung" },
-  { key: "3.8",  label: "GQ-Begehung",             group: "HACCP 3 – Metzgerei", periodType: "quarterly", description: "Vierteljährliche GQ-Begehung Metzgerei" },
+  { key: "1.4",  label: "Schulungsnachweise",       group: "HACCP 1 – Organisation & Hygiene", periodType: "yearly",    description: "Jahresschulungen — mind. 1 Nachweis pro Jahr und Filiale" },
+  { key: "1.5",  label: "Jahresreinigungsplan",     group: "HACCP 1 – Organisation & Hygiene", periodType: "monthly",   description: "Monatliche Bestätigungen im Jahresreinigungsplan" },
+  { key: "1.6",  label: "Betriebsbegehung",         group: "HACCP 1 – Organisation & Hygiene", periodType: "quarterly", description: "Vierteljährliche Betriebsbegehung" },
+  { key: "2.1",  label: "Wareneingänge Selbstbedienung", group: "HACCP 2 – Selbstbedienung (SBF)", periodType: "daily", description: "Tägliche Wareneingangskontrolle Selbstbedienungsfrischfleisch" },
+  { key: "2.2",  label: "Warencheck OG",            group: "HACCP 2 – Selbstbedienung (SBF)", periodType: "daily",     description: "Warenzustand OG — tägliche Kontrolle" },
+  { key: "2.3",  label: "Reinigung täglich",        group: "HACCP 2 – Selbstbedienung (SBF)", periodType: "daily",     description: "Tägliche Reinigungskontrolle SBF-Bereich" },
+  { key: "3.1",  label: "Metzgerei Wareneingänge",  group: "HACCP 3 – Metzgerei",              periodType: "daily",     description: "Tägliche Wareneingangskontrolle Metzgerei" },
+  { key: "3.2",  label: "Reinigungsplan Metzgerei", group: "HACCP 3 – Metzgerei",              periodType: "monthly",   description: "Monatlicher Reinigungsplan Metzgerei" },
+  { key: "3.3",  label: "Öffnung Salate",           group: "HACCP 3 – Metzgerei",              periodType: "daily",     description: "Tägliche Öffnungsdokumentation Salate" },
+  { key: "3.4",  label: "Käsetheke Kontrolle",      group: "HACCP 3 – Metzgerei",              periodType: "daily",     description: "Tägliche Käsetheke-Temperaturkontrolle" },
+  { key: "3.5",  label: "Semmelliste",              group: "HACCP 3 – Metzgerei",              periodType: "daily",     description: "Tägliche Semmelliste" },
+  { key: "3.8",  label: "GQ-Begehung",              group: "HACCP 3 – Metzgerei",              periodType: "quarterly", description: "Vierteljährliche GQ-Begehung Metzgerei" },
 ] as const;
 
 export const TRIGGER_TYPES = [
@@ -94,9 +95,18 @@ async function getLastEntryDate(sectionKey: string, marketId: number): Promise<D
         row = r.rows[0];
         return row ? toDate(row.year, row.month, row.day) : null;
       }
+      case "1.4": {
+        const r = await pool.query(
+          `SELECT created_at FROM schulungsnachweise WHERE tenant_id = $1 ORDER BY created_at DESC LIMIT 1`,
+          [marketId]
+        );
+        row = r.rows[0];
+        return row?.created_at ? new Date(row.created_at) : null;
+      }
       case "1.5": {
         const r = await pool.query(
-          `SELECT year, month FROM cleaning_plan_confirmations WHERE tenant_id = 1 ORDER BY year DESC, month DESC LIMIT 1`
+          `SELECT year, month FROM cleaning_plan_confirmations WHERE tenant_id = $1 ORDER BY year DESC, month DESC LIMIT 1`,
+          [marketId]
         );
         row = r.rows[0];
         return row ? toDate(row.year, row.month, 1) : null;
@@ -168,6 +178,10 @@ function daysUntilPeriodEnd(sectionKey: string): number {
     const endOfQuarter = new Date(now.getFullYear(), endMonth, 0);
     return Math.ceil((endOfQuarter.getTime() - now.getTime()) / 86400000);
   }
+  if (section.periodType === "yearly") {
+    const endOfYear = new Date(now.getFullYear(), 11, 31);
+    return Math.ceil((endOfYear.getTime() - now.getTime()) / 86400000);
+  }
   return 999;
 }
 
@@ -238,8 +252,16 @@ async function sendEmail(to: string, subject: string, body: string): Promise<boo
   }
 }
 
+async function getTelegramBotToken(): Promise<string | null> {
+  if (process.env.TELEGRAM_BOT_TOKEN) return process.env.TELEGRAM_BOT_TOKEN;
+  try {
+    const r = await pool.query(`SELECT telegram_bot_token FROM email_settings LIMIT 1`);
+    return r.rows[0]?.telegram_bot_token || null;
+  } catch { return null; }
+}
+
 async function sendTelegram(chatId: string, message: string): Promise<boolean> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const token = await getTelegramBotToken();
   if (!token) return false;
   try {
     const resp = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -296,7 +318,8 @@ export async function runNotificationCheck(): Promise<{ checked: number; sent: n
   const rules = rulesResult.rows;
 
   const usersResult = await pool.query(
-    `SELECT u.id, u.name, u.email, u.role, nc.channel_type, nc.telegram_chat_id, nc.email_override
+    `SELECT u.id, u.name, u.email, u.role, u.assigned_market_ids,
+            nc.channel_type, nc.telegram_chat_id, nc.email_override
      FROM users u
      LEFT JOIN notification_channels nc ON nc.user_id = u.id
      WHERE u.is_registered = TRUE`
@@ -319,6 +342,10 @@ export async function runNotificationCheck(): Promise<{ checked: number; sent: n
       for (const userId of userIds) {
         const user = usersMap.get(userId);
         if (!user) continue;
+
+        // Skip if user is restricted to specific markets and this market is not in their list
+        const assignedMarkets: number[] | null = user.assigned_market_ids;
+        if (assignedMarkets && assignedMarkets.length > 0 && !assignedMarkets.includes(marketId)) continue;
 
         const channel = user.channel_type || "off";
         if (channel === "off") continue;

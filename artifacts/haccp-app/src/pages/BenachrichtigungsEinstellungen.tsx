@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import {
   ChevronLeft, Bell, Plus, Trash2, Check, X, AlertTriangle,
   Mail, Send, Clock, Users, RefreshCw, Eye, MessageCircle,
-  BellOff, Play, CheckCircle, XCircle,
+  BellOff, Play, CheckCircle, XCircle, Settings, Save, Store,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -19,8 +19,9 @@ function cn(...inputs: (string | boolean | undefined | null)[]) {
 interface Section { key: string; label: string; group: string; periodType: string; description: string; }
 interface TriggerType { key: string; label: string; unit: string; description: string; }
 interface Rule { id: number; tenant_id: number; section_key: string; trigger_type: string; trigger_value: number; notify_user_ids: number[]; is_active: boolean; }
-interface UserChannel { id: number; name: string; email: string; role: string; channel_type: string | null; telegram_chat_id: string | null; email_override: string | null; }
+interface UserChannel { id: number; name: string; email: string; role: string; channel_type: string | null; telegram_chat_id: string | null; email_override: string | null; assigned_market_ids: number[] | null; }
 interface LogEntry { id: number; rule_id: number; user_id: number; market_id: number; channel_type: string; message: string; status: string; sent_at: string; user_name: string; section_key: string; trigger_type: string; }
+interface EmailSettings { id?: number; smtp_host?: string; smtp_port?: number; smtp_user?: string; smtp_pass?: string; from_name?: string; default_recipient?: string; enabled?: boolean; telegram_bot_token?: string; }
 
 const ROLE_LABELS: Record<string, string> = {
   SUPERADMIN: "Superadmin", ADMIN: "Administrator",
@@ -33,7 +34,7 @@ const PERIOD_LABELS: Record<string, string> = {
 
 const MARKET_NAMES: Record<number, string> = { 1: "Leeder", 2: "Buching", 3: "Marktoberdorf" };
 
-type TabId = "regeln" | "empfaenger" | "protokoll";
+type TabId = "regeln" | "empfaenger" | "protokoll" | "einstellungen";
 
 export default function BenachrichtigungsEinstellungen() {
   const { adminSession } = useAppStore();
@@ -44,6 +45,7 @@ export default function BenachrichtigungsEinstellungen() {
   const [rules, setRules] = useState<Rule[]>([]);
   const [users, setUsers] = useState<UserChannel[]>([]);
   const [log, setLog] = useState<LogEntry[]>([]);
+  const [emailSettings, setEmailSettings] = useState<EmailSettings>({});
   const [loading, setLoading] = useState(true);
   const [checkRunning, setCheckRunning] = useState(false);
   const [checkResult, setCheckResult] = useState<{ checked: number; sent: number; errors: number } | null>(null);
@@ -55,17 +57,19 @@ export default function BenachrichtigungsEinstellungen() {
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [meta, rulesData, usersData, logData] = await Promise.all([
+      const [meta, rulesData, usersData, logData, settingsData] = await Promise.all([
         fetch(`${API_BASE}/notifications/meta`).then(r => r.json()),
         fetch(`${API_BASE}/notifications/rules`).then(r => r.json()),
         fetch(`${API_BASE}/notifications/channels`).then(r => r.json()),
         fetch(`${API_BASE}/notifications/log?limit=50`).then(r => r.json()),
+        fetch(`${API_BASE}/notifications/email-settings`).then(r => r.json()),
       ]);
       setSections(meta.sections || []);
       setTriggerTypes(meta.triggerTypes || []);
       setRules(rulesData || []);
       setUsers(usersData || []);
       setLog(logData || []);
+      setEmailSettings(settingsData || {});
     } finally {
       setLoading(false);
     }
@@ -89,9 +93,10 @@ export default function BenachrichtigungsEinstellungen() {
   if (!adminSession || adminSession.role !== "SUPERADMIN") return null;
 
   const tabs: { id: TabId; label: string; icon: typeof Bell; count?: number }[] = [
-    { id: "regeln",     label: "Regeln",     icon: Bell,  count: rules.length },
-    { id: "empfaenger", label: "Empfänger",  icon: Users, count: users.length },
-    { id: "protokoll",  label: "Protokoll",  icon: Eye,   count: log.length },
+    { id: "regeln",        label: "Regeln",        icon: Bell,     count: rules.length },
+    { id: "empfaenger",    label: "Empfänger",     icon: Users,    count: users.length },
+    { id: "protokoll",     label: "Protokoll",     icon: Eye,      count: log.length },
+    { id: "einstellungen", label: "Einstellungen", icon: Settings },
   ];
 
   return (
@@ -156,9 +161,10 @@ export default function BenachrichtigungsEinstellungen() {
           <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">Laden...</div>
         ) : (
           <>
-            {tab === "regeln"     && <RegelnTab sections={sections} triggerTypes={triggerTypes} rules={rules} users={users} onSaved={loadAll} />}
-            {tab === "empfaenger" && <EmpfaengerTab users={users} onSaved={loadAll} />}
-            {tab === "protokoll"  && <ProtokollTab log={log} sections={sections} />}
+            {tab === "regeln"        && <RegelnTab sections={sections} triggerTypes={triggerTypes} rules={rules} users={users} onSaved={loadAll} />}
+            {tab === "empfaenger"    && <EmpfaengerTab users={users} onSaved={loadAll} />}
+            {tab === "protokoll"     && <ProtokollTab log={log} sections={sections} />}
+            {tab === "einstellungen" && <EinstellungenTab settings={emailSettings} onSaved={() => { loadAll(); }} />}
           </>
         )}
       </div>
@@ -449,15 +455,29 @@ function RegelnTab({ sections, triggerTypes, rules, users, onSaved }: {
   );
 }
 
+const MARKETS = [{ id: 1, name: "Leeder" }, { id: 2, name: "Buching" }, { id: 3, name: "Marktoberdorf" }];
+
 function EmpfaengerTab({ users, onSaved }: { users: UserChannel[]; onSaved: () => void }) {
   const [saving, setSaving] = useState<number | null>(null);
   const [localUsers, setLocalUsers] = useState<UserChannel[]>([]);
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
 
-  useEffect(() => { setLocalUsers(users.map(u => ({ ...u }))); }, [users]);
+  useEffect(() => { setLocalUsers(users.map(u => ({ ...u, assigned_market_ids: u.assigned_market_ids || [] }))); }, [users]);
 
   const updateLocal = (userId: number, field: string, value: string) => {
     setLocalUsers(prev => prev.map(u => u.id === userId ? { ...u, [field]: value } : u));
+    setSavedIds(prev => { const s = new Set(prev); s.delete(userId); return s; });
+  };
+
+  const toggleMarket = (userId: number, marketId: number) => {
+    setLocalUsers(prev => prev.map(u => {
+      if (u.id !== userId) return u;
+      const current = u.assigned_market_ids || [];
+      const updated = current.includes(marketId)
+        ? current.filter(id => id !== marketId)
+        : [...current, marketId];
+      return { ...u, assigned_market_ids: updated };
+    }));
     setSavedIds(prev => { const s = new Set(prev); s.delete(userId); return s; });
   };
 
@@ -469,7 +489,12 @@ function EmpfaengerTab({ users, onSaved }: { users: UserChannel[]; onSaved: () =
       await fetch(`${API_BASE}/notifications/channels/${userId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ channelType: u.channel_type || "off", telegramChatId: u.telegram_chat_id, emailOverride: u.email_override }),
+        body: JSON.stringify({
+          channelType: u.channel_type || "off",
+          telegramChatId: u.telegram_chat_id,
+          emailOverride: u.email_override,
+          assignedMarketIds: u.role === "MARKTLEITER" ? (u.assigned_market_ids || []) : undefined,
+        }),
       });
       setSavedIds(prev => new Set([...prev, userId]));
       setTimeout(() => setSavedIds(prev => { const s = new Set(prev); s.delete(userId); return s; }), 3000);
@@ -563,6 +588,33 @@ function EmpfaengerTab({ users, onSaved }: { users: UserChannel[]; onSaved: () =
                         />
                       </div>
                     )}
+
+                    {u.role === "MARKTLEITER" && (
+                      <div>
+                        <label className="block text-xs text-muted-foreground mb-1.5 flex items-center gap-1">
+                          <Store className="h-3.5 w-3.5" /> Zugeordnete Filialen
+                          <span className="text-muted-foreground/60">(leer = alle Filialen)</span>
+                        </label>
+                        <div className="flex items-center gap-2">
+                          {MARKETS.map(m => {
+                            const assigned = (u.assigned_market_ids || []).includes(m.id);
+                            return (
+                              <button
+                                key={m.id}
+                                onClick={() => toggleMarket(u.id, m.id)}
+                                className={cn(
+                                  "px-3 py-1.5 rounded-lg text-xs font-semibold border-2 transition-all",
+                                  assigned ? "bg-orange-50 text-orange-700 border-orange-300" : "bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300"
+                                )}
+                              >
+                                {assigned && <Check className="h-3 w-3 inline-block mr-1" />}
+                                {m.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <button
@@ -580,6 +632,154 @@ function EmpfaengerTab({ users, onSaved }: { users: UserChannel[]; onSaved: () =
             );
           })}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function EinstellungenTab({ settings, onSaved }: { settings: EmailSettings; onSaved: () => void }) {
+  const [form, setForm] = useState<EmailSettings>({});
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [showSmtpPass, setShowSmtpPass] = useState(false);
+  const [showTgToken, setShowTgToken] = useState(false);
+
+  useEffect(() => { setForm({ ...settings }); }, [settings]);
+
+  const update = (field: keyof EmailSettings, value: string | number | boolean) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setSaved(false);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await fetch(`${API_BASE}/notifications/email-settings`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          smtpHost: form.smtp_host,
+          smtpPort: Number(form.smtp_port) || 587,
+          smtpUser: form.smtp_user,
+          smtpPass: form.smtp_pass,
+          fromName: form.from_name,
+          defaultRecipient: form.default_recipient,
+          enabled: form.enabled,
+          telegramBotToken: form.telegram_bot_token,
+        }),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Email SMTP */}
+      <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
+        <div className="bg-[#1a3a6b] text-white px-5 py-3 flex items-center gap-3">
+          <Mail className="h-5 w-5" />
+          <h2 className="text-base font-bold">E-Mail-Versand (SMTP)</h2>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-border/40">
+            <span className="text-sm font-semibold text-foreground flex-1">E-Mail-Benachrichtigungen aktiv</span>
+            <button
+              onClick={() => update("enabled", !form.enabled)}
+              className={cn(
+                "relative inline-flex h-6 w-11 items-center rounded-full transition-colors",
+                form.enabled ? "bg-orange-500" : "bg-gray-300"
+              )}
+            >
+              <span className={cn("inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform", form.enabled ? "translate-x-6" : "translate-x-1")} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">SMTP-Server (Host)</label>
+              <input type="text" value={form.smtp_host || ""} onChange={e => update("smtp_host", e.target.value)}
+                placeholder="smtp.ionos.de" className="w-full px-3 py-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">SMTP-Port</label>
+              <input type="number" value={form.smtp_port || 587} onChange={e => update("smtp_port", Number(e.target.value))}
+                placeholder="587" className="w-full px-3 py-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">SMTP-Benutzername</label>
+              <input type="text" value={form.smtp_user || ""} onChange={e => update("smtp_user", e.target.value)}
+                placeholder="haccp@edeka-dallmann.de" className="w-full px-3 py-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">SMTP-Passwort</label>
+              <div className="relative">
+                <input type={showSmtpPass ? "text" : "password"} value={form.smtp_pass || ""} onChange={e => update("smtp_pass", e.target.value)}
+                  placeholder="••••••••" className="w-full px-3 py-2 pr-10 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                <button type="button" onClick={() => setShowSmtpPass(p => !p)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <Eye className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">Absendername</label>
+              <input type="text" value={form.from_name || ""} onChange={e => update("from_name", e.target.value)}
+                placeholder="EDEKA Dallmann HACCP" className="w-full px-3 py-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground mb-1">Standard-Empfänger (Fallback)</label>
+              <input type="email" value={form.default_recipient || ""} onChange={e => update("default_recipient", e.target.value)}
+                placeholder="chef@edeka-dallmann.de" className="w-full px-3 py-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Telegram */}
+      <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
+        <div className="bg-[#1a3a6b] text-white px-5 py-3 flex items-center gap-3">
+          <MessageCircle className="h-5 w-5" />
+          <h2 className="text-base font-bold">Telegram Bot-Token</h2>
+        </div>
+        <div className="p-5 space-y-3">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
+            <p className="font-semibold mb-1">Bot erstellen (einmalig):</p>
+            <ol className="list-decimal list-inside text-xs space-y-0.5">
+              <li>Bei Telegram <strong>@BotFather</strong> schreiben und <code>/newbot</code> eingeben</li>
+              <li>Einen Namen und Benutzernamen für den Bot wählen</li>
+              <li>Den generierten Token hier eintragen</li>
+            </ol>
+          </div>
+          <div>
+            <label className="block text-xs text-muted-foreground mb-1">Bot-Token</label>
+            <div className="relative">
+              <input type={showTgToken ? "text" : "password"} value={form.telegram_bot_token || ""} onChange={e => update("telegram_bot_token", e.target.value)}
+                placeholder="1234567890:ABCdef..." className="w-full px-3 py-2 pr-10 border border-border rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-green-200" />
+              <button type="button" onClick={() => setShowTgToken(p => !p)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <Eye className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Alternativ kann der Token auch als Umgebungsvariable <code className="bg-gray-100 px-1 rounded">TELEGRAM_BOT_TOKEN</code> hinterlegt werden — dann hat die Umgebungsvariable Vorrang.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button
+          onClick={save}
+          disabled={saving || saved}
+          className={cn(
+            "flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all",
+            saved ? "bg-green-100 text-green-700 border border-green-200" : "bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50"
+          )}
+        >
+          {saved ? <><Check className="h-4 w-4" /> Gespeichert</> : <><Save className="h-4 w-4" /> {saving ? "Speichert..." : "Einstellungen speichern"}</>}
+        </button>
       </div>
     </div>
   );

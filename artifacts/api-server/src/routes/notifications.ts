@@ -56,7 +56,7 @@ router.delete("/notifications/rules/:id", async (req, res) => {
 
 router.get("/notifications/channels", async (req, res) => {
   const r = await pool.query(
-    `SELECT u.id, u.name, u.email, u.role,
+    `SELECT u.id, u.name, u.email, u.role, u.assigned_market_ids,
             nc.channel_type, nc.telegram_chat_id, nc.email_override
      FROM users u
      LEFT JOIN notification_channels nc ON nc.user_id = u.id
@@ -68,7 +68,7 @@ router.get("/notifications/channels", async (req, res) => {
 
 router.put("/notifications/channels/:userId", async (req, res) => {
   const userId = Number(req.params.userId);
-  const { channelType, telegramChatId, emailOverride } = req.body;
+  const { channelType, telegramChatId, emailOverride, assignedMarketIds } = req.body;
   await pool.query(
     `INSERT INTO notification_channels (user_id, channel_type, telegram_chat_id, email_override)
      VALUES ($1, $2, $3, $4)
@@ -78,7 +78,58 @@ router.put("/notifications/channels/:userId", async (req, res) => {
        email_override = EXCLUDED.email_override`,
     [userId, channelType || "off", telegramChatId || null, emailOverride || null]
   );
+  if (assignedMarketIds !== undefined) {
+    await pool.query(
+      `UPDATE users SET assigned_market_ids = $1 WHERE id = $2`,
+      [assignedMarketIds && assignedMarketIds.length > 0 ? assignedMarketIds : null, userId]
+    );
+  }
   res.json({ success: true });
+});
+
+router.get("/notifications/email-settings", async (_req, res) => {
+  try {
+    const r = await pool.query(`SELECT * FROM email_settings ORDER BY id LIMIT 1`);
+    res.json(r.rows[0] || {});
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.put("/notifications/email-settings", async (req, res) => {
+  try {
+    const { smtpHost, smtpPort, smtpUser, smtpPass, fromName, defaultRecipient, enabled, telegramBotToken } = req.body;
+    const existing = await pool.query(`SELECT id FROM email_settings LIMIT 1`);
+    if (existing.rows.length === 0) {
+      await pool.query(
+        `INSERT INTO email_settings (smtp_host, smtp_port, smtp_user, smtp_pass, from_name, default_recipient, enabled, telegram_bot_token)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [smtpHost || "smtp.ionos.de", smtpPort || 587, smtpUser || null, smtpPass || null,
+         fromName || "EDEKA Dallmann HACCP", defaultRecipient || null, enabled ?? false, telegramBotToken || null]
+      );
+    } else {
+      const sets: string[] = [];
+      const vals: any[] = [];
+      let idx = 1;
+      if (smtpHost       !== undefined) { sets.push(`smtp_host=$${idx++}`);          vals.push(smtpHost); }
+      if (smtpPort       !== undefined) { sets.push(`smtp_port=$${idx++}`);          vals.push(smtpPort); }
+      if (smtpUser       !== undefined) { sets.push(`smtp_user=$${idx++}`);          vals.push(smtpUser || null); }
+      if (smtpPass       !== undefined) { sets.push(`smtp_pass=$${idx++}`);          vals.push(smtpPass || null); }
+      if (fromName       !== undefined) { sets.push(`from_name=$${idx++}`);          vals.push(fromName); }
+      if (defaultRecipient !== undefined) { sets.push(`default_recipient=$${idx++}`); vals.push(defaultRecipient || null); }
+      if (enabled        !== undefined) { sets.push(`enabled=$${idx++}`);            vals.push(enabled); }
+      if (telegramBotToken !== undefined) { sets.push(`telegram_bot_token=$${idx++}`); vals.push(telegramBotToken || null); }
+      sets.push(`updated_at=NOW()`);
+      if (sets.length > 1) {
+        vals.push(existing.rows[0].id);
+        await pool.query(`UPDATE email_settings SET ${sets.join(",")} WHERE id=$${idx}`, vals);
+      }
+    }
+    const updated = await pool.query(`SELECT * FROM email_settings LIMIT 1`);
+    res.json(updated.rows[0]);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 router.get("/notifications/log", async (req, res) => {
