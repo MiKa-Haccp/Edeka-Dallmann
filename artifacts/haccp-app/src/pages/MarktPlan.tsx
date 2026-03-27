@@ -849,7 +849,7 @@ export default function MarktPlan() {
                       ref={imgRef}
                       style={{
                         position: "relative",
-                        display: "inline-block",
+                        display: "block",
                         width: "100%",
                         lineHeight: 0,
                         transform: rotateMap ? "rotate(90deg)" : undefined,
@@ -863,19 +863,22 @@ export default function MarktPlan() {
                         draggable={false}
                         style={{ display: "block", width: "100%", height: "auto", userSelect: "none" }}
                       />
-                      {markers.map(m => (
-                        <MarkerPin
-                          key={m.id}
-                          marker={m}
-                          onEdit={openEdit}
-                          moveMode={moveMode}
-                          onPointerDown={handlePointerDown}
-                          onPointerMove={handlePointerMove}
-                          onPointerUp={handlePointerUp}
-                          isDragging={draggingId === m.id}
-                          mapRotated={rotateMap}
-                        />
-                      ))}
+                      {/* Overlay exakt auf dem Bild — Marker-% beziehen sich auf Bildgrösse */}
+                      <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, pointerEvents: "none" }}>
+                        {markers.map(m => (
+                          <MarkerPin
+                            key={m.id}
+                            marker={m}
+                            onEdit={openEdit}
+                            moveMode={moveMode}
+                            onPointerDown={handlePointerDown}
+                            onPointerMove={handlePointerMove}
+                            onPointerUp={handlePointerUp}
+                            isDragging={draggingId === m.id}
+                            mapRotated={rotateMap}
+                          />
+                        ))}
+                      </div>
                     </div>
                   </TransformComponent>
                 </div>
