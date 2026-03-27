@@ -103,7 +103,7 @@ export default function WareBestellungen() {
 
         {/* Header */}
         <div className="flex items-center gap-3">
-          <Link href="/ware" className="p-2 rounded-xl hover:bg-secondary transition-colors text-muted-foreground">
+          <Link href="/ware-bestellungen" className="p-2 rounded-xl hover:bg-secondary transition-colors text-muted-foreground">
             <ChevronLeft className="w-5 h-5" />
           </Link>
           <div className="flex-1">
