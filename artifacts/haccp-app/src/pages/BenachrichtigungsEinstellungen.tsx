@@ -18,7 +18,7 @@ function cn(...inputs: (string | boolean | undefined | null)[]) {
 
 interface Section { key: string; label: string; group: string; periodType: string; description: string; }
 interface TriggerType { key: string; label: string; unit: string; description: string; }
-interface Rule { id: number; tenant_id: number; section_key: string; trigger_type: string; trigger_value: number; notify_user_ids: number[]; is_active: boolean; }
+interface Rule { id: number; tenant_id: number; section_key: string; trigger_type: string; trigger_value: number; notify_user_ids: number[]; is_active: boolean; market_ids: number[] | null; }
 interface UserChannel { id: number; name: string; email: string; role: string; channel_type: string | null; telegram_chat_id: string | null; email_override: string | null; assigned_market_ids: number[] | null; }
 interface LogEntry { id: number; rule_id: number; user_id: number; market_id: number; channel_type: string; message: string; status: string; sent_at: string; user_name: string; section_key: string; trigger_type: string; }
 interface EmailSettings { id?: number; smtp_host?: string; smtp_port?: number; smtp_user?: string; smtp_pass?: string; from_name?: string; default_recipient?: string; enabled?: boolean; telegram_bot_token?: string; }
@@ -176,7 +176,7 @@ function RegelnTab({ sections, triggerTypes, rules, users, onSaved }: {
   sections: Section[]; triggerTypes: TriggerType[]; rules: Rule[]; users: UserChannel[]; onSaved: () => void;
 }) {
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ sectionKey: "", triggerType: "no_entry_days", triggerValue: 7, notifyUserIds: [] as number[] });
+  const [form, setForm] = useState({ sectionKey: "", triggerType: "no_entry_days", triggerValue: 7, notifyUserIds: [] as number[], marketIds: [] as number[] });
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
@@ -190,9 +190,15 @@ function RegelnTab({ sections, triggerTypes, rules, users, onSaved }: {
       await fetch(`${API_BASE}/notifications/rules`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sectionKey: form.sectionKey, triggerType: form.triggerType, triggerValue: form.triggerValue, notifyUserIds: form.notifyUserIds }),
+        body: JSON.stringify({
+          sectionKey: form.sectionKey,
+          triggerType: form.triggerType,
+          triggerValue: form.triggerValue,
+          notifyUserIds: form.notifyUserIds,
+          marketIds: form.marketIds,
+        }),
       });
-      setForm({ sectionKey: "", triggerType: "no_entry_days", triggerValue: 7, notifyUserIds: [] });
+      setForm({ sectionKey: "", triggerType: "no_entry_days", triggerValue: 7, notifyUserIds: [], marketIds: [] });
       setShowForm(false);
       onSaved();
     } finally {
@@ -233,6 +239,17 @@ function RegelnTab({ sections, triggerTypes, rules, users, onSaved }: {
         : [...prev.notifyUserIds, userId],
     }));
   };
+
+  const toggleMarketRule = (marketId: number) => {
+    setForm(prev => ({
+      ...prev,
+      marketIds: prev.marketIds.includes(marketId)
+        ? prev.marketIds.filter(id => id !== marketId)
+        : [...prev.marketIds, marketId],
+    }));
+  };
+
+  const ALL_MARKETS = [{ id: 1, name: "Leeder" }, { id: 2, name: "Buching" }, { id: 3, name: "Marktoberdorf" }];
 
   const triggerNeedsValue = form.triggerType !== "overdue_period";
   const selectedSection = sections.find(s => s.key === form.sectionKey);
@@ -289,6 +306,31 @@ function RegelnTab({ sections, triggerTypes, rules, users, onSaved }: {
                   Rhythmus: <span className="font-medium">{PERIOD_LABELS[selectedSection.periodType] || selectedSection.periodType}</span>
                 </p>
               )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
+                Filialen <span className="font-normal text-muted-foreground/60">(leer = alle 3 Filialen)</span>
+              </label>
+              <div className="flex gap-2">
+                {ALL_MARKETS.map(m => {
+                  const sel = form.marketIds.includes(m.id);
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => toggleMarketRule(m.id)}
+                      className={cn(
+                        "flex-1 px-2 py-2 rounded-xl text-xs font-semibold border-2 transition-all",
+                        sel ? "bg-orange-50 text-orange-700 border-orange-400" : "bg-white text-muted-foreground border-border hover:border-orange-200"
+                      )}
+                    >
+                      {sel && <Check className="h-3 w-3 inline-block mr-0.5" />}
+                      {m.name}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div>
@@ -416,11 +458,19 @@ function RegelnTab({ sections, triggerTypes, rules, users, onSaved }: {
               <div key={rule.id} className={cn("bg-white rounded-xl border shadow-sm p-4 flex items-center gap-4", rule.is_active ? "border-border/60" : "border-border/30 opacity-60")}>
                 <div className={cn("w-2 h-10 rounded-full flex-shrink-0", rule.is_active ? "bg-orange-400" : "bg-gray-300")} />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
+                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                     <span className="font-bold text-sm text-foreground">{section?.label || rule.section_key}</span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">
                       {PERIOD_LABELS[section?.periodType || ""] || section?.periodType}
                     </span>
+                    {rule.market_ids && rule.market_ids.length > 0
+                      ? rule.market_ids.map(mid => (
+                          <span key={mid} className="text-xs px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200 font-medium">
+                            {MARKET_NAMES[mid] || `Markt ${mid}`}
+                          </span>
+                        ))
+                      : <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200 font-medium">Alle Filialen</span>
+                    }
                   </div>
                   <p className="text-xs text-muted-foreground">
                     {getTriggerLabel(rule.trigger_type, rule.trigger_value, "")} ·{" "}

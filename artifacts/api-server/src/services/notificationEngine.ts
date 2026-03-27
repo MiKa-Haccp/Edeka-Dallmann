@@ -3,18 +3,17 @@ import nodemailer from "nodemailer";
 import cron from "node-cron";
 
 export const MONITORABLE_SECTIONS = [
-  { key: "1.4",  label: "Schulungsnachweise",       group: "HACCP 1 – Organisation & Hygiene", periodType: "yearly",    description: "Jahresschulungen — mind. 1 Nachweis pro Jahr und Filiale" },
-  { key: "1.5",  label: "Jahresreinigungsplan",     group: "HACCP 1 – Organisation & Hygiene", periodType: "monthly",   description: "Monatliche Bestätigungen im Jahresreinigungsplan" },
-  { key: "1.6",  label: "Betriebsbegehung",         group: "HACCP 1 – Organisation & Hygiene", periodType: "quarterly", description: "Vierteljährliche Betriebsbegehung" },
-  { key: "2.1",  label: "Wareneingänge Selbstbedienung", group: "HACCP 2 – Selbstbedienung (SBF)", periodType: "daily", description: "Tägliche Wareneingangskontrolle Selbstbedienungsfrischfleisch" },
-  { key: "2.2",  label: "Warencheck OG",            group: "HACCP 2 – Selbstbedienung (SBF)", periodType: "daily",     description: "Warenzustand OG — tägliche Kontrolle" },
-  { key: "2.3",  label: "Reinigung täglich",        group: "HACCP 2 – Selbstbedienung (SBF)", periodType: "daily",     description: "Tägliche Reinigungskontrolle SBF-Bereich" },
-  { key: "3.1",  label: "Metzgerei Wareneingänge",  group: "HACCP 3 – Metzgerei",              periodType: "daily",     description: "Tägliche Wareneingangskontrolle Metzgerei" },
-  { key: "3.2",  label: "Reinigungsplan Metzgerei", group: "HACCP 3 – Metzgerei",              periodType: "monthly",   description: "Monatlicher Reinigungsplan Metzgerei" },
-  { key: "3.3",  label: "Öffnung Salate",           group: "HACCP 3 – Metzgerei",              periodType: "daily",     description: "Tägliche Öffnungsdokumentation Salate" },
-  { key: "3.4",  label: "Käsetheke Kontrolle",      group: "HACCP 3 – Metzgerei",              periodType: "daily",     description: "Tägliche Käsetheke-Temperaturkontrolle" },
-  { key: "3.5",  label: "Semmelliste",              group: "HACCP 3 – Metzgerei",              periodType: "daily",     description: "Tägliche Semmelliste" },
-  { key: "3.8",  label: "GQ-Begehung",              group: "HACCP 3 – Metzgerei",              periodType: "quarterly", description: "Vierteljährliche GQ-Begehung Metzgerei" },
+  { key: "1.4",  label: "Schulungsnachweise",              group: "HACCP 1 – Organisation & Hygiene", periodType: "yearly",    description: "Jahresschulungen — mind. 1 Nachweis pro Jahr und Filiale" },
+  { key: "1.5",  label: "Reinigungsplan Jahr",             group: "HACCP 1 – Organisation & Hygiene", periodType: "monthly",   description: "Monatliche Bestätigungen im Reinigungsplan" },
+  { key: "1.6",  label: "Betriebsbegehung",                group: "HACCP 1 – Organisation & Hygiene", periodType: "quarterly", description: "Vierteljährliche Betriebsbegehung" },
+  { key: "2.1",  label: "Wareneingaenge",                  group: "HACCP 2 – Selbstbedienung (SBF)", periodType: "daily",      description: "Tägliche Wareneingangskontrolle" },
+  { key: "2.2",  label: "Warenzustand Obst & Gemüse",      group: "HACCP 2 – Selbstbedienung (SBF)", periodType: "daily",      description: "Tägliche Kontrolle Warenzustand OG" },
+  { key: "2.3",  label: "Reinigungsdokumentation täglich", group: "HACCP 2 – Selbstbedienung (SBF)", periodType: "daily",      description: "Tägliche Reinigungsdokumentation" },
+  { key: "3.1",  label: "Wareneingaenge Metzgerei",        group: "HACCP 3 – Metzgerei",              periodType: "daily",      description: "Tägliche Wareneingangskontrolle Metzgerei" },
+  { key: "3.2",  label: "Reinigungspläne Metzgerei",       group: "HACCP 3 – Metzgerei",              periodType: "monthly",    description: "Monatliche Reinigungspläne Metzgerei" },
+  { key: "3.3",  label: "Öffnung Salate",                  group: "HACCP 3 – Metzgerei",              periodType: "daily",      description: "Tägliche Öffnungsdokumentation Salate" },
+  { key: "3.4",  label: "Käsetheke und Reifeschrank",      group: "HACCP 3 – Metzgerei",              periodType: "daily",      description: "Tägliche Käsetheke-Kontrolle" },
+  { key: "3.8",  label: "GQ-Betriebsbegehung",             group: "HACCP 3 – Metzgerei",              periodType: "quarterly",  description: "Vierteljährliche GQ-Betriebsbegehung Metzgerei" },
 ] as const;
 
 export const TRIGGER_TYPES = [
@@ -333,7 +332,12 @@ export async function runNotificationCheck(): Promise<{ checked: number; sent: n
     const userIds: number[] = rule.notify_user_ids || [];
     if (userIds.length === 0) continue;
 
-    for (const marketId of MARKETS) {
+    // Determine which markets this rule applies to
+    const ruleMarkets: number[] = (rule.market_ids && rule.market_ids.length > 0)
+      ? rule.market_ids.filter((id: number) => MARKETS.includes(id))
+      : MARKETS;
+
+    for (const marketId of ruleMarkets) {
       const { triggered, reason } = await shouldTrigger(rule, marketId);
       if (!triggered) continue;
 

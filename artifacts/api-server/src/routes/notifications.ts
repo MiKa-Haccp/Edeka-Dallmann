@@ -18,22 +18,22 @@ router.get("/notifications/rules", async (req, res) => {
 });
 
 router.post("/notifications/rules", async (req, res) => {
-  const { tenantId = 1, sectionKey, triggerType, triggerValue, notifyUserIds = [] } = req.body;
+  const { tenantId = 1, sectionKey, triggerType, triggerValue, notifyUserIds = [], marketIds } = req.body;
   if (!sectionKey || !triggerType) {
     res.status(400).json({ error: "sectionKey und triggerType sind Pflichtfelder." });
     return;
   }
   const r = await pool.query(
-    `INSERT INTO notification_rules (tenant_id, section_key, trigger_type, trigger_value, notify_user_ids)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-    [tenantId, sectionKey, triggerType, triggerValue, notifyUserIds]
+    `INSERT INTO notification_rules (tenant_id, section_key, trigger_type, trigger_value, notify_user_ids, market_ids)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    [tenantId, sectionKey, triggerType, triggerValue, notifyUserIds, marketIds && marketIds.length > 0 ? marketIds : null]
   );
   res.json(r.rows[0]);
 });
 
 router.put("/notifications/rules/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const { sectionKey, triggerType, triggerValue, notifyUserIds, isActive } = req.body;
+  const { sectionKey, triggerType, triggerValue, notifyUserIds, isActive, marketIds } = req.body;
   const sets: string[] = [];
   const vals: any[] = [];
   let idx = 1;
@@ -42,6 +42,7 @@ router.put("/notifications/rules/:id", async (req, res) => {
   if (triggerValue  !== undefined) { sets.push(`trigger_value = $${idx++}`);    vals.push(triggerValue); }
   if (notifyUserIds !== undefined) { sets.push(`notify_user_ids = $${idx++}`);  vals.push(notifyUserIds); }
   if (isActive      !== undefined) { sets.push(`is_active = $${idx++}`);        vals.push(isActive); }
+  if (marketIds     !== undefined) { sets.push(`market_ids = $${idx++}`);       vals.push(marketIds && marketIds.length > 0 ? marketIds : null); }
   if (sets.length === 0) { res.status(400).json({ error: "Keine Felder zum Aktualisieren." }); return; }
   vals.push(id);
   const r = await pool.query(`UPDATE notification_rules SET ${sets.join(", ")} WHERE id = $${idx} RETURNING *`, vals);
