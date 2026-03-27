@@ -129,7 +129,7 @@ router.post("/seed", async (_req, res) => {
   for (const market of allMarkets) {
     await db.insert(marketInfoTable).values({
       marketId: market.id,
-      marketNumber: market.code === "LEE" ? "38107" : market.code === "BUC" ? "38108" : "38109",
+      marketNumber: market.code === "LEE" ? "38107" : market.code === "BUC" ? "38189" : "34805",
       street: market.code === "LEE" ? "Dammstraße 28" : market.code === "BUC" ? "Hauptstraße 5" : "Bahnhofstraße 12",
       plzOrt: market.code === "LEE" ? "86825 Leeder" : market.code === "BUC" ? "86983 Buching" : "86989 MOD",
       year: currentYear,
