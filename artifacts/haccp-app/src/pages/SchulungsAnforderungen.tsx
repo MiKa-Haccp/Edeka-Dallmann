@@ -3,8 +3,9 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   GraduationCap, Plus, Pencil, Trash2, Save, X, AlertTriangle,
-  CheckCircle2, Clock, ChevronLeft, Loader2, ToggleLeft, ToggleRight,
-  Users, ShieldAlert, AlarmClock, UserCheck, ChevronDown, GitBranch,
+  CheckCircle2, ChevronLeft, Loader2, ToggleRight, ToggleLeft,
+  Users, ShieldAlert, AlarmClock, UserCheck, ChevronDown,
+  GitBranch, Award, BookOpen, Search,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -15,225 +16,268 @@ const GRUPPEN_OPTS = [
   { value: "markt",          label: "Markt",          color: "text-sky-700",    bg: "bg-sky-100 border-sky-200" },
   { value: "metzgerei",      label: "Metzgerei",      color: "text-orange-700", bg: "bg-orange-100 border-orange-200" },
 ];
-
 const INTERVALL_OPTS = [
-  { label: "Monatlich", value: 1 },
-  { label: "Vierteljährlich", value: 3 },
-  { label: "Halbjährlich", value: 6 },
-  { label: "Jährlich", value: 12 },
-  { label: "Alle 2 Jahre", value: 24 },
-  { label: "Alle 3 Jahre", value: 36 },
+  { label: "Monatl.", value: 1 }, { label: "Vierteljährl.", value: 3 },
+  { label: "Halbjährl.", value: 6 }, { label: "Jährlich", value: 12 },
+  { label: "Alle 2 J.", value: 24 }, { label: "Alle 3 J.", value: 36 },
 ];
-
 const INTERVALL_LABEL: Record<number, string> = {
   1: "Monatlich", 3: "Vierteljährlich", 6: "Halbjährlich",
   12: "Jährlich", 24: "Alle 2 Jahre", 36: "Alle 3 Jahre",
 };
 
+interface Mitarbeiter { id: number; name: string; gruppe: string; }
+
 interface Pflicht {
-  id: number;
-  tenant_id: number;
-  schulung_kategorie: string;
-  bezeichnung: string;
-  gueltige_gruppen: string[];
-  intervall_monate: number;
-  is_active: boolean;
+  id: number; schulung_kategorie: string; bezeichnung: string;
+  gueltige_gruppen: string[]; intervall_monate: number; is_active: boolean;
+  typ: "schulung" | "bescheinigung"; zuordnung_modus: "gruppe" | "personen" | "auto";
+  subbereich: string | null; parent_pflicht_id: number | null;
   person_spezifisch: boolean;
-  subbereich: string | null;
-  parent_pflicht_id: number | null;
+  personen: { userId: number; name: string; gruppe: string }[];
 }
 
-interface ComplianceEntry {
-  employeeId: number;
-  name: string;
-  gruppe: string | null;
-  status: string;
-  hasProblems: boolean;
-  problemCount: number;
-  warningCount: number;
+interface BeschComplianceEntry {
+  pflichtId: number; bezeichnung: string; kategorie: string;
+  intervallMonate: number; zuordnungModus: string;
+  personen: { userId: number; name: string }[];
+  entries: { name: string; gruppe: string | null; gueltigBis: string | null; status: string }[];
+  hasProblems: boolean; problemCount: number; warningCount: number;
+}
+
+interface SchulComplianceEntry {
+  employeeId: number; name: string; gruppe: string | null;
+  hasProblems: boolean; problemCount: number; warningCount: number;
   trainings: {
-    pflichtId: number;
-    bezeichnung: string;
-    kategorie: string;
-    subbereich: string | null;
-    personSpezifisch: boolean;
-    parentPflichtId: number | null;
-    intervallMonate: number;
-    status: "ok" | "bald_fällig" | "überfällig" | "fehlend" | "ausnahme";
-    naechsteSchulung: string | null;
+    pflichtId: number; bezeichnung: string; status: string;
+    naechsteSchulung: string | null; zuordnungModus: string; parentPflichtId: number | null;
     ausnahme: { id: number; begruendung: string } | null;
   }[];
 }
 
-// --- Combobox component ---
-function Combobox({ value, onChange, options, placeholder, id }: {
-  value: string;
-  onChange: (v: string) => void;
-  options: string[];
-  placeholder?: string;
-  id?: string;
+// ── Combobox ─────────────────────────────────────────────────────────────────
+function Combobox({ value, onChange, options, placeholder }: {
+  value: string; onChange: (v: string) => void; options: string[]; placeholder?: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const filtered = options.filter((o) => o.toLowerCase().includes(value.toLowerCase()));
+  const filtered = value ? options.filter((o) => o.toLowerCase().includes(value.toLowerCase())) : options;
 
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
   }, []);
 
   return (
     <div ref={ref} className="relative">
       <div className="flex items-center gap-1">
-        <input
-          id={id}
-          value={value}
-          onChange={(e) => { onChange(e.target.value); setOpen(true); }}
-          onFocus={() => setOpen(true)}
-          placeholder={placeholder}
-          autoComplete="off"
-          className="flex-1 px-3 py-2 rounded-lg border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20"
-        />
+        <input value={value} onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)} placeholder={placeholder} autoComplete="off"
+          className="flex-1 px-3 py-2 rounded-lg border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
         <button type="button" onClick={() => setOpen((p) => !p)}
-          className="p-2 rounded-lg border border-border/60 bg-white hover:bg-muted/40 transition-colors">
+          className="p-2 rounded-lg border border-border/60 bg-white hover:bg-muted/40">
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
         </button>
       </div>
       {open && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-border/60 rounded-xl shadow-lg max-h-48 overflow-y-auto">
-          {options.length === 0 && (
-            <p className="px-3 py-2 text-xs text-muted-foreground">Keine vorhandenen Einträge</p>
-          )}
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-border/60 rounded-xl shadow-lg max-h-52 overflow-y-auto">
           {(filtered.length > 0 ? filtered : options).map((o) => (
-            <button key={o} type="button"
-              onClick={() => { onChange(o); setOpen(false); }}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/40 transition-colors ${value === o ? "font-semibold text-[#1a3a6b]" : "text-foreground"}`}>
+            <button key={o} type="button" onClick={() => { onChange(o); setOpen(false); }}
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-muted/40 ${value === o ? "font-semibold text-[#1a3a6b]" : ""}`}>
               {o}
             </button>
           ))}
           {value && !options.includes(value) && (
-            <button type="button"
-              onClick={() => { onChange(value); setOpen(false); }}
+            <button type="button" onClick={() => { onChange(value); setOpen(false); }}
               className="w-full text-left px-3 py-2 text-xs text-muted-foreground hover:bg-muted/40 border-t border-border/30">
               „{value}" neu anlegen
             </button>
           )}
+          {options.length === 0 && <p className="px-3 py-2 text-xs text-muted-foreground">Noch keine Einträge</p>}
         </div>
       )}
     </div>
   );
 }
 
-// --- GruppePill ---
+// ── Person-Picker ────────────────────────────────────────────────────────────
+function PersonPicker({ mitarbeiter, selected, onChange }: {
+  mitarbeiter: Mitarbeiter[]; selected: number[]; onChange: (ids: number[]) => void;
+}) {
+  const [filter, setFilter] = useState("");
+  const shown = mitarbeiter.filter((m) => m.name.toLowerCase().includes(filter.toLowerCase()));
+  const toggle = (id: number) =>
+    onChange(selected.includes(id) ? selected.filter((x) => x !== id) : [...selected, id]);
+  const allSelected = mitarbeiter.length > 0 && mitarbeiter.every((m) => selected.includes(m.id));
+
+  return (
+    <div className="border border-border/60 rounded-xl overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-border/40 bg-muted/20">
+        <Search className="w-3.5 h-3.5 text-muted-foreground" />
+        <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Mitarbeiter suchen…"
+          className="flex-1 bg-transparent text-sm focus:outline-none" />
+        <button type="button" onClick={() => onChange(allSelected ? [] : mitarbeiter.map((m) => m.id))}
+          className="text-xs font-semibold text-[#1a3a6b] hover:underline shrink-0">
+          {allSelected ? "Alle abwählen" : "Alle wählen"}
+        </button>
+      </div>
+      <div className="max-h-44 overflow-y-auto divide-y divide-border/20">
+        {shown.map((m) => {
+          const g = GRUPPEN_OPTS.find((x) => x.value === m.gruppe);
+          const checked = selected.includes(m.id);
+          return (
+            <label key={m.id} className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/20 transition-colors ${checked ? "bg-[#1a3a6b]/5" : ""}`}>
+              <input type="checkbox" checked={checked} onChange={() => toggle(m.id)} className="rounded" />
+              <span className="flex-1 text-sm font-medium text-foreground">{m.name}</span>
+              {g && <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full border ${g.bg} ${g.color}`}>{g.label}</span>}
+            </label>
+          );
+        })}
+        {shown.length === 0 && <p className="px-3 py-3 text-xs text-muted-foreground">Keine Mitarbeiter gefunden</p>}
+      </div>
+    </div>
+  );
+}
+
+// ── GruppePill ───────────────────────────────────────────────────────────────
 function GruppePill({ value }: { value: string }) {
   const g = GRUPPEN_OPTS.find((x) => x.value === value);
   if (!g) return null;
-  return (
-    <span className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full border ${g.bg} ${g.color}`}>
-      {g.label}
-    </span>
-  );
+  return <span className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full border ${g.bg} ${g.color}`}>{g.label}</span>;
 }
 
-// --- StatusChip ---
+// ── StatusChip ───────────────────────────────────────────────────────────────
 function StatusChip({ status }: { status: string }) {
-  const map: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
-    ok:          { label: "OK",          color: "text-green-700", bg: "bg-green-100 border-green-200",  icon: <CheckCircle2 className="w-3 h-3" /> },
-    bald_fällig: { label: "Bald fällig", color: "text-amber-700", bg: "bg-amber-100 border-amber-200",  icon: <AlarmClock className="w-3 h-3" /> },
-    überfällig:  { label: "Überfällig",  color: "text-red-700",   bg: "bg-red-100 border-red-200",      icon: <AlertTriangle className="w-3 h-3" /> },
-    fehlend:     { label: "Fehlend",     color: "text-slate-700", bg: "bg-slate-100 border-slate-200",  icon: <X className="w-3 h-3" /> },
-    ausnahme:    { label: "Ausnahme",    color: "text-gray-500",  bg: "bg-gray-100 border-gray-200",    icon: <ShieldAlert className="w-3 h-3" /> },
+  const m: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
+    ok:          { label: "OK",         color: "text-green-700", bg: "bg-green-100 border-green-200",  icon: <CheckCircle2 className="w-3 h-3" /> },
+    bald_fällig: { label: "Bald fällig",color: "text-amber-700", bg: "bg-amber-100 border-amber-200",  icon: <AlarmClock className="w-3 h-3" /> },
+    überfällig:  { label: "Überfällig", color: "text-red-700",   bg: "bg-red-100 border-red-200",      icon: <AlertTriangle className="w-3 h-3" /> },
+    fehlend:     { label: "Fehlend",    color: "text-slate-600", bg: "bg-slate-100 border-slate-200",  icon: <X className="w-3 h-3" /> },
+    ausnahme:    { label: "Ausnahme",   color: "text-gray-500",  bg: "bg-gray-100 border-gray-200",    icon: <ShieldAlert className="w-3 h-3" /> },
   };
-  const c = map[status] || map.fehlend;
-  return (
-    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${c.bg} ${c.color}`}>
-      {c.icon} {c.label}
-    </span>
-  );
+  const c = m[status] || m.fehlend;
+  return <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${c.bg} ${c.color}`}>{c.icon}{c.label}</span>;
 }
 
-// --- PflichtForm (full form for main entries) ---
-function PflichtForm({ initial, onSave, onCancel, kategorien, subbereiche }: {
-  initial?: Partial<Pflicht>;
-  onSave: (data: any) => Promise<void>;
-  onCancel: () => void;
-  kategorien: string[];
-  subbereiche: string[];
+// ── Zuordnungs-Badge ─────────────────────────────────────────────────────────
+function ZuordnungBadge({ modus }: { modus: string }) {
+  if (modus === "personen") return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-100 border border-indigo-200 text-indigo-700">
+      <UserCheck className="w-3 h-3" /> Bestimmte Personen
+    </span>
+  );
+  if (modus === "auto") return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-100 border border-teal-200 text-teal-700">
+      <Award className="w-3 h-3" /> Aus Ordner
+    </span>
+  );
+  return null;
+}
+
+// ── Pflicht-Form ─────────────────────────────────────────────────────────────
+function PflichtForm({ initial, typ: fixedTyp, parentId, kategorien, subbereiche, mitarbeiter, onSave, onCancel }: {
+  initial?: Partial<Pflicht>; typ?: "schulung" | "bescheinigung"; parentId?: number;
+  kategorien: string[]; subbereiche: string[]; mitarbeiter: Mitarbeiter[];
+  onSave: (data: any) => Promise<void>; onCancel: () => void;
 }) {
   const { adminSession } = useAppStore();
   const tenantId = adminSession?.tenantId || 1;
 
+  const [typ, setTyp] = useState<"schulung"|"bescheinigung">(fixedTyp || initial?.typ || "schulung");
   const [kategorie, setKategorie] = useState(initial?.schulung_kategorie || "");
   const [bezeichnung, setBezeichnung] = useState(initial?.bezeichnung || "");
+  const [modus, setModus] = useState<"gruppe"|"personen"|"auto">(initial?.zuordnung_modus || "gruppe");
   const [gruppen, setGruppen] = useState<string[]>(initial?.gueltige_gruppen || []);
-  const [intervall, setIntervall] = useState(initial?.intervall_monate || 12);
-  const [personSpezifisch, setPersonSpezifisch] = useState(initial?.person_spezifisch || false);
+  const [selectedPersonen, setSelectedPersonen] = useState<number[]>((initial?.personen || []).map((p) => p.userId));
   const [subbereich, setSubbereich] = useState(initial?.subbereich || "");
+  const [intervall, setIntervall] = useState(initial?.intervall_monate || 12);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const toggleGruppe = (g: string) => setGruppen((p) => p.includes(g) ? p.filter((x) => x !== g) : [...p, g]);
 
   const handleSave = async () => {
-    if (!kategorie.trim() || !bezeichnung.trim()) { setError("Bitte Kategorie und Anzeigename ausfüllen."); return; }
-    if (!personSpezifisch && gruppen.length === 0) { setError("Bitte mindestens eine Gruppe wählen oder auf Personenspezifisch umschalten."); return; }
+    if (!kategorie.trim() || !bezeichnung.trim()) { setError("Kategorie und Name ausfüllen."); return; }
+    if (modus === "gruppe" && gruppen.length === 0) { setError("Mindestens eine Gruppe wählen."); return; }
+    if (modus === "personen" && selectedPersonen.length === 0) { setError("Mindestens eine Person auswählen."); return; }
     setSaving(true); setError("");
-    await onSave({ tenantId, schulungKategorie: kategorie.trim(), bezeichnung: bezeichnung.trim(), gueltigeGruppen: personSpezifisch ? [] : gruppen, intervallMonate: intervall, isActive: initial?.is_active ?? true, personSpezifisch, subbereich: subbereich.trim() || null });
+    await onSave({
+      tenantId, schulungKategorie: kategorie.trim(), bezeichnung: bezeichnung.trim(),
+      gueltigeGruppen: modus === "gruppe" ? gruppen : [],
+      intervallMonate: intervall, subbereich: subbereich.trim() || null,
+      typ, zuordnungModus: modus,
+      personSpezifisch: modus === "auto",
+      parentPflichtId: parentId || null,
+      isActive: initial?.is_active ?? true,
+      selectedPersonen,
+    });
     setSaving(false);
   };
 
   return (
     <div className="bg-muted/20 border border-border/60 rounded-2xl p-4 space-y-4">
-      <p className="text-sm font-bold text-foreground">{initial?.id ? "Schulung bearbeiten" : "Neue Schulungspflicht"}</p>
+      <p className="text-sm font-bold">{initial?.id ? "Bearbeiten" : (parentId ? "Unterpunkt hinzufügen" : "Neu anlegen")}</p>
+
+      {/* Typ */}
+      {!fixedTyp && !parentId && (
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setTyp("schulung")}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all ${typ === "schulung" ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "bg-white text-muted-foreground border-border/60"}`}>
+            <BookOpen className="w-3.5 h-3.5" /> Schulung
+          </button>
+          <button type="button" onClick={() => setTyp("bescheinigung")}
+            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border-2 transition-all ${typ === "bescheinigung" ? "bg-amber-600 text-white border-amber-600" : "bg-white text-muted-foreground border-border/60"}`}>
+            <Award className="w-3.5 h-3.5" /> Bescheinigung
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Kategorie</label>
-          <Combobox value={kategorie} onChange={setKategorie} options={kategorien} placeholder="z.B. Ersthelfer" />
-          <p className="text-xs text-muted-foreground">Muss mit der Kategorie im Schulungsordner übereinstimmen.</p>
+          <Combobox value={kategorie} onChange={setKategorie} options={kategorien} placeholder="z.B. Hygieneschulung" />
+          <p className="text-xs text-muted-foreground">Muss mit Kategorie im Schulungsordner übereinstimmen.</p>
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Anzeigename</label>
-          <input value={bezeichnung} onChange={(e) => setBezeichnung(e.target.value)} placeholder="z.B. Ersthelfer-Ausbildung"
+          <input value={bezeichnung} onChange={(e) => setBezeichnung(e.target.value)} placeholder="z.B. Jährliche Hygieneschulung"
             className="px-3 py-2 rounded-lg border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
         </div>
       </div>
 
-      {/* Zuordnungsart */}
+      {/* Zuordnungsmodus */}
       <div className="flex flex-col gap-2">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Zuordnungsart</label>
-        <div className="flex gap-2">
-          <button type="button" onClick={() => setPersonSpezifisch(false)}
-            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${!personSpezifisch ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "bg-white text-muted-foreground border-border/60 hover:border-[#1a3a6b]/30"}`}>
-            <Users className="w-3.5 h-3.5" /> Gruppenbasiert
-          </button>
-          <button type="button" onClick={() => setPersonSpezifisch(true)}
-            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${personSpezifisch ? "bg-teal-600 text-white border-teal-600" : "bg-white text-muted-foreground border-border/60 hover:border-teal-400"}`}>
-            <UserCheck className="w-3.5 h-3.5" /> Personenspezifisch
-          </button>
+        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Zuordnung</label>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { key: "gruppe",   icon: <Users className="w-3.5 h-3.5" />,     label: "Gruppe",    cls: "bg-[#1a3a6b] text-white border-[#1a3a6b]" },
+            { key: "personen", icon: <UserCheck className="w-3.5 h-3.5" />, label: "Personen",  cls: "bg-indigo-600 text-white border-indigo-600" },
+            { key: "auto",     icon: <Award className="w-3.5 h-3.5" />,     label: "Aus Ordner",cls: "bg-teal-600 text-white border-teal-600" },
+          ].map(({ key, icon, label, cls }) => (
+            <button key={key} type="button" onClick={() => setModus(key as any)}
+              className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl text-xs font-bold border-2 transition-all ${modus === key ? cls : "bg-white text-muted-foreground border-border/60 hover:border-gray-300"}`}>
+              {icon} {label}
+            </button>
+          ))}
         </div>
-        {personSpezifisch ? (
-          <p className="text-xs text-teal-700 bg-teal-50 border border-teal-200 rounded-lg px-3 py-2">
-            Gilt automatisch für alle Mitarbeiter, die bereits einen Nachweis dieser Kategorie im Schulungsordner haben.
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground">Schulung gilt verpflichtend für alle Mitarbeiter der gewählten Gruppen.</p>
-        )}
+        <p className="text-xs text-muted-foreground">
+          {modus === "gruppe" && "Verpflichtend für alle Mitarbeiter der gewählten Gruppen."}
+          {modus === "personen" && "Nur die explizit ausgewählten Personen müssen diese Schulung absolvieren."}
+          {modus === "auto" && "Automatisch relevant für jeden, der bereits einen Nachweis in dieser Kategorie hat (z.B. Ersthelfer, Brandschutz)."}
+        </p>
       </div>
 
-      {/* Gruppen (nur gruppenbasiert) */}
-      {!personSpezifisch && (
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Gilt für Gruppen</label>
+      {/* Gruppen (nur bei 'gruppe') */}
+      {modus === "gruppe" && (
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Gilt für</label>
           <div className="flex flex-wrap gap-2">
             {GRUPPEN_OPTS.map((g) => {
               const active = gruppen.includes(g.value);
               return (
                 <button key={g.value} type="button" onClick={() => toggleGruppe(g.value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${active ? `${g.bg} ${g.color}` : "bg-white border-border/60 text-muted-foreground hover:border-[#1a3a6b]/30"}`}>
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${active ? `${g.bg} ${g.color} border-current` : "bg-white border-border/60 text-muted-foreground"}`}>
                   {g.label}
                 </button>
               );
@@ -242,13 +286,23 @@ function PflichtForm({ initial, onSave, onCancel, kategorien, subbereiche }: {
         </div>
       )}
 
+      {/* Person Picker (nur bei 'personen') */}
+      {modus === "personen" && (
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Zugeordnete Personen <span className="font-normal normal-case text-muted-foreground">({selectedPersonen.length} gewählt)</span>
+          </label>
+          <PersonPicker mitarbeiter={mitarbeiter} selected={selectedPersonen} onChange={setSelectedPersonen} />
+        </div>
+      )}
+
       {/* Subbereich */}
       <div className="flex flex-col gap-1">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Subbereich <span className="font-normal normal-case text-muted-foreground">(optional)</span>
         </label>
-        <Combobox value={subbereich} onChange={setSubbereich} options={subbereiche} placeholder="z.B. Feuerwerk" />
-        <p className="text-xs text-muted-foreground">Wenn gesetzt, wird die Bezeichnung im Schulungsnachweis abgeglichen.</p>
+        <Combobox value={subbereich} onChange={setSubbereich} options={subbereiche} placeholder="z.B. Feuerwerk, Fleischhygiene" />
+        <p className="text-xs text-muted-foreground">Wird gegen Bezeichnung im Schulungsnachweis abgeglichen.</p>
       </div>
 
       {/* Intervall */}
@@ -257,7 +311,7 @@ function PflichtForm({ initial, onSave, onCancel, kategorien, subbereiche }: {
         <div className="flex flex-wrap gap-2">
           {INTERVALL_OPTS.map((o) => (
             <button key={o.value} type="button" onClick={() => setIntervall(o.value)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${intervall === o.value ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "bg-white border-border/60 text-muted-foreground hover:border-[#1a3a6b]/30"}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${intervall === o.value ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "bg-white border-border/60 text-muted-foreground"}`}>
               {o.label}
             </button>
           ))}
@@ -279,416 +333,352 @@ function PflichtForm({ initial, onSave, onCancel, kategorien, subbereiche }: {
   );
 }
 
-// --- UnterpunktForm (simplified for sub-entries) ---
-function UnterpunktForm({ parent, onSave, onCancel, subbereiche }: {
-  parent: Pflicht;
-  onSave: (data: any) => Promise<void>;
-  onCancel: () => void;
-  subbereiche: string[];
+// ── Pflicht-Karte ────────────────────────────────────────────────────────────
+function PflichtCard({ p, children, kategorien, subbereiche, mitarbeiter, onUpdate, onDelete, onToggle, onAddChild }: {
+  p: Pflicht; children?: Pflicht[];
+  kategorien: string[]; subbereiche: string[]; mitarbeiter: Mitarbeiter[];
+  onUpdate: (id: number, data: any) => Promise<void>;
+  onDelete: (id: number) => Promise<void>;
+  onToggle: (p: Pflicht) => Promise<void>;
+  onAddChild: (parentId: number, data: any) => Promise<void>;
 }) {
-  const { adminSession } = useAppStore();
-  const tenantId = adminSession?.tenantId || 1;
-
-  const [bezeichnung, setBezeichnung] = useState("");
-  const [subbereich, setSubbereich] = useState("");
-  const [intervall, setIntervall] = useState(parent.intervall_monate);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  const handleSave = async () => {
-    if (!bezeichnung.trim()) { setError("Bitte einen Anzeigenamen eingeben."); return; }
-    setSaving(true); setError("");
-    await onSave({
-      tenantId,
-      schulungKategorie: parent.schulung_kategorie,
-      bezeichnung: bezeichnung.trim(),
-      gueltigeGruppen: parent.person_spezifisch ? [] : parent.gueltige_gruppen,
-      intervallMonate: intervall,
-      isActive: true,
-      personSpezifisch: parent.person_spezifisch,
-      subbereich: subbereich.trim() || null,
-      parentPflichtId: parent.id,
-    });
-    setSaving(false);
-  };
+  const [editing, setEditing] = useState(false);
+  const [addingSub, setAddingSub] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(false);
+  const isDesc = p.typ === "bescheinigung";
+  const borderColor = isDesc ? "border-amber-300" : (p.zuordnung_modus === "personen" ? "border-indigo-200" : p.zuordnung_modus === "auto" ? "border-teal-200" : "border-border/40");
 
   return (
-    <div className="ml-6 mt-2 bg-blue-50/50 border border-blue-200 rounded-xl p-3 space-y-3">
-      <p className="text-xs font-bold text-blue-700 flex items-center gap-1.5">
-        <GitBranch className="w-3.5 h-3.5" /> Unterpunkt zu „{parent.bezeichnung}"
-      </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Anzeigename</label>
-          <input value={bezeichnung} onChange={(e) => setBezeichnung(e.target.value)}
-            placeholder="z.B. HACCP — Fleischbereich"
-            className="px-3 py-2 rounded-lg border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-200" />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Subbereich <span className="font-normal normal-case text-muted-foreground">(opt.)</span>
-          </label>
-          <Combobox value={subbereich} onChange={setSubbereich} options={subbereiche} placeholder="z.B. Feuerwerk" />
-        </div>
+    <div className="space-y-1">
+      <div className={`bg-white rounded-2xl border-2 overflow-hidden ${p.is_active ? borderColor : "border-slate-200 opacity-60"}`}>
+        {editing ? (
+          <div className="p-4">
+            <PflichtForm initial={p} kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter}
+              onSave={async (data) => { await onUpdate(p.id, data); setEditing(false); }}
+              onCancel={() => setEditing(false)} />
+          </div>
+        ) : (
+          <div className="px-5 py-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center flex-wrap gap-1.5 mb-1">
+                  <p className="text-sm font-bold text-foreground">{p.bezeichnung}</p>
+                  {isDesc && <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-amber-700"><Award className="w-3 h-3" /> Bescheinigung</span>}
+                  <ZuordnungBadge modus={p.zuordnung_modus} />
+                  {(children?.length ?? 0) > 0 && (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 border border-blue-200 text-blue-700">
+                      <GitBranch className="w-3 h-3" /> {children!.length} Unterpunkt{children!.length !== 1 ? "e" : ""}
+                    </span>
+                  )}
+                  {!p.is_active && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">Inaktiv</span>}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Kat: <span className="font-semibold text-foreground">{p.schulung_kategorie}</span>
+                  {p.subbereich && <> · <span className="font-semibold text-blue-700">{p.subbereich}</span></>}
+                  {" · "}{INTERVALL_LABEL[p.intervall_monate] || `${p.intervall_monate}M`}
+                </p>
+                {p.zuordnung_modus === "gruppe" && p.gueltige_gruppen.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {p.gueltige_gruppen.map((g) => <GruppePill key={g} value={g} />)}
+                  </div>
+                )}
+                {p.zuordnung_modus === "personen" && p.personen.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {p.personen.map((per) => (
+                      <span key={per.userId} className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700">
+                        {per.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {!p.parent_pflicht_id && (
+                  <button onClick={() => { setAddingSub((x) => !x); setEditing(false); }} title="Unterpunkt"
+                    className={`p-1.5 rounded-lg border transition-all ${addingSub ? "bg-blue-100 border-blue-300 text-blue-700" : "bg-white border-border/60 text-muted-foreground hover:border-blue-300 hover:text-blue-600"}`}>
+                    <GitBranch className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button onClick={() => onToggle(p)} className="text-muted-foreground hover:text-green-600 transition-colors">
+                  {p.is_active ? <ToggleRight className="w-5 h-5 text-green-600" /> : <ToggleLeft className="w-5 h-5" />}
+                </button>
+                <button onClick={() => { setEditing(true); setAddingSub(false); }}
+                  className="p-1.5 rounded-lg hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-colors">
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                {confirmDel ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-red-600 font-medium">Löschen?</span>
+                    <button onClick={() => onDelete(p.id)} className="px-2 py-1 bg-red-600 text-white rounded text-xs font-bold">Ja</button>
+                    <button onClick={() => setConfirmDel(false)} className="px-2 py-1 border rounded text-xs text-muted-foreground">Nein</button>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmDel(true)} className="p-1.5 rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Intervall</label>
-        <div className="flex flex-wrap gap-1.5">
-          {INTERVALL_OPTS.map((o) => (
-            <button key={o.value} type="button" onClick={() => setIntervall(o.value)}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-all ${intervall === o.value ? "bg-blue-600 text-white border-blue-600" : "bg-white border-border/60 text-muted-foreground"}`}>
-              {o.label}
-            </button>
-          ))}
+
+      {/* Unterpunkt-Formular */}
+      {addingSub && (
+        <div className="ml-6">
+          <PflichtForm parentId={p.id} typ={p.typ} kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter}
+            onSave={async (data) => { await onAddChild(p.id, data); setAddingSub(false); }}
+            onCancel={() => setAddingSub(false)} />
         </div>
-      </div>
-      {error && <p className="text-xs text-red-600 font-medium">{error}</p>}
-      <div className="flex gap-2">
-        <button onClick={handleSave} disabled={saving}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-700 disabled:opacity-40">
-          {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />} Hinzufügen
-        </button>
-        <button onClick={onCancel} className="px-3 py-1.5 bg-white border border-border/60 rounded-lg text-xs font-semibold text-muted-foreground">
-          Abbrechen
-        </button>
-      </div>
+      )}
+
+      {/* Child cards */}
+      {(children || []).map((child) => (
+        <div key={child.id} className="flex gap-0 ml-6">
+          <div className="flex flex-col items-center w-4 shrink-0 pt-3">
+            <div className="w-px flex-1 bg-blue-200 ml-2" />
+            <div className="w-3 h-px bg-blue-200" />
+          </div>
+          <div className="flex-1">
+            <PflichtCard p={child} kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter}
+              onUpdate={onUpdate} onDelete={onDelete} onToggle={onToggle} onAddChild={onAddChild} />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
-// --- Main Page ---
+// ── Hauptseite ───────────────────────────────────────────────────────────────
 export default function SchulungsAnforderungen() {
   const { adminSession } = useAppStore();
   const tenantId = adminSession?.tenantId || 1;
 
-  const [tab, setTab] = useState<"pflichten" | "compliance">("pflichten");
+  const [tab, setTab] = useState<"anforderungen" | "uebersicht">("anforderungen");
+  const [uebersichtTyp, setUebersichtTyp] = useState<"schulungen" | "bescheinigungen">("schulungen");
   const [pflichten, setPflichten] = useState<Pflicht[]>([]);
   const [kategorien, setKategorien] = useState<string[]>([]);
   const [subbereiche, setSubbereiche] = useState<string[]>([]);
-  const [compliance, setCompliance] = useState<ComplianceEntry[]>([]);
+  const [mitarbeiter, setMitarbeiter] = useState<Mitarbeiter[]>([]);
+  const [schulCompliance, setSchulCompliance] = useState<SchulComplianceEntry[]>([]);
+  const [beschCompliance, setBeschCompliance] = useState<BeschComplianceEntry[]>([]);
   const [loadingP, setLoadingP] = useState(true);
   const [loadingC, setLoadingC] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [addSubTo, setAddSubTo] = useState<number | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [showFormTyp, setShowFormTyp] = useState<"schulung" | "bescheinigung" | null>(null);
 
-  const loadKategorien = useCallback(async () => {
-    const res = await fetch(`${BASE}/schulungs-kategorien?tenantId=${tenantId}`);
-    const data = await res.json();
-    setKategorien(data.kategorien || []);
-    setSubbereiche(data.subbereiche || []);
-  }, [tenantId]);
-
-  const loadPflichten = useCallback(async () => {
+  const reload = useCallback(async () => {
     setLoadingP(true);
-    try {
-      const res = await fetch(`${BASE}/schulungs-pflichten?tenantId=${tenantId}`);
-      const data = await res.json();
-      setPflichten(data);
-    } finally {
-      setLoadingP(false);
-    }
+    const [pRes, kRes, mRes] = await Promise.all([
+      fetch(`${BASE}/schulungs-pflichten?tenantId=${tenantId}`).then((r) => r.json()),
+      fetch(`${BASE}/schulungs-kategorien?tenantId=${tenantId}`).then((r) => r.json()),
+      fetch(`${BASE}/mitarbeiter-fuer-picker?tenantId=${tenantId}`).then((r) => r.json()),
+    ]);
+    setPflichten(pRes);
+    setKategorien(kRes.kategorien || []);
+    setSubbereiche(kRes.subbereiche || []);
+    setMitarbeiter(mRes);
+    setLoadingP(false);
   }, [tenantId]);
 
   const loadCompliance = useCallback(async () => {
     setLoadingC(true);
-    try {
-      const res = await fetch(`${BASE}/schulungs-compliance?tenantId=${tenantId}`);
-      const data = await res.json();
-      setCompliance(data);
-    } finally {
-      setLoadingC(false);
-    }
+    const [sc, bc] = await Promise.all([
+      fetch(`${BASE}/schulungs-compliance?tenantId=${tenantId}`).then((r) => r.json()),
+      fetch(`${BASE}/bescheinigungen-compliance?tenantId=${tenantId}`).then((r) => r.json()),
+    ]);
+    setSchulCompliance(sc);
+    setBeschCompliance(bc);
+    setLoadingC(false);
   }, [tenantId]);
 
-  useEffect(() => { loadPflichten(); loadKategorien(); }, [loadPflichten, loadKategorien]);
-  useEffect(() => { if (tab === "compliance") loadCompliance(); }, [tab, loadCompliance]);
+  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => { if (tab === "uebersicht") loadCompliance(); }, [tab, loadCompliance]);
+
+  const savePersonen = async (pflichtId: number, data: any) => {
+    if (data.zuordnungModus === "personen") {
+      await fetch(`${BASE}/schulungs-person-zuordnungen/${pflichtId}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId, userIds: data.selectedPersonen || [] }),
+      });
+    }
+  };
 
   const handleCreate = async (data: any) => {
-    const res = await fetch(`${BASE}/schulungs-pflichten`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-    if (res.ok) { setShowForm(false); setAddSubTo(null); await loadPflichten(); await loadKategorien(); }
+    const res = await fetch(`${BASE}/schulungs-pflichten`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      await savePersonen(created.id, data);
+      setShowFormTyp(null);
+      await reload();
+    }
   };
 
   const handleUpdate = async (id: number, data: any) => {
-    const res = await fetch(`${BASE}/schulungs-pflichten/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
-    if (res.ok) { setEditingId(null); await loadPflichten(); await loadKategorien(); }
-  };
-
-  const handleToggleActive = async (p: Pflicht) => {
-    await fetch(`${BASE}/schulungs-pflichten/${p.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ schulungKategorie: p.schulung_kategorie, bezeichnung: p.bezeichnung, gueltigeGruppen: p.gueltige_gruppen, intervallMonate: p.intervall_monate, isActive: !p.is_active, personSpezifisch: p.person_spezifisch, subbereich: p.subbereich }) });
-    await loadPflichten();
+    await fetch(`${BASE}/schulungs-pflichten/${id}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data),
+    });
+    await savePersonen(id, data);
+    await reload();
   };
 
   const handleDelete = async (id: number) => {
     await fetch(`${BASE}/schulungs-pflichten/${id}`, { method: "DELETE" });
-    setConfirmDelete(null);
-    await loadPflichten();
+    await reload();
   };
 
-  // Build tree: parent → children
-  const parents = pflichten.filter((p) => !p.parent_pflicht_id);
-  const childrenOf = (parentId: number) => pflichten.filter((p) => p.parent_pflicht_id === parentId);
+  const handleToggle = async (p: Pflicht) => {
+    await fetch(`${BASE}/schulungs-pflichten/${p.id}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ schulungKategorie: p.schulung_kategorie, bezeichnung: p.bezeichnung, gueltigeGruppen: p.gueltige_gruppen, intervallMonate: p.intervall_monate, isActive: !p.is_active, subbereich: p.subbereich, typ: p.typ, zuordnungModus: p.zuordnung_modus }),
+    });
+    await reload();
+  };
 
-  const withProblems = compliance.filter((e) => e.hasProblems);
-  const warnOnly = compliance.filter((e) => !e.hasProblems && e.warningCount > 0);
-  const okOnly = compliance.filter((e) => !e.hasProblems && e.warningCount === 0 && e.trainings.length > 0);
+  const handleAddChild = async (parentId: number, data: any) => { await handleCreate({ ...data, parentPflichtId: parentId }); };
+
+  const schulungen = pflichten.filter((p) => p.typ === "schulung" && !p.parent_pflicht_id);
+  const bescheinigungen = pflichten.filter((p) => p.typ === "bescheinigung" && !p.parent_pflicht_id);
+  const childrenOf = (id: number) => pflichten.filter((p) => p.parent_pflicht_id === id);
 
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
 
         <div className="flex items-center gap-3">
-          <Link href="/verwaltung" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
+          <Link href="/verwaltung" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <div className="flex-1">
             <h1 className="text-xl font-bold text-foreground">Schulungsanforderungen</h1>
-            <p className="text-sm text-muted-foreground">Pflichtschulungen definieren und Compliance-Status überwachen.</p>
+            <p className="text-sm text-muted-foreground">Schulungen, Bescheinigungen und Compliance-Status verwalten.</p>
           </div>
         </div>
 
         {/* Tabs */}
         <div className="flex gap-1 p-1 bg-muted/40 rounded-2xl border border-border/30">
-          <button onClick={() => setTab("pflichten")}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${tab === "pflichten" ? "bg-white shadow-sm border border-border/40 text-[#1a3a6b]" : "text-muted-foreground hover:text-foreground"}`}>
-            <GraduationCap className="w-4 h-4" /> Anforderungen
-          </button>
-          <button onClick={() => setTab("compliance")}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${tab === "compliance" ? "bg-white shadow-sm border border-border/40 text-[#1a3a6b]" : "text-muted-foreground hover:text-foreground"}`}>
-            <Users className="w-4 h-4" /> Mitarbeiter-Übersicht
-          </button>
+          {[
+            { key: "anforderungen", label: "Anforderungen", icon: <GraduationCap className="w-4 h-4" /> },
+            { key: "uebersicht", label: "Mitarbeiter-Übersicht", icon: <Users className="w-4 h-4" /> },
+          ].map(({ key, label, icon }) => (
+            <button key={key} onClick={() => setTab(key as any)}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${tab === key ? "bg-white shadow-sm border border-border/40 text-[#1a3a6b]" : "text-muted-foreground"}`}>
+              {icon} {label}
+            </button>
+          ))}
         </div>
 
-        {/* ===== TAB: PFLICHTEN ===== */}
-        {tab === "pflichten" && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{pflichten.length} Schulungspflichten konfiguriert</p>
-              {!showForm && (
-                <button onClick={() => { setShowForm(true); setAddSubTo(null); setEditingId(null); }}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors">
-                  <Plus className="w-4 h-4" /> Neue Anforderung
-                </button>
-              )}
-            </div>
-
-            <div className="bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 text-xs text-teal-800 leading-relaxed">
-              <strong>Personenspezifische Schulungen</strong> (Ersthelfer, Brandschutz, Strohschwein) erscheinen automatisch bei Mitarbeitern mit entsprechendem Eintrag im Schulungsordner.
-            </div>
-
-            {showForm && (
-              <PflichtForm kategorien={kategorien} subbereiche={subbereiche} onSave={handleCreate} onCancel={() => setShowForm(false)} />
-            )}
-
+        {/* ===== TAB: ANFORDERUNGEN ===== */}
+        {tab === "anforderungen" && (
+          <div className="space-y-6">
             {loadingP ? (
-              <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+              <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
             ) : (
-              <div className="space-y-3">
-                {parents.map((p) => {
-                  const children = childrenOf(p.id);
-                  const isPersonSpez = p.person_spezifisch;
-                  const borderColor = isPersonSpez ? "border-teal-200" : "border-border/40";
-
-                  return (
-                    <div key={p.id} className="space-y-0.5">
-                      {/* Parent card */}
-                      <div className={`bg-white rounded-2xl border-2 overflow-hidden transition-all ${p.is_active ? borderColor : "border-slate-200 opacity-60"}`}>
-                        {editingId === p.id ? (
-                          <div className="p-4">
-                            <PflichtForm initial={p} kategorien={kategorien} subbereiche={subbereiche}
-                              onSave={(data) => handleUpdate(p.id, data)} onCancel={() => setEditingId(null)} />
-                          </div>
-                        ) : (
-                          <div className="px-5 py-4">
-                            <div className="flex items-start gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <p className="text-sm font-bold text-foreground">{p.bezeichnung}</p>
-                                  {isPersonSpez && (
-                                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-100 border border-teal-200 text-teal-700">
-                                      <UserCheck className="w-3 h-3" /> Personenspezifisch
-                                    </span>
-                                  )}
-                                  {children.length > 0 && (
-                                    <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 border border-blue-200 text-blue-700">
-                                      <GitBranch className="w-3 h-3" /> {children.length} Unterpunkt{children.length !== 1 ? "e" : ""}
-                                    </span>
-                                  )}
-                                  {!p.is_active && (
-                                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">Inaktiv</span>
-                                  )}
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  Kategorie: <span className="font-semibold text-foreground">{p.schulung_kategorie}</span>
-                                  {p.subbereich && <> · Subbereich: <span className="font-semibold text-foreground">{p.subbereich}</span></>}
-                                  {" · "}<Clock className="w-3 h-3 inline" /> {INTERVALL_LABEL[p.intervall_monate] || `Alle ${p.intervall_monate} Monate`}
-                                </p>
-                                {!isPersonSpez && (
-                                  <div className="flex flex-wrap gap-1 mt-2">
-                                    {(p.gueltige_gruppen || []).map((g) => <GruppePill key={g} value={g} />)}
-                                  </div>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-1.5 shrink-0">
-                                {/* Unterpunkt hinzufügen */}
-                                <button onClick={() => setAddSubTo(addSubTo === p.id ? null : p.id)}
-                                  title="Unterpunkt hinzufügen"
-                                  className={`p-1.5 rounded-lg text-xs font-bold border transition-all flex items-center gap-1 ${addSubTo === p.id ? "bg-blue-100 border-blue-300 text-blue-700" : "bg-white border-border/60 text-muted-foreground hover:border-blue-300 hover:text-blue-600"}`}>
-                                  <GitBranch className="w-3.5 h-3.5" /><Plus className="w-2.5 h-2.5" />
-                                </button>
-                                <button onClick={() => handleToggleActive(p)} title={p.is_active ? "Deaktivieren" : "Aktivieren"}
-                                  className="text-muted-foreground hover:text-[#1a3a6b] transition-colors">
-                                  {p.is_active ? <ToggleRight className="w-5 h-5 text-green-600" /> : <ToggleLeft className="w-5 h-5" />}
-                                </button>
-                                <button onClick={() => { setEditingId(p.id); setAddSubTo(null); }}
-                                  className="p-1.5 rounded-lg hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-colors">
-                                  <Pencil className="w-3.5 h-3.5" />
-                                </button>
-                                {confirmDelete === p.id ? (
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-xs text-red-600 font-medium">Löschen?</span>
-                                    <button onClick={() => handleDelete(p.id)} className="px-2 py-1 bg-red-600 text-white rounded text-xs font-bold">Ja</button>
-                                    <button onClick={() => setConfirmDelete(null)} className="px-2 py-1 border border-border/60 rounded text-xs font-semibold text-muted-foreground">Nein</button>
-                                  </div>
-                                ) : (
-                                  <button onClick={() => setConfirmDelete(p.id)}
-                                    className="p-1.5 rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors">
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Unterpunkt-Formular */}
-                      {addSubTo === p.id && (
-                        <UnterpunktForm parent={p} subbereiche={subbereiche}
-                          onSave={async (data) => { await handleCreate(data); setAddSubTo(null); }}
-                          onCancel={() => setAddSubTo(null)} />
-                      )}
-
-                      {/* Child entries */}
-                      {children.map((child) => (
-                        <div key={child.id} className="ml-6 space-y-0.5">
-                          <div className="flex items-stretch gap-0">
-                            {/* Connector line */}
-                            <div className="w-4 shrink-0 flex flex-col items-center">
-                              <div className="w-px flex-1 bg-blue-200 ml-2" />
-                              <div className="w-3 h-px bg-blue-200" />
-                            </div>
-                            <div className={`flex-1 bg-blue-50/60 rounded-xl border-2 overflow-hidden ${child.is_active ? "border-blue-200" : "border-slate-200 opacity-60"}`}>
-                              {editingId === child.id ? (
-                                <div className="p-3">
-                                  <PflichtForm initial={child} kategorien={kategorien} subbereiche={subbereiche}
-                                    onSave={(data) => handleUpdate(child.id, data)} onCancel={() => setEditingId(null)} />
-                                </div>
-                              ) : (
-                                <div className="px-4 py-3">
-                                  <div className="flex items-center gap-2">
-                                    <GitBranch className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-1.5 flex-wrap">
-                                        <p className="text-xs font-bold text-foreground">{child.bezeichnung}</p>
-                                        {child.person_spezifisch && (
-                                          <span className="inline-flex items-center gap-1 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-teal-100 border border-teal-200 text-teal-700">
-                                            <UserCheck className="w-2.5 h-2.5" /> Personenspez.
-                                          </span>
-                                        )}
-                                        {!child.is_active && (
-                                          <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">Inaktiv</span>
-                                        )}
-                                      </div>
-                                      <p className="text-xs text-muted-foreground mt-0.5">
-                                        {child.subbereich && <><span className="font-semibold text-blue-700">{child.subbereich}</span> · </>}
-                                        <Clock className="w-2.5 h-2.5 inline" /> {INTERVALL_LABEL[child.intervall_monate] || `Alle ${child.intervall_monate} Monate`}
-                                      </p>
-                                    </div>
-                                    <div className="flex items-center gap-1 shrink-0">
-                                      <button onClick={() => handleToggleActive(child)} className="text-muted-foreground">
-                                        {child.is_active ? <ToggleRight className="w-4 h-4 text-green-600" /> : <ToggleLeft className="w-4 h-4" />}
-                                      </button>
-                                      <button onClick={() => { setEditingId(child.id); setAddSubTo(null); }}
-                                        className="p-1 rounded hover:bg-muted/40 text-muted-foreground hover:text-foreground">
-                                        <Pencil className="w-3 h-3" />
-                                      </button>
-                                      {confirmDelete === child.id ? (
-                                        <div className="flex items-center gap-1">
-                                          <button onClick={() => handleDelete(child.id)} className="px-1.5 py-0.5 bg-red-600 text-white rounded text-xs font-bold">Ja</button>
-                                          <button onClick={() => setConfirmDelete(null)} className="px-1.5 py-0.5 border border-border/60 rounded text-xs font-semibold text-muted-foreground">Nein</button>
-                                        </div>
-                                      ) : (
-                                        <button onClick={() => setConfirmDelete(child.id)}
-                                          className="p-1 rounded hover:bg-red-50 text-muted-foreground hover:text-red-500">
-                                          <Trash2 className="w-3 h-3" />
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+              <>
+                {/* ── Schulungen ── */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-[#1a3a6b]" />
+                      <h2 className="text-sm font-bold text-foreground">Schulungsthemen</h2>
+                      <span className="text-xs text-muted-foreground">{schulungen.length} Themen</span>
                     </div>
-                  );
-                })}
-              </div>
+                    {showFormTyp !== "schulung" && (
+                      <button onClick={() => setShowFormTyp("schulung")}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a3a6b] text-white rounded-xl text-xs font-bold hover:bg-[#2d5aa0]">
+                        <Plus className="w-3.5 h-3.5" /> Schulung
+                      </button>
+                    )}
+                  </div>
+
+                  {showFormTyp === "schulung" && (
+                    <PflichtForm typ="schulung" kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter}
+                      onSave={handleCreate} onCancel={() => setShowFormTyp(null)} />
+                  )}
+
+                  {schulungen.map((p) => (
+                    <PflichtCard key={p.id} p={p} children={childrenOf(p.id)}
+                      kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter}
+                      onUpdate={handleUpdate} onDelete={handleDelete} onToggle={handleToggle} onAddChild={handleAddChild} />
+                  ))}
+
+                  {schulungen.length === 0 && !showFormTyp && (
+                    <div className="text-center py-8 border-2 border-dashed border-border/40 rounded-2xl">
+                      <p className="text-sm text-muted-foreground">Noch keine Schulungsthemen angelegt</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Bescheinigungen ── */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-4 h-4 text-amber-600" />
+                      <h2 className="text-sm font-bold text-foreground">Bescheinigungen & Zertifikate</h2>
+                      <span className="text-xs text-muted-foreground">{bescheinigungen.length} Typen</span>
+                    </div>
+                    {showFormTyp !== "bescheinigung" && (
+                      <button onClick={() => setShowFormTyp("bescheinigung")}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-700">
+                        <Plus className="w-3.5 h-3.5" /> Bescheinigung
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-xs text-amber-800">
+                    <strong>Aus Ordner:</strong> Automatisch für jeden, der eine Bescheinigung dieser Art im Archiv hat.&nbsp;
+                    <strong>Personen:</strong> Nur explizit ausgewählte Personen werden überwacht.
+                  </div>
+
+                  {showFormTyp === "bescheinigung" && (
+                    <PflichtForm typ="bescheinigung" kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter}
+                      onSave={handleCreate} onCancel={() => setShowFormTyp(null)} />
+                  )}
+
+                  {bescheinigungen.map((p) => (
+                    <PflichtCard key={p.id} p={p} children={childrenOf(p.id)}
+                      kategorien={kategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter}
+                      onUpdate={handleUpdate} onDelete={handleDelete} onToggle={handleToggle} onAddChild={handleAddChild} />
+                  ))}
+
+                  {bescheinigungen.length === 0 && !showFormTyp && (
+                    <div className="text-center py-8 border-2 border-dashed border-amber-200 rounded-2xl">
+                      <p className="text-sm text-muted-foreground">Noch keine Bescheinigungstypen angelegt</p>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
         )}
 
-        {/* ===== TAB: COMPLIANCE ===== */}
-        {tab === "compliance" && (
+        {/* ===== TAB: ÜBERSICHT ===== */}
+        {tab === "uebersicht" && (
           <div className="space-y-4">
+            {/* Sub-Tabs */}
+            <div className="flex gap-1 p-1 bg-muted/30 rounded-xl border border-border/20">
+              <button onClick={() => setUebersichtTyp("schulungen")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${uebersichtTyp === "schulungen" ? "bg-white shadow-sm text-[#1a3a6b]" : "text-muted-foreground"}`}>
+                <BookOpen className="w-3.5 h-3.5" /> Schulungen
+              </button>
+              <button onClick={() => setUebersichtTyp("bescheinigungen")}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${uebersichtTyp === "bescheinigungen" ? "bg-white shadow-sm text-amber-600" : "text-muted-foreground"}`}>
+                <Award className="w-3.5 h-3.5" /> Bescheinigungen
+              </button>
+            </div>
+
             {loadingC ? (
-              <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+              <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
             ) : (
               <>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-center">
-                    <p className="text-2xl font-bold text-red-700">{withProblems.length}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Handlungsbedarf</p>
-                  </div>
-                  <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-center">
-                    <p className="text-2xl font-bold text-amber-700">{warnOnly.length}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Bald fällig</p>
-                  </div>
-                  <div className="bg-green-50 border border-green-200 rounded-2xl px-4 py-3 text-center">
-                    <p className="text-2xl font-bold text-green-700">{okOnly.length}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Alles OK</p>
-                  </div>
-                </div>
-
-                {compliance.length === 0 && (
-                  <div className="text-center py-12 rounded-2xl border-2 border-dashed border-border/40">
-                    <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-sm font-medium text-muted-foreground">Keine aktiven Mitarbeiter gefunden</p>
-                  </div>
+                {/* Schulungen-Übersicht */}
+                {uebersichtTyp === "schulungen" && (
+                  <SchulComplianceView entries={schulCompliance} />
                 )}
-
-                {withProblems.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Handlungsbedarf</p>
-                    {withProblems.map((emp) => <ComplianceCard key={emp.employeeId} entry={emp} />)}
-                  </div>
-                )}
-
-                {warnOnly.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Bald fällig</p>
-                    {warnOnly.map((emp) => <ComplianceCard key={emp.employeeId} entry={emp} />)}
-                  </div>
-                )}
-
-                {okOnly.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Alles aktuell</p>
-                    {okOnly.map((emp) => <ComplianceCard key={emp.employeeId} entry={emp} compact />)}
-                  </div>
+                {/* Bescheinigungen-Übersicht */}
+                {uebersichtTyp === "bescheinigungen" && (
+                  <BeschComplianceView entries={beschCompliance} />
                 )}
               </>
             )}
@@ -699,74 +689,149 @@ export default function SchulungsAnforderungen() {
   );
 }
 
-function ComplianceCard({ entry, compact }: { entry: ComplianceEntry; compact?: boolean }) {
-  const [expanded, setExpanded] = useState(false);
-  const gruppe = GRUPPEN_OPTS.find((g) => g.value === entry.gruppe);
-
-  const borderColor = entry.hasProblems
-    ? "border-red-300"
-    : entry.warningCount > 0
-    ? "border-amber-300"
-    : "border-border/40";
+// ── Schulungen-Compliance-View ────────────────────────────────────────────────
+function SchulComplianceView({ entries }: { entries: SchulComplianceEntry[] }) {
+  const problems = entries.filter((e) => e.hasProblems);
+  const warnings = entries.filter((e) => !e.hasProblems && e.warningCount > 0);
+  const ok = entries.filter((e) => !e.hasProblems && e.warningCount === 0 && e.trainings.length > 0);
 
   return (
-    <div className={`bg-white rounded-2xl border-2 overflow-hidden ${borderColor}`}>
-      <button onClick={() => setExpanded((p) => !p)} className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/10 transition-colors">
+    <div className="space-y-4">
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 text-center">
+          <p className="text-2xl font-bold text-red-700">{problems.length}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Handlungsbedarf</p>
+        </div>
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-center">
+          <p className="text-2xl font-bold text-amber-700">{warnings.length}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Bald fällig</p>
+        </div>
+        <div className="bg-green-50 border border-green-200 rounded-2xl px-4 py-3 text-center">
+          <p className="text-2xl font-bold text-green-700">{ok.length}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Alles OK</p>
+        </div>
+      </div>
+
+      {entries.length === 0 && (
+        <div className="text-center py-10 border-2 border-dashed border-border/40 rounded-2xl">
+          <Users className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">Keine Mitarbeiter gefunden</p>
+        </div>
+      )}
+
+      {[...problems, ...warnings, ...ok].map((emp) => {
+        const gruppe = GRUPPEN_OPTS.find((g) => g.value === emp.gruppe);
+        return <SchulEmpCard key={emp.employeeId} emp={emp} gruppe={gruppe} />;
+      })}
+    </div>
+  );
+}
+
+function SchulEmpCard({ emp, gruppe }: { emp: SchulComplianceEntry; gruppe: any }) {
+  const [expanded, setExpanded] = useState(false);
+  const border = emp.hasProblems ? "border-red-300" : emp.warningCount > 0 ? "border-amber-300" : "border-border/40";
+
+  return (
+    <div className={`bg-white rounded-2xl border-2 overflow-hidden ${border}`}>
+      <button onClick={() => setExpanded((x) => !x)} className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/10">
         <div className="w-9 h-9 rounded-xl bg-[#1a3a6b]/10 flex items-center justify-center shrink-0">
           <GraduationCap className="w-4 h-4 text-[#1a3a6b]" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-foreground">{entry.name}</p>
+          <p className="text-sm font-bold">{emp.name}</p>
           <div className="flex items-center gap-2 flex-wrap mt-0.5">
-            {gruppe && (
-              <span className={`inline-flex items-center text-xs font-semibold px-1.5 py-0.5 rounded-full border ${gruppe.bg} ${gruppe.color}`}>
-                {gruppe.label}
-              </span>
-            )}
-            <span className="text-xs text-muted-foreground">{entry.trainings.length} Schulung{entry.trainings.length !== 1 ? "en" : ""} relevant</span>
+            {gruppe && <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full border ${gruppe.bg} ${gruppe.color}`}>{gruppe.label}</span>}
+            <span className="text-xs text-muted-foreground">{emp.trainings.length} Schulung{emp.trainings.length !== 1 ? "en" : ""}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {entry.hasProblems && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 border border-red-200 text-red-700">
-              <AlertTriangle className="w-3 h-3" /> {entry.problemCount} offen
-            </span>
-          )}
-          {entry.warningCount > 0 && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-amber-700">
-              <AlarmClock className="w-3 h-3" /> {entry.warningCount} bald
-            </span>
-          )}
-          {!entry.hasProblems && entry.warningCount === 0 && entry.trainings.length > 0 && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 border border-green-200 text-green-700">
-              <CheckCircle2 className="w-3 h-3" /> OK
-            </span>
-          )}
+          {emp.hasProblems && <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 border border-red-200 text-red-700"><AlertTriangle className="w-3 h-3" />{emp.problemCount}</span>}
+          {emp.warningCount > 0 && <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-amber-700"><AlarmClock className="w-3 h-3" />{emp.warningCount}</span>}
+          {!emp.hasProblems && emp.warningCount === 0 && emp.trainings.length > 0 && <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 border border-green-200 text-green-700"><CheckCircle2 className="w-3 h-3" />OK</span>}
         </div>
       </button>
-
       {expanded && (
-        <div className="px-4 pb-4 border-t border-border/30 pt-3 space-y-2">
-          {entry.trainings.map((t) => (
-            <div key={t.pflichtId} className={`flex items-center gap-3 py-1.5 border-b border-border/20 last:border-0 ${t.parentPflichtId ? "ml-4 pl-2 border-l-2 border-blue-200" : ""}`}>
+        <div className="px-4 pb-4 border-t border-border/20 pt-3 space-y-1.5">
+          {emp.trainings.map((t) => (
+            <div key={t.pflichtId} className={`flex items-center gap-3 py-1.5 border-b border-border/10 last:border-0 ${t.parentPflichtId ? "ml-4 pl-2 border-l-2 border-blue-200" : ""}`}>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center gap-1.5">
                   {t.parentPflichtId && <GitBranch className="w-3 h-3 text-blue-400 shrink-0" />}
-                  <p className="text-xs font-semibold text-foreground">{t.bezeichnung}</p>
-                  {t.personSpezifisch && <span className="text-xs text-teal-600 font-medium">· Extern</span>}
+                  <p className="text-xs font-semibold">{t.bezeichnung}</p>
+                  {t.zuordnungModus === "personen" && <span className="text-xs text-indigo-600">· Individuell</span>}
+                  {t.zuordnungModus === "auto" && <span className="text-xs text-teal-600">· Extern</span>}
                 </div>
-                {t.naechsteSchulung && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Nächste: {new Date(t.naechsteSchulung).toLocaleDateString("de-DE")}
-                  </p>
-                )}
-                {t.ausnahme?.begruendung && (
-                  <p className="text-xs text-muted-foreground mt-0.5 italic">Begründung: {t.ausnahme.begruendung}</p>
-                )}
+                {t.naechsteSchulung && <p className="text-xs text-muted-foreground">Nächste: {new Date(t.naechsteSchulung).toLocaleDateString("de-DE")}</p>}
+                {t.ausnahme?.begruendung && <p className="text-xs text-muted-foreground italic">Begr.: {t.ausnahme.begruendung}</p>}
               </div>
               <StatusChip status={t.status} />
             </div>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Bescheinigungen-Compliance-View ──────────────────────────────────────────
+function BeschComplianceView({ entries }: { entries: BeschComplianceEntry[] }) {
+  if (entries.length === 0) return (
+    <div className="text-center py-10 border-2 border-dashed border-amber-200 rounded-2xl">
+      <Award className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+      <p className="text-sm text-muted-foreground">Keine Bescheinigungstypen konfiguriert</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {entries.map((b) => <BeschCard key={b.pflichtId} b={b} />)}
+    </div>
+  );
+}
+
+function BeschCard({ b }: { b: BeschComplianceEntry }) {
+  const [expanded, setExpanded] = useState(false);
+  const border = b.hasProblems ? "border-red-300" : b.warningCount > 0 ? "border-amber-300" : "border-amber-200";
+
+  return (
+    <div className={`bg-white rounded-2xl border-2 overflow-hidden ${border}`}>
+      <button onClick={() => setExpanded((x) => !x)} className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/10">
+        <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+          <Award className="w-4 h-4 text-amber-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold">{b.bezeichnung}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {b.entries.length} Person{b.entries.length !== 1 ? "en" : ""} ·{" "}
+            {INTERVALL_LABEL[b.intervallMonate] || `${b.intervallMonate}M`} ·{" "}
+            {b.zuordnungModus === "auto" ? "Aus Ordner" : "Explizit"}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {b.hasProblems && <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 border border-red-200 text-red-700"><AlertTriangle className="w-3 h-3" />{b.problemCount}</span>}
+          {b.warningCount > 0 && <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 border border-amber-200 text-amber-700"><AlarmClock className="w-3 h-3" />{b.warningCount}</span>}
+          {!b.hasProblems && b.warningCount === 0 && b.entries.length > 0 && <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 border border-green-200 text-green-700"><CheckCircle2 className="w-3 h-3" />OK</span>}
+          {b.entries.length === 0 && <span className="text-xs text-muted-foreground px-2">Keine Einträge</span>}
+        </div>
+      </button>
+      {expanded && (
+        <div className="px-4 pb-4 border-t border-border/20 pt-3 space-y-1.5">
+          {b.entries.length === 0 && <p className="text-xs text-muted-foreground">Noch keine Nachweise im Archiv für diese Bescheinigung.</p>}
+          {b.entries.map((e, i) => {
+            const gruppe = GRUPPEN_OPTS.find((g) => g.value === e.gruppe);
+            return (
+              <div key={i} className="flex items-center gap-3 py-1.5 border-b border-border/10 last:border-0">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-semibold">{e.name}</p>
+                    {gruppe && <span className={`text-xs font-semibold px-1.5 py-0.5 rounded-full border ${gruppe.bg} ${gruppe.color}`}>{gruppe.label}</span>}
+                  </div>
+                  {e.gueltigBis && <p className="text-xs text-muted-foreground">Gültig bis: {new Date(e.gueltigBis).toLocaleDateString("de-DE")}</p>}
+                </div>
+                <StatusChip status={e.status} />
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
