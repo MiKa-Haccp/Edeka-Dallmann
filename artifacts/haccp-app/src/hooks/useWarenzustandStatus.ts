@@ -688,6 +688,7 @@ function periodEndMonth(activeMonths: number[], idx: number): number {
 }
 
 export function useAnnualCleaningPlanStatus(): TrafficLight {
+  const { selectedMarketId } = useAppStore();
   const [status, setStatus] = useState<TrafficLight>("none");
   const [tick, setTick] = useState(0);
 
@@ -697,12 +698,13 @@ export function useAnnualCleaningPlanStatus(): TrafficLight {
   }, []);
 
   useEffect(() => {
+    if (!selectedMarketId) { setStatus("none"); return; }
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
     let cancelled = false;
 
-    fetch(`${BASE}/cleaning-plan?tenantId=1&year=${year}`)
+    fetch(`${BASE}/cleaning-plan?tenantId=1&marketId=${selectedMarketId}&year=${year}`)
       .then(r => r.json())
       .then((confirmations: { itemKey: string; month: number }[]) => {
         if (cancelled) return;
@@ -743,13 +745,14 @@ export function useAnnualCleaningPlanStatus(): TrafficLight {
       })
       .catch(() => { if (!cancelled) setStatus("none"); });
     return () => { cancelled = true; };
-  }, [tick]);
+  }, [selectedMarketId, tick]);
 
   return status;
 }
 
 // ===== 1.6 Betriebsbegehung – Quartalsampel =====
 export function useBetriebsbegehungStatus(): TrafficLight {
+  const { selectedMarketId } = useAppStore();
   const [status, setStatus] = useState<TrafficLight>("none");
   const [tick, setTick] = useState(0);
 
@@ -759,12 +762,18 @@ export function useBetriebsbegehungStatus(): TrafficLight {
   }, []);
 
   useEffect(() => {
+    if (!selectedMarketId) { setStatus("none"); return; }
     const now = new Date();
     const year = now.getFullYear();
-    const curQ = Math.ceil((now.getMonth() + 1) / 3);
+    const month = now.getMonth() + 1;
+    const curQ = Math.ceil(month / 3);
+    // Wie weit ist das aktuelle Quartal fortgeschritten? (0..1)
+    const qStartMonth = (curQ - 1) * 3 + 1;
+    const dayInQ = (month - qStartMonth) * 30 + now.getDate();
+    const qProgress = dayInQ / 92; // ~92 Tage pro Quartal
     let cancelled = false;
 
-    fetch(`${BASE}/betriebsbegehung?tenantId=1`)
+    fetch(`${BASE}/betriebsbegehung?tenantId=1&marketId=${selectedMarketId}`)
       .then(r => r.json())
       .then((reports: { quartal: number; year: number }[]) => {
         if (cancelled) return;
@@ -772,12 +781,14 @@ export function useBetriebsbegehungStatus(): TrafficLight {
         const doneQ = new Set(thisYear.map(r => r.quartal));
 
         if (doneQ.has(curQ)) { setStatus("green"); return; }
+        // Vorheriges Quartal fehlt → rot
         if (curQ > 1 && !doneQ.has(curQ - 1)) { setStatus("red"); return; }
-        setStatus("yellow");
+        // Aktuelles Quartal noch nicht erledigt: Fortschritt > 50% → orange, sonst keine Anzeige
+        setStatus(qProgress > 0.5 ? "yellow" : "none");
       })
       .catch(() => { if (!cancelled) setStatus("none"); });
     return () => { cancelled = true; };
-  }, [tick]);
+  }, [selectedMarketId, tick]);
 
   return status;
 }
