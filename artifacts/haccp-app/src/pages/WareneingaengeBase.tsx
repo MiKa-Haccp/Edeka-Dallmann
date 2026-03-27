@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, createContext, useContext } from "react";
+import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
@@ -1074,7 +1075,10 @@ function WareneingaengeContent() {
       <div className="space-y-4 pb-10">
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-[#1a3a6b]/10"><ClipboardList className="w-6 h-6 text-[#1a3a6b]"/></div>
+            <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors shrink-0">
+              <ChevronLeft className="w-5 h-5"/>
+            </Link>
+            <div className="p-2.5 rounded-xl bg-[#1a3a6b]/10 shrink-0"><ClipboardList className="w-6 h-6 text-[#1a3a6b]"/></div>
             <div>
               <h1 className="text-xl font-bold">{pageTitle}</h1>
               <p className="text-sm text-muted-foreground">{pageSubtitle}</p>

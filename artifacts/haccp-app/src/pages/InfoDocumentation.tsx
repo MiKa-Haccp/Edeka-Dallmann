@@ -1,5 +1,6 @@
+import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { FileText, Archive, Clock, Info, BookOpen, Folder } from "lucide-react";
+import { FileText, Archive, Clock, Info, BookOpen, Folder, ChevronLeft } from "lucide-react";
 
 const retentionData = [
   {
@@ -46,6 +47,12 @@ export default function InfoDocumentation() {
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto space-y-6 pb-8">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors shrink-0">
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+          <h1 className="text-lg font-bold text-foreground">1.3 Info Dokumentation</h1>
+        </div>
         <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-6 md:p-8 text-white shadow-lg">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">

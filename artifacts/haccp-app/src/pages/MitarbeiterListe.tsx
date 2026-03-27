@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
+import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Users, Loader2 } from "lucide-react";
+import { Users, Loader2, ChevronLeft } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -51,7 +52,10 @@ export default function MitarbeiterListe() {
       <div className="max-w-2xl mx-auto space-y-4 pb-10">
 
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#1a3a6b]/10 rounded-2xl flex items-center justify-center">
+          <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors shrink-0">
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+          <div className="w-10 h-10 bg-[#1a3a6b]/10 rounded-2xl flex items-center justify-center shrink-0">
             <Users className="w-5 h-5 text-[#1a3a6b]" />
           </div>
           <div>

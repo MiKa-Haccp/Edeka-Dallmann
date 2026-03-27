@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
+  ChevronLeft,
   HeartPulse, Plus, Loader2, Save, X, Camera, FileText,
   ChevronDown, ChevronUp, Trash2, ExternalLink, AlertCircle,
   CheckCircle2, Clock,
@@ -362,7 +364,10 @@ export default function Gesundheitszeugnisse() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#1a3a6b]/10 rounded-2xl flex items-center justify-center">
+            <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors shrink-0">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div className="w-10 h-10 bg-[#1a3a6b]/10 rounded-2xl flex items-center justify-center shrink-0">
               <HeartPulse className="w-5 h-5 text-[#1a3a6b]" />
             </div>
             <div>

@@ -21,7 +21,7 @@ const SIDEBAR_PATHS = [
   "/haccp", "/wareneingaenge", "/metzgerei-wareneingaenge", "/reinigungsplan-metzgerei", "/oeffnung-salate", "/kaesetheke-kontrolle", "/semmelliste", "/eingefrorenes-fleisch", "/rezepturen", "/gq-begehung", "/abteilungsfremde-personen",
   "/marktplan",
   "/section/", "/category/", "/we-", "/besprechungsprotokoll",
-  "/gesundheitszeugnisse", "/admin/users", "/admin/geraete", "/admin/login", "/admin/register",
+  "/gesundheitszeugnisse",
 ];
 
 function useSidebarVisible() {
@@ -74,7 +74,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background flex flex-col">
       {showGeraetSperre && <GeraetSperrScreen />}
       {showMarktwahlScreen && <MarktwahlScreen />}
-      <Header onMenuToggle={() => setMobileMenuOpen(true)} />
+      <Header onMenuToggle={showSidebar ? () => setMobileMenuOpen(true) : undefined} />
       {showSidebar && (
         <MobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
       )}

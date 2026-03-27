@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Printer } from "lucide-react";
+import { Printer, ChevronLeft } from "lucide-react";
 
 export default function HinweisschildGesperrteWare() {
   const [datum, setDatum] = useState("");
@@ -35,6 +36,12 @@ export default function HinweisschildGesperrteWare() {
       `}</style>
 
       <div className="max-w-4xl space-y-4 pb-8">
+        <div className="flex items-center gap-3">
+          <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors shrink-0">
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+          <h1 className="text-lg font-bold text-foreground">Hinweisschild gesperrte Ware</h1>
+        </div>
         <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 md:p-7 text-white shadow-lg">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
