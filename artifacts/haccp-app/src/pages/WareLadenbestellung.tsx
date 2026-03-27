@@ -71,6 +71,7 @@ export default function WareLadenbestellung() {
   const [bestellungen, setBestellungen] = useState<Bestellung[]>([]);
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [canvasScale, setCanvasScale] = useState(1);
 
   // Add modal
   const [showAdd, setShowAdd] = useState(false);
@@ -93,6 +94,7 @@ export default function WareLadenbestellung() {
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   // ── Load ──────────────────────────────────────────────────────────────────
   const loadGebiete = useCallback(async () => {
@@ -251,8 +253,6 @@ export default function WareLadenbestellung() {
   };
 
   // ── Canvas scale ──────────────────────────────────────────────────────────
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [canvasScale, setCanvasScale] = useState(1);
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
