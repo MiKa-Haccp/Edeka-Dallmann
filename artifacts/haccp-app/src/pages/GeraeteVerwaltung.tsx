@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
-import { Smartphone, Trash2, ShieldOff, ShieldCheck, Loader2, RefreshCw, Calendar, AlertTriangle } from "lucide-react";
+import { Smartphone, Trash2, ShieldOff, ShieldCheck, Loader2, RefreshCw, Calendar, AlertTriangle, ChevronLeft } from "lucide-react";
 import { useLocation } from "wouter";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -84,6 +84,14 @@ export default function GeraeteVerwaltung() {
   return (
     <AppLayout>
       <div className="max-w-3xl space-y-6 pb-8">
+        <button
+          onClick={() => navigate("/admin/system")}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Systemverwaltung
+        </button>
+
         <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 md:p-7 text-white shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
