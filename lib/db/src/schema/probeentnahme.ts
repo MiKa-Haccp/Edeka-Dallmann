@@ -3,6 +3,7 @@ import { pgTable, serial, integer, text, boolean, timestamp } from "drizzle-orm/
 export const probeentnahmeTable = pgTable("probeentnahme", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull(),
+  marketId: integer("market_id").notNull().default(1),
 
   // Marktdaten
   markt: text("markt"),

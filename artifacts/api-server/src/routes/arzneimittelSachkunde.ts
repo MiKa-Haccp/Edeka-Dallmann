@@ -1,25 +1,29 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { arzneimittelSachkundeTable } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 const router = Router();
 
 router.get("/arzneimittel-sachkunde", async (req, res) => {
   const tenantId = Number(req.query.tenantId) || 1;
+  const marketId = req.query.marketId ? Number(req.query.marketId) : null;
+  const where = marketId
+    ? and(eq(arzneimittelSachkundeTable.tenantId, tenantId), eq(arzneimittelSachkundeTable.marketId, marketId))
+    : eq(arzneimittelSachkundeTable.tenantId, tenantId);
   const rows = await db
     .select()
     .from(arzneimittelSachkundeTable)
-    .where(eq(arzneimittelSachkundeTable.tenantId, tenantId))
+    .where(where)
     .orderBy(arzneimittelSachkundeTable.mitarbeiterName);
   res.json(rows);
 });
 
 router.post("/arzneimittel-sachkunde", async (req, res) => {
-  const { tenantId = 1, ...fields } = req.body;
+  const { tenantId = 1, marketId = 1, ...fields } = req.body;
   const row = await db
     .insert(arzneimittelSachkundeTable)
-    .values({ tenantId, ...fields })
+    .values({ tenantId, marketId, ...fields })
     .returning();
   res.json(row[0]);
 });

@@ -276,7 +276,7 @@ function PinModal({
 
 // ===== HAUPTSEITE =====
 export default function Besprechungsprotokoll({ noLayout }: { noLayout?: boolean } = {}) {
-  const { adminSession } = useAppStore();
+  const { adminSession, selectedMarketId } = useAppStore();
   const isAdmin = !!adminSession;
   const Wrap = noLayout ? ({ children }: { children: ReactNode }) => <>{children}</> : AppLayout;
 
@@ -304,10 +304,13 @@ export default function Besprechungsprotokoll({ noLayout }: { noLayout?: boolean
   const loadProtokolle = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/besprechungsprotokoll?tenantId=1`);
+      const url = selectedMarketId
+        ? `${BASE}/besprechungsprotokoll?tenantId=1&marketId=${selectedMarketId}`
+        : `${BASE}/besprechungsprotokoll?tenantId=1`;
+      const res = await fetch(url);
       setProtokolle(await res.json());
     } finally { setLoading(false); }
-  }, []);
+  }, [selectedMarketId]);
 
   useEffect(() => { loadProtokolle(); }, [loadProtokolle]);
 
@@ -335,7 +338,7 @@ export default function Besprechungsprotokoll({ noLayout }: { noLayout?: boolean
   const handleSave = async () => {
     setSaving(true);
     try {
-      const body = { tenantId: 1, datum, leiterName, thema, unterschriftLeiterDigital: unterschrift };
+      const body = { tenantId: 1, marketId: selectedMarketId || 1, datum, leiterName, thema, unterschriftLeiterDigital: unterschrift };
       let data: Protokoll;
       if (current) {
         const res = await fetch(`${BASE}/besprechungsprotokoll/${current.id}`, {

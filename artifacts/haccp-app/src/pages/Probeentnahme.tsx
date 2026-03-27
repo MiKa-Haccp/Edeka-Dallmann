@@ -202,10 +202,13 @@ export default function Probeentnahme() {
   const loadRecords = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/probeentnahme?tenantId=1`);
+      const url = selectedMarketId
+        ? `${BASE}/probeentnahme?tenantId=1&marketId=${selectedMarketId}`
+        : `${BASE}/probeentnahme?tenantId=1`;
+      const res = await fetch(url);
       setRecords(await res.json());
     } finally { setLoading(false); }
-  }, []);
+  }, [selectedMarketId]);
 
   useEffect(() => { loadRecords(); }, [loadRecords]);
 
@@ -237,7 +240,7 @@ export default function Probeentnahme() {
 
   const handleOpen = (r: ProbeRecord) => {
     setCurrent(r);
-    const { id, tenantId, createdAt, updatedAt, ...fields } = r;
+    const { id, tenantId, marketId: _mid, createdAt, updatedAt, ...fields } = r;
     setForm(fields as FormData);
     setVerifiedUserName(null);
     setEmailSent(false);
@@ -248,7 +251,7 @@ export default function Probeentnahme() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const body = { tenantId: 1, ...form };
+      const body = { tenantId: 1, marketId: selectedMarketId || 1, ...form };
       const res = current
         ? await fetch(`${BASE}/probeentnahme/${current.id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
         : await fetch(`${BASE}/probeentnahme`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });

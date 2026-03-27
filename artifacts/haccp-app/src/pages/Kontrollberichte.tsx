@@ -404,6 +404,7 @@ function AktionsplanCard({
 
 // ===== TÜV PANEL =====
 function TuevPanel({ year }: { year: number }) {
+  const { selectedMarketId } = useAppStore();
   const [daten, setDaten] = useState<TuevJahresbericht | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -419,7 +420,8 @@ function TuevPanel({ year }: { year: number }) {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/tuev-jahresbericht?tenantId=1&year=${year}`);
+      const mktParam = selectedMarketId ? `&marketId=${selectedMarketId}` : "";
+      const res = await fetch(`${BASE}/tuev-jahresbericht?tenantId=1&year=${year}${mktParam}`);
       const data = await res.json();
       setDaten(data);
       if (data) {
@@ -437,7 +439,7 @@ function TuevPanel({ year }: { year: number }) {
         setAktFoto(""); setMassnahmen([]);
       }
     } finally { setLoading(false); }
-  }, [year]);
+  }, [year, selectedMarketId]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
@@ -448,7 +450,7 @@ function TuevPanel({ year }: { year: number }) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          tenantId: 1, year,
+          tenantId: 1, marketId: selectedMarketId || 1, year,
           zertifikateDokument: zertDok,
           zertifikateNotizen: zertNotizen,
           pruefungenDokument: pruefDok,

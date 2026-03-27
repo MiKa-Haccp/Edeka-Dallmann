@@ -8,22 +8,18 @@ const router = Router();
 router.get("/tuev-jahresbericht", async (req, res) => {
   const tenantId = Number(req.query.tenantId) || 1;
   const year = Number(req.query.year) || new Date().getFullYear();
+  const marketId = req.query.marketId ? Number(req.query.marketId) : null;
 
-  const rows = await db
-    .select()
-    .from(tuevJahresberichtTable)
-    .where(
-      and(
-        eq(tuevJahresberichtTable.tenantId, tenantId),
-        eq(tuevJahresberichtTable.year, year)
-      )
-    );
+  const where = marketId
+    ? and(eq(tuevJahresberichtTable.tenantId, tenantId), eq(tuevJahresberichtTable.year, year), eq(tuevJahresberichtTable.marketId, marketId))
+    : and(eq(tuevJahresberichtTable.tenantId, tenantId), eq(tuevJahresberichtTable.year, year));
 
+  const rows = await db.select().from(tuevJahresberichtTable).where(where);
   res.json(rows[0] || null);
 });
 
 router.put("/tuev-jahresbericht", async (req, res) => {
-  const { tenantId = 1, year, ...fields } = req.body;
+  const { tenantId = 1, marketId = 1, year, ...fields } = req.body;
 
   const existing = await db
     .select()
@@ -31,6 +27,7 @@ router.put("/tuev-jahresbericht", async (req, res) => {
     .where(
       and(
         eq(tuevJahresberichtTable.tenantId, tenantId),
+        eq(tuevJahresberichtTable.marketId, marketId),
         eq(tuevJahresberichtTable.year, year)
       )
     );
@@ -42,6 +39,7 @@ router.put("/tuev-jahresbericht", async (req, res) => {
       .where(
         and(
           eq(tuevJahresberichtTable.tenantId, tenantId),
+          eq(tuevJahresberichtTable.marketId, marketId),
           eq(tuevJahresberichtTable.year, year)
         )
       )
@@ -50,7 +48,7 @@ router.put("/tuev-jahresbericht", async (req, res) => {
   } else {
     const row = await db
       .insert(tuevJahresberichtTable)
-      .values({ tenantId, year, ...fields })
+      .values({ tenantId, marketId, year, ...fields })
       .returning();
     res.json(row[0]);
   }

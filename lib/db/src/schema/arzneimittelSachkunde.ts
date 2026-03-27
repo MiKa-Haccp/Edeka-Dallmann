@@ -3,6 +3,7 @@ import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
 export const arzneimittelSachkundeTable = pgTable("arzneimittel_sachkunde", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull(),
+  marketId: integer("market_id").notNull().default(1),
   mitarbeiterName: text("mitarbeiter_name").notNull(),
   zertifikatBezeichnung: text("zertifikat_bezeichnung"),
   ausstellungsDatum: text("ausstellungs_datum"),

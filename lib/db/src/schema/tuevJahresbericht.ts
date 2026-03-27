@@ -3,6 +3,7 @@ import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
 export const tuevJahresberichtTable = pgTable("tuev_jahresbericht", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull(),
+  marketId: integer("market_id").notNull().default(1),
   year: integer("year").notNull(),
   zertifikateDokument: text("zertifikate_dokument"),
   zertifikateNotizen: text("zertifikate_notizen"),

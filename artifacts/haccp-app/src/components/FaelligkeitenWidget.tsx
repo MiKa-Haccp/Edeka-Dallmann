@@ -51,7 +51,8 @@ export function FaelligkeitenWidget() {
   );
 
   useEffect(() => {
-    fetch(`${BASE}/betriebsbegehung?tenantId=1`)
+    if (!selectedMarketId) { setBbLoaded(true); return; }
+    fetch(`${BASE}/betriebsbegehung?tenantId=1&marketId=${selectedMarketId}`)
       .then((r) => r.json())
       .then((data: Array<{ quartal: number; year: number }>) => {
         const done = data
@@ -61,7 +62,7 @@ export function FaelligkeitenWidget() {
         setBbLoaded(true);
       })
       .catch(() => setBbLoaded(true));
-  }, [currentYear]);
+  }, [currentYear, selectedMarketId]);
 
   if (!adminSession) return null;
 

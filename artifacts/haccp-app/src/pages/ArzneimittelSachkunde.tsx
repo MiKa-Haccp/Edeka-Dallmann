@@ -340,7 +340,7 @@ function EintragKarte({ z, onDelete, isAdmin }: { z: Eintrag; onDelete: () => vo
 
 // ===== HAUPTSEITE =====
 export default function ArzneimittelSachkunde() {
-  const { adminSession } = useAppStore();
+  const { adminSession, selectedMarketId } = useAppStore();
   const isAdmin = !!adminSession;
 
   const [eintraege, setEintraege] = useState<Eintrag[]>([]);
@@ -350,10 +350,13 @@ export default function ArzneimittelSachkunde() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/arzneimittel-sachkunde?tenantId=1`);
+      const url = selectedMarketId
+        ? `${BASE}/arzneimittel-sachkunde?tenantId=1&marketId=${selectedMarketId}`
+        : `${BASE}/arzneimittel-sachkunde?tenantId=1`;
+      const res = await fetch(url);
       setEintraege(await res.json());
     } finally { setLoading(false); }
-  }, []);
+  }, [selectedMarketId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -361,7 +364,7 @@ export default function ArzneimittelSachkunde() {
     const res = await fetch(`${BASE}/arzneimittel-sachkunde`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenantId: 1, ...fields }),
+      body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || 1, ...fields }),
     });
     const neu = await res.json();
     setEintraege((p) => [...p, neu].sort((a, b) => a.mitarbeiterName.localeCompare(b.mitarbeiterName)));

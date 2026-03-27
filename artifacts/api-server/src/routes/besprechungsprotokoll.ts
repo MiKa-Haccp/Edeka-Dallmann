@@ -13,10 +13,14 @@ const router = Router();
 
 router.get("/besprechungsprotokoll", async (req, res) => {
   const tenantId = Number(req.query.tenantId) || 1;
+  const marketId = req.query.marketId ? Number(req.query.marketId) : null;
+  const where = marketId
+    ? and(eq(besprechungsprotokollTable.tenantId, tenantId), eq(besprechungsprotokollTable.marketId, marketId))
+    : eq(besprechungsprotokollTable.tenantId, tenantId);
   const rows = await db
     .select()
     .from(besprechungsprotokollTable)
-    .where(eq(besprechungsprotokollTable.tenantId, tenantId))
+    .where(where)
     .orderBy(besprechungsprotokollTable.createdAt);
   res.json(rows);
 });
@@ -32,17 +36,17 @@ router.get("/besprechungsprotokoll/:id", async (req, res) => {
 });
 
 router.post("/besprechungsprotokoll", async (req, res) => {
-  const { tenantId = 1, ...fields } = req.body;
+  const { tenantId = 1, marketId = 1, ...fields } = req.body;
   const row = await db
     .insert(besprechungsprotokollTable)
-    .values({ tenantId, ...fields })
+    .values({ tenantId, marketId, ...fields })
     .returning();
   res.json(row[0]);
 });
 
 router.put("/besprechungsprotokoll/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const { tenantId, ...fields } = req.body;
+  const { tenantId, marketId, ...fields } = req.body;
   const row = await db
     .update(besprechungsprotokollTable)
     .set({ ...fields, updatedAt: new Date() })
@@ -94,7 +98,6 @@ router.post("/besprechungsprotokoll/:protokollId/teilnehmer/:id/pin-verify", asy
 
   if (!pin) return res.status(400).json({ error: "PIN fehlt" });
 
-  // Nutzer anhand PIN + Tenant ermitteln
   const users = await db
     .select()
     .from(usersTable)
@@ -106,7 +109,6 @@ router.post("/besprechungsprotokoll/:protokollId/teilnehmer/:id/pin-verify", asy
 
   const user = users[0];
 
-  // Teilnehmer bestätigen
   const updated = await db
     .update(besprechungTeilnehmerTable)
     .set({

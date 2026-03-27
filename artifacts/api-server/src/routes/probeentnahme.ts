@@ -1,16 +1,20 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { probeentnahmeTable } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 const router = Router();
 
 router.get("/probeentnahme", async (req, res) => {
   const tenantId = Number(req.query.tenantId) || 1;
+  const marketId = req.query.marketId ? Number(req.query.marketId) : null;
+  const where = marketId
+    ? and(eq(probeentnahmeTable.tenantId, tenantId), eq(probeentnahmeTable.marketId, marketId))
+    : eq(probeentnahmeTable.tenantId, tenantId);
   const results = await db
     .select()
     .from(probeentnahmeTable)
-    .where(eq(probeentnahmeTable.tenantId, tenantId))
+    .where(where)
     .orderBy(probeentnahmeTable.createdAt);
   res.json(results);
 });
@@ -23,14 +27,14 @@ router.get("/probeentnahme/:id", async (req, res) => {
 });
 
 router.post("/probeentnahme", async (req, res) => {
-  const { tenantId = 1, ...fields } = req.body;
-  const result = await db.insert(probeentnahmeTable).values({ tenantId, ...fields }).returning();
+  const { tenantId = 1, marketId = 1, ...fields } = req.body;
+  const result = await db.insert(probeentnahmeTable).values({ tenantId, marketId, ...fields }).returning();
   res.json(result[0]);
 });
 
 router.put("/probeentnahme/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const { tenantId, ...fields } = req.body;
+  const { tenantId, marketId, ...fields } = req.body;
   const result = await db
     .update(probeentnahmeTable)
     .set({ ...fields, updatedAt: new Date() })

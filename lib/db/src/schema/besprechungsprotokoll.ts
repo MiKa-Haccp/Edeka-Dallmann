@@ -3,6 +3,7 @@ import { pgTable, serial, integer, text, boolean, timestamp } from "drizzle-orm/
 export const besprechungsprotokollTable = pgTable("besprechungsprotokoll", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").notNull(),
+  marketId: integer("market_id").notNull().default(1),
   datum: text("datum").notNull(),
   leiterName: text("leiter_name"),
   unterschriftLeiterDigital: text("unterschrift_leiter_digital"),

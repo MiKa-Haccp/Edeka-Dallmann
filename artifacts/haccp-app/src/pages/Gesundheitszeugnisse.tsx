@@ -321,7 +321,7 @@ function ZeugnisKarte({ z, onDelete, isAdmin }: { z: Gesundheitszeugnis; onDelet
 
 // ===== HAUPTSEITE =====
 export default function Gesundheitszeugnisse() {
-  const { adminSession } = useAppStore();
+  const { adminSession, selectedMarketId } = useAppStore();
   const isAdmin = !!adminSession;
 
   const [zeugnisse, setZeugnisse] = useState<Gesundheitszeugnis[]>([]);
@@ -331,10 +331,13 @@ export default function Gesundheitszeugnisse() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/gesundheitszeugnisse?tenantId=1`);
+      const url = selectedMarketId
+        ? `${BASE}/gesundheitszeugnisse?tenantId=1&marketId=${selectedMarketId}`
+        : `${BASE}/gesundheitszeugnisse?tenantId=1`;
+      const res = await fetch(url);
       setZeugnisse(await res.json());
     } finally { setLoading(false); }
-  }, []);
+  }, [selectedMarketId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -342,7 +345,7 @@ export default function Gesundheitszeugnisse() {
     const res = await fetch(`${BASE}/gesundheitszeugnisse`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenantId: 1, ...fields }),
+      body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || 1, ...fields }),
     });
     const neu = await res.json();
     setZeugnisse((p) => [...p, neu].sort((a, b) => a.mitarbeiterName.localeCompare(b.mitarbeiterName)));

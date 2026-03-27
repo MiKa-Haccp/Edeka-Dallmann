@@ -336,7 +336,7 @@ function ZertifikatKarte({ z, onDelete, isAdmin }: { z: Zertifikat; onDelete: ()
 
 // ===== HAUPTSEITE =====
 export default function AntiVektorZugang() {
-  const { adminSession } = useAppStore();
+  const { adminSession, selectedMarketId } = useAppStore();
   const isAdmin = !!adminSession;
 
   const [tab, setTab] = useState<Tab>("zugang");
@@ -355,17 +355,23 @@ export default function AntiVektorZugang() {
   const [loadingZ, setLoadingZ] = useState(false);
 
   const loadZugangsdaten = useCallback(async () => {
-    const res = await fetch(`${BASE}/anti-vektor/zugangsdaten?tenantId=1`);
+    const url = selectedMarketId
+      ? `${BASE}/anti-vektor/zugangsdaten?tenantId=1&marketId=${selectedMarketId}`
+      : `${BASE}/anti-vektor/zugangsdaten?tenantId=1`;
+    const res = await fetch(url);
     setZugangsdaten(await res.json());
-  }, []);
+  }, [selectedMarketId]);
 
   const loadZertifikate = useCallback(async () => {
     setLoadingZ(true);
     try {
-      const res = await fetch(`${BASE}/anti-vektor/zertifikate?tenantId=1`);
+      const url = selectedMarketId
+        ? `${BASE}/anti-vektor/zertifikate?tenantId=1&marketId=${selectedMarketId}`
+        : `${BASE}/anti-vektor/zertifikate?tenantId=1`;
+      const res = await fetch(url);
       setZertifikate(await res.json());
     } finally { setLoadingZ(false); }
-  }, []);
+  }, [selectedMarketId]);
 
   useEffect(() => { loadZugangsdaten(); loadZertifikate(); }, [loadZugangsdaten, loadZertifikate]);
 
@@ -375,7 +381,7 @@ export default function AntiVektorZugang() {
       const res = await fetch(`${BASE}/anti-vektor/zugangsdaten`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenantId: 1, ...zugangsdaten }),
+        body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || 1, ...zugangsdaten }),
       });
       setZugangsdaten(await res.json());
       setSavedZugang(true);
@@ -388,7 +394,7 @@ export default function AntiVektorZugang() {
     const res = await fetch(`${BASE}/anti-vektor/zertifikate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenantId: 1, ...fields }),
+      body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || 1, ...fields }),
     });
     const neu = await res.json();
     setZertifikate((p) => [...p, neu]);

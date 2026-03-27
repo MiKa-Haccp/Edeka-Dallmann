@@ -1,25 +1,29 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { gesundheitszeugnisseTable } from "@workspace/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 const router = Router();
 
 router.get("/gesundheitszeugnisse", async (req, res) => {
   const tenantId = Number(req.query.tenantId) || 1;
+  const marketId = req.query.marketId ? Number(req.query.marketId) : null;
+  const where = marketId
+    ? and(eq(gesundheitszeugnisseTable.tenantId, tenantId), eq(gesundheitszeugnisseTable.marketId, marketId))
+    : eq(gesundheitszeugnisseTable.tenantId, tenantId);
   const rows = await db
     .select()
     .from(gesundheitszeugnisseTable)
-    .where(eq(gesundheitszeugnisseTable.tenantId, tenantId))
+    .where(where)
     .orderBy(gesundheitszeugnisseTable.mitarbeiterName);
   res.json(rows);
 });
 
 router.post("/gesundheitszeugnisse", async (req, res) => {
-  const { tenantId = 1, ...fields } = req.body;
+  const { tenantId = 1, marketId = 1, ...fields } = req.body;
   const row = await db
     .insert(gesundheitszeugnisseTable)
-    .values({ tenantId, ...fields })
+    .values({ tenantId, marketId, ...fields })
     .returning();
   res.json(row[0]);
 });
