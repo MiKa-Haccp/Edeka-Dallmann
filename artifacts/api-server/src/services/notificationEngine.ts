@@ -3,18 +3,27 @@ import nodemailer from "nodemailer";
 import cron from "node-cron";
 
 export const MONITORABLE_SECTIONS = [
-  { key: "1.4",  label: "Schulungsnachweise",              group: "HACCP 1 – Organisation & Hygiene", periodType: "yearly",    description: "Jahresschulungen — mind. 1 Nachweis pro Jahr und Filiale" },
-  { key: "1.5",  label: "Reinigungsplan Jahr",             group: "HACCP 1 – Organisation & Hygiene", periodType: "monthly",   description: "Monatliche Bestätigungen im Reinigungsplan" },
-  { key: "1.6",  label: "Betriebsbegehung",                group: "HACCP 1 – Organisation & Hygiene", periodType: "quarterly", description: "Vierteljährliche Betriebsbegehung" },
-  { key: "2.1",  label: "Wareneingaenge",                  group: "HACCP 2 – Selbstbedienung (SBF)", periodType: "daily",      description: "Tägliche Wareneingangskontrolle" },
-  { key: "2.2",  label: "Warenzustand Obst & Gemüse",      group: "HACCP 2 – Selbstbedienung (SBF)", periodType: "daily",      description: "Tägliche Kontrolle Warenzustand OG" },
-  { key: "2.3",  label: "Reinigungsdokumentation täglich", group: "HACCP 2 – Selbstbedienung (SBF)", periodType: "daily",      description: "Tägliche Reinigungsdokumentation" },
-  { key: "3.1",  label: "Wareneingaenge Metzgerei",        group: "HACCP 3 – Metzgerei",              periodType: "daily",      description: "Tägliche Wareneingangskontrolle Metzgerei" },
-  { key: "3.2",  label: "Reinigungspläne Metzgerei",       group: "HACCP 3 – Metzgerei",              periodType: "monthly",    description: "Monatliche Reinigungspläne Metzgerei" },
-  { key: "3.3",  label: "Öffnung Salate",                  group: "HACCP 3 – Metzgerei",              periodType: "daily",      description: "Tägliche Öffnungsdokumentation Salate" },
-  { key: "3.4",  label: "Käsetheke und Reifeschrank",      group: "HACCP 3 – Metzgerei",              periodType: "daily",      description: "Tägliche Käsetheke-Kontrolle" },
-  { key: "3.8",  label: "GQ-Betriebsbegehung",             group: "HACCP 3 – Metzgerei",              periodType: "quarterly",  description: "Vierteljährliche GQ-Betriebsbegehung Metzgerei" },
+  { key: "1.1",  label: "Verantwortlichkeiten",            group: "HACCP 1 – Allgemein",  periodType: "yearly",    description: "Jährliche Pflege der Verantwortlichkeiten im Markt" },
+  { key: "1.4",  label: "Schulungsnachweise",              group: "HACCP 1 – Allgemein",  periodType: "yearly",    description: "Jahresschulungen — mind. 1 Nachweis pro Jahr und Filiale" },
+  { key: "1.5",  label: "Reinigungsplan Jahr",             group: "HACCP 1 – Allgemein",  periodType: "monthly",   description: "Monatliche Bestätigungen im Reinigungsplan" },
+  { key: "1.6",  label: "Betriebsbegehung",                group: "HACCP 1 – Allgemein",  periodType: "quarterly", description: "Vierteljährliche Betriebsbegehung" },
+  { key: "2.1",  label: "Wareneingaenge",                  group: "HACCP 2 – Markt",      periodType: "daily",     description: "Tägliche Wareneingangskontrolle" },
+  { key: "2.2",  label: "Warenzustand Obst & Gemüse",      group: "HACCP 2 – Markt",      periodType: "daily",     description: "Tägliche Kontrolle Warenzustand Obst & Gemüse" },
+  { key: "2.3",  label: "Reinigungsdokumentation täglich", group: "HACCP 2 – Markt",      periodType: "daily",     description: "Tägliche Reinigungsdokumentation" },
+  { key: "3.1",  label: "Wareneingaenge Metzgerei",        group: "HACCP 3 – Metzgerei",  periodType: "daily",     description: "Tägliche Wareneingangskontrolle Metzgerei" },
+  { key: "3.2",  label: "Reinigungspläne Metzgerei",       group: "HACCP 3 – Metzgerei",  periodType: "monthly",   description: "Monatliche Reinigungspläne Metzgerei" },
+  { key: "3.3",  label: "Öffnung Salate",                  group: "HACCP 3 – Metzgerei",  periodType: "daily",     description: "Tägliche Öffnungsdokumentation Salate" },
+  { key: "3.4",  label: "Käsetheke und Reifeschrank",      group: "HACCP 3 – Metzgerei",  periodType: "daily",     description: "Tägliche Käsetheke-Kontrolle" },
+  { key: "3.8",  label: "GQ-Betriebsbegehung",             group: "HACCP 3 – Metzgerei",  periodType: "quarterly", description: "Vierteljährliche GQ-Betriebsbegehung Metzgerei" },
 ] as const;
+
+export const CHECK_RHYTHMS = [
+  { key: "daily",          label: "Täglich",                    description: "Wird jeden Tag geprüft" },
+  { key: "weekly_monday",  label: "Wöchentlich (jeden Montag)", description: "Wird jeden Montag geprüft" },
+  { key: "monthly",        label: "Monatlich (1. des Monats)",  description: "Wird am 1. jedes Monats geprüft" },
+  { key: "quarterly",      label: "Quartalsweise",              description: "Wird am Quartalsbeginn geprüft" },
+  { key: "yearly",         label: "Jährlich (1. Januar)",       description: "Wird einmal jährlich geprüft" },
+];
 
 export const TRIGGER_TYPES = [
   { key: "no_entry_days",    label: "Keine Einträge seit X Tagen",        unit: "Tage",  description: "Benachrichtigung wenn seit X Tagen kein Eintrag erfolgt ist" },
@@ -93,6 +102,14 @@ async function getLastEntryDate(sectionKey: string, marketId: number): Promise<D
         );
         row = r.rows[0];
         return row ? toDate(row.year, row.month, row.day) : null;
+      }
+      case "1.1": {
+        const r = await pool.query(
+          `SELECT created_at FROM responsibilities WHERE market_id = $1 ORDER BY created_at DESC LIMIT 1`,
+          [marketId]
+        );
+        row = r.rows[0];
+        return row?.created_at ? new Date(row.created_at) : null;
       }
       case "1.4": {
         const r = await pool.query(
@@ -251,6 +268,25 @@ async function sendEmail(to: string, subject: string, body: string): Promise<boo
   }
 }
 
+function shouldCheckToday(rhythm: string | null): boolean {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+  const date = now.getDate();
+  const month = now.getMonth(); // 0-indexed
+
+  switch (rhythm || "daily") {
+    case "daily":         return true;
+    case "weekly_monday": return day === 1;
+    case "monthly":       return date === 1;
+    case "quarterly": {
+      const quarterStartMonths = [0, 3, 6, 9];
+      return date === 1 && quarterStartMonths.includes(month);
+    }
+    case "yearly":        return date === 1 && month === 0;
+    default:              return true;
+  }
+}
+
 async function getTelegramBotToken(): Promise<string | null> {
   if (process.env.TELEGRAM_BOT_TOKEN) return process.env.TELEGRAM_BOT_TOKEN;
   try {
@@ -328,6 +364,9 @@ export async function runNotificationCheck(): Promise<{ checked: number; sent: n
   for (const rule of rules) {
     const section = MONITORABLE_SECTIONS.find(s => s.key === rule.section_key);
     if (!section) continue;
+
+    // Skip if today is not a check day for this rule's rhythm
+    if (!shouldCheckToday(rule.check_rhythm || "daily")) continue;
 
     const userIds: number[] = rule.notify_user_ids || [];
     if (userIds.length === 0) continue;

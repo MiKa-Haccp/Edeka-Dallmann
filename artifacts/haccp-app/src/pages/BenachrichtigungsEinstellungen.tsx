@@ -18,7 +18,8 @@ function cn(...inputs: (string | boolean | undefined | null)[]) {
 
 interface Section { key: string; label: string; group: string; periodType: string; description: string; }
 interface TriggerType { key: string; label: string; unit: string; description: string; }
-interface Rule { id: number; tenant_id: number; section_key: string; trigger_type: string; trigger_value: number; notify_user_ids: number[]; is_active: boolean; market_ids: number[] | null; }
+interface CheckRhythm { key: string; label: string; description: string; }
+interface Rule { id: number; tenant_id: number; section_key: string; trigger_type: string; trigger_value: number; notify_user_ids: number[]; is_active: boolean; market_ids: number[] | null; check_rhythm: string | null; }
 interface UserChannel { id: number; name: string; email: string; role: string; channel_type: string | null; telegram_chat_id: string | null; email_override: string | null; assigned_market_ids: number[] | null; }
 interface LogEntry { id: number; rule_id: number; user_id: number; market_id: number; channel_type: string; message: string; status: string; sent_at: string; user_name: string; section_key: string; trigger_type: string; }
 interface EmailSettings { id?: number; smtp_host?: string; smtp_port?: number; smtp_user?: string; smtp_pass?: string; from_name?: string; default_recipient?: string; enabled?: boolean; telegram_bot_token?: string; }
@@ -42,6 +43,7 @@ export default function BenachrichtigungsEinstellungen() {
   const [tab, setTab] = useState<TabId>("regeln");
   const [sections, setSections] = useState<Section[]>([]);
   const [triggerTypes, setTriggerTypes] = useState<TriggerType[]>([]);
+  const [checkRhythms, setCheckRhythms] = useState<CheckRhythm[]>([]);
   const [rules, setRules] = useState<Rule[]>([]);
   const [users, setUsers] = useState<UserChannel[]>([]);
   const [log, setLog] = useState<LogEntry[]>([]);
@@ -66,6 +68,7 @@ export default function BenachrichtigungsEinstellungen() {
       ]);
       setSections(meta.sections || []);
       setTriggerTypes(meta.triggerTypes || []);
+      setCheckRhythms(meta.checkRhythms || []);
       setRules(rulesData || []);
       setUsers(usersData || []);
       setLog(logData || []);
@@ -161,7 +164,7 @@ export default function BenachrichtigungsEinstellungen() {
           <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">Laden...</div>
         ) : (
           <>
-            {tab === "regeln"        && <RegelnTab sections={sections} triggerTypes={triggerTypes} rules={rules} users={users} onSaved={loadAll} />}
+            {tab === "regeln"        && <RegelnTab sections={sections} triggerTypes={triggerTypes} checkRhythms={checkRhythms} rules={rules} users={users} onSaved={loadAll} />}
             {tab === "empfaenger"    && <EmpfaengerTab users={users} onSaved={loadAll} />}
             {tab === "protokoll"     && <ProtokollTab log={log} sections={sections} />}
             {tab === "einstellungen" && <EinstellungenTab settings={emailSettings} onSaved={() => { loadAll(); }} />}
@@ -172,12 +175,17 @@ export default function BenachrichtigungsEinstellungen() {
   );
 }
 
-function RegelnTab({ sections, triggerTypes, rules, users, onSaved }: {
-  sections: Section[]; triggerTypes: TriggerType[]; rules: Rule[]; users: UserChannel[]; onSaved: () => void;
+const RHYTHM_LABELS: Record<string, string> = {
+  daily: "Täglich", weekly_monday: "Wöchentlich (Mo)", monthly: "Monatlich", quarterly: "Quartalsweise", yearly: "Jährlich",
+};
+
+function RegelnTab({ sections, triggerTypes, checkRhythms, rules, users, onSaved }: {
+  sections: Section[]; triggerTypes: TriggerType[]; checkRhythms: CheckRhythm[]; rules: Rule[]; users: UserChannel[]; onSaved: () => void;
 }) {
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ sectionKey: "", triggerType: "no_entry_days", triggerValue: 7, notifyUserIds: [] as number[], marketIds: [] as number[] });
+  const [form, setForm] = useState({ sectionKey: "", triggerType: "no_entry_days", triggerValue: 7, notifyUserIds: [] as number[], marketIds: [] as number[], checkRhythm: "daily" });
   const [saving, setSaving] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
 
@@ -196,9 +204,11 @@ function RegelnTab({ sections, triggerTypes, rules, users, onSaved }: {
           triggerValue: form.triggerValue,
           notifyUserIds: form.notifyUserIds,
           marketIds: form.marketIds,
+          checkRhythm: form.checkRhythm,
         }),
       });
-      setForm({ sectionKey: "", triggerType: "no_entry_days", triggerValue: 7, notifyUserIds: [], marketIds: [] });
+      setForm({ sectionKey: "", triggerType: "no_entry_days", triggerValue: 7, notifyUserIds: [], marketIds: [], checkRhythm: "daily" });
+      setUserSearch("");
       setShowForm(false);
       onSaved();
     } finally {
@@ -303,7 +313,7 @@ function RegelnTab({ sections, triggerTypes, rules, users, onSaved }: {
               </select>
               {selectedSection && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Rhythmus: <span className="font-medium">{PERIOD_LABELS[selectedSection.periodType] || selectedSection.periodType}</span>
+                  Standardrhythmus der Sektion: <span className="font-medium">{PERIOD_LABELS[selectedSection.periodType] || selectedSection.periodType}</span>
                 </p>
               )}
             </div>
@@ -349,6 +359,28 @@ function RegelnTab({ sections, triggerTypes, rules, users, onSaved }: {
               </p>
             </div>
 
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Prüfungsrhythmus</label>
+              <select
+                value={form.checkRhythm}
+                onChange={e => setForm(prev => ({ ...prev, checkRhythm: e.target.value }))}
+                className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-200"
+              >
+                {(checkRhythms.length > 0 ? checkRhythms : [
+                  { key: "daily", label: "Täglich", description: "" },
+                  { key: "weekly_monday", label: "Wöchentlich (jeden Montag)", description: "" },
+                  { key: "monthly", label: "Monatlich (1. des Monats)", description: "" },
+                  { key: "quarterly", label: "Quartalsweise", description: "" },
+                  { key: "yearly", label: "Jährlich (1. Januar)", description: "" },
+                ]).map(r => (
+                  <option key={r.key} value={r.key}>{r.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Wie oft prüft das System diese Regel?
+              </p>
+            </div>
+
             {triggerNeedsValue && (
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
@@ -382,11 +414,20 @@ function RegelnTab({ sections, triggerTypes, rules, users, onSaved }: {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-2">
-              Empfänger ({form.notifyUserIds.length} ausgewählt)
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-semibold text-muted-foreground">
+                Empfänger ({form.notifyUserIds.length} ausgewählt)
+              </label>
+              <input
+                type="text"
+                value={userSearch}
+                onChange={e => setUserSearch(e.target.value)}
+                placeholder="Mitarbeiter suchen…"
+                className="px-3 py-1.5 border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-orange-200 w-48"
+              />
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-              {users.map(u => {
+              {users.filter(u => !userSearch || u.name.toLowerCase().includes(userSearch.toLowerCase())).map(u => {
                 const selected = form.notifyUserIds.includes(u.id);
                 const hasChannel = u.channel_type && u.channel_type !== "off";
                 return (
@@ -473,8 +514,9 @@ function RegelnTab({ sections, triggerTypes, rules, users, onSaved }: {
                     }
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {getTriggerLabel(rule.trigger_type, rule.trigger_value, "")} ·{" "}
-                    {notifyUsers.length === 0 ? "Keine Empfänger" : notifyUsers.map(u => u.name).join(", ")}
+                    {getTriggerLabel(rule.trigger_type, rule.trigger_value, "")}
+                    {rule.check_rhythm && rule.check_rhythm !== "daily" && <> · <span className="font-medium">{RHYTHM_LABELS[rule.check_rhythm] || rule.check_rhythm}</span></>}
+                    {" · "}{notifyUsers.length === 0 ? "Keine Empfänger" : notifyUsers.map(u => u.name).join(", ")}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">

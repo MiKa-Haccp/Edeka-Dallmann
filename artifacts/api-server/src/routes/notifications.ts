@@ -1,11 +1,11 @@
 import { Router, type IRouter } from "express";
 import { pool } from "@workspace/db";
-import { MONITORABLE_SECTIONS, TRIGGER_TYPES, runNotificationCheck } from "../services/notificationEngine";
+import { MONITORABLE_SECTIONS, TRIGGER_TYPES, CHECK_RHYTHMS, runNotificationCheck } from "../services/notificationEngine";
 
 const router: IRouter = Router();
 
 router.get("/notifications/meta", (_req, res) => {
-  res.json({ sections: MONITORABLE_SECTIONS, triggerTypes: TRIGGER_TYPES });
+  res.json({ sections: MONITORABLE_SECTIONS, triggerTypes: TRIGGER_TYPES, checkRhythms: CHECK_RHYTHMS });
 });
 
 router.get("/notifications/rules", async (req, res) => {
@@ -18,22 +18,22 @@ router.get("/notifications/rules", async (req, res) => {
 });
 
 router.post("/notifications/rules", async (req, res) => {
-  const { tenantId = 1, sectionKey, triggerType, triggerValue, notifyUserIds = [], marketIds } = req.body;
+  const { tenantId = 1, sectionKey, triggerType, triggerValue, notifyUserIds = [], marketIds, checkRhythm } = req.body;
   if (!sectionKey || !triggerType) {
     res.status(400).json({ error: "sectionKey und triggerType sind Pflichtfelder." });
     return;
   }
   const r = await pool.query(
-    `INSERT INTO notification_rules (tenant_id, section_key, trigger_type, trigger_value, notify_user_ids, market_ids)
-     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-    [tenantId, sectionKey, triggerType, triggerValue, notifyUserIds, marketIds && marketIds.length > 0 ? marketIds : null]
+    `INSERT INTO notification_rules (tenant_id, section_key, trigger_type, trigger_value, notify_user_ids, market_ids, check_rhythm)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    [tenantId, sectionKey, triggerType, triggerValue, notifyUserIds, marketIds && marketIds.length > 0 ? marketIds : null, checkRhythm || "daily"]
   );
   res.json(r.rows[0]);
 });
 
 router.put("/notifications/rules/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const { sectionKey, triggerType, triggerValue, notifyUserIds, isActive, marketIds } = req.body;
+  const { sectionKey, triggerType, triggerValue, notifyUserIds, isActive, marketIds, checkRhythm } = req.body;
   const sets: string[] = [];
   const vals: any[] = [];
   let idx = 1;
@@ -43,6 +43,7 @@ router.put("/notifications/rules/:id", async (req, res) => {
   if (notifyUserIds !== undefined) { sets.push(`notify_user_ids = $${idx++}`);  vals.push(notifyUserIds); }
   if (isActive      !== undefined) { sets.push(`is_active = $${idx++}`);        vals.push(isActive); }
   if (marketIds     !== undefined) { sets.push(`market_ids = $${idx++}`);       vals.push(marketIds && marketIds.length > 0 ? marketIds : null); }
+  if (checkRhythm   !== undefined) { sets.push(`check_rhythm = $${idx++}`);     vals.push(checkRhythm || "daily"); }
   if (sets.length === 0) { res.status(400).json({ error: "Keine Felder zum Aktualisieren." }); return; }
   vals.push(id);
   const r = await pool.query(`UPDATE notification_rules SET ${sets.join(", ")} WHERE id = $${idx} RETURNING *`, vals);
