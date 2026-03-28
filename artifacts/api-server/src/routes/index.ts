@@ -47,7 +47,7 @@ import emailSettingsRouter from "./emailSettings";
 import notificationsRouter from "./notifications";
 import schulungsAnforderungenRouter from "./schulungsAnforderungen";
 import monatsberichtRouter from "./monatsbericht";
-import eigenbedarfOrdersatzRouter from "./eigenbedarfOrdersatz";
+
 
 const router: IRouter = Router();
 
@@ -99,6 +99,5 @@ router.use(emailSettingsRouter);
 router.use(notificationsRouter);
 router.use(schulungsAnforderungenRouter);
 router.use(monatsberichtRouter);
-router.use(eigenbedarfOrdersatzRouter);
 
 export default router;

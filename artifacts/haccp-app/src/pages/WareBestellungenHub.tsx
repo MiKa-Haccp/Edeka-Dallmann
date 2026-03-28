@@ -1,6 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Link } from "wouter";
-import { ShoppingCart, ArrowRight, Store, ChevronLeft, BookOpen } from "lucide-react";
+import { ShoppingCart, ArrowRight, Store, ChevronLeft } from "lucide-react";
 
 interface SubCard {
   id: string;
@@ -12,11 +12,11 @@ interface SubCard {
 
 const UNTERPUNKTE: SubCard[] = [
   {
-    id: "eigenbedarf",
-    icon: BookOpen,
-    title: "EDEKA Eigenbedarf",
-    description: "Ordersatz-Seiten für den EDEKA Eigenbedarf. Mitarbeiter können hier die aktuellen Bestelllisten einsehen.",
-    href: "/ware-eigenbedarf",
+    id: "rayon",
+    icon: ShoppingCart,
+    title: "Rayon-Bestellungen",
+    description: "Marktübersicht nach Rayons. Mitarbeiter haken jeden Bereich nach erfolgter Bestellung ab.",
+    href: "/ware-rayon-bestellungen",
   },
   {
     id: "laden",
@@ -41,7 +41,7 @@ export default function WareBestellungenHub() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground mb-0.5">Bestellungen</h1>
-            <p className="text-muted-foreground text-sm">EDEKA Eigenbedarf und Ladenbestellung.</p>
+            <p className="text-muted-foreground text-sm">Rayon-Bestellungen und Ladenbestellung.</p>
           </div>
         </div>
 
