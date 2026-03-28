@@ -5,7 +5,7 @@ import { Link } from "wouter";
 import {
   ChevronLeft, Plus, Pencil, Check, X,
   GripVertical, Loader2, ChevronRight, LayoutGrid, List,
-  Trash2, CheckCircle2, Circle,
+  Trash2, CheckCircle2, Circle, Truck, Clock, AlertTriangle, CalendarDays,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -49,6 +49,54 @@ interface Bestellung {
   kuerzel: string | null; anmerkung: string | null; created_at: string;
 }
 
+interface Lieferplan {
+  id: number; market_id: number; tenant_id: number;
+  name: string; kategorie: string | null;
+  liefertag: number; bestelltag: number | null;
+  bestellschluss_uhrzeit: string | null;
+  notiz: string | null; sort_order: number;
+}
+
+const WTAG_LANG = ["","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
+const WTAG_KURZ = ["","Mo","Di","Mi","Do","Fr","Sa","So"];
+
+function jsTagToOurs(d: Date): number { const t = d.getDay(); return t === 0 ? 7 : t; }
+
+const KAT_CONFIG: Record<string, { label: string; bg: string; border: string; text: string }> = {
+  trocken:   { label: "Trocken",   bg: "bg-amber-50",  border: "border-amber-300", text: "text-amber-800" },
+  tk:        { label: "TK",        bg: "bg-blue-50",   border: "border-blue-300",  text: "text-blue-800"  },
+  getraenke: { label: "Getränke",  bg: "bg-green-50",  border: "border-green-300", text: "text-green-800" },
+  werbeware: { label: "Werbeware", bg: "bg-purple-50", border: "border-purple-300",text: "text-purple-800"},
+};
+const KAT_DEFAULT = { label: "Sonstige", bg: "bg-gray-50", border: "border-gray-300", text: "text-gray-700" };
+
+function getKat(k: string | null) { return k ? (KAT_CONFIG[k] ?? KAT_DEFAULT) : KAT_DEFAULT; }
+
+interface NextDeadline {
+  plan: Lieferplan;
+  bestellDate: Date;
+  daysUntil: number;
+}
+
+function calcNextDeadlines(plaene: Lieferplan[]): NextDeadline[] {
+  const now = new Date();
+  const todayDow = jsTagToOurs(now);
+  const results: NextDeadline[] = [];
+  for (const p of plaene) {
+    if (!p.bestelltag) continue;
+    let diff = (p.bestelltag - todayDow + 7) % 7;
+    if (diff === 0 && p.bestellschluss_uhrzeit) {
+      const [h, m] = p.bestellschluss_uhrzeit.split(":").map(Number);
+      const deadline = new Date(); deadline.setHours(h, m, 0, 0);
+      if (now > deadline) diff = 7;
+    }
+    const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() + diff);
+    results.push({ plan: p, bestellDate: d, daysUntil: diff });
+  }
+  results.sort((a, b) => a.daysUntil - b.daysUntil || a.plan.sort_order - b.plan.sort_order);
+  return results;
+}
+
 function hexToRgb(hex: string) {
   const r = parseInt(hex.slice(1,3),16);
   const g = parseInt(hex.slice(3,5),16);
@@ -68,12 +116,13 @@ export default function WareLadenbestellung() {
   const { selectedMarketId, adminSession } = useAppStore();
   const isAdmin = !!adminSession;
 
-  const [activeTab, setActiveTab] = useState<"plan" | "liste">("liste");
+  const [activeTab, setActiveTab] = useState<"plan" | "liste" | "lieferplan">("liste");
   const [datum, setDatum] = useState(todayIso());
   const [gebiete, setGebiete] = useState<Gebiet[]>([]);
   const [bestellungen, setBestellungen] = useState<Bestellung[]>([]);
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [lieferplaene, setLieferplaene] = useState<Lieferplan[]>([]);
   const [canvasScale, setCanvasScale] = useState(1);
 
   // Add modal
@@ -128,8 +177,15 @@ export default function WareLadenbestellung() {
     } finally { setLoading(false); }
   }, [selectedMarketId, datum]);
 
+  const loadLieferplaene = useCallback(async () => {
+    if (!selectedMarketId) return;
+    const r = await fetch(`${BASE}/laden-lieferplaene?marketId=${selectedMarketId}`);
+    if (r.ok) setLieferplaene(await r.json());
+  }, [selectedMarketId]);
+
   useEffect(() => { loadGebiete(); }, [loadGebiete]);
   useEffect(() => { loadBestellungen(); }, [loadBestellungen]);
+  useEffect(() => { loadLieferplaene(); }, [loadLieferplaene]);
 
   // Inline-Speichern Zuständig (nach loadGebiete definiert – keine temporal dead zone)
   const saveInlineZustaendig = useCallback(async (id: number, val: string) => {
@@ -377,7 +433,64 @@ export default function WareLadenbestellung() {
             <LayoutGrid className="w-4 h-4" />
             Ladenplan
           </button>
+          <button
+            onClick={() => setActiveTab("lieferplan")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === "lieferplan"
+                ? "bg-white shadow text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Truck className="w-4 h-4" />
+            Lieferplan
+          </button>
         </div>
+
+        {/* Nächste Bestellfristen – immer sichtbar wenn Lieferplan vorhanden */}
+        {lieferplaene.length > 0 && activeTab !== "lieferplan" && (() => {
+          const deadlines = calcNextDeadlines(lieferplaene).slice(0, 3);
+          return (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {deadlines.map((d, i) => {
+                const kat = getKat(d.plan.kategorie);
+                const urgent = d.daysUntil === 0;
+                const soon   = d.daysUntil === 1;
+                const urgentStyle = urgent
+                  ? "border-red-400 bg-red-50"
+                  : soon
+                  ? "border-amber-400 bg-amber-50"
+                  : "border-gray-200 bg-white";
+                const label = d.daysUntil === 0
+                  ? "Heute!"
+                  : d.daysUntil === 1
+                  ? "Morgen"
+                  : `in ${d.daysUntil} Tagen`;
+                return (
+                  <div key={`${d.plan.id}-${i}`} className={`border rounded-xl px-3 py-2 flex items-start gap-2.5 ${urgentStyle}`}>
+                    {urgent ? (
+                      <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                    ) : (
+                      <Clock className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className={`text-xs font-bold uppercase tracking-wide ${urgent ? "text-red-600" : soon ? "text-amber-600" : "text-gray-500"}`}>
+                        Bestellen {label} – {WTAG_KURZ[d.plan.bestelltag!]}
+                        {d.plan.bestellschluss_uhrzeit ? ` bis ${d.plan.bestellschluss_uhrzeit}` : ""}
+                      </p>
+                      <p className="text-sm font-semibold text-gray-800 truncate">{d.plan.name}</p>
+                      <p className="text-xs text-gray-500">
+                        Lieferung: <span className="font-medium">{WTAG_LANG[d.plan.liefertag]}</span>
+                      </p>
+                    </div>
+                    <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full border font-semibold whitespace-nowrap ${kat.bg} ${kat.border} ${kat.text}`}>
+                      {kat.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Status + Date bar */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -744,6 +857,129 @@ export default function WareLadenbestellung() {
               </div>
             )}
           </>
+        )}
+
+        {/* ═══════════════ LIEFERPLAN-TAB ═══════════════ */}
+        {activeTab === "lieferplan" && (
+          <div className="space-y-4">
+            {lieferplaene.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <Truck className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">Kein Lieferplan für diesen Markt hinterlegt.</p>
+              </div>
+            ) : (
+              <>
+                {/* Nächste Bestellfristen in kompakter Liste */}
+                <div className="bg-white border border-border/60 rounded-2xl overflow-hidden">
+                  <div className="px-4 pt-4 pb-2 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[#1a3a6b]" />
+                    <h2 className="font-bold text-sm text-foreground uppercase tracking-wide">Nächste Bestellfristen</h2>
+                  </div>
+                  <div className="divide-y divide-border/40">
+                    {calcNextDeadlines(lieferplaene).map((nd, i) => {
+                      const kat = getKat(nd.plan.kategorie);
+                      const urgent = nd.daysUntil === 0;
+                      const soon   = nd.daysUntil === 1;
+                      const dayLabel = nd.daysUntil === 0 ? "Heute" : nd.daysUntil === 1 ? "Morgen" : WTAG_LANG[nd.plan.bestelltag!];
+                      const rowBg = urgent ? "bg-red-50" : soon ? "bg-amber-50" : "bg-white";
+                      return (
+                        <div key={`nd-${nd.plan.id}-${i}`} className={`px-4 py-3 flex items-center gap-3 ${rowBg}`}>
+                          <div className="w-24 shrink-0">
+                            <span className={`text-xs font-bold uppercase tracking-wide ${urgent ? "text-red-600" : soon ? "text-amber-600" : "text-gray-500"}`}>
+                              {dayLabel}
+                            </span>
+                            {nd.plan.bestellschluss_uhrzeit && (
+                              <span className={`block text-xs ${urgent ? "text-red-500" : "text-gray-400"}`}>
+                                bis {nd.plan.bestellschluss_uhrzeit} Uhr
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-800">{nd.plan.name}</p>
+                            {nd.plan.notiz && <p className="text-xs text-gray-400 truncate">{nd.plan.notiz}</p>}
+                          </div>
+                          <div className="shrink-0 flex flex-col items-end gap-1">
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${kat.bg} ${kat.border} ${kat.text}`}>
+                              {kat.label}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              → Lieferung {WTAG_KURZ[nd.plan.liefertag]}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Wochenplan nach Liefertag */}
+                <div className="bg-white border border-border/60 rounded-2xl overflow-hidden">
+                  <div className="px-4 pt-4 pb-2 flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4 text-[#1a3a6b]" />
+                    <h2 className="font-bold text-sm text-foreground uppercase tracking-wide">Wöchentlicher Lieferplan</h2>
+                  </div>
+                  {[1,2,3,4,5,6,7].map(dow => {
+                    const dayPlaene = lieferplaene.filter(p => p.liefertag === dow);
+                    if (!dayPlaene.length) return null;
+                    const todayDow = jsTagToOurs(new Date());
+                    const isToday = dow === todayDow;
+                    return (
+                      <div key={dow} className={`border-t border-border/40 ${isToday ? "bg-[#1a3a6b]/4" : ""}`}>
+                        <div className={`px-4 py-2 flex items-center gap-2 ${isToday ? "bg-[#1a3a6b]/8" : ""}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                            isToday ? "bg-[#1a3a6b] text-white" : "bg-secondary text-muted-foreground"
+                          }`}>
+                            {WTAG_KURZ[dow]}
+                          </div>
+                          <span className={`text-sm font-bold ${isToday ? "text-[#1a3a6b]" : "text-foreground"}`}>
+                            {WTAG_LANG[dow]}
+                            {isToday && <span className="ml-2 text-[10px] bg-[#1a3a6b] text-white px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wide">Heute</span>}
+                          </span>
+                        </div>
+                        <div className="px-4 pb-3 space-y-2">
+                          {dayPlaene.map(p => {
+                            const kat = getKat(p.kategorie);
+                            return (
+                              <div key={p.id} className={`border rounded-xl p-3 ${kat.bg} ${kat.border}`}>
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border font-bold uppercase tracking-wide ${kat.bg} ${kat.border} ${kat.text}`}>
+                                        {kat.label}
+                                      </span>
+                                      <span className={`text-sm font-bold ${kat.text}`}>{p.name}</span>
+                                    </div>
+                                    {p.notiz && (
+                                      <p className="text-xs text-gray-500 mt-1">{p.notiz}</p>
+                                    )}
+                                  </div>
+                                  {p.bestelltag ? (
+                                    <div className="shrink-0 text-right">
+                                      <p className="text-[10px] text-gray-400 uppercase tracking-wide font-semibold">Bestellen bis</p>
+                                      <p className="text-sm font-bold text-gray-700">
+                                        {WTAG_LANG[p.bestelltag]}
+                                        {p.bestellschluss_uhrzeit && (
+                                          <span className="text-xs font-semibold text-gray-500"> {p.bestellschluss_uhrzeit} Uhr</span>
+                                        )}
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <div className="shrink-0 text-right">
+                                      <p className="text-xs text-gray-400 italic">Unabhängiger Bestelltag</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
         )}
 
         {/* ── Add Gebiet Modal ──────────────────────────────────────────────────── */}

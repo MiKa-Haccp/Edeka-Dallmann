@@ -27,5 +27,20 @@ export const ladenBestellungenTable = pgTable("laden_bestellungen", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const ladenLieferplaeneTable = pgTable("laden_lieferplaene", {
+  id:                    serial("id").primaryKey(),
+  marketId:              integer("market_id").notNull(),
+  tenantId:              integer("tenant_id").notNull().default(1),
+  name:                  varchar("name", { length: 120 }).notNull(),
+  kategorie:             varchar("kategorie", { length: 30 }),
+  liefertag:             integer("liefertag").notNull(),
+  bestelltag:            integer("bestelltag"),
+  bestellschlussUhrzeit: varchar("bestellschluss_uhrzeit", { length: 10 }),
+  notiz:                 text("notiz"),
+  sortOrder:             integer("sort_order").notNull().default(99),
+  createdAt:             timestamp("created_at").defaultNow().notNull(),
+});
+
 export type LadenBestellgebiet = typeof ladenBestellgebieteTable.$inferSelect;
 export type LadenBestellung    = typeof ladenBestellungenTable.$inferSelect;
+export type LadenLieferplan    = typeof ladenLieferplaeneTable.$inferSelect;

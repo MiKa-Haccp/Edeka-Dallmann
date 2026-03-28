@@ -84,4 +84,52 @@ router.delete("/laden-bestellungen/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Lieferplaene ─────────────────────────────────────────────────────────────
+
+router.get("/laden-lieferplaene", async (req, res) => {
+  const { marketId, tenantId = "1" } = req.query as Record<string, string>;
+  if (!marketId) return res.status(400).json({ error: "marketId required" });
+  const { rows } = await pool.query(
+    `SELECT * FROM laden_lieferplaene WHERE market_id=$1 AND tenant_id=$2 ORDER BY sort_order, id`,
+    [marketId, tenantId]
+  );
+  res.json(rows);
+});
+
+router.post("/laden-lieferplaene", async (req, res) => {
+  const { marketId, tenantId = 1, name, kategorie, liefertag, bestelltag, bestellschlussUhrzeit, notiz, sortOrder = 99 } = req.body;
+  if (!marketId || !name || !liefertag) return res.status(400).json({ error: "marketId, name, liefertag required" });
+  const { rows } = await pool.query(
+    `INSERT INTO laden_lieferplaene (market_id, tenant_id, name, kategorie, liefertag, bestelltag, bestellschluss_uhrzeit, notiz, sort_order)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+    [marketId, tenantId, name, kategorie || null, liefertag, bestelltag || null, bestellschlussUhrzeit || null, notiz || null, sortOrder]
+  );
+  res.json(rows[0]);
+});
+
+router.put("/laden-lieferplaene/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, kategorie, liefertag, bestelltag, bestellschlussUhrzeit, notiz, sortOrder } = req.body;
+  const { rows } = await pool.query(
+    `UPDATE laden_lieferplaene SET
+       name=COALESCE($1,name),
+       kategorie=COALESCE($2,kategorie),
+       liefertag=COALESCE($3,liefertag),
+       bestelltag=$4,
+       bestellschluss_uhrzeit=$5,
+       notiz=$6,
+       sort_order=COALESCE($7,sort_order)
+     WHERE id=$8 RETURNING *`,
+    [name, kategorie, liefertag, bestelltag ?? null, bestellschlussUhrzeit ?? null, notiz ?? null, sortOrder, id]
+  );
+  if (!rows.length) return res.status(404).json({ error: "Not found" });
+  res.json(rows[0]);
+});
+
+router.delete("/laden-lieferplaene/:id", async (req, res) => {
+  const { id } = req.params;
+  await pool.query("DELETE FROM laden_lieferplaene WHERE id=$1", [id]);
+  res.json({ ok: true });
+});
+
 export default router;
