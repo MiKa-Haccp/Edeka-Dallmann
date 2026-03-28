@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Link } from "wouter";
@@ -175,11 +175,15 @@ function ZoomControls() {
   );
 }
 
+// Referenzbreite: bei dieser angezeigten Bildbreite (px) sind die Buttons "1×" groß.
+// Alles darunter wird kleiner, alles darüber größer – proportional zum Bild.
+const MARKER_REFERENCE_WIDTH = 900;
+
 // ─── Marker-Button auf dem Plan ───────────────────────────────────────────────
 function MarkerPin({
   marker, onEdit, moveMode,
   onPointerDown, onPointerMove, onPointerUp,
-  isDragging, mapRotated,
+  isDragging, mapRotated, markerScale,
 }: {
   marker: Marker;
   onEdit: (m: Marker) => void;
@@ -189,11 +193,16 @@ function MarkerPin({
   onPointerUp:   (e: React.PointerEvent, m: Marker) => void;
   isDragging: boolean;
   mapRotated?: boolean;
+  markerScale: number;
 }) {
   const st  = markerStatus(marker);
   const s   = ST[st];
   const sz  = marker.size || "xs";
   const rot = marker.rotated ?? false;
+
+  const baseTransform = mapRotated
+    ? `translate(-50%, -50%) rotate(-180deg) scale(${markerScale})`
+    : `translate(-50%, -50%) scale(${markerScale})`;
 
   return (
     <div
@@ -206,7 +215,8 @@ function MarkerPin({
         position: "absolute",
         left: `${marker.x}%`,
         top:  `${marker.y}%`,
-        transform: mapRotated ? "translate(-50%, -50%) rotate(-180deg)" : "translate(-50%, -50%)",
+        transform: baseTransform,
+        transformOrigin: "50% 50%",
         zIndex: isDragging ? 50 : 10,
         pointerEvents: "auto",
         cursor: moveMode ? (isDragging ? "grabbing" : "grab") : "pointer",
@@ -538,6 +548,23 @@ export default function MarktPlan() {
   const dragId  = useRef<number | null>(null);
   const imgRef  = useRef<HTMLDivElement>(null);
   const [draggingId, setDraggingId] = useState<number | null>(null);
+
+  // Bildbreite tracken → Marker proportional skalieren
+  const [imageWidth, setImageWidth] = useState(MARKER_REFERENCE_WIDTH);
+  useEffect(() => {
+    const el = imgRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect.width;
+      if (w && w > 0) setImageWidth(w);
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  const markerScale = useMemo(
+    () => Math.max(0.2, imageWidth / MARKER_REFERENCE_WIDTH),
+    [imageWidth]
+  );
 
   // Marker laden + Plan-Rotation aus DB laden
   const load = useCallback(async () => {
@@ -875,6 +902,7 @@ export default function MarktPlan() {
                           onPointerUp={handlePointerUp}
                           isDragging={draggingId === m.id}
                           mapRotated={rotateMap}
+                          markerScale={markerScale}
                         />
                       ))}
                     </div>
