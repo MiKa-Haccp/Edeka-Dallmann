@@ -70,6 +70,7 @@ export default function WareEigenbedarfOrdersatz() {
   const [uploadSeiteNr, setUploadSeiteNr] = useState(1);
   const [uploadTitel, setUploadTitel] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
@@ -102,9 +103,7 @@ export default function WareEigenbedarfOrdersatz() {
     await openLightbox(seiten[next], next);
   };
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = async (file: File) => {
     setUploadFile(file);
     if (file.type.startsWith("image/")) {
       const compressed = await compressImage(file);
@@ -112,7 +111,35 @@ export default function WareEigenbedarfOrdersatz() {
     } else {
       setUploadPreview(null);
     }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
     e.target.value = "";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/") && file.type !== "application/pdf") return;
+    await processFile(file);
   };
 
   const handleUpload = async () => {
@@ -300,7 +327,12 @@ export default function WareEigenbedarfOrdersatz() {
 
               {/* ── Schritt 1: Datei auswählen ── */}
               {!uploadFile && (
-                <div className="px-5 pb-6 space-y-3">
+                <div
+                  className={`px-5 pb-6 space-y-3 transition-colors ${dragActive ? "bg-[#1a3a6b]/5" : ""}`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
                   <p className="text-sm text-muted-foreground">Was möchtest du hochladen?</p>
 
                   {/* Foto-Kachel */}
@@ -330,6 +362,18 @@ export default function WareEigenbedarfOrdersatz() {
                       <p className="text-xs text-red-700 mt-0.5">PDF-Datei aus dem Speicher wählen</p>
                     </div>
                   </button>
+
+                  {/* Drag & Drop Zone */}
+                  <div className={`border-2 border-dashed rounded-2xl p-4 flex flex-col items-center gap-2 text-center transition-all select-none pointer-events-none
+                    ${dragActive
+                      ? "border-[#1a3a6b] bg-[#1a3a6b]/8 text-[#1a3a6b]"
+                      : "border-border/50 text-muted-foreground/60"}`}
+                  >
+                    <Upload className="w-5 h-5" />
+                    <p className="text-xs">
+                      {dragActive ? "Datei hier ablegen …" : "Oder Datei hier hineinziehen (Foto oder PDF)"}
+                    </p>
+                  </div>
 
                   {/* Hidden inputs */}
                   <input ref={photoInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
