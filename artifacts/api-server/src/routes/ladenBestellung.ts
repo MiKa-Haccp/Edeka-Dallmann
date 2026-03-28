@@ -16,19 +16,19 @@ router.get("/laden-bestellgebiete", async (req, res) => {
 });
 
 router.post("/laden-bestellgebiete", async (req, res) => {
-  const { marketId, tenantId = 1, name, farbe = "#1a3a6b", x = 0, y = 0, w = 180, h = 100, sortOrder = 99, sortiment, zustaendig } = req.body;
+  const { marketId, tenantId = 1, name, farbe = "#1a3a6b", x = 0, y = 0, w = 180, h = 100, sortOrder = 99, sortiment, zustaendig, kategorie } = req.body;
   if (!marketId || !name) return res.status(400).json({ error: "marketId and name required" });
   const { rows } = await pool.query(
-    `INSERT INTO laden_bestellgebiete (market_id, tenant_id, name, farbe, x, y, w, h, sort_order, sortiment, zustaendig)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-    [marketId, tenantId, name, farbe, x, y, w, h, sortOrder, sortiment || null, zustaendig || null]
+    `INSERT INTO laden_bestellgebiete (market_id, tenant_id, name, farbe, x, y, w, h, sort_order, sortiment, zustaendig, kategorie)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+    [marketId, tenantId, name, farbe, x, y, w, h, sortOrder, sortiment || null, zustaendig || null, kategorie || null]
   );
   res.json(rows[0]);
 });
 
 router.put("/laden-bestellgebiete/:id", async (req, res) => {
   const { id } = req.params;
-  const { name, farbe, x, y, w, h, sortOrder, sortiment, zustaendig } = req.body;
+  const { name, farbe, x, y, w, h, sortOrder, sortiment, zustaendig, kategorie } = req.body;
   const { rows } = await pool.query(
     `UPDATE laden_bestellgebiete SET
        name=COALESCE($1,name), farbe=COALESCE($2,farbe),
@@ -36,9 +36,10 @@ router.put("/laden-bestellgebiete/:id", async (req, res) => {
        w=COALESCE($5,w), h=COALESCE($6,h),
        sort_order=COALESCE($7,sort_order),
        sortiment=CASE WHEN $8::text IS NOT NULL THEN $8 ELSE sortiment END,
-       zustaendig=CASE WHEN $9::text IS NOT NULL THEN $9 ELSE zustaendig END
-     WHERE id=$10 RETURNING *`,
-    [name, farbe, x, y, w, h, sortOrder, sortiment ?? null, zustaendig ?? null, id]
+       zustaendig=CASE WHEN $9::text IS NOT NULL THEN $9 ELSE zustaendig END,
+       kategorie=CASE WHEN $10::text IS NOT NULL THEN $10 ELSE kategorie END
+     WHERE id=$11 RETURNING *`,
+    [name, farbe, x, y, w, h, sortOrder, sortiment ?? null, zustaendig ?? null, kategorie ?? null, id]
   );
   if (!rows.length) return res.status(404).json({ error: "Not found" });
   res.json(rows[0]);

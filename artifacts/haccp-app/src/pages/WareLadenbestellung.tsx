@@ -43,6 +43,7 @@ interface Gebiet {
   sort_order: number;
   sortiment: string | null;
   zustaendig: string | null;
+  kategorie: string | null;
 }
 interface Bestellung {
   id: number; gebiet_id: number; datum: string;
@@ -123,6 +124,7 @@ export default function WareLadenbestellung() {
   const [loading, setLoading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [lieferplaene, setLieferplaene] = useState<Lieferplan[]>([]);
+  const [filterKategorie, setFilterKategorie] = useState<string | null>(null);
   const [canvasScale, setCanvasScale] = useState(1);
 
   // Add modal
@@ -131,6 +133,7 @@ export default function WareLadenbestellung() {
   const [addFarbe, setAddFarbe] = useState(FARBEN[0]);
   const [addSortiment, setAddSortiment] = useState("");
   const [addZustaendig, setAddZustaendig] = useState("");
+  const [addKategorie, setAddKategorie] = useState<string>("");
   const [adding, setAdding] = useState(false);
 
   // Order modal
@@ -144,6 +147,7 @@ export default function WareLadenbestellung() {
   const [editName, setEditName] = useState("");
   const [editSortiment, setEditSortiment] = useState("");
   const [editZustaendig, setEditZustaendig] = useState("");
+  const [editKategorie, setEditKategorie] = useState("");
   const [editFarbe, setEditFarbe] = useState(FARBEN[0]);
   const [editSaving, setEditSaving] = useState(false);
 
@@ -289,9 +293,10 @@ export default function WareLadenbestellung() {
           x: nextX, y: nextY, w: 200, h: 120,
           sortiment: addSortiment.trim() || null,
           zustaendig: addZustaendig.trim() || null,
+          kategorie: addKategorie || null,
         }),
       });
-      setAddName(""); setAddFarbe(FARBEN[0]); setAddSortiment(""); setAddZustaendig("");
+      setAddName(""); setAddFarbe(FARBEN[0]); setAddSortiment(""); setAddZustaendig(""); setAddKategorie("");
       setShowAdd(false);
       await loadGebiete();
     } finally { setAdding(false); }
@@ -315,6 +320,7 @@ export default function WareLadenbestellung() {
           farbe: editFarbe,
           sortiment: editSortiment.trim() || "",
           zustaendig: editZustaendig.trim() || "",
+          kategorie: editKategorie || null,
         }),
       });
       setEditingGebiet(null);
@@ -327,6 +333,7 @@ export default function WareLadenbestellung() {
     setEditName(g.name);
     setEditSortiment(g.sortiment ?? "");
     setEditZustaendig(g.zustaendig ?? "");
+    setEditKategorie(g.kategorie ?? "");
     setEditFarbe(g.farbe);
   };
 
@@ -377,8 +384,9 @@ export default function WareLadenbestellung() {
   };
 
   const bestellMap = new Map(bestellungen.map(b => [b.gebiet_id, b]));
-  const orderedCount = bestellungen.length;
-  const totalCount = gebiete.length;
+  const visibleGebiete = filterKategorie ? gebiete.filter(g => g.kategorie === filterKategorie) : gebiete;
+  const orderedCount = visibleGebiete.filter(g => bestellMap.has(g.id)).length;
+  const totalCount = visibleGebiete.length;
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
@@ -455,18 +463,26 @@ export default function WareLadenbestellung() {
                 const kat = getKat(d.plan.kategorie);
                 const urgent = d.daysUntil === 0;
                 const soon   = d.daysUntil === 1;
+                const isActive = filterKategorie === d.plan.kategorie;
                 const urgentStyle = urgent
-                  ? "border-red-400 bg-red-50"
+                  ? "border-red-400 bg-red-50 hover:bg-red-100"
                   : soon
-                  ? "border-amber-400 bg-amber-50"
-                  : "border-gray-200 bg-white";
+                  ? "border-amber-400 bg-amber-50 hover:bg-amber-100"
+                  : "border-gray-200 bg-white hover:bg-gray-50";
                 const label = d.daysUntil === 0
                   ? "Heute!"
                   : d.daysUntil === 1
                   ? "Morgen"
                   : `in ${d.daysUntil} Tagen`;
                 return (
-                  <div key={`${d.plan.id}-${i}`} className={`border rounded-xl px-3 py-2 flex items-start gap-2.5 ${urgentStyle}`}>
+                  <button
+                    key={`${d.plan.id}-${i}`}
+                    onClick={() => {
+                      setFilterKategorie(d.plan.kategorie);
+                      setActiveTab("liste");
+                    }}
+                    className={`border rounded-xl px-3 py-2 flex items-start gap-2.5 text-left w-full transition-colors cursor-pointer ${urgentStyle} ${isActive ? "ring-2 ring-[#1a3a6b]" : ""}`}
+                  >
                     {urgent ? (
                       <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                     ) : (
@@ -485,7 +501,7 @@ export default function WareLadenbestellung() {
                     <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full border font-semibold whitespace-nowrap ${kat.bg} ${kat.border} ${kat.text}`}>
                       {kat.label}
                     </span>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -540,6 +556,26 @@ export default function WareLadenbestellung() {
 
         {/* ═══════════════ LISTENANSICHT ═══════════════ */}
         {selectedMarketId && activeTab === "liste" && (
+          <>
+            {/* Filter-Chip */}
+            {filterKategorie && (() => {
+              const kat = getKat(filterKategorie);
+              return (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground font-medium">Gefiltert:</span>
+                  <span className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-semibold ${kat.bg} ${kat.border} ${kat.text}`}>
+                    {kat.label}
+                    <button onClick={() => setFilterKategorie(null)} className="hover:opacity-70 transition-opacity ml-0.5">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    ({gebiete.filter(g => g.kategorie === filterKategorie).length} Bereiche)
+                  </span>
+                </div>
+              );
+            })()}
+
           <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
             {gebiete.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
@@ -565,7 +601,7 @@ export default function WareLadenbestellung() {
                     </tr>
                   </thead>
                   <tbody>
-                    {gebiete.map((g, i) => {
+                    {visibleGebiete.map((g, i) => {
                       const bestellt = bestellMap.get(g.id);
                       const isOrdered = !!bestellt;
                       return (
@@ -684,6 +720,7 @@ export default function WareLadenbestellung() {
               </div>
             )}
           </div>
+          </>
         )}
 
         {/* ═══════════════ PLANANSICHT ═══════════════ */}
@@ -1019,6 +1056,20 @@ export default function WareLadenbestellung() {
                   />
                 </div>
                 <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Lieferkategorie</label>
+                  <select
+                    value={addKategorie}
+                    onChange={e => setAddKategorie(e.target.value)}
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 bg-white"
+                  >
+                    <option value="">— keine —</option>
+                    <option value="trocken">Trocken</option>
+                    <option value="tk">TK</option>
+                    <option value="getraenke">Getränke</option>
+                    <option value="werbeware">Werbeware</option>
+                  </select>
+                </div>
+                <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Farbe</label>
                   <div className="mt-1.5 flex flex-wrap gap-2">
                     {FARBEN.map(f => (
@@ -1085,6 +1136,20 @@ export default function WareLadenbestellung() {
                     placeholder="Name des Mitarbeiters"
                     className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
                   />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Lieferkategorie</label>
+                  <select
+                    value={editKategorie}
+                    onChange={e => setEditKategorie(e.target.value)}
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 bg-white"
+                  >
+                    <option value="">— keine —</option>
+                    <option value="trocken">Trocken</option>
+                    <option value="tk">TK</option>
+                    <option value="getraenke">Getränke</option>
+                    <option value="werbeware">Werbeware</option>
+                  </select>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Farbe</label>

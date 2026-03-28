@@ -13,6 +13,7 @@ export const ladenBestellgebieteTable = pgTable("laden_bestellgebiete", {
   sortOrder:   integer("sort_order").notNull().default(99),
   sortiment:   text("sortiment"),
   zustaendig:  varchar("zustaendig", { length: 100 }),
+  kategorie:   varchar("kategorie", { length: 30 }),
   createdAt:   timestamp("created_at").defaultNow().notNull(),
 });
 
