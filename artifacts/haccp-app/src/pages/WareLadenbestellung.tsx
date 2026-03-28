@@ -90,13 +90,17 @@ export default function WareLadenbestellung() {
   const [orderAnmerkung, setOrderAnmerkung] = useState("");
   const [ordering, setOrdering] = useState(false);
 
-  // Inline edit for list view
+  // Inline edit for list view (full modal)
   const [editingGebiet, setEditingGebiet] = useState<Gebiet | null>(null);
   const [editName, setEditName] = useState("");
   const [editSortiment, setEditSortiment] = useState("");
   const [editZustaendig, setEditZustaendig] = useState("");
   const [editFarbe, setEditFarbe] = useState(FARBEN[0]);
   const [editSaving, setEditSaving] = useState(false);
+
+  // Inline-Bearbeitung Zuständig – State (Callback kommt nach loadGebiete)
+  const [inlineZustaendigId, setInlineZustaendigId] = useState<number | null>(null);
+  const [inlineZustaendigVal, setInlineZustaendigVal] = useState("");
 
   // Drag / resize state
   const dragRef = useRef<{
@@ -126,6 +130,17 @@ export default function WareLadenbestellung() {
 
   useEffect(() => { loadGebiete(); }, [loadGebiete]);
   useEffect(() => { loadBestellungen(); }, [loadBestellungen]);
+
+  // Inline-Speichern Zuständig (nach loadGebiete definiert – keine temporal dead zone)
+  const saveInlineZustaendig = useCallback(async (id: number, val: string) => {
+    setInlineZustaendigId(null);
+    await fetch(`${BASE}/laden-bestellgebiete/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ zustaendig: val.trim() }),
+    });
+    await loadGebiete();
+  }, [loadGebiete]);
 
   // ── Canvas mouse events ───────────────────────────────────────────────────
   const getCanvasPos = (e: React.MouseEvent | MouseEvent) => {
@@ -469,9 +484,38 @@ export default function WareLadenbestellung() {
                             {g.sortiment || <span className="italic opacity-40">—</span>}
                           </td>
 
-                          {/* Zuständig */}
-                          <td className="px-4 py-3 font-medium text-foreground">
-                            {g.zustaendig || <span className="text-muted-foreground italic text-xs">—</span>}
+                          {/* Zuständig – direkt bearbeitbar für Admins */}
+                          <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                            {isAdmin && inlineZustaendigId === g.id ? (
+                              <input
+                                autoFocus
+                                value={inlineZustaendigVal}
+                                onChange={e => setInlineZustaendigVal(e.target.value)}
+                                onBlur={() => saveInlineZustaendig(g.id, inlineZustaendigVal)}
+                                onKeyDown={e => {
+                                  if (e.key === "Enter") saveInlineZustaendig(g.id, inlineZustaendigVal);
+                                  if (e.key === "Escape") setInlineZustaendigId(null);
+                                }}
+                                className="w-full text-sm border border-[#1a3a6b]/40 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 font-medium"
+                                style={{ minWidth: 90 }}
+                              />
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  if (!isAdmin) return;
+                                  setInlineZustaendigId(g.id);
+                                  setInlineZustaendigVal(g.zustaendig ?? "");
+                                }}
+                                className={`text-left font-medium text-sm w-full rounded-lg px-2 py-1 transition-colors ${
+                                  isAdmin
+                                    ? "hover:bg-[#1a3a6b]/8 cursor-text text-foreground"
+                                    : "cursor-default text-foreground"
+                                }`}
+                                title={isAdmin ? "Klicken zum Bearbeiten" : undefined}
+                              >
+                                {g.zustaendig || <span className="text-muted-foreground italic text-xs">—</span>}
+                              </button>
+                            )}
                           </td>
 
                           {/* Bestellt-Status */}
