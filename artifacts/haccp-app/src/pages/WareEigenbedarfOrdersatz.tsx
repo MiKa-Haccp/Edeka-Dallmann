@@ -3,9 +3,9 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import { Link } from "wouter";
 import {
-  ChevronLeft, Plus, Trash2, X, Upload, FileText,
+  ChevronLeft, Plus, X, Upload, FileText,
   ChevronLeft as PrevIcon, ChevronRight as NextIcon,
-  Loader2, ZoomIn, RefreshCw,
+  Loader2, ZoomIn, RefreshCw, Camera, File,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -70,7 +70,8 @@ export default function WareEigenbedarfOrdersatz() {
   const [uploadSeiteNr, setUploadSeiteNr] = useState(1);
   const [uploadTitel, setUploadTitel] = useState("");
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   const loadSeiten = useCallback(async () => {
     if (!selectedMarketId) return;
@@ -111,6 +112,7 @@ export default function WareEigenbedarfOrdersatz() {
     } else {
       setUploadPreview(null);
     }
+    e.target.value = "";
   };
 
   const handleUpload = async () => {
@@ -147,7 +149,6 @@ export default function WareEigenbedarfOrdersatz() {
       setUploadPreview(null);
       setUploadTitel("");
       setUploadSeiteNr(seiten.length + 1);
-      if (fileInputRef.current) fileInputRef.current.value = "";
       await loadSeiten();
     } finally { setUploading(false); }
   };
@@ -281,83 +282,121 @@ export default function WareEigenbedarfOrdersatz() {
 
         {/* ── Upload Modal ── */}
         {showUpload && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold">Ordersatz-Seite hochladen</h2>
-                <button onClick={() => setShowUpload(false)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground">
-                  <X className="w-4 h-4" />
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-sm">
+
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 pt-5 pb-3">
+                <h2 className="text-base font-bold">
+                  {uploadFile ? "Details eingeben" : "Seite hochladen"}
+                </h2>
+                <button
+                  onClick={() => { setShowUpload(false); setUploadFile(null); setUploadPreview(null); }}
+                  className="p-1.5 rounded-xl hover:bg-gray-100 text-muted-foreground"
+                >
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Seitennummer</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={uploadSeiteNr}
-                    onChange={e => setUploadSeiteNr(Number(e.target.value))}
-                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
-                  />
-                </div>
+              {/* ── Schritt 1: Datei auswählen ── */}
+              {!uploadFile && (
+                <div className="px-5 pb-6 space-y-3">
+                  <p className="text-sm text-muted-foreground">Was möchtest du hochladen?</p>
 
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Titel (optional)</label>
-                  <input
-                    value={uploadTitel}
-                    onChange={e => setUploadTitel(e.target.value)}
-                    placeholder="z.B. Duftstecker / Eigenbedarf"
-                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Datei auswählen</label>
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="mt-1 border-2 border-dashed border-border/60 rounded-xl px-3 py-4 text-center cursor-pointer hover:border-[#1a3a6b]/40 hover:bg-[#1a3a6b]/4 transition-colors"
+                  {/* Foto-Kachel */}
+                  <button
+                    onClick={() => photoInputRef.current?.click()}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-amber-200 bg-amber-50 hover:bg-amber-100 hover:border-amber-300 active:scale-[0.98] transition-all text-left"
                   >
+                    <div className="w-14 h-14 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                      <Camera className="w-7 h-7 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-amber-900">Foto aufnehmen</p>
+                      <p className="text-xs text-amber-700 mt-0.5">Kamera oder Galerie – JPG, PNG</p>
+                    </div>
+                  </button>
+
+                  {/* PDF-Kachel */}
+                  <button
+                    onClick={() => pdfInputRef.current?.click()}
+                    className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-red-200 bg-red-50 hover:bg-red-100 hover:border-red-300 active:scale-[0.98] transition-all text-left"
+                  >
+                    <div className="w-14 h-14 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+                      <File className="w-7 h-7 text-red-500" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-red-900">PDF hochladen</p>
+                      <p className="text-xs text-red-700 mt-0.5">PDF-Datei aus dem Speicher wählen</p>
+                    </div>
+                  </button>
+
+                  {/* Hidden inputs */}
+                  <input ref={photoInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+                  <input ref={pdfInputRef} type="file" accept="application/pdf" onChange={handleFileSelect} className="hidden" />
+                </div>
+              )}
+
+              {/* ── Schritt 2: Details + Vorschau ── */}
+              {uploadFile && (
+                <div className="px-5 pb-5 space-y-4">
+
+                  {/* Vorschau */}
+                  <div className="rounded-xl overflow-hidden border border-border/60 bg-gray-50">
                     {uploadPreview ? (
-                      <img src={uploadPreview} alt="Vorschau" className="max-h-40 mx-auto rounded-lg object-contain" />
-                    ) : uploadFile ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <FileText className="w-10 h-10 text-red-400" />
-                        <span className="text-xs text-gray-600">{uploadFile.name}</span>
-                      </div>
+                      <img src={uploadPreview} alt="Vorschau" className="w-full max-h-48 object-contain" />
                     ) : (
-                      <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <Upload className="w-8 h-8" />
-                        <span className="text-sm font-medium">Foto oder PDF auswählen</span>
-                        <span className="text-xs">JPG, PNG oder PDF – max. 10 MB</span>
+                      <div className="flex items-center gap-3 p-4">
+                        <FileText className="w-10 h-10 text-red-400 flex-shrink-0" />
+                        <span className="text-sm text-gray-600 break-all">{uploadFile.name}</span>
                       </div>
                     )}
                   </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*,application/pdf"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                </div>
-              </div>
 
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={() => setShowUpload(false)}
-                  className="flex-1 px-4 py-2.5 border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground"
-                >
-                  Abbrechen
-                </button>
-                <button
-                  onClick={handleUpload}
-                  disabled={!uploadFile || uploading}
-                  className="flex-1 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {uploading ? <><Loader2 className="w-4 h-4 animate-spin" /> Lädt hoch…</> : <><Upload className="w-4 h-4" /> Hochladen</>}
-                </button>
-              </div>
+                  {/* Seitennummer */}
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Seitennummer</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={uploadSeiteNr}
+                      onChange={e => setUploadSeiteNr(Number(e.target.value))}
+                      className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                    />
+                  </div>
+
+                  {/* Titel */}
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Titel (optional)</label>
+                    <input
+                      value={uploadTitel}
+                      onChange={e => setUploadTitel(e.target.value)}
+                      placeholder="z.B. Duftstecker / Eigenbedarf"
+                      className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                    />
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => { setUploadFile(null); setUploadPreview(null); }}
+                      className="px-4 py-2.5 border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground"
+                    >
+                      ← Zurück
+                    </button>
+                    <button
+                      onClick={handleUpload}
+                      disabled={uploading}
+                      className="flex-1 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {uploading
+                        ? <><Loader2 className="w-4 h-4 animate-spin" /> Lädt hoch…</>
+                        : <><Upload className="w-4 h-4" /> Hochladen</>}
+                    </button>
+                  </div>
+                </div>
+              )}
+
             </div>
           </div>
         )}
