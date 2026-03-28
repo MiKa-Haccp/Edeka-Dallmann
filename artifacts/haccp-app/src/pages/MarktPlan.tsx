@@ -562,7 +562,7 @@ export default function MarktPlan() {
     return () => obs.disconnect();
   }, []);
   const markerScale = useMemo(
-    () => Math.max(0.2, imageWidth / MARKER_REFERENCE_WIDTH),
+    () => Math.min(1.0, Math.max(0.2, imageWidth / MARKER_REFERENCE_WIDTH)),
     [imageWidth]
   );
 
