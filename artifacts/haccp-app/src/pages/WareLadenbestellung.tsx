@@ -4,7 +4,8 @@ import { useAppStore } from "@/store/use-app-store";
 import { Link } from "wouter";
 import {
   ChevronLeft, Plus, Pencil, Check, X,
-  GripVertical, Loader2, ChevronRight,
+  GripVertical, Loader2, ChevronRight, LayoutGrid, List,
+  Trash2, CheckCircle2, Circle,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -40,13 +41,14 @@ interface Gebiet {
   name: string; farbe: string;
   x: number; y: number; w: number; h: number;
   sort_order: number;
+  sortiment: string | null;
+  zustaendig: string | null;
 }
 interface Bestellung {
   id: number; gebiet_id: number; datum: string;
   kuerzel: string | null; anmerkung: string | null; created_at: string;
 }
 
-// ─── lighter version of a hex color for background ──────────────────────────
 function hexToRgb(hex: string) {
   const r = parseInt(hex.slice(1,3),16);
   const g = parseInt(hex.slice(3,5),16);
@@ -66,6 +68,7 @@ export default function WareLadenbestellung() {
   const { selectedMarketId, adminSession } = useAppStore();
   const isAdmin = !!adminSession;
 
+  const [activeTab, setActiveTab] = useState<"plan" | "liste">("liste");
   const [datum, setDatum] = useState(todayIso());
   const [gebiete, setGebiete] = useState<Gebiet[]>([]);
   const [bestellungen, setBestellungen] = useState<Bestellung[]>([]);
@@ -77,6 +80,8 @@ export default function WareLadenbestellung() {
   const [showAdd, setShowAdd] = useState(false);
   const [addName, setAddName] = useState("");
   const [addFarbe, setAddFarbe] = useState(FARBEN[0]);
+  const [addSortiment, setAddSortiment] = useState("");
+  const [addZustaendig, setAddZustaendig] = useState("");
   const [adding, setAdding] = useState(false);
 
   // Order modal
@@ -85,7 +90,15 @@ export default function WareLadenbestellung() {
   const [orderAnmerkung, setOrderAnmerkung] = useState("");
   const [ordering, setOrdering] = useState(false);
 
-  // Drag / resize state (refs to avoid stale closures)
+  // Inline edit for list view
+  const [editingGebiet, setEditingGebiet] = useState<Gebiet | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editSortiment, setEditSortiment] = useState("");
+  const [editZustaendig, setEditZustaendig] = useState("");
+  const [editFarbe, setEditFarbe] = useState(FARBEN[0]);
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Drag / resize state
   const dragRef = useRef<{
     id: number; type: "move" | "resize";
     startX: number; startY: number;
@@ -93,7 +106,6 @@ export default function WareLadenbestellung() {
   } | null>(null);
 
   const canvasRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   // ── Load ──────────────────────────────────────────────────────────────────
@@ -131,18 +143,15 @@ export default function WareLadenbestellung() {
     const { cx, cy } = getCanvasPos(e);
     const dx = cx - dr.startX;
     const dy = cy - dr.startY;
-
     setGebiete(prev => prev.map(g => {
       if (g.id !== dr.id) return g;
       if (dr.type === "move") {
-        return {
-          ...g,
+        return { ...g,
           x: Math.max(0, Math.min(CANVAS_W - g.w, snap(dr.origX + dx))),
           y: Math.max(0, Math.min(CANVAS_H - g.h, snap(dr.origY + dy))),
         };
       } else {
-        return {
-          ...g,
+        return { ...g,
           w: Math.max(MIN_W, Math.min(CANVAS_W - g.x, snap(dr.origW + dx))),
           h: Math.max(MIN_H, Math.min(CANVAS_H - g.y, snap(dr.origH + dy))),
         };
@@ -173,6 +182,18 @@ export default function WareLadenbestellung() {
     };
   }, [editMode, onMouseMove, onMouseUp]);
 
+  // ── Canvas scale ──────────────────────────────────────────────────────────
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(() => {
+      const availW = el.clientWidth - 4;
+      setCanvasScale(Math.min(1, availW / CANVAS_W));
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   // ── Handlers ──────────────────────────────────────────────────────────────
   const startDrag = (e: React.MouseEvent, id: number, type: "move" | "resize") => {
     e.preventDefault();
@@ -195,9 +216,12 @@ export default function WareLadenbestellung() {
           marketId: selectedMarketId, tenantId: 1,
           name: addName.trim(), farbe: addFarbe,
           x: nextX, y: nextY, w: 200, h: 120,
+          sortiment: addSortiment.trim() || null,
+          zustaendig: addZustaendig.trim() || null,
         }),
       });
-      setAddName(""); setAddFarbe(FARBEN[0]); setShowAdd(false);
+      setAddName(""); setAddFarbe(FARBEN[0]); setAddSortiment(""); setAddZustaendig("");
+      setShowAdd(false);
       await loadGebiete();
     } finally { setAdding(false); }
   };
@@ -208,6 +232,36 @@ export default function WareLadenbestellung() {
     await loadBestellungen();
   };
 
+  const handleSaveEdit = async () => {
+    if (!editingGebiet || !editName.trim()) return;
+    setEditSaving(true);
+    try {
+      await fetch(`${BASE}/laden-bestellgebiete/${editingGebiet.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName.trim(),
+          farbe: editFarbe,
+          sortiment: editSortiment.trim() || "",
+          zustaendig: editZustaendig.trim() || "",
+        }),
+      });
+      setEditingGebiet(null);
+      await loadGebiete();
+    } finally { setEditSaving(false); }
+  };
+
+  const openEditGebiet = (g: Gebiet) => {
+    setEditingGebiet(g);
+    setEditName(g.name);
+    setEditSortiment(g.sortiment ?? "");
+    setEditZustaendig(g.zustaendig ?? "");
+    setEditFarbe(g.farbe);
+  };
+
+  // Plan-Canvas rename
+  const [renamingId, setRenamingId] = useState<number | null>(null);
+  const [renameVal, setRenameVal] = useState("");
   const handleRename = async (id: number, name: string) => {
     await fetch(`${BASE}/laden-bestellgebiete/${id}`, {
       method: "PUT",
@@ -221,7 +275,6 @@ export default function WareLadenbestellung() {
     if (editMode) return;
     const existing = bestellungen.find(b => b.gebiet_id === g.id);
     if (existing) {
-      // unmark
       if (confirm(`Bestellung für "${g.name}" aufheben?`)) {
         fetch(`${BASE}/laden-bestellungen/${existing.id}`, { method: "DELETE" })
           .then(() => loadBestellungen());
@@ -252,26 +305,11 @@ export default function WareLadenbestellung() {
     } finally { setOrdering(false); }
   };
 
-  // ── Canvas scale ──────────────────────────────────────────────────────────
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const obs = new ResizeObserver(() => {
-      const availW = el.clientWidth - 4;
-      setCanvasScale(Math.min(1, availW / CANVAS_W));
-    });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
   const bestellMap = new Map(bestellungen.map(b => [b.gebiet_id, b]));
   const orderedCount = bestellungen.length;
   const totalCount = gebiete.length;
 
-  // ── Inline rename state ───────────────────────────────────────────────────
-  const [renamingId, setRenamingId] = useState<number | null>(null);
-  const [renameVal, setRenameVal] = useState("");
-
+  // ── RENDER ────────────────────────────────────────────────────────────────
   return (
     <AppLayout>
       <div className="max-w-full space-y-4 pb-8">
@@ -300,18 +338,42 @@ export default function WareLadenbestellung() {
           )}
         </div>
 
+        {/* Tab switcher */}
+        <div className="flex items-center gap-1 bg-secondary/40 p-1 rounded-2xl w-fit">
+          <button
+            onClick={() => setActiveTab("liste")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === "liste"
+                ? "bg-white shadow text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <List className="w-4 h-4" />
+            Liste
+          </button>
+          <button
+            onClick={() => setActiveTab("plan")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === "plan"
+                ? "bg-white shadow text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+            Ladenplan
+          </button>
+        </div>
+
         {/* Status + Date bar */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <div className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
-              totalCount > 0 && orderedCount === totalCount
-                ? "bg-green-100 text-green-700"
-                : orderedCount > 0
-                ? "bg-amber-100 text-amber-700"
-                : "bg-gray-100 text-gray-600"
-            }`}>
-              {loading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : `${orderedCount} / ${totalCount} bestellt`}
-            </div>
+          <div className={`px-3 py-1.5 rounded-full text-sm font-semibold ${
+            totalCount > 0 && orderedCount === totalCount
+              ? "bg-green-100 text-green-700"
+              : orderedCount > 0
+              ? "bg-amber-100 text-amber-700"
+              : "bg-gray-100 text-gray-600"
+          }`}>
+            {loading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : `${orderedCount} / ${totalCount} bestellt`}
           </div>
           <div className="flex items-center gap-1.5">
             <button onClick={() => setDatum(d => addDays(d,-1))}
@@ -331,7 +393,7 @@ export default function WareLadenbestellung() {
         {editMode && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 flex items-center justify-between gap-3">
             <p className="text-sm text-amber-700 font-medium">
-              ✏️ Bearbeitungsmodus — Gebiete verschieben und skalieren
+              ✏️ Bearbeitungsmodus
             </p>
             <button
               onClick={() => setShowAdd(true)}
@@ -342,309 +404,494 @@ export default function WareLadenbestellung() {
           </div>
         )}
 
-        {/* No market */}
         {!selectedMarketId && (
           <div className="bg-white rounded-2xl border border-border/60 p-10 text-center text-muted-foreground text-sm">
             Bitte oben einen Markt auswählen.
           </div>
         )}
 
-        {/* Canvas */}
-        {selectedMarketId && (
-          <div ref={wrapRef} className="w-full overflow-x-auto">
-            <div
-              style={{ width: CANVAS_W * canvasScale, height: CANVAS_H * canvasScale, position: "relative" }}
-              className="mx-auto"
-            >
-              <div
-                ref={canvasRef}
-                style={{
-                  width: CANVAS_W,
-                  height: CANVAS_H,
-                  transform: `scale(${canvasScale})`,
-                  transformOrigin: "top left",
-                  position: "relative",
-                  background: editMode
-                    ? "radial-gradient(circle, #cbd5e1 1px, transparent 1px)"
-                    : "#f8fafc",
-                  backgroundSize: editMode ? `${GRID}px ${GRID}px` : undefined,
-                  borderRadius: 16,
-                  border: "1.5px solid #e2e8f0",
-                  overflow: "hidden",
-                }}
-              >
-                {gebiete.length === 0 && !editMode && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted-foreground">
-                    <p className="text-sm">Noch keine Bestellgebiete angelegt.</p>
-                    {isAdmin && (
-                      <button onClick={() => { setEditMode(true); setShowAdd(true); }}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-semibold hover:bg-[#2d5aa0]">
-                        <Plus className="w-4 h-4" /> Erstes Gebiet anlegen
-                      </button>
-                    )}
-                  </div>
+        {/* ═══════════════ LISTENANSICHT ═══════════════ */}
+        {selectedMarketId && activeTab === "liste" && (
+          <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
+            {gebiete.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
+                <p className="text-sm">Noch keine Bestellgebiete angelegt.</p>
+                {isAdmin && (
+                  <button onClick={() => { setEditMode(true); setShowAdd(true); }}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-semibold hover:bg-[#2d5aa0]">
+                    <Plus className="w-4 h-4" /> Erstes Gebiet anlegen
+                  </button>
                 )}
-
-                {gebiete.map(g => {
-                  const bestellt = bestellMap.get(g.id);
-                  const isOrdered = !!bestellt;
-
-                  if (editMode) {
-                    return (
-                      <div
-                        key={g.id}
-                        style={{
-                          position: "absolute",
-                          left: g.x, top: g.y, width: g.w, height: g.h,
-                          background: lightBg(g.farbe),
-                          border: `2px dashed ${borderColor(g.farbe)}`,
-                          borderRadius: 12,
-                          cursor: "grab",
-                          userSelect: "none",
-                          boxSizing: "border-box",
-                        }}
-                        onMouseDown={e => startDrag(e, g.id, "move")}
-                      >
-                        {/* Delete */}
-                        <button
-                          onMouseDown={e => e.stopPropagation()}
-                          onClick={e => { e.stopPropagation(); handleDeleteGebiet(g.id); }}
-                          style={{ position:"absolute", top:4, right:4,
-                            background:"#dc2626", color:"white", border:"none",
-                            borderRadius:6, width:22, height:22, cursor:"pointer",
-                            display:"flex", alignItems:"center", justifyContent:"center" }}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b border-border/60 bg-secondary/30">
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground w-8"></th>
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Bestellbereich</th>
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground hidden md:table-cell">Sortiment</th>
+                      <th className="text-left px-4 py-3 font-semibold text-muted-foreground w-32">Zuständig</th>
+                      <th className="text-center px-4 py-3 font-semibold text-muted-foreground w-28">Bestellt</th>
+                      {editMode && <th className="w-16 px-2 py-3"></th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {gebiete.map((g, i) => {
+                      const bestellt = bestellMap.get(g.id);
+                      const isOrdered = !!bestellt;
+                      return (
+                        <tr
+                          key={g.id}
+                          className={`border-b border-border/40 transition-colors ${
+                            isOrdered ? "bg-green-50/60" : i % 2 === 0 ? "bg-white" : "bg-secondary/10"
+                          } ${!editMode ? "hover:bg-secondary/20 cursor-pointer" : ""}`}
+                          onClick={() => !editMode && openOrderModal(g)}
                         >
-                          <X className="w-3 h-3" />
-                        </button>
+                          {/* Farbindikator */}
+                          <td className="px-4 py-3">
+                            <div
+                              className="w-3 h-3 rounded-full flex-shrink-0"
+                              style={{ background: g.farbe }}
+                            />
+                          </td>
 
-                        {/* Name (click to rename) */}
-                        <div
-                          style={{
-                            padding:"6px 28px 4px 8px",
-                            display:"flex", flexDirection:"column", height:"100%",
-                            justifyContent:"flex-start",
-                          }}
-                        >
-                          {renamingId === g.id ? (
-                            <div onMouseDown={e => e.stopPropagation()} style={{ display:"flex", gap:4 }}>
-                              <input
-                                autoFocus
-                                value={renameVal}
-                                onChange={e => setRenameVal(e.target.value)}
-                                onKeyDown={e => {
-                                  if (e.key === "Enter") {
-                                    handleRename(g.id, renameVal); setRenamingId(null);
-                                  }
-                                  if (e.key === "Escape") setRenamingId(null);
-                                }}
-                                style={{
-                                  width:"100%", border:"1px solid "+g.farbe,
-                                  borderRadius:6, padding:"2px 4px",
-                                  fontSize:13, fontWeight:600, color:g.farbe,
-                                  background:"white",
-                                }}
-                              />
-                              <button onMouseDown={e => e.stopPropagation()} onClick={() => { handleRename(g.id, renameVal); setRenamingId(null); }}
-                                style={{ background:g.farbe, color:"white", border:"none", borderRadius:6, padding:"2px 6px", cursor:"pointer", fontSize:12 }}>
-                                ✓
+                          {/* Name */}
+                          <td className="px-4 py-3">
+                            <span className="font-semibold text-foreground">{g.name}</span>
+                            {g.sortiment && (
+                              <p className="text-xs text-muted-foreground mt-0.5 md:hidden">{g.sortiment}</p>
+                            )}
+                          </td>
+
+                          {/* Sortiment (desktop) */}
+                          <td className="px-4 py-3 hidden md:table-cell text-muted-foreground text-xs leading-relaxed">
+                            {g.sortiment || <span className="italic opacity-40">—</span>}
+                          </td>
+
+                          {/* Zuständig */}
+                          <td className="px-4 py-3 font-medium text-foreground">
+                            {g.zustaendig || <span className="text-muted-foreground italic text-xs">—</span>}
+                          </td>
+
+                          {/* Bestellt-Status */}
+                          <td className="px-4 py-3 text-center" onClick={e => e.stopPropagation()}>
+                            {isOrdered ? (
+                              <button
+                                onClick={() => openOrderModal(g)}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-bold transition-colors"
+                                title="Bestellung aufheben"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                {bestellt.kuerzel || "✓"}
                               </button>
-                            </div>
-                          ) : (
-                            <span
-                              onClick={e => { e.stopPropagation(); setRenamingId(g.id); setRenameVal(g.name); }}
-                              style={{ fontSize:13, fontWeight:700, color:g.farbe, cursor:"text", lineHeight:1.3 }}
-                              title="Klicken zum Umbenennen"
-                            >
-                              {g.name}
-                            </span>
+                            ) : (
+                              <button
+                                onClick={() => openOrderModal(g)}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-secondary hover:bg-secondary/80 text-muted-foreground rounded-lg text-xs font-semibold transition-colors"
+                              >
+                                <Circle className="w-3.5 h-3.5" />
+                                Offen
+                              </button>
+                            )}
+                          </td>
+
+                          {/* Bearbeiten (Admin) */}
+                          {editMode && (
+                            <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => openEditGebiet(g)}
+                                  className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                                  title="Bearbeiten"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm(`"${g.name}" wirklich löschen?`)) handleDeleteGebiet(g.id);
+                                  }}
+                                  className="p-1.5 rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-600 transition-colors"
+                                  title="Löschen"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
                           )}
-                          <span style={{ fontSize:11, color:g.farbe, opacity:0.7, marginTop:2 }}>
-                            {g.w}×{g.h}px
-                          </span>
-                        </div>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
-                        {/* Resize handle (bottom-right) */}
+        {/* ═══════════════ PLANANSICHT ═══════════════ */}
+        {selectedMarketId && activeTab === "plan" && (
+          <>
+            <div ref={wrapRef} className="w-full overflow-x-auto">
+              <div
+                style={{ width: CANVAS_W * canvasScale, height: CANVAS_H * canvasScale, position: "relative" }}
+                className="mx-auto"
+              >
+                <div
+                  ref={canvasRef}
+                  style={{
+                    width: CANVAS_W,
+                    height: CANVAS_H,
+                    transform: `scale(${canvasScale})`,
+                    transformOrigin: "top left",
+                    position: "relative",
+                    background: editMode
+                      ? "radial-gradient(circle, #cbd5e1 1px, transparent 1px)"
+                      : "#f8fafc",
+                    backgroundSize: editMode ? `${GRID}px ${GRID}px` : undefined,
+                    borderRadius: 16,
+                    border: "1.5px solid #e2e8f0",
+                    overflow: "hidden",
+                  }}
+                >
+                  {gebiete.length === 0 && !editMode && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted-foreground">
+                      <p className="text-sm">Noch keine Bestellgebiete angelegt.</p>
+                      {isAdmin && (
+                        <button onClick={() => { setEditMode(true); setShowAdd(true); }}
+                          className="flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-semibold hover:bg-[#2d5aa0]">
+                          <Plus className="w-4 h-4" /> Erstes Gebiet anlegen
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {gebiete.map(g => {
+                    const bestellt = bestellMap.get(g.id);
+                    const isOrdered = !!bestellt;
+
+                    if (editMode) {
+                      return (
                         <div
-                          onMouseDown={e => startDrag(e, g.id, "resize")}
+                          key={g.id}
                           style={{
-                            position:"absolute", bottom:4, right:4,
-                            width:16, height:16, cursor:"nwse-resize",
-                            background:g.farbe, borderRadius:4, opacity:0.8,
-                            display:"flex", alignItems:"center", justifyContent:"center",
+                            position: "absolute",
+                            left: g.x, top: g.y, width: g.w, height: g.h,
+                            background: lightBg(g.farbe),
+                            border: `2px dashed ${borderColor(g.farbe)}`,
+                            borderRadius: 12,
+                            cursor: "grab",
+                            userSelect: "none",
+                            boxSizing: "border-box",
                           }}
+                          onMouseDown={e => startDrag(e, g.id, "move")}
                         >
-                          <GripVertical className="w-2.5 h-2.5" style={{ color:"white" }} />
-                        </div>
-                      </div>
-                    );
-                  }
+                          <button
+                            onMouseDown={e => e.stopPropagation()}
+                            onClick={e => { e.stopPropagation(); handleDeleteGebiet(g.id); }}
+                            style={{ position:"absolute", top:4, right:4,
+                              background:"#dc2626", color:"white", border:"none",
+                              borderRadius:6, width:22, height:22, cursor:"pointer",
+                              display:"flex", alignItems:"center", justifyContent:"center" }}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
 
-                  // Use mode
-                  return (
-                    <button
-                      key={g.id}
-                      onClick={() => openOrderModal(g)}
-                      style={{
-                        position:"absolute", left:g.x, top:g.y, width:g.w, height:g.h,
-                        background: isOrdered ? g.farbe : lightBg(g.farbe),
-                        border: `2px solid ${isOrdered ? g.farbe : borderColor(g.farbe)}`,
-                        borderRadius:12,
-                        cursor:"pointer",
-                        display:"flex", flexDirection:"column",
-                        alignItems:"center", justifyContent:"center",
-                        gap:4, padding:8,
-                        transition:"all 0.15s",
-                        boxSizing:"border-box",
-                      }}
-                    >
-                      {isOrdered && (
-                        <div style={{
-                          position:"absolute", top:6, right:8,
-                          background:"rgba(255,255,255,0.3)", borderRadius:8,
-                          padding:"2px 6px", fontSize:11, color:"white", fontWeight:700,
-                        }}>
-                          ✓
+                          <div style={{ padding:"6px 28px 4px 8px", display:"flex", flexDirection:"column", height:"100%", justifyContent:"flex-start" }}>
+                            {renamingId === g.id ? (
+                              <div onMouseDown={e => e.stopPropagation()} style={{ display:"flex", gap:4 }}>
+                                <input
+                                  autoFocus
+                                  value={renameVal}
+                                  onChange={e => setRenameVal(e.target.value)}
+                                  onKeyDown={e => {
+                                    if (e.key === "Enter") { handleRename(g.id, renameVal); setRenamingId(null); }
+                                    if (e.key === "Escape") setRenamingId(null);
+                                  }}
+                                  style={{ width:"100%", border:"1px solid "+g.farbe, borderRadius:6, padding:"2px 4px", fontSize:13, fontWeight:600, color:g.farbe, background:"white" }}
+                                />
+                                <button onMouseDown={e => e.stopPropagation()} onClick={() => { handleRename(g.id, renameVal); setRenamingId(null); }}
+                                  style={{ background:g.farbe, color:"white", border:"none", borderRadius:6, padding:"2px 6px", cursor:"pointer", fontSize:12 }}>
+                                  ✓
+                                </button>
+                              </div>
+                            ) : (
+                              <span
+                                onClick={e => { e.stopPropagation(); setRenamingId(g.id); setRenameVal(g.name); }}
+                                style={{ fontSize:13, fontWeight:700, color:g.farbe, cursor:"text", lineHeight:1.3 }}
+                                title="Klicken zum Umbenennen"
+                              >
+                                {g.name}
+                              </span>
+                            )}
+                            <span style={{ fontSize:11, color:g.farbe, opacity:0.7, marginTop:2 }}>
+                              {g.w}×{g.h}px
+                            </span>
+                          </div>
+
+                          <div
+                            onMouseDown={e => startDrag(e, g.id, "resize")}
+                            style={{
+                              position:"absolute", bottom:4, right:4,
+                              width:16, height:16, cursor:"nwse-resize",
+                              background:g.farbe, borderRadius:4, opacity:0.8,
+                              display:"flex", alignItems:"center", justifyContent:"center",
+                            }}
+                          >
+                            <GripVertical className="w-2.5 h-2.5" style={{ color:"white" }} />
+                          </div>
                         </div>
-                      )}
-                      <span style={{
-                        fontSize: g.w < 120 ? 12 : 14, fontWeight:700,
-                        color: isOrdered ? "white" : g.farbe,
-                        textAlign:"center", lineHeight:1.3,
-                        wordBreak:"break-word",
-                      }}>
-                        {g.name}
-                      </span>
-                      {isOrdered && (
-                        <span style={{ fontSize:11, color:"rgba(255,255,255,0.9)", fontWeight:600 }}>
-                          {bestellt.kuerzel ? bestellt.kuerzel : "Bestellt"}
+                      );
+                    }
+
+                    return (
+                      <button
+                        key={g.id}
+                        onClick={() => openOrderModal(g)}
+                        style={{
+                          position:"absolute", left:g.x, top:g.y, width:g.w, height:g.h,
+                          background: isOrdered ? g.farbe : lightBg(g.farbe),
+                          border: `2px solid ${isOrdered ? g.farbe : borderColor(g.farbe)}`,
+                          borderRadius:12,
+                          cursor:"pointer",
+                          display:"flex", flexDirection:"column",
+                          alignItems:"center", justifyContent:"center",
+                          gap:4, padding:8,
+                          transition:"all 0.15s",
+                          boxSizing:"border-box",
+                        }}
+                      >
+                        {isOrdered && (
+                          <div style={{
+                            position:"absolute", top:6, right:8,
+                            background:"rgba(255,255,255,0.3)", borderRadius:8,
+                            padding:"2px 6px", fontSize:11, color:"white", fontWeight:700,
+                          }}>✓</div>
+                        )}
+                        <span style={{
+                          fontSize: g.w < 120 ? 12 : 14, fontWeight:700,
+                          color: isOrdered ? "white" : g.farbe,
+                          textAlign:"center", lineHeight:1.3, wordBreak:"break-word",
+                        }}>
+                          {g.name}
                         </span>
-                      )}
-                    </button>
-                  );
-                })}
+                        {isOrdered && (
+                          <span style={{ fontSize:11, color:"rgba(255,255,255,0.9)", fontWeight:600 }}>
+                            {bestellt.kuerzel ? bestellt.kuerzel : "Bestellt"}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {gebiete.length > 0 && (
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setCanvasScale(s => Math.max(0.3, +(s - 0.1).toFixed(1)))}
+                  className="px-3 py-1.5 text-xs bg-white border border-border/60 rounded-lg hover:bg-secondary text-muted-foreground">−</button>
+                <button onClick={() => setCanvasScale(1)}
+                  className="px-3 py-1.5 text-xs bg-white border border-border/60 rounded-lg hover:bg-secondary text-muted-foreground min-w-[56px] text-center">
+                  {Math.round(canvasScale * 100)}%
+                </button>
+                <button onClick={() => setCanvasScale(s => Math.min(2, +(s + 0.1).toFixed(1)))}
+                  className="px-3 py-1.5 text-xs bg-white border border-border/60 rounded-lg hover:bg-secondary text-muted-foreground">+</button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Add Gebiet Modal ──────────────────────────────────────────────────── */}
+        {showAdd && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
+              <h2 className="text-base font-bold">Bestellgebiet hinzufügen</h2>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Name <span className="text-red-500">*</span></label>
+                  <input
+                    autoFocus
+                    value={addName}
+                    onChange={e => setAddName(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleAddGebiet()}
+                    placeholder="z.B. Trockenwaren, Süßwaren..."
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Sortiment</label>
+                  <textarea
+                    value={addSortiment}
+                    onChange={e => setAddSortiment(e.target.value)}
+                    placeholder="z.B. Chips + Salzgebäck + Süßwaren"
+                    rows={2}
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Zuständig</label>
+                  <input
+                    value={addZustaendig}
+                    onChange={e => setAddZustaendig(e.target.value)}
+                    placeholder="Name des Mitarbeiters"
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Farbe</label>
+                  <div className="mt-1.5 flex flex-wrap gap-2">
+                    {FARBEN.map(f => (
+                      <button
+                        key={f} onClick={() => setAddFarbe(f)}
+                        style={{ background: f, width: 28, height: 28, borderRadius: 8,
+                          border: addFarbe === f ? "3px solid #fff" : "2px solid rgba(0,0,0,0.1)",
+                          outline: addFarbe === f ? `2px solid ${f}` : "none",
+                          cursor: "pointer" }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button onClick={() => setShowAdd(false)}
+                  className="flex-1 px-4 py-2.5 border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground">
+                  Abbrechen
+                </button>
+                <button onClick={handleAddGebiet} disabled={!addName.trim() || adding}
+                  className="flex-1 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-50">
+                  {adding ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Hinzufügen"}
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Zoom controls */}
-        {selectedMarketId && gebiete.length > 0 && (
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setCanvasScale(s => Math.max(0.3, +(s - 0.1).toFixed(1)))}
-              className="px-3 py-1.5 text-xs bg-white border border-border/60 rounded-lg hover:bg-secondary text-muted-foreground">
-              −
-            </button>
-            <button onClick={() => setCanvasScale(1)}
-              className="px-3 py-1.5 text-xs bg-white border border-border/60 rounded-lg hover:bg-secondary text-muted-foreground min-w-[56px] text-center">
-              {Math.round(canvasScale * 100)}%
-            </button>
-            <button onClick={() => setCanvasScale(s => Math.min(2, +(s + 0.1).toFixed(1)))}
-              className="px-3 py-1.5 text-xs bg-white border border-border/60 rounded-lg hover:bg-secondary text-muted-foreground">
-              +
-            </button>
+        {/* ── Edit Gebiet Modal (Liste) ─────────────────────────────────────────── */}
+        {editingGebiet && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-bold">Gebiet bearbeiten</h2>
+                <button onClick={() => setEditingGebiet(null)} className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Name <span className="text-red-500">*</span></label>
+                  <input
+                    autoFocus
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Sortiment</label>
+                  <textarea
+                    value={editSortiment}
+                    onChange={e => setEditSortiment(e.target.value)}
+                    placeholder="z.B. Chips + Salzgebäck + Süßwaren"
+                    rows={3}
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Zuständig</label>
+                  <input
+                    value={editZustaendig}
+                    onChange={e => setEditZustaendig(e.target.value)}
+                    placeholder="Name des Mitarbeiters"
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Farbe</label>
+                  <div className="mt-1.5 flex flex-wrap gap-2">
+                    {FARBEN.map(f => (
+                      <button
+                        key={f} onClick={() => setEditFarbe(f)}
+                        style={{ background: f, width: 28, height: 28, borderRadius: 8,
+                          border: editFarbe === f ? "3px solid #fff" : "2px solid rgba(0,0,0,0.1)",
+                          outline: editFarbe === f ? `2px solid ${f}` : "none",
+                          cursor: "pointer" }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button onClick={() => setEditingGebiet(null)}
+                  className="flex-1 px-4 py-2.5 border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground">
+                  Abbrechen
+                </button>
+                <button onClick={handleSaveEdit} disabled={!editName.trim() || editSaving}
+                  className="flex-1 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-50">
+                  {editSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Speichern"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Order Modal ───────────────────────────────────────────────────────── */}
+        {orderGebiet && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <div
+                  style={{ background: lightBg(orderGebiet.farbe), border: `2px solid ${borderColor(orderGebiet.farbe)}` }}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                >
+                  <Check className="w-5 h-5" style={{ color: orderGebiet.farbe }} />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold">{orderGebiet.name}</h2>
+                  <p className="text-xs text-muted-foreground">{isoToDE(datum)}</p>
+                  {orderGebiet.sortiment && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{orderGebiet.sortiment}</p>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Kürzel (optional)</label>
+                  <input
+                    autoFocus
+                    value={orderKuerzel}
+                    onChange={e => setOrderKuerzel(e.target.value.toUpperCase().slice(0, 4))}
+                    onKeyDown={e => e.key === "Enter" && handleOrder()}
+                    placeholder={orderGebiet.zustaendig ? orderGebiet.zustaendig.slice(0,4).toUpperCase() : "z.B. MK"}
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Anmerkung (optional)</label>
+                  <input
+                    value={orderAnmerkung}
+                    onChange={e => setOrderAnmerkung(e.target.value)}
+                    placeholder="z.B. Fehlmenge, Sonderbestellung..."
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button onClick={() => setOrderGebiet(null)}
+                  className="flex-1 px-4 py-2.5 border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground">
+                  Abbrechen
+                </button>
+                <button onClick={handleOrder} disabled={ordering}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-colors disabled:opacity-50"
+                  style={{ background: orderGebiet.farbe }}>
+                  {ordering ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Als bestellt markieren"}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
       </div>
-
-      {/* ── Add Gebiet Modal ──────────────────────────────────────────────────── */}
-      {showAdd && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
-            <h2 className="text-base font-bold">Bestellgebiet hinzufügen</h2>
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Name</label>
-                <input
-                  autoFocus
-                  value={addName}
-                  onChange={e => setAddName(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleAddGebiet()}
-                  placeholder="z.B. Trockenwaren, Kühltheke..."
-                  className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Farbe</label>
-                <div className="mt-1.5 flex flex-wrap gap-2">
-                  {FARBEN.map(f => (
-                    <button
-                      key={f} onClick={() => setAddFarbe(f)}
-                      style={{ background: f, width: 28, height: 28, borderRadius: 8,
-                        border: addFarbe === f ? "3px solid #fff" : "2px solid rgba(0,0,0,0.1)",
-                        outline: addFarbe === f ? `2px solid ${f}` : "none",
-                        cursor: "pointer" }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-2 pt-2">
-              <button onClick={() => setShowAdd(false)}
-                className="flex-1 px-4 py-2.5 border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground">
-                Abbrechen
-              </button>
-              <button onClick={handleAddGebiet} disabled={!addName.trim() || adding}
-                className="flex-1 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-50">
-                {adding ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Hinzufügen"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Order Modal ───────────────────────────────────────────────────────── */}
-      {orderGebiet && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div
-                style={{ background: lightBg(orderGebiet.farbe), border: `2px solid ${borderColor(orderGebiet.farbe)}` }}
-                className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              >
-                <Check className="w-5 h-5" style={{ color: orderGebiet.farbe }} />
-              </div>
-              <div>
-                <h2 className="text-base font-bold">{orderGebiet.name}</h2>
-                <p className="text-xs text-muted-foreground">{isoToDE(datum)}</p>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Kürzel (optional)</label>
-                <input
-                  autoFocus
-                  value={orderKuerzel}
-                  onChange={e => setOrderKuerzel(e.target.value.toUpperCase().slice(0, 4))}
-                  onKeyDown={e => e.key === "Enter" && handleOrder()}
-                  placeholder="z.B. MK"
-                  className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Anmerkung (optional)</label>
-                <input
-                  value={orderAnmerkung}
-                  onChange={e => setOrderAnmerkung(e.target.value)}
-                  placeholder="z.B. Fehlmenge gemeldet..."
-                  className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2 pt-2">
-              <button onClick={() => setOrderGebiet(null)}
-                className="flex-1 px-4 py-2.5 border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground">
-                Abbrechen
-              </button>
-              <button onClick={handleOrder} disabled={ordering}
-                style={{ background: orderGebiet.farbe }}
-                className="flex-1 px-4 py-2.5 text-white rounded-xl text-sm font-bold disabled:opacity-60 transition-opacity">
-                {ordering ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "✓ Bestellt"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </AppLayout>
   );
 }
