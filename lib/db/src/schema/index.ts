@@ -38,3 +38,4 @@ export * from "./tuevJahresbericht";
 export * from "./emailSettings";
 export * from "./marketEmailConfigs";
 export * from "./ladenBestellung";
+export * from "./monatsberichtConfig";

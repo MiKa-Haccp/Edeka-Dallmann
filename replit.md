@@ -103,6 +103,7 @@ artifacts-monorepo/
 - `/admin/login` — Admin login page (email + password)
 - `/admin/register` — Admin registration via invitation token
 - `/admin/users` — Benutzerverwaltung: Role management, permission checkboxes, market assignments (SUPERADMIN only)
+- `/admin/monatsbericht` — HACCP Monatsbericht: Generiert HTML-Bericht aus allen HACCP-Modulen (Reinigung, WE O&G, MHD-Kontrolle, Metzgerei, Besprechungsprotokoll, Betriebsbegehung, GQ-Begehung, Einräumservice, Probeentnahme, Produktfehlermeldungen); Vorschau im Browser; optionaler E-Mail-Versand; Empfänger-E-Mail je Filiale konfigurierbar; DB-Tabelle monatsbericht_config
 
 ## Role Hierarchy
 

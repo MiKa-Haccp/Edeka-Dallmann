@@ -46,6 +46,7 @@ import tuevJahresberichtRouter from "./tuevJahresbericht";
 import emailSettingsRouter from "./emailSettings";
 import notificationsRouter from "./notifications";
 import schulungsAnforderungenRouter from "./schulungsAnforderungen";
+import monatsberichtRouter from "./monatsbericht";
 
 const router: IRouter = Router();
 
@@ -96,5 +97,6 @@ router.use(tuevJahresberichtRouter);
 router.use(emailSettingsRouter);
 router.use(notificationsRouter);
 router.use(schulungsAnforderungenRouter);
+router.use(monatsberichtRouter);
 
 export default router;
