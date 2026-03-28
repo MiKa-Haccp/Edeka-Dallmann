@@ -52,6 +52,7 @@ import MHDKontrolle from "./pages/MHDKontrolle";
 import WareBestellungen from "./pages/WareBestellungen";
 import WareBestellungenHub from "./pages/WareBestellungenHub";
 import WareLadenbestellung from "./pages/WareLadenbestellung";
+import WareEigenbedarfOrdersatz from "./pages/WareEigenbedarfOrdersatz";
 import WareEinraeumservice from "./pages/WareEinraeumservice";
 import WareMHD from "./pages/WareMHD";
 import LadenplanBuilder from "./pages/LadenplanBuilder";
@@ -118,6 +119,7 @@ function Router() {
       <Route path="/ware" component={Ware} />
       <Route path="/mhd-kontrolle" component={MHDKontrolle} />
       <Route path="/ware-bestellungen" component={WareBestellungenHub} />
+      <Route path="/ware-eigenbedarf" component={WareEigenbedarfOrdersatz} />
       <Route path="/ware-rayon-bestellungen" component={WareBestellungen} />
       <Route path="/ware-ladenbestellung" component={WareLadenbestellung} />
       <Route path="/ware-einraeumservice" component={WareEinraeumservice} />
