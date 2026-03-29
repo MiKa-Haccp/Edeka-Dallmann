@@ -217,7 +217,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
         {selectedMarketId && !loading && (
           <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
             {/* Desktop-Tabelle */}
-            <div className="hidden md:block overflow-x-auto">
+            <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[65vh]">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10">
                   <tr className="bg-gray-50 border-b border-border/60">
