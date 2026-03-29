@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import type { ReactNode } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import { Link } from "wouter";
@@ -32,7 +33,7 @@ const EMPTY: Omit<Lieferant, "id" | "market_id"> = {
   sort_order: 99,
 };
 
-export default function WareStreckenUebersicht() {
+export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolean } = {}) {
   const { selectedMarketId, adminSession } = useAppStore();
   const isAdmin = !!adminSession;
 
@@ -131,33 +132,56 @@ export default function WareStreckenUebersicht() {
     (l.info ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
+  const Wrap = noLayout
+    ? ({ children }: { children: ReactNode }) => <>{children}</>
+    : ({ children }: { children: ReactNode }) => <AppLayout>{children}</AppLayout>;
+
   return (
-    <AppLayout>
+    <Wrap>
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-5 pb-10">
 
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <Link href="/ware-streckenbestellung" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-          <div className="w-10 h-10 rounded-xl bg-[#1a3a6b]/10 flex items-center justify-center flex-shrink-0">
-            <List className="w-5 h-5 text-[#1a3a6b]" />
+        {/* Header – nur im Standalone-Modus */}
+        {!noLayout && (
+          <div className="flex items-center gap-3">
+            <Link href="/ware-streckenbestellung" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div className="w-10 h-10 rounded-xl bg-[#1a3a6b]/10 flex items-center justify-center flex-shrink-0">
+              <List className="w-5 h-5 text-[#1a3a6b]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl font-bold text-foreground">Übersicht Streckenlieferanten</h1>
+              <p className="text-sm text-muted-foreground">
+                {lieferanten.length > 0 ? `${lieferanten.length} Lieferanten` : "Alle Streckenlieferanten"}
+              </p>
+            </div>
+            {isAdmin && (
+              <button
+                onClick={() => { setShowAdd(true); setAddData({ ...EMPTY, sort_order: lieferanten.length + 1 }); }}
+                className="flex items-center gap-2 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-semibold hover:bg-[#2d5aa0] transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Neu
+              </button>
+            )}
           </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-foreground">Übersicht Streckenlieferanten</h1>
+        )}
+
+        {/* Tab-Modus: kompakte Aktionszeile */}
+        {noLayout && (
+          <div className="flex items-center justify-between gap-2">
             <p className="text-sm text-muted-foreground">
               {lieferanten.length > 0 ? `${lieferanten.length} Lieferanten` : "Alle Streckenlieferanten"}
             </p>
+            {isAdmin && (
+              <button
+                onClick={() => { setShowAdd(true); setAddData({ ...EMPTY, sort_order: lieferanten.length + 1 }); }}
+                className="flex items-center gap-2 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-semibold hover:bg-[#2d5aa0] transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Neu
+              </button>
+            )}
           </div>
-          {isAdmin && (
-            <button
-              onClick={() => { setShowAdd(true); setAddData({ ...EMPTY, sort_order: lieferanten.length + 1 }); }}
-              className="flex items-center gap-2 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-semibold hover:bg-[#2d5aa0] transition-colors"
-            >
-              <Plus className="w-4 h-4" /> Neu
-            </button>
-          )}
-        </div>
+        )}
 
         {/* Suche */}
         {lieferanten.length > 5 && (
@@ -417,6 +441,6 @@ export default function WareStreckenUebersicht() {
         )}
 
       </div>
-    </AppLayout>
+    </Wrap>
   );
 }
