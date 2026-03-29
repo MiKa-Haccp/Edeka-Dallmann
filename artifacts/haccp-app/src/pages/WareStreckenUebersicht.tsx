@@ -235,7 +235,6 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                     <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[13%] bg-gray-50">Ansprechpartner</th>
                     <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[11%] bg-gray-50">Tel.Nr.</th>
                     <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide bg-gray-50">Info</th>
-                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[52px] bg-gray-50">Kürzel</th>
                     <th className="text-right px-3 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[100px] leading-tight bg-gray-50">Mind. Bestell&shy;wert</th>
                     <th className="px-2 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[62px] text-center leading-tight bg-gray-50">Wir best.</th>
                     <th className="px-2 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[66px] text-center leading-tight bg-gray-50">AD best.</th>
@@ -264,11 +263,6 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                             <textarea value={editData.info ?? ""} onChange={e => setEditData(p => ({ ...p, info: e.target.value }))}
                               rows={2}
                               className="w-full border border-border/60 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none" />
-                          </td>
-                          <td className="px-3 py-2">
-                            <input value={editData.kuerzel ?? ""} onChange={e => setEditData(p => ({ ...p, kuerzel: e.target.value }))}
-                              maxLength={5}
-                              className="w-full border border-border/60 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 text-center" />
                           </td>
                           <td className="px-3 py-2">
                             <div className="relative">
@@ -302,13 +296,6 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                           <td className="px-3 py-2.5 text-muted-foreground text-xs">{l.ansprechpartner || "–"}</td>
                           <td className="px-3 py-2.5 text-muted-foreground whitespace-pre-line text-xs">{l.telefon || "–"}</td>
                           <td className="px-3 py-2.5 text-muted-foreground leading-snug text-xs">{l.info || "–"}</td>
-                          <td className="px-3 py-2.5 text-center">
-                            {l.kuerzel && (
-                              <span className="inline-block text-xs font-bold px-1.5 py-0.5 rounded bg-[#1a3a6b]/10 text-[#1a3a6b]">
-                                {l.kuerzel}
-                              </span>
-                            )}
-                          </td>
                           <td className="px-3 py-2.5 text-right text-xs text-muted-foreground tabular-nums">
                             {formatEuro(l.mindestbestellwert)}
                           </td>
