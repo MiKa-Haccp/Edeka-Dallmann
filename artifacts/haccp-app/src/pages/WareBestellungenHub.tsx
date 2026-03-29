@@ -12,18 +12,18 @@ interface SubCard {
 
 const UNTERPUNKTE: SubCard[] = [
   {
-    id: "rayon",
-    icon: ShoppingCart,
-    title: "Rayon-Bestellungen",
-    description: "Marktübersicht nach Rayons. Mitarbeiter haken jeden Bereich nach erfolgter Bestellung ab.",
-    href: "/ware-rayon-bestellungen",
-  },
-  {
     id: "laden",
     icon: Store,
     title: "Ladenbestellung",
     description: "Bestellungen für den Laden erfassen und verwalten.",
     href: "/ware-ladenbestellung",
+  },
+  {
+    id: "rayon",
+    icon: ShoppingCart,
+    title: "Streckenbestellung",
+    description: "Marktübersicht nach Rayons. Mitarbeiter haken jeden Bereich nach erfolgter Bestellung ab.",
+    href: "/ware-rayon-bestellungen",
   },
 ];
 
@@ -41,7 +41,7 @@ export default function WareBestellungenHub() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground mb-0.5">Bestellungen</h1>
-            <p className="text-muted-foreground text-sm">Rayon-Bestellungen und Ladenbestellung.</p>
+            <p className="text-muted-foreground text-sm">Ladenbestellung und Streckenbestellung.</p>
           </div>
         </div>
 
