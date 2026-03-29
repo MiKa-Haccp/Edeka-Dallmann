@@ -256,8 +256,9 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                               className="w-full border border-border/60 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
                           </td>
                           <td className="px-3 py-2">
-                            <input value={editData.telefon ?? ""} onChange={e => setEditData(p => ({ ...p, telefon: e.target.value }))}
-                              className="w-full border border-border/60 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+                            <textarea value={editData.telefon ?? ""} onChange={e => setEditData(p => ({ ...p, telefon: e.target.value }))}
+                              rows={2}
+                              className="w-full border border-border/60 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none" />
                           </td>
                           <td className="px-3 py-2">
                             <textarea value={editData.info ?? ""} onChange={e => setEditData(p => ({ ...p, info: e.target.value }))}
@@ -299,7 +300,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                         <>
                           <td className="px-3 py-2.5 font-semibold text-foreground text-xs">{l.name}</td>
                           <td className="px-3 py-2.5 text-muted-foreground text-xs">{l.ansprechpartner || "–"}</td>
-                          <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap text-xs">{l.telefon || "–"}</td>
+                          <td className="px-3 py-2.5 text-muted-foreground whitespace-pre-line text-xs">{l.telefon || "–"}</td>
                           <td className="px-3 py-2.5 text-muted-foreground leading-snug text-xs">{l.info || "–"}</td>
                           <td className="px-3 py-2.5 text-center">
                             {l.kuerzel && (
@@ -427,7 +428,6 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                 {[
                   { label: "Name *", key: "name", placeholder: "z.B. Hartkorn" },
                   { label: "Ansprechpartner", key: "ansprechpartner", placeholder: "z.B. Stefan Haugg" },
-                  { label: "Tel.Nr.", key: "telefon", placeholder: "z.B. 0151/42259352" },
                   { label: "Kürzel", key: "kuerzel", placeholder: "z.B. KW" },
                 ].map(f => (
                   <div key={f.key}>
@@ -441,6 +441,16 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                     />
                   </div>
                 ))}
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tel.Nr.</label>
+                  <textarea
+                    value={addData.telefon ?? ""}
+                    onChange={e => setAddData(p => ({ ...p, telefon: e.target.value }))}
+                    placeholder={"z.B. 0151/42259352\n0800/1234567"}
+                    rows={2}
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none"
+                  />
+                </div>
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Mindestbestellwert (€)</label>
                   <div className="relative mt-1">
