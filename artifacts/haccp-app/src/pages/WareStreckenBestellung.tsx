@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ShoppingBag, Phone, User, Info, CheckCircle2, Clock,
-  ChevronDown, ChevronUp, Loader2, Trash2, X, KeyRound, Pencil, Save,
+  ChevronDown, ChevronUp, Loader2, Trash2, X, KeyRound, Pencil, Save, Ban,
 } from "lucide-react";
 
 const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
@@ -42,15 +42,18 @@ function formatDate(iso: string) {
 
 function BestellDialog({
   lieferant,
+  mode = "bestellen",
   onConfirm,
   onClose,
 }: {
   lieferant: Lieferant;
+  mode?: "bestellen" | "nicht_bestellt";
   onConfirm: (kuerzel: string, notiz: string) => Promise<void>;
   onClose: () => void;
 }) {
+  const istNichtBestellt = mode === "nicht_bestellt";
   const [kuerzel, setKuerzel] = useState("");
-  const [notiz, setNotiz] = useState("");
+  const [notiz, setNotiz] = useState(istNichtBestellt ? "nicht bestellt" : "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -69,7 +72,12 @@ function BestellDialog({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold text-foreground">Bestellung bestätigen</h2>
+            <div className="flex items-center gap-2">
+              {istNichtBestellt && <Ban className="w-4 h-4 text-orange-500" />}
+              <h2 className="text-lg font-bold text-foreground">
+                {istNichtBestellt ? "Nicht bestellt erfassen" : "Bestellung bestätigen"}
+              </h2>
+            </div>
             <p className="text-sm text-muted-foreground mt-0.5">{lieferant.name}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
@@ -96,12 +104,12 @@ function BestellDialog({
 
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
-              Notiz (optional)
+              Notiz {istNichtBestellt ? "(Grund, optional)" : "(optional)"}
             </label>
             <textarea
               value={notiz}
               onChange={e => setNotiz(e.target.value)}
-              placeholder="z.B. Sonderbestellung, Menge geändert …"
+              placeholder={istNichtBestellt ? "z.B. kein Bedarf, Urlaub, Lager voll …" : "z.B. Sonderbestellung, Menge geändert …"}
               rows={2}
               className="w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none"
             />
@@ -115,10 +123,12 @@ function BestellDialog({
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex-1 px-4 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-semibold hover:bg-[#2d5aa0] disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+            className={`flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-50 transition-colors flex items-center justify-center gap-2 ${
+              istNichtBestellt ? "bg-orange-500 hover:bg-orange-600" : "bg-[#1a3a6b] hover:bg-[#2d5aa0]"
+            }`}
           >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            Bestätigen
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : istNichtBestellt ? <Ban className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+            {istNichtBestellt ? "Nicht bestellt" : "Bestätigen"}
           </button>
         </div>
       </div>
@@ -130,6 +140,7 @@ function LieferantCard({
   lieferant,
   bestellungen,
   onBestellen,
+  onNichtBestellen,
   onDeleteBestellung,
   onUpdateLieferant,
   isAdmin,
@@ -137,6 +148,7 @@ function LieferantCard({
   lieferant: Lieferant;
   bestellungen: Bestellung[];
   onBestellen: (l: Lieferant) => void;
+  onNichtBestellen: (l: Lieferant) => void;
   onDeleteBestellung: (id: number) => void;
   onUpdateLieferant: (id: number, data: Partial<Lieferant>) => Promise<void>;
   isAdmin: boolean;
@@ -203,12 +215,21 @@ function LieferantCard({
             </button>
           )}
           {!editing && (
-            <button
-              onClick={() => onBestellen(lieferant)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-xs font-bold hover:bg-[#2d5aa0] transition-colors"
-            >
-              <ShoppingBag className="w-3.5 h-3.5" /> Bestellen
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => onNichtBestellen(lieferant)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold hover:bg-orange-600 transition-colors"
+                title="Nicht bestellt erfassen"
+              >
+                <Ban className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => onBestellen(lieferant)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-xs font-bold hover:bg-[#2d5aa0] transition-colors"
+              >
+                <ShoppingBag className="w-3.5 h-3.5" /> Bestellen
+              </button>
+            </div>
           )}
           {editing && (
             <div className="flex items-center gap-1.5">
@@ -368,6 +389,7 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
   const [bestellungen, setBestellungen] = useState<Bestellung[]>([]);
   const [loading, setLoading] = useState(false);
   const [dialogLieferant, setDialogLieferant] = useState<Lieferant | null>(null);
+  const [dialogMode, setDialogMode] = useState<"bestellen" | "nicht_bestellt">("bestellen");
 
   const load = useCallback(async () => {
     if (!selectedMarketId) return;
@@ -387,6 +409,9 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
   }, [selectedMarketId]);
 
   useEffect(() => { load(); }, [load]);
+
+  const openBestellen = (l: Lieferant) => { setDialogMode("bestellen"); setDialogLieferant(l); };
+  const openNichtBestellen = (l: Lieferant) => { setDialogMode("nicht_bestellt"); setDialogLieferant(l); };
 
   const handleBestellen = async (kuerzel: string, notiz: string) => {
     if (!dialogLieferant || !selectedMarketId) return;
@@ -456,7 +481,8 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
               key={l.id}
               lieferant={l}
               bestellungen={getBestellungenForLieferant(l.id)}
-              onBestellen={setDialogLieferant}
+              onBestellen={openBestellen}
+              onNichtBestellen={openNichtBestellen}
               onDeleteBestellung={handleDeleteBestellung}
               onUpdateLieferant={handleUpdateLieferant}
               isAdmin={isAdmin}
@@ -468,6 +494,7 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
       {dialogLieferant && (
         <BestellDialog
           lieferant={dialogLieferant}
+          mode={dialogMode}
           onConfirm={handleBestellen}
           onClose={() => setDialogLieferant(null)}
         />
