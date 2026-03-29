@@ -10,6 +10,32 @@ const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
+function formatPhoneLine(raw: string): string {
+  const clean = raw.trim().replace(/[\s\-\/\.\(\)]/g, "");
+  if (!clean) return raw;
+  const plus = clean.startsWith("+") ? "+" : "";
+  const digits = clean.replace(/^\+/, "");
+  const chunk = (s: string, sizes: number[]) => {
+    const parts: string[] = [];
+    let i = 0;
+    for (const n of sizes) { if (i < s.length) { parts.push(s.slice(i, i + n)); i += n; } }
+    if (i < s.length) parts.push(s.slice(i));
+    return parts.join(" ");
+  };
+  if (plus && digits.startsWith("49")) {
+    const rest = digits.slice(2);
+    return /^1[5-7]/.test(rest) ? `+49 ${chunk(rest, [3, 4, 4])}` : `+49 ${chunk(rest, [3, 3, 4])}`;
+  }
+  if (/^01[5-7]/.test(digits)) return `${digits.slice(0, 4)} ${chunk(digits.slice(4), [4, 3])}`;
+  if (/^0800/.test(digits)) return `0800 ${chunk(digits.slice(4), [3, 4])}`;
+  if (digits.startsWith("0")) return `${digits.slice(0, 4)} ${chunk(digits.slice(4), [3, 2, 2])}`;
+  return raw;
+}
+function formatPhone(raw: string | null): string {
+  if (!raw) return "";
+  return raw.split("\n").map(l => l.trim() ? formatPhoneLine(l) : l).join("\n");
+}
+
 interface Lieferant {
   id: number;
   name: string;
@@ -273,7 +299,7 @@ function LieferantCard({
               <Phone className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Telefon</p>
-                <a href={`tel:${lieferant.telefon}`} className="text-[#1a3a6b] font-medium hover:underline text-sm whitespace-pre-line">{lieferant.telefon}</a>
+                <a href={`tel:${lieferant.telefon}`} className="text-[#1a3a6b] font-medium hover:underline text-sm whitespace-pre-line">{formatPhone(lieferant.telefon)}</a>
               </div>
             </div>
           )}
