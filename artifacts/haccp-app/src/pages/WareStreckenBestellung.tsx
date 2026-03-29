@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
-import type { ReactNode } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ShoppingBag, Phone, User, Info, CheckCircle2, Clock,
   ChevronDown, ChevronUp, Loader2, Trash2, X, KeyRound,
 } from "lucide-react";
+
+const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -295,9 +296,7 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
   const getBestellungenForLieferant = (lieferantId: number) =>
     bestellungen.filter(b => b.lieferant_id === lieferantId);
 
-  const Wrap = noLayout
-    ? ({ children }: { children: ReactNode }) => <>{children}</>
-    : ({ children }: { children: ReactNode }) => <AppLayout>{children}</AppLayout>;
+  const Wrap = noLayout ? NoWrap : AppLayout;
 
   if (!selectedMarketId) {
     return (

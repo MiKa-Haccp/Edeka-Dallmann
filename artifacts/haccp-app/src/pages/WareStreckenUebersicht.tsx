@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
-import type { ReactNode } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import { Link } from "wouter";
 import {
   ChevronLeft, Plus, Pencil, Trash2, X, Save, Loader2, List, Search, CheckSquare, Square,
 } from "lucide-react";
+
+const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -132,9 +133,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
     (l.info ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const Wrap = noLayout
-    ? ({ children }: { children: ReactNode }) => <>{children}</>
-    : ({ children }: { children: ReactNode }) => <AppLayout>{children}</AppLayout>;
+  const Wrap = noLayout ? NoWrap : AppLayout;
 
   return (
     <Wrap>
