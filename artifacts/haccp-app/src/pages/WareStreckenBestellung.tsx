@@ -153,7 +153,8 @@ function LieferantCard({
   onUpdateLieferant: (id: number, data: Partial<Lieferant>) => Promise<void>;
   isAdmin: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editData, setEditData] = useState({
@@ -164,6 +165,7 @@ function LieferantCard({
   });
 
   const last = bestellungen[0];
+  const lastIsNichtBestellt = last?.notiz?.toLowerCase().includes("nicht bestellt");
 
   const startEdit = () => {
     setEditData({
@@ -187,23 +189,37 @@ function LieferantCard({
 
   return (
     <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
-      {/* Header */}
-      <div className="px-5 py-4 flex items-start justify-between gap-3 border-b border-border/40">
+      {/* Kompakte Zeile – immer sichtbar, klickbar zum Auf-/Zuklappen */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full px-5 py-3.5 flex items-center justify-between gap-3 text-left hover:bg-gray-50/60 transition-colors"
+      >
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-bold text-foreground text-base">{lieferant.name}</h3>
+            <span className="font-bold text-foreground text-sm">{lieferant.name}</span>
             {lieferant.kuerzel && (
               <span className="text-xs font-mono bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{lieferant.kuerzel}</span>
             )}
           </div>
-          {last && (
-            <p className="text-xs text-green-600 font-medium mt-0.5 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" />
-              Zuletzt: {new Date(last.bestellt_am).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })} – {last.mitarbeiter_kuerzel}
+          {last ? (
+            <p className={`text-xs font-medium mt-0.5 flex items-center gap-1 ${lastIsNichtBestellt ? "text-orange-500" : "text-green-600"}`}>
+              {lastIsNichtBestellt ? <Ban className="w-3 h-3" /> : <CheckCircle2 className="w-3 h-3" />}
+              {new Date(last.bestellt_am).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}
+              {" "}– {last.mitarbeiter_kuerzel}
+              {lastIsNichtBestellt && <span className="ml-1 opacity-70">(nicht bestellt)</span>}
             </p>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-0.5 italic">Noch keine Bestellung</p>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        {open ? <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" /> : <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />}
+      </button>
+
+      {/* Ausgeklappter Inhalt */}
+      {open && (<>
+      {/* Aktionsleiste */}
+      <div className="px-5 py-3 border-t border-border/40 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5">
           {isAdmin && !editing && (
             <button
               onClick={startEdit}
@@ -212,23 +228,6 @@ function LieferantCard({
             >
               <Pencil className="w-3.5 h-3.5" />
             </button>
-          )}
-          {!editing && (
-            <div className="flex items-center gap-1.5">
-              <button
-                onClick={() => onNichtBestellen(lieferant)}
-                className="flex items-center gap-1.5 px-3 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold hover:bg-orange-600 transition-colors"
-                title="Nicht bestellt erfassen"
-              >
-                <Ban className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => onBestellen(lieferant)}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-xs font-bold hover:bg-[#2d5aa0] transition-colors"
-              >
-                <ShoppingBag className="w-3.5 h-3.5" /> Bestellen
-              </button>
-            </div>
           )}
           {editing && (
             <div className="flex items-center gap-1.5">
@@ -244,6 +243,23 @@ function LieferantCard({
             </div>
           )}
         </div>
+        {!editing && (
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => onNichtBestellen(lieferant)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-orange-500 text-white rounded-xl text-xs font-bold hover:bg-orange-600 transition-colors"
+              title="Nicht bestellt erfassen"
+            >
+              <Ban className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => onBestellen(lieferant)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-xs font-bold hover:bg-[#2d5aa0] transition-colors"
+            >
+              <ShoppingBag className="w-3.5 h-3.5" /> Bestellen
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Info-Bereich – Ansicht */}
@@ -342,7 +358,7 @@ function LieferantCard({
           <p className="text-xs text-muted-foreground italic text-center py-2">Noch keine Bestellungen erfasst</p>
         ) : (
           <>
-            {expanded && (
+            {historyOpen && (
               <div className="space-y-1.5 mb-2 mt-1">
                 {bestellungen.map(b => {
                   const istNichtBestellt = b.notiz?.toLowerCase().includes("nicht bestellt");
@@ -378,10 +394,10 @@ function LieferantCard({
               </div>
             )}
             <button
-              onClick={() => setExpanded(e => !e)}
+              onClick={() => setHistoryOpen(h => !h)}
               className="flex items-center gap-1 text-xs text-[#1a3a6b] font-medium hover:underline"
             >
-              {expanded
+              {historyOpen
                 ? <><ChevronUp className="w-3 h-3" /> Verlauf ausblenden</>
                 : <><ChevronDown className="w-3 h-3" /> Bestellverlauf ({bestellungen.length})</>
               }
@@ -389,6 +405,8 @@ function LieferantCard({
           </>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }
