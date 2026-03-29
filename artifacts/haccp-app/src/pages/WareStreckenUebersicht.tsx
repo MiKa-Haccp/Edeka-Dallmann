@@ -231,15 +231,15 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10">
                   <tr className="bg-gray-50 border-b border-border/60">
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[18%] bg-gray-50">Name</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[16%] bg-gray-50">Ansprechpartner</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[15%] bg-gray-50">Tel.Nr.</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide bg-gray-50">Info</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[60px] bg-gray-50">Kürzel</th>
-                    <th className="text-right px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[130px] bg-gray-50">Mindestbestellwert</th>
-                    <th className="px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[80px] text-center bg-gray-50">Wir bestellen</th>
-                    <th className="px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[90px] text-center bg-gray-50">Außendienst bestellt</th>
-                    {isAdmin && <th className="px-4 py-3 w-[80px] bg-gray-50" />}
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[15%] bg-gray-50">Name</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[13%] bg-gray-50">Ansprechpartner</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[11%] bg-gray-50">Tel.Nr.</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide bg-gray-50">Info</th>
+                    <th className="text-left px-3 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[52px] bg-gray-50">Kürzel</th>
+                    <th className="text-right px-3 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[100px] leading-tight bg-gray-50">Mind. Bestell&shy;wert</th>
+                    <th className="px-2 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[62px] text-center leading-tight bg-gray-50">Wir best.</th>
+                    <th className="px-2 py-2.5 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[66px] text-center leading-tight bg-gray-50">AD best.</th>
+                    {isAdmin && <th className="px-2 py-2.5 w-[56px] bg-gray-50" />}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">
@@ -297,47 +297,47 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                         </>
                       ) : (
                         <>
-                          <td className="px-4 py-3 font-semibold text-foreground">{l.name}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{l.ansprechpartner || "–"}</td>
-                          <td className="px-4 py-3 text-muted-foreground whitespace-pre-line">{l.telefon || "–"}</td>
-                          <td className="px-4 py-3 text-muted-foreground leading-snug">{l.info || "–"}</td>
-                          <td className="px-4 py-3 text-center">
+                          <td className="px-3 py-2.5 font-semibold text-foreground text-xs">{l.name}</td>
+                          <td className="px-3 py-2.5 text-muted-foreground text-xs">{l.ansprechpartner || "–"}</td>
+                          <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap text-xs">{l.telefon || "–"}</td>
+                          <td className="px-3 py-2.5 text-muted-foreground leading-snug text-xs">{l.info || "–"}</td>
+                          <td className="px-3 py-2.5 text-center">
                             {l.kuerzel && (
                               <span className="inline-block text-xs font-bold px-1.5 py-0.5 rounded bg-[#1a3a6b]/10 text-[#1a3a6b]">
                                 {l.kuerzel}
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-right text-sm text-muted-foreground tabular-nums">
+                          <td className="px-3 py-2.5 text-right text-xs text-muted-foreground tabular-nums">
                             {formatEuro(l.mindestbestellwert)}
                           </td>
-                          <td className="px-4 py-3 text-center">
+                          <td className="px-2 py-2.5 text-center">
                             <button
                               onClick={() => toggleBestellt(l)}
                               title={l.wird_bestellt ? "Wird von uns bestellt" : "Bestellt selbst / wird nicht von uns bestellt"}
                               className={`transition-colors ${l.wird_bestellt ? "text-green-600 hover:text-green-700" : "text-gray-300 hover:text-gray-400"}`}
                             >
-                              {l.wird_bestellt ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                              {l.wird_bestellt ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
                             </button>
                           </td>
-                          <td className="px-4 py-3 text-center">
+                          <td className="px-2 py-2.5 text-center">
                             <button
                               onClick={() => toggleAussendienst(l)}
                               title={l.aussendienst_bestellt ? "Außendienst bestellt" : "Außendienst bestellt nicht"}
                               className={`transition-colors ${l.aussendienst_bestellt ? "text-blue-600 hover:text-blue-700" : "text-gray-300 hover:text-gray-400"}`}
                             >
-                              {l.aussendienst_bestellt ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                              {l.aussendienst_bestellt ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
                             </button>
                           </td>
                           {isAdmin && (
-                            <td className="px-3 py-3">
-                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <td className="px-2 py-2.5">
+                              <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onClick={() => startEdit(l)}
-                                  className="p-1.5 text-[#1a3a6b] hover:bg-[#1a3a6b]/10 rounded-lg">
+                                  className="p-1 text-[#1a3a6b] hover:bg-[#1a3a6b]/10 rounded-lg">
                                   <Pencil className="w-3.5 h-3.5" />
                                 </button>
                                 <button onClick={() => handleDelete(l.id)}
-                                  className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg">
+                                  className="p-1 text-red-500 hover:bg-red-50 rounded-lg">
                                   <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                               </div>
