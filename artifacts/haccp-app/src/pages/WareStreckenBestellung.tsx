@@ -152,7 +152,7 @@ function LieferantCard({
   });
 
   const last = bestellungen[0];
-  const recent = bestellungen.slice(0, expanded ? 10 : 3);
+  const recent = bestellungen.slice(0, expanded ? bestellungen.length : 1);
 
   const startEdit = () => {
     setEditData({
@@ -345,7 +345,7 @@ function LieferantCard({
                 </div>
               ))}
             </div>
-            {bestellungen.length > 3 && (
+            {bestellungen.length > 1 && (
               <button
                 onClick={() => setExpanded(e => !e)}
                 className="mt-2 flex items-center gap-1 text-xs text-[#1a3a6b] font-medium hover:underline"
