@@ -17,7 +17,13 @@ interface Lieferant {
   telefon: string | null;
   info: string | null;
   kuerzel: string | null;
+  mindestbestellwert: number | null;
   wird_bestellt: boolean;
+}
+
+function formatEuro(val: number | null) {
+  if (val == null) return null;
+  return `€\u00a0${Number(val).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 interface Bestellung {
@@ -190,6 +196,15 @@ function LieferantCard({
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bestellbesonderheiten</p>
                 <p className="text-foreground text-sm whitespace-pre-wrap">{lieferant.info}</p>
+              </div>
+            </div>
+          )}
+          {lieferant.mindestbestellwert != null && (
+            <div className="flex items-start gap-2">
+              <ShoppingBag className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Mindestbestellwert</p>
+                <p className="text-foreground text-sm font-semibold">{formatEuro(lieferant.mindestbestellwert)}</p>
               </div>
             </div>
           )}

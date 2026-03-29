@@ -18,6 +18,7 @@ interface Lieferant {
   telefon: string | null;
   info: string | null;
   kuerzel: string | null;
+  mindestbestellwert: number | null;
   wird_bestellt: boolean;
   aussendienst_bestellt: boolean;
   sort_order: number;
@@ -29,10 +30,16 @@ const EMPTY: Omit<Lieferant, "id" | "market_id"> = {
   telefon: "",
   info: "",
   kuerzel: "",
+  mindestbestellwert: null,
   wird_bestellt: false,
   aussendienst_bestellt: false,
   sort_order: 99,
 };
+
+function formatEuro(val: number | null) {
+  if (val == null) return "–";
+  return `€\u00a0${Number(val).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
 
 export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolean } = {}) {
   const { selectedMarketId, adminSession } = useAppStore();
@@ -69,6 +76,9 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
       telefon: l.telefon ?? "",
       info: l.info ?? "",
       kuerzel: l.kuerzel ?? "",
+      mindestbestellwert: l.mindestbestellwert ?? null,
+      wird_bestellt: l.wird_bestellt,
+      aussendienst_bestellt: l.aussendienst_bestellt,
       sort_order: l.sort_order,
     });
   };
@@ -226,6 +236,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[15%] bg-gray-50">Tel.Nr.</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide bg-gray-50">Info</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[60px] bg-gray-50">Kürzel</th>
+                    <th className="text-right px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[130px] bg-gray-50">Mindestbestellwert</th>
                     <th className="px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[80px] text-center bg-gray-50">Wir bestellen</th>
                     <th className="px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[90px] text-center bg-gray-50">Außendienst bestellt</th>
                     {isAdmin && <th className="px-4 py-3 w-[80px] bg-gray-50" />}
@@ -258,6 +269,17 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                               maxLength={5}
                               className="w-full border border-border/60 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 text-center" />
                           </td>
+                          <td className="px-3 py-2">
+                            <div className="relative">
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
+                              <input
+                                type="number" min="0" step="0.01"
+                                value={editData.mindestbestellwert ?? ""}
+                                onChange={e => setEditData(p => ({ ...p, mindestbestellwert: e.target.value ? parseFloat(e.target.value) : null }))}
+                                placeholder="–"
+                                className="w-full border border-border/60 rounded-lg pl-6 pr-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+                            </div>
+                          </td>
                           <td className="px-3 py-2 text-center text-muted-foreground text-xs">–</td>
                           <td className="px-3 py-2 text-center text-muted-foreground text-xs">–</td>
                           <td className="px-3 py-2">
@@ -285,6 +307,9 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                                 {l.kuerzel}
                               </span>
                             )}
+                          </td>
+                          <td className="px-4 py-3 text-right text-sm text-muted-foreground tabular-nums">
+                            {formatEuro(l.mindestbestellwert)}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <button
@@ -324,7 +349,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                   ))}
                   {filtered.length === 0 && (
                     <tr>
-                      <td colSpan={isAdmin ? 8 : 7} className="px-4 py-10 text-center text-muted-foreground text-sm">
+                      <td colSpan={isAdmin ? 9 : 8} className="px-4 py-10 text-center text-muted-foreground text-sm">
                         {search ? "Kein Lieferant gefunden." : "Noch keine Streckenlieferanten eingetragen."}
                       </td>
                     </tr>
@@ -372,6 +397,11 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                     </a>
                   )}
                   {l.info && <p className="text-sm text-muted-foreground leading-snug">{l.info}</p>}
+                  {l.mindestbestellwert != null && (
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-semibold">Mindestbestellwert:</span> {formatEuro(l.mindestbestellwert)}
+                    </p>
+                  )}
                 </div>
               ))}
               {filtered.length === 0 && (
@@ -411,6 +441,19 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                     />
                   </div>
                 ))}
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Mindestbestellwert (€)</label>
+                  <div className="relative mt-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
+                    <input
+                      type="number" min="0" step="0.01"
+                      value={addData.mindestbestellwert ?? ""}
+                      onChange={e => setAddData(p => ({ ...p, mindestbestellwert: e.target.value ? parseFloat(e.target.value) : null }))}
+                      placeholder="z.B. 150"
+                      className="w-full border border-border/60 rounded-xl pl-7 pr-3 py-2.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                    />
+                  </div>
+                </div>
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Info</label>
                   <textarea
