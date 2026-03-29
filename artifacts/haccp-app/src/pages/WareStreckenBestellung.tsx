@@ -164,7 +164,6 @@ function LieferantCard({
   });
 
   const last = bestellungen[0];
-  const recent = bestellungen.slice(0, expanded ? bestellungen.length : 1);
 
   const startEdit = () => {
     setEditData({
@@ -338,42 +337,55 @@ function LieferantCard({
       )}
 
       {/* Verlauf */}
-      <div className="px-5 py-3">
+      <div className="px-5 pb-3 pt-1">
         {bestellungen.length === 0 ? (
           <p className="text-xs text-muted-foreground italic text-center py-2">Noch keine Bestellungen erfasst</p>
         ) : (
           <>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
-              <Clock className="w-3 h-3" /> Bestellverlauf
-            </p>
-            <div className="space-y-1.5">
-              {recent.map(b => (
-                <div key={b.id} className="flex items-start justify-between gap-2 text-sm group">
-                  <div className="min-w-0">
-                    <span className="font-semibold text-foreground">{b.mitarbeiter_kuerzel}</span>
-                    <span className="text-muted-foreground ml-2 text-xs">{formatDate(b.bestellt_am)}</span>
-                    {b.notiz && <p className="text-xs text-muted-foreground mt-0.5 truncate">↳ {b.notiz}</p>}
-                  </div>
-                  {isAdmin && (
-                    <button
-                      onClick={() => onDeleteBestellung(b.id)}
-                      className="shrink-0 p-1 text-gray-300 hover:text-red-500 transition-colors rounded"
-                      title="Eintrag löschen"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-            {bestellungen.length > 1 && (
-              <button
-                onClick={() => setExpanded(e => !e)}
-                className="mt-2 flex items-center gap-1 text-xs text-[#1a3a6b] font-medium hover:underline"
-              >
-                {expanded ? <><ChevronUp className="w-3 h-3" /> Weniger anzeigen</> : <><ChevronDown className="w-3 h-3" /> Alle {bestellungen.length} anzeigen</>}
-              </button>
+            {expanded && (
+              <div className="space-y-1.5 mb-2 mt-1">
+                {bestellungen.map(b => {
+                  const istNichtBestellt = b.notiz?.toLowerCase().includes("nicht bestellt");
+                  return (
+                    <div key={b.id} className="flex items-start justify-between gap-2 text-sm group">
+                      <div className="min-w-0 flex items-start gap-2">
+                        {istNichtBestellt
+                          ? <Ban className="w-3 h-3 text-orange-400 shrink-0 mt-0.5" />
+                          : <CheckCircle2 className="w-3 h-3 text-green-500 shrink-0 mt-0.5" />
+                        }
+                        <div>
+                          <span className={`font-semibold ${istNichtBestellt ? "text-orange-600" : "text-foreground"}`}>
+                            {b.mitarbeiter_kuerzel}
+                          </span>
+                          <span className="text-muted-foreground ml-2 text-xs">{formatDate(b.bestellt_am)}</span>
+                          {b.notiz && !istNichtBestellt && (
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate">↳ {b.notiz}</p>
+                          )}
+                        </div>
+                      </div>
+                      {isAdmin && (
+                        <button
+                          onClick={() => onDeleteBestellung(b.id)}
+                          className="shrink-0 p-1 text-gray-300 hover:text-red-500 transition-colors rounded"
+                          title="Eintrag löschen"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             )}
+            <button
+              onClick={() => setExpanded(e => !e)}
+              className="flex items-center gap-1 text-xs text-[#1a3a6b] font-medium hover:underline"
+            >
+              {expanded
+                ? <><ChevronUp className="w-3 h-3" /> Verlauf ausblenden</>
+                : <><ChevronDown className="w-3 h-3" /> Bestellverlauf ({bestellungen.length})</>
+              }
+            </button>
           </>
         )}
       </div>
