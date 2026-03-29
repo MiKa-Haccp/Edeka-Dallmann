@@ -64,4 +64,38 @@ router.delete("/strecken-lieferanten/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Bestellungen ───────────────────────────────────────────────────────────
+
+router.get("/strecken-bestellungen", async (req, res) => {
+  const { marketId, tenantId = "1" } = req.query as Record<string, string>;
+  if (!marketId) return res.status(400).json({ error: "marketId required" });
+  const { rows } = await pool.query(
+    `SELECT b.id, b.lieferant_id, b.bestellt_am, b.mitarbeiter_kuerzel, b.notiz
+     FROM strecken_bestellungen b
+     WHERE b.market_id=$1 AND b.tenant_id=$2
+     ORDER BY b.bestellt_am DESC
+     LIMIT 200`,
+    [marketId, tenantId]
+  );
+  res.json(rows);
+});
+
+router.post("/strecken-bestellungen", async (req, res) => {
+  const { marketId, tenantId = 1, lieferantId, mitarbeiterKuerzel, notiz } = req.body;
+  if (!marketId || !lieferantId || !mitarbeiterKuerzel) {
+    return res.status(400).json({ error: "marketId, lieferantId and mitarbeiterKuerzel required" });
+  }
+  const { rows } = await pool.query(
+    `INSERT INTO strecken_bestellungen (market_id, tenant_id, lieferant_id, mitarbeiter_kuerzel, notiz)
+     VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+    [marketId, tenantId, lieferantId, mitarbeiterKuerzel.trim(), notiz || null]
+  );
+  res.json(rows[0]);
+});
+
+router.delete("/strecken-bestellungen/:id", async (req, res) => {
+  await pool.query("DELETE FROM strecken_bestellungen WHERE id=$1", [req.params.id]);
+  res.json({ ok: true });
+});
+
 export default router;
