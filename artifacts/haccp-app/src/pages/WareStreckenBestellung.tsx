@@ -216,7 +216,8 @@ function LieferantCard({
                   {isAdmin && (
                     <button
                       onClick={() => onDeleteBestellung(b.id)}
-                      className="shrink-0 p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all rounded"
+                      className="shrink-0 p-1 text-gray-300 hover:text-red-500 transition-colors rounded"
+                      title="Eintrag löschen"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
