@@ -257,7 +257,7 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
       ]);
       const lData = await lRes.json();
       const bData = await bRes.json();
-      setLieferanten(lData);
+      setLieferanten(lData.filter((l: Lieferant) => l.wird_bestellt));
       setBestellungen(bData);
     } finally {
       setLoading(false);
