@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import { Link } from "wouter";
 import {
-  ChevronLeft, Plus, Pencil, Trash2, X, Save, Loader2, List, Search,
+  ChevronLeft, Plus, Pencil, Trash2, X, Save, Loader2, List, Search, CheckSquare, Square,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -16,6 +16,7 @@ interface Lieferant {
   telefon: string | null;
   info: string | null;
   kuerzel: string | null;
+  wird_bestellt: boolean;
   sort_order: number;
 }
 
@@ -25,6 +26,7 @@ const EMPTY: Omit<Lieferant, "id" | "market_id"> = {
   telefon: "",
   info: "",
   kuerzel: "",
+  wird_bestellt: false,
   sort_order: 99,
 };
 
@@ -94,6 +96,15 @@ export default function WareStreckenUebersicht() {
       setAddData(EMPTY);
       await load();
     } finally { setAdding(false); }
+  };
+
+  const toggleBestellt = async (l: Lieferant) => {
+    setLieferanten(prev => prev.map(x => x.id === l.id ? { ...x, wird_bestellt: !x.wird_bestellt } : x));
+    await fetch(`${BASE}/strecken-lieferanten/${l.id}/bestellt`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wirdBestellt: !l.wird_bestellt }),
+    });
   };
 
   const handleDelete = async (id: number) => {
@@ -178,9 +189,10 @@ export default function WareStreckenUebersicht() {
                   <tr className="bg-gray-50 border-b border-border/60">
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[18%]">Name</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[16%]">Ansprechpartner</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[16%]">Tel.Nr.</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[15%]">Tel.Nr.</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide">Info</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[60px]">Kürzel</th>
+                    <th className="px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[80px] text-center">Wir bestellen</th>
                     {isAdmin && <th className="px-4 py-3 w-[80px]" />}
                   </tr>
                 </thead>
@@ -211,6 +223,7 @@ export default function WareStreckenUebersicht() {
                               maxLength={5}
                               className="w-full border border-border/60 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 text-center" />
                           </td>
+                          <td className="px-3 py-2 text-center text-muted-foreground text-xs">–</td>
                           <td className="px-3 py-2">
                             <div className="flex items-center gap-1">
                               <button onClick={saveEdit} disabled={saving}
@@ -237,6 +250,17 @@ export default function WareStreckenUebersicht() {
                               </span>
                             )}
                           </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => toggleBestellt(l)}
+                              title={l.wird_bestellt ? "Wird von uns bestellt" : "Bestellt selbst / wird nicht von uns bestellt"}
+                              className={`transition-colors ${l.wird_bestellt ? "text-green-600 hover:text-green-700" : "text-gray-300 hover:text-gray-400"}`}
+                            >
+                              {l.wird_bestellt
+                                ? <CheckSquare className="w-5 h-5" />
+                                : <Square className="w-5 h-5" />}
+                            </button>
+                          </td>
                           {isAdmin && (
                             <td className="px-3 py-3">
                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -257,7 +281,7 @@ export default function WareStreckenUebersicht() {
                   ))}
                   {filtered.length === 0 && (
                     <tr>
-                      <td colSpan={isAdmin ? 6 : 5} className="px-4 py-10 text-center text-muted-foreground text-sm">
+                      <td colSpan={isAdmin ? 7 : 6} className="px-4 py-10 text-center text-muted-foreground text-sm">
                         {search ? "Kein Lieferant gefunden." : "Noch keine Streckenlieferanten eingetragen."}
                       </td>
                     </tr>
@@ -271,7 +295,13 @@ export default function WareStreckenUebersicht() {
               {filtered.map(l => (
                 <div key={l.id} className="p-4 space-y-2">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="font-bold text-foreground leading-tight">{l.name}</p>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <button onClick={() => toggleBestellt(l)} title={l.wird_bestellt ? "Wird von uns bestellt" : "Nicht von uns bestellt"}
+                        className={`shrink-0 transition-colors ${l.wird_bestellt ? "text-green-600" : "text-gray-300"}`}>
+                        {l.wird_bestellt ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                      </button>
+                      <p className="font-bold text-foreground leading-tight">{l.name}</p>
+                    </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {l.kuerzel && (
                         <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-[#1a3a6b]/10 text-[#1a3a6b]">{l.kuerzel}</span>

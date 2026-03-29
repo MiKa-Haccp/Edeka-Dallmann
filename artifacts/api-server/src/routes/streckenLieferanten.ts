@@ -7,7 +7,7 @@ router.get("/strecken-lieferanten", async (req, res) => {
   const { marketId, tenantId = "1" } = req.query as Record<string, string>;
   if (!marketId) return res.status(400).json({ error: "marketId required" });
   const { rows } = await pool.query(
-    `SELECT id, market_id, tenant_id, name, ansprechpartner, telefon, info, kuerzel, sort_order, created_at, updated_at
+    `SELECT id, market_id, tenant_id, name, ansprechpartner, telefon, info, kuerzel, wird_bestellt, sort_order, created_at, updated_at
      FROM strecken_lieferanten WHERE market_id=$1 AND tenant_id=$2 ORDER BY sort_order, name`,
     [marketId, tenantId]
   );
@@ -32,6 +32,17 @@ router.put("/strecken-lieferanten/:id", async (req, res) => {
     `UPDATE strecken_lieferanten SET name=$1, ansprechpartner=$2, telefon=$3, info=$4, kuerzel=$5, sort_order=$6, updated_at=NOW()
      WHERE id=$7 RETURNING *`,
     [name, ansprechpartner || null, telefon || null, info || null, kuerzel || null, sortOrder ?? 99, id]
+  );
+  if (!rows.length) return res.status(404).json({ error: "Not found" });
+  res.json(rows[0]);
+});
+
+router.patch("/strecken-lieferanten/:id/bestellt", async (req, res) => {
+  const { id } = req.params;
+  const { wirdBestellt } = req.body;
+  const { rows } = await pool.query(
+    `UPDATE strecken_lieferanten SET wird_bestellt=$1, updated_at=NOW() WHERE id=$2 RETURNING *`,
+    [!!wirdBestellt, id]
   );
   if (!rows.length) return res.status(404).json({ error: "Not found" });
   res.json(rows[0]);
