@@ -42,6 +42,21 @@ export const ladenLieferplaeneTable = pgTable("laden_lieferplaene", {
   createdAt:             timestamp("created_at").defaultNow().notNull(),
 });
 
-export type LadenBestellgebiet = typeof ladenBestellgebieteTable.$inferSelect;
-export type LadenBestellung    = typeof ladenBestellungenTable.$inferSelect;
-export type LadenLieferplan    = typeof ladenLieferplaeneTable.$inferSelect;
+export const streckenLieferantenTable = pgTable("strecken_lieferanten", {
+  id:              serial("id").primaryKey(),
+  marketId:        integer("market_id").notNull(),
+  tenantId:        integer("tenant_id").notNull().default(1),
+  name:            varchar("name", { length: 150 }).notNull(),
+  ansprechpartner: varchar("ansprechpartner", { length: 150 }),
+  telefon:         varchar("telefon", { length: 200 }),
+  info:            text("info"),
+  kuerzel:         varchar("kuerzel", { length: 10 }),
+  sortOrder:       integer("sort_order").notNull().default(99),
+  createdAt:       timestamp("created_at").defaultNow().notNull(),
+  updatedAt:       timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type LadenBestellgebiet    = typeof ladenBestellgebieteTable.$inferSelect;
+export type LadenBestellung       = typeof ladenBestellungenTable.$inferSelect;
+export type LadenLieferplan       = typeof ladenLieferplaeneTable.$inferSelect;
+export type StreckenLieferant     = typeof streckenLieferantenTable.$inferSelect;

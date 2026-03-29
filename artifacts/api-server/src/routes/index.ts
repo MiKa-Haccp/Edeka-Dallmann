@@ -47,6 +47,7 @@ import emailSettingsRouter from "./emailSettings";
 import notificationsRouter from "./notifications";
 import schulungsAnforderungenRouter from "./schulungsAnforderungen";
 import monatsberichtRouter from "./monatsbericht";
+import streckenLieferantenRouter from "./streckenLieferanten";
 
 
 const router: IRouter = Router();
@@ -99,5 +100,6 @@ router.use(emailSettingsRouter);
 router.use(notificationsRouter);
 router.use(schulungsAnforderungenRouter);
 router.use(monatsberichtRouter);
+router.use(streckenLieferantenRouter);
 
 export default router;

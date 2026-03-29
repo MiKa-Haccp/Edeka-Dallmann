@@ -1,6 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Link } from "wouter";
-import { ShoppingCart, ArrowRight, Store, ChevronLeft } from "lucide-react";
+import { Truck, ArrowRight, List, ShoppingBag, ChevronLeft } from "lucide-react";
 
 interface SubCard {
   id: string;
@@ -12,36 +12,36 @@ interface SubCard {
 
 const UNTERPUNKTE: SubCard[] = [
   {
-    id: "laden",
-    icon: Store,
-    title: "Ladenbestellung",
-    description: "Bestellungen für den Laden erfassen und verwalten.",
-    href: "/ware-ladenbestellung",
+    id: "uebersicht",
+    icon: List,
+    title: "Übersicht Streckenlieferanten",
+    description: "Alle Streckenlieferanten mit Ansprechpartner, Telefonnummer und Infos – jederzeit anpassbar.",
+    href: "/ware-strecken-uebersicht",
   },
   {
-    id: "rayon",
-    icon: ShoppingCart,
-    title: "Streckenbestellung",
-    description: "Marktübersicht nach Rayons. Mitarbeiter haken jeden Bereich nach erfolgter Bestellung ab.",
-    href: "/ware-streckenbestellung",
+    id: "bestellung",
+    icon: ShoppingBag,
+    title: "Bestellung Streckenlieferanten",
+    description: "Bestellungen bei Streckenlieferanten erfassen und verwalten.",
+    href: "/ware-strecken-bestellung",
   },
 ];
 
-export default function WareBestellungenHub() {
+export default function WareStreckenbestellungHub() {
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
 
         <div className="flex items-center gap-3">
-          <Link href="/ware" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
+          <Link href="/ware-bestellungen" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
             <ChevronLeft className="h-5 w-5" />
           </Link>
           <div className="w-10 h-10 rounded-xl bg-[#1a3a6b]/10 flex items-center justify-center flex-shrink-0">
-            <ShoppingCart className="w-5 h-5 text-[#1a3a6b]" />
+            <Truck className="w-5 h-5 text-[#1a3a6b]" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground mb-0.5">Bestellungen</h1>
-            <p className="text-muted-foreground text-sm">Ladenbestellung und Streckenbestellung.</p>
+            <h1 className="text-xl font-bold text-foreground mb-0.5">Streckenbestellung</h1>
+            <p className="text-muted-foreground text-sm">Übersicht und Bestellung für Streckenlieferanten.</p>
           </div>
         </div>
 
