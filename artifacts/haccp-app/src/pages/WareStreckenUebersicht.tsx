@@ -219,16 +219,16 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
             {/* Desktop-Tabelle */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
-                <thead>
+                <thead className="sticky top-0 z-10">
                   <tr className="bg-gray-50 border-b border-border/60">
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[18%]">Name</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[16%]">Ansprechpartner</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[15%]">Tel.Nr.</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide">Info</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[60px]">Kürzel</th>
-                    <th className="px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[80px] text-center">Wir bestellen</th>
-                    <th className="px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[90px] text-center">Außendienst bestellt</th>
-                    {isAdmin && <th className="px-4 py-3 w-[80px]" />}
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[18%] bg-gray-50">Name</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[16%] bg-gray-50">Ansprechpartner</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[15%] bg-gray-50">Tel.Nr.</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide bg-gray-50">Info</th>
+                    <th className="text-left px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[60px] bg-gray-50">Kürzel</th>
+                    <th className="px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[80px] text-center bg-gray-50">Wir bestellen</th>
+                    <th className="px-4 py-3 font-semibold text-muted-foreground text-xs uppercase tracking-wide w-[90px] text-center bg-gray-50">Außendienst bestellt</th>
+                    {isAdmin && <th className="px-4 py-3 w-[80px] bg-gray-50" />}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/40">
