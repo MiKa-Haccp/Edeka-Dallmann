@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ShoppingBag, Phone, User, Info, CheckCircle2, Clock,
-  ChevronDown, ChevronUp, Loader2, Trash2, X, KeyRound,
+  ChevronDown, ChevronUp, Loader2, Trash2, X, KeyRound, Pencil, Save,
 } from "lucide-react";
 
 const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
@@ -131,17 +131,48 @@ function LieferantCard({
   bestellungen,
   onBestellen,
   onDeleteBestellung,
+  onUpdateLieferant,
   isAdmin,
 }: {
   lieferant: Lieferant;
   bestellungen: Bestellung[];
   onBestellen: (l: Lieferant) => void;
   onDeleteBestellung: (id: number) => void;
+  onUpdateLieferant: (id: number, data: Partial<Lieferant>) => Promise<void>;
   isAdmin: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editData, setEditData] = useState({
+    ansprechpartner: lieferant.ansprechpartner ?? "",
+    telefon: lieferant.telefon ?? "",
+    info: lieferant.info ?? "",
+    mindestbestellwert: lieferant.mindestbestellwert as number | null,
+  });
+
   const last = bestellungen[0];
   const recent = bestellungen.slice(0, expanded ? 10 : 3);
+
+  const startEdit = () => {
+    setEditData({
+      ansprechpartner: lieferant.ansprechpartner ?? "",
+      telefon: lieferant.telefon ?? "",
+      info: lieferant.info ?? "",
+      mindestbestellwert: lieferant.mindestbestellwert,
+    });
+    setEditing(true);
+  };
+
+  const saveEdit = async () => {
+    setSaving(true);
+    try {
+      await onUpdateLieferant(lieferant.id, editData);
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
@@ -161,16 +192,42 @@ function LieferantCard({
             </p>
           )}
         </div>
-        <button
-          onClick={() => onBestellen(lieferant)}
-          className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-xs font-bold hover:bg-[#2d5aa0] transition-colors"
-        >
-          <ShoppingBag className="w-3.5 h-3.5" /> Bestellen
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          {isAdmin && !editing && (
+            <button
+              onClick={startEdit}
+              className="p-1.5 text-muted-foreground hover:text-[#1a3a6b] hover:bg-[#1a3a6b]/10 rounded-lg transition-colors"
+              title="Lieferantendaten bearbeiten"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {!editing && (
+            <button
+              onClick={() => onBestellen(lieferant)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-xs font-bold hover:bg-[#2d5aa0] transition-colors"
+            >
+              <ShoppingBag className="w-3.5 h-3.5" /> Bestellen
+            </button>
+          )}
+          {editing && (
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => setEditing(false)}
+                className="px-3 py-1.5 text-xs border border-border/60 rounded-xl text-muted-foreground hover:text-foreground">
+                Abbrechen
+              </button>
+              <button onClick={saveEdit} disabled={saving}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a3a6b] text-white rounded-xl text-xs font-bold hover:bg-[#2d5aa0] disabled:opacity-50">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                Speichern
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Info-Bereich */}
-      {(lieferant.ansprechpartner || lieferant.telefon || lieferant.info) && (
+      {/* Info-Bereich – Ansicht */}
+      {!editing && (lieferant.ansprechpartner || lieferant.telefon || lieferant.info || lieferant.mindestbestellwert != null) && (
         <div className="px-5 py-3 bg-gray-50/60 border-b border-border/40 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
           {lieferant.ansprechpartner && (
             <div className="flex items-start gap-2">
@@ -186,7 +243,7 @@ function LieferantCard({
               <Phone className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Telefon</p>
-                <a href={`tel:${lieferant.telefon}`} className="text-[#1a3a6b] font-medium hover:underline text-sm">{lieferant.telefon}</a>
+                <a href={`tel:${lieferant.telefon}`} className="text-[#1a3a6b] font-medium hover:underline text-sm whitespace-pre-line">{lieferant.telefon}</a>
               </div>
             </div>
           )}
@@ -208,6 +265,54 @@ function LieferantCard({
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Info-Bereich – Bearbeiten */}
+      {editing && (
+        <div className="px-5 py-4 bg-blue-50/40 border-b border-[#1a3a6b]/20 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ansprechpartner</label>
+              <input
+                value={editData.ansprechpartner}
+                onChange={e => setEditData(p => ({ ...p, ansprechpartner: e.target.value }))}
+                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Mindestbestellwert (€)</label>
+              <div className="relative mt-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">€</span>
+                <input
+                  type="number" min="0" step="0.01"
+                  value={editData.mindestbestellwert ?? ""}
+                  onChange={e => setEditData(p => ({ ...p, mindestbestellwert: e.target.value ? parseFloat(e.target.value) : null }))}
+                  placeholder="–"
+                  className="w-full border border-border/60 rounded-xl pl-7 pr-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tel.Nr.</label>
+              <textarea
+                value={editData.telefon}
+                onChange={e => setEditData(p => ({ ...p, telefon: e.target.value }))}
+                rows={2}
+                placeholder={"z.B. 0151/42259352\n0800/1234567"}
+                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bestellbesonderheiten</label>
+              <textarea
+                value={editData.info}
+                onChange={e => setEditData(p => ({ ...p, info: e.target.value }))}
+                rows={2}
+                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none"
+              />
+            </div>
+          </div>
         </div>
       )}
 
@@ -309,6 +414,18 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
     setBestellungen(prev => prev.filter(b => b.id !== id));
   };
 
+  const handleUpdateLieferant = async (id: number, data: Partial<Lieferant>) => {
+    const res = await fetch(`${BASE}/strecken-lieferanten/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId, ...data }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setLieferanten(prev => prev.map(l => l.id === id ? { ...l, ...updated } : l));
+    }
+  };
+
   const getBestellungenForLieferant = (lieferantId: number) =>
     bestellungen.filter(b => b.lieferant_id === lieferantId);
 
@@ -341,6 +458,7 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
               bestellungen={getBestellungenForLieferant(l.id)}
               onBestellen={setDialogLieferant}
               onDeleteBestellung={handleDeleteBestellung}
+              onUpdateLieferant={handleUpdateLieferant}
               isAdmin={isAdmin}
             />
           ))
