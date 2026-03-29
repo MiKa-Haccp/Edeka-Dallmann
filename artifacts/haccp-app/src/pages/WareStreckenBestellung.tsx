@@ -257,7 +257,7 @@ function LieferantCard({
 
 export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolean } = {}) {
   const { selectedMarketId, adminSession } = useAppStore();
-  const isAdmin = !!adminSession;
+  const isAdmin = adminSession?.role === "SUPERADMIN" || adminSession?.role === "ADMIN" || adminSession?.role === "MARKTLEITER" || adminSession?.role === "BEREICHSLEITUNG";
 
   const [lieferanten, setLieferanten] = useState<Lieferant[]>([]);
   const [bestellungen, setBestellungen] = useState<Bestellung[]>([]);

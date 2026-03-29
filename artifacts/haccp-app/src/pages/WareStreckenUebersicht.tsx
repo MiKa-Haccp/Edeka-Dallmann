@@ -43,7 +43,7 @@ function formatEuro(val: number | null) {
 
 export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolean } = {}) {
   const { selectedMarketId, adminSession } = useAppStore();
-  const isAdmin = !!adminSession;
+  const isAdmin = adminSession?.role === "SUPERADMIN" || adminSession?.role === "ADMIN" || adminSession?.role === "MARKTLEITER" || adminSession?.role === "BEREICHSLEITUNG";
 
   const [lieferanten, setLieferanten] = useState<Lieferant[]>([]);
   const [loading, setLoading] = useState(false);
