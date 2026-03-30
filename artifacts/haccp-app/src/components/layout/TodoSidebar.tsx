@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
-  Home, CheckSquare, ClipboardList, Zap, TableProperties, X, GripVertical,
+  Home, CheckSquare, ClipboardList, TableProperties, X, GripVertical,
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -60,8 +60,7 @@ function TodoSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
 
         <NavLink href="/todo" label="Übersicht" icon={CheckSquare} onNavigate={onNavigate} />
-        <NavLink href="/todo-tagesliste" label="Tagesliste" icon={ClipboardList} onNavigate={onNavigate} />
-        <NavLink href="/todo-rundgang" label="Schneller Rundgang" icon={Zap} onNavigate={onNavigate} />
+        <NavLink href="/todo-tagesliste" label="Meine Aufgaben" icon={ClipboardList} onNavigate={onNavigate} />
         {isAdmin && (
           <NavLink href="/todo-verwaltung" label="Aufgaben verwalten" icon={ClipboardList} onNavigate={onNavigate} />
         )}

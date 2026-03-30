@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Link } from "wouter";
 import { useAppStore } from "@/store/use-app-store";
-import { ClipboardList, Zap, TableProperties, CheckCircle2, AlertCircle, Clock } from "lucide-react";
+import { ClipboardList, TableProperties, CheckCircle2, AlertCircle } from "lucide-react";
 
 const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -13,7 +13,6 @@ export default function TodoHub() {
   const { selectedMarketId } = useAppStore();
   const [pendingStandard, setPendingStandard] = useState<number | null>(null);
   const [openAdhoc, setOpenAdhoc] = useState<number | null>(null);
-  const [overdueAdhoc, setOverdueAdhoc] = useState<number>(0);
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
@@ -32,12 +31,11 @@ export default function TodoHub() {
       const completedIds = new Set(completions.map((c: { task_id: number }) => c.task_id));
       setPendingStandard(tasks.filter((t: { id: number }) => !completedIds.has(t.id)).length);
       setOpenAdhoc(adhoc.length);
-      const now = Date.now();
-      setOverdueAdhoc(adhoc.filter((a: { deadline: string | null }) =>
-        a.deadline && new Date(a.deadline).getTime() < now
-      ).length);
     }).catch(() => {});
   }, [selectedMarketId, weekday, todayStr]);
+
+  const totalOpen = (pendingStandard ?? 0) + (openAdhoc ?? 0);
+  const allDone = pendingStandard !== null && openAdhoc !== null && totalOpen === 0;
 
   return (
     <AppLayout>
@@ -58,51 +56,19 @@ export default function TodoHub() {
                     <ClipboardList className="w-6 h-6 text-[#1a3a6b]" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-foreground">Tagesliste</h2>
-                    <p className="text-xs text-muted-foreground mt-0.5">Standard-Aufgaben für heute</p>
+                    <h2 className="font-bold text-foreground">Meine Aufgaben</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">Alle Aufgaben für heute im Überblick</p>
                   </div>
                 </div>
-                {pendingStandard !== null && (
-                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold ${
-                    pendingStandard === 0
+                {pendingStandard !== null && openAdhoc !== null && (
+                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold whitespace-nowrap ${
+                    allDone
                       ? "bg-green-100 text-green-700"
                       : "bg-amber-100 text-amber-700"
                   }`}>
-                    {pendingStandard === 0
+                    {allDone
                       ? <><CheckCircle2 className="w-4 h-4" /> Alle erledigt</>
-                      : <><AlertCircle className="w-4 h-4" /> {pendingStandard} offen</>
-                    }
-                  </div>
-                )}
-              </div>
-            </div>
-          </Link>
-
-          <Link href="/todo-rundgang">
-            <div className="bg-white rounded-2xl border border-border/60 shadow-sm p-5 hover:shadow-md hover:border-orange-300 transition-all cursor-pointer group">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-orange-100 rounded-xl group-hover:bg-orange-200 transition-colors">
-                    <Zap className="w-6 h-6 text-orange-600" />
-                  </div>
-                  <div>
-                    <h2 className="font-bold text-foreground">Schneller Rundgang</h2>
-                    <p className="text-xs text-muted-foreground mt-0.5">Ad-hoc Aufgaben erfassen & erledigen</p>
-                  </div>
-                </div>
-                {openAdhoc !== null && (
-                  <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-bold ${
-                    overdueAdhoc > 0
-                      ? "bg-red-100 text-red-700"
-                      : openAdhoc === 0
-                        ? "bg-green-100 text-green-700"
-                        : "bg-orange-100 text-orange-700"
-                  }`}>
-                    {overdueAdhoc > 0
-                      ? <><Clock className="w-4 h-4" /> {overdueAdhoc} überfällig</>
-                      : openAdhoc === 0
-                        ? <><CheckCircle2 className="w-4 h-4" /> Keine offen</>
-                        : <><Zap className="w-4 h-4" /> {openAdhoc} offen</>
+                      : <><AlertCircle className="w-4 h-4" /> {totalOpen} offen</>
                     }
                   </div>
                 )}

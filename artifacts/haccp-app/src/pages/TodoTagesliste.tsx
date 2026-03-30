@@ -4,6 +4,7 @@ import { useAppStore } from "@/store/use-app-store";
 import {
   CheckCircle2, Circle, Loader2, Info, ChevronLeft, ChevronRight,
   Flame, Minus, ArrowDown, X, Camera, ImagePlus, Trash2, ZoomIn,
+  Plus, Clock, Archive, ChevronDown, ChevronUp, RotateCcw, CalendarDays, Zap,
 } from "lucide-react";
 
 const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
@@ -12,12 +13,12 @@ const BASE = import.meta.env.VITE_API_URL || "/api";
 const WEEKDAY_NAMES = ["", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 
 const PRIORITY_CONFIG = {
-  hoch:   { label: "Hoch",    icon: Flame,    color: "text-red-600",   bg: "bg-red-50",   border: "border-red-200"   },
-  mittel: { label: "Mittel",  icon: Minus,    color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
-  niedrig:{ label: "Niedrig", icon: ArrowDown, color: "text-blue-600", bg: "bg-blue-50",  border: "border-blue-200"  },
+  hoch:   { label: "Hoch",    icon: Flame,    color: "text-red-600",   bg: "bg-red-50",   border: "border-red-200",   badge: "bg-red-100 text-red-700"    },
+  mittel: { label: "Mittel",  icon: Minus,    color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", badge: "bg-amber-100 text-amber-700" },
+  niedrig:{ label: "Niedrig", icon: ArrowDown, color: "text-blue-600", bg: "bg-blue-50",  border: "border-blue-200",  badge: "bg-blue-100 text-blue-700"   },
 };
 
-interface Task {
+interface StandardTask {
   id: number;
   title: string;
   description: string | null;
@@ -31,6 +32,19 @@ interface Completion {
   completed_at: string;
   photo_data: string | null;
 }
+interface AdhocTask {
+  id: number;
+  title: string;
+  description: string | null;
+  priority: string;
+  deadline: string | null;
+  photo_data: string | null;
+  created_by_name: string | null;
+  created_at: string;
+  is_completed: boolean;
+  completed_by_name: string | null;
+  completed_at: string | null;
+}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -41,15 +55,14 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-function PINDialog({ onConfirm, onClose, title }: {
+function PINDialog({ title, onConfirm, onClose }: {
+  title: string;
   onConfirm: (pin: string) => Promise<string | null>;
   onClose: () => void;
-  title: string;
 }) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-
   const handleConfirm = async () => {
     if (pin.length !== 4) { setError("PIN muss 4-stellig sein"); return; }
     setSaving(true);
@@ -58,34 +71,24 @@ function PINDialog({ onConfirm, onClose, title }: {
     setSaving(false);
     if (err) setError(err);
   };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-foreground">{title}</h3>
-          <button onClick={onClose} className="p-1 rounded-lg text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+          <h3 className="font-bold text-foreground text-sm">{title}</h3>
+          <button onClick={onClose}><X className="w-4 h-4 text-muted-foreground" /></button>
         </div>
-        <p className="text-sm text-muted-foreground mb-4">Bitte gib deinen 4-stelligen PIN ein:</p>
         <input
-          type="password"
-          inputMode="numeric"
-          maxLength={4}
-          value={pin}
+          type="password" inputMode="numeric" maxLength={4} value={pin} autoFocus
           onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
           onKeyDown={e => e.key === "Enter" && handleConfirm()}
           placeholder="• • • •"
-          autoFocus
-          className="w-full border border-border/60 rounded-xl px-4 py-3 text-center text-2xl tracking-widest focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 mb-3"
+          className="w-full border border-border/60 rounded-xl px-4 py-3 text-center text-2xl tracking-widest mb-3 focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
         />
         {error && <p className="text-xs text-red-600 text-center mb-3">{error}</p>}
-        <button
-          onClick={handleConfirm}
-          disabled={saving || pin.length !== 4}
-          className="w-full py-2.5 bg-[#1a3a6b] text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-          Bestätigen
+        <button onClick={handleConfirm} disabled={saving || pin.length !== 4}
+          className="w-full py-2.5 bg-[#1a3a6b] text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+          {saving && <Loader2 className="w-4 h-4 animate-spin" />} Bestätigen
         </button>
       </div>
     </div>
@@ -103,29 +106,18 @@ function PhotoDialog({ taskTitle, currentPhoto, onSave, onDelete, onClose }: {
   const [saving, setSaving] = useState(false);
   const [enlarged, setEnlarged] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const b64 = await fileToBase64(file);
-    setPreview(b64);
+    setPreview(await fileToBase64(file));
   };
-
   const handleSave = async () => {
     if (!preview || preview === currentPhoto) { onClose(); return; }
-    setSaving(true);
-    await onSave(preview);
-    setSaving(false);
-    onClose();
+    setSaving(true); await onSave(preview); setSaving(false); onClose();
   };
-
   const handleDelete = async () => {
-    setSaving(true);
-    await onDelete();
-    setSaving(false);
-    onClose();
+    setSaving(true); await onDelete(); setSaving(false); onClose();
   };
-
   return (
     <>
       {enlarged && preview && (
@@ -137,59 +129,38 @@ function PhotoDialog({ taskTitle, currentPhoto, onSave, onDelete, onClose }: {
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-bold text-foreground flex items-center gap-2">
-                <Camera className="w-4 h-4 text-[#1a3a6b]" /> Foto
-              </h3>
+              <h3 className="font-bold text-foreground flex items-center gap-2"><Camera className="w-4 h-4 text-[#1a3a6b]" /> Foto</h3>
               <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{taskTitle}</p>
             </div>
-            <button onClick={onClose} className="p-1 rounded-lg text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+            <button onClick={onClose}><X className="w-4 h-4 text-muted-foreground" /></button>
           </div>
-
           {preview ? (
             <div className="relative mb-4 rounded-xl overflow-hidden bg-gray-100 aspect-video">
               <img src={preview} alt="Vorschau" className="w-full h-full object-cover" />
-              <button
-                onClick={() => setEnlarged(true)}
-                className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-lg text-white hover:bg-black/70"
-              >
-                <ZoomIn className="w-4 h-4" />
-              </button>
+              <button onClick={() => setEnlarged(true)} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-lg text-white"><ZoomIn className="w-4 h-4" /></button>
             </div>
           ) : (
-            <button
-              onClick={() => inputRef.current?.click()}
-              className="w-full mb-4 border-2 border-dashed border-border/60 rounded-xl py-8 flex flex-col items-center gap-2 text-muted-foreground hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b] transition-colors"
-            >
+            <button onClick={() => inputRef.current?.click()}
+              className="w-full mb-4 border-2 border-dashed border-border/60 rounded-xl py-8 flex flex-col items-center gap-2 text-muted-foreground hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b] transition-colors">
               <ImagePlus className="w-8 h-8" />
               <span className="text-sm font-medium">Foto auswählen oder aufnehmen</span>
             </button>
           )}
-
           <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
-
           <div className="flex gap-2">
             {preview && (
-              <button
-                onClick={() => inputRef.current?.click()}
-                className="flex-1 py-2.5 border border-border/60 rounded-xl text-sm font-medium text-muted-foreground hover:bg-gray-50 flex items-center justify-center gap-1.5"
-              >
+              <button onClick={() => inputRef.current?.click()}
+                className="flex-1 py-2.5 border border-border/60 rounded-xl text-sm font-medium text-muted-foreground hover:bg-gray-50 flex items-center justify-center gap-1.5">
                 <ImagePlus className="w-4 h-4" /> Ersetzen
               </button>
             )}
             {currentPhoto && (
-              <button
-                onClick={handleDelete}
-                disabled={saving}
-                className="py-2.5 px-3 border border-red-200 rounded-xl text-red-600 hover:bg-red-50 disabled:opacity-50"
-              >
+              <button onClick={handleDelete} disabled={saving} className="py-2.5 px-3 border border-red-200 rounded-xl text-red-600 hover:bg-red-50 disabled:opacity-50">
                 <Trash2 className="w-4 h-4" />
               </button>
             )}
-            <button
-              onClick={handleSave}
-              disabled={saving || !preview}
-              className="flex-1 py-2.5 bg-[#1a3a6b] text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
-            >
+            <button onClick={handleSave} disabled={saving || !preview}
+              className="flex-1 py-2.5 bg-[#1a3a6b] text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {preview && preview !== currentPhoto ? "Speichern" : "Schließen"}
             </button>
@@ -200,68 +171,170 @@ function PhotoDialog({ taskTitle, currentPhoto, onSave, onDelete, onClose }: {
   );
 }
 
+function NewAdhocDialog({ onSave, onClose }: {
+  onSave: (data: { title: string; description: string; priority: string; deadline: string; photoData: string; pin: string }) => Promise<string | null>;
+  onClose: () => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState("mittel");
+  const [deadline, setDeadline] = useState("");
+  const [photoData, setPhotoData] = useState("");
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => setPhotoData(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+  const handleSubmit = async () => {
+    if (!title.trim()) { setError("Titel erforderlich"); return; }
+    if (pin.length !== 4) { setError("PIN muss 4-stellig sein"); return; }
+    setSaving(true);
+    const err = await onSave({ title: title.trim(), description, priority, deadline, photoData, pin });
+    setSaving(false);
+    if (err) setError(err);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-border/60 px-5 py-4 flex items-center justify-between rounded-t-3xl sm:rounded-t-2xl">
+          <h3 className="font-bold text-foreground flex items-center gap-2"><Zap className="w-4 h-4 text-orange-500" /> Neue Aufgabe</h3>
+          <button onClick={onClose}><X className="w-5 h-5 text-muted-foreground" /></button>
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Titel *</label>
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Was muss erledigt werden?"
+              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Beschreibung</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2}
+              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dringlichkeit</label>
+              <select value={priority} onChange={e => setPriority(e.target.value)}
+                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
+                {Object.entries(PRIORITY_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Zieluhrzeit</label>
+              <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)}
+                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Foto (optional)</label>
+            <div className="mt-1">
+              {photoData ? (
+                <div className="relative">
+                  <img src={photoData} alt="Vorschau" className="w-full h-36 object-cover rounded-xl" />
+                  <button onClick={() => setPhotoData("")} className="absolute top-2 right-2 p-1.5 bg-black/60 text-white rounded-lg"><X className="w-3.5 h-3.5" /></button>
+                </div>
+              ) : (
+                <button onClick={() => fileRef.current?.click()}
+                  className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border/60 rounded-xl text-sm text-muted-foreground hover:border-orange-400/60 hover:text-orange-500 w-full justify-center transition-colors">
+                  <Camera className="w-4 h-4" /> Foto aufnehmen / auswählen
+                </button>
+              )}
+              <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dein PIN *</label>
+            <input type="password" inputMode="numeric" maxLength={4} value={pin}
+              onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="• • • •"
+              className="mt-1 w-full border border-border/60 rounded-xl px-4 py-2.5 text-center text-xl tracking-widest focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+          </div>
+          {error && <p className="text-xs text-red-600">{error}</p>}
+          <button onClick={handleSubmit} disabled={saving || !title.trim() || pin.length !== 4}
+            className="w-full py-3 bg-orange-500 text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2 hover:bg-orange-600 transition-colors">
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />} Aufgabe speichern
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function TodoTagesliste() {
-  const { selectedMarketId } = useAppStore();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const { selectedMarketId, adminSession } = useAppStore();
+  const isAdmin = adminSession?.role === "SUPERADMIN" || adminSession?.role === "ADMIN"
+    || adminSession?.role === "MARKTLEITER" || adminSession?.role === "BEREICHSLEITUNG";
+
+  const [standardTasks, setStandardTasks] = useState<StandardTask[]>([]);
   const [completions, setCompletions] = useState<Completion[]>([]);
+  const [adhocTasks, setAdhocTasks] = useState<AdhocTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => new Date());
-  const [pinDialog, setPinDialog] = useState<{ taskId: number; taskTitle: string } | null>(null);
+
+  const [pinStandardId, setPinStandardId] = useState<{ id: number; title: string } | null>(null);
+  const [pinAdhocId, setPinAdhocId] = useState<number | null>(null);
   const [photoDialog, setPhotoDialog] = useState<{ taskId: number; taskTitle: string; currentPhoto: string | null } | null>(null);
   const [enlargedPhoto, setEnlargedPhoto] = useState<string | null>(null);
+  const [showNewAdhoc, setShowNewAdhoc] = useState(false);
+  const [showDoneStandard, setShowDoneStandard] = useState(false);
+  const [showDoneAdhoc, setShowDoneAdhoc] = useState(false);
 
   const dateStr = selectedDate.toISOString().split("T")[0];
   const weekday = selectedDate.getDay() === 0 ? 7 : selectedDate.getDay();
+  const isToday = dateStr === new Date().toISOString().split("T")[0];
 
   const load = useCallback(async () => {
     if (!selectedMarketId) return;
     setLoading(true);
     try {
-      const [tRes, cRes] = await Promise.all([
+      const [tRes, cRes, aRes] = await Promise.all([
         fetch(`${BASE}/todo/standard-tasks?marketId=${selectedMarketId}&weekday=${weekday}`),
         fetch(`${BASE}/todo/daily-completions?marketId=${selectedMarketId}&date=${dateStr}`),
+        fetch(`${BASE}/todo/adhoc-tasks?marketId=${selectedMarketId}&includeCompleted=true`),
       ]);
-      setTasks(await tRes.json());
+      setStandardTasks(await tRes.json());
       setCompletions(await cRes.json());
+      setAdhocTasks(await aRes.json());
     } finally { setLoading(false); }
   }, [selectedMarketId, weekday, dateStr]);
 
   useEffect(() => { load(); }, [load]);
 
   const completionMap = new Map(completions.map(c => [c.task_id, c]));
-  const isToday = dateStr === new Date().toISOString().split("T")[0];
-
   const moveDate = (days: number) => {
     setSelectedDate(d => { const n = new Date(d); n.setDate(n.getDate() + days); return n; });
   };
 
-  const handleToggle = async (task: Task) => {
+  // Standard task handlers
+  const handleStandardToggle = async (task: StandardTask) => {
     const comp = completionMap.get(task.id);
     if (comp) {
       await fetch(`${BASE}/todo/daily-completions/${task.id}/${dateStr}`, { method: "DELETE" });
       setCompletions(prev => prev.filter(c => c.task_id !== task.id));
     } else {
-      setPinDialog({ taskId: task.id, taskTitle: task.title });
+      setPinStandardId({ id: task.id, title: task.title });
     }
   };
-
-  const handlePinConfirm = async (pin: string) => {
-    if (!pinDialog || !selectedMarketId) return "Fehler";
+  const handleStandardPIN = async (pin: string) => {
+    if (!pinStandardId || !selectedMarketId) return "Fehler";
     const res = await fetch(`${BASE}/todo/daily-completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ taskId: pinDialog.taskId, marketId: selectedMarketId, date: dateStr, pin, tenantId: "1" }),
+      body: JSON.stringify({ taskId: pinStandardId.id, marketId: selectedMarketId, date: dateStr, pin, tenantId: "1" }),
     });
-    if (!res.ok) {
-      const data = await res.json();
-      return data.error || "Fehler";
-    }
+    if (!res.ok) { const d = await res.json(); return d.error || "Fehler"; }
     const comp = await res.json();
     setCompletions(prev => [...prev.filter(c => c.task_id !== comp.task_id), comp]);
-    setPinDialog(null);
+    setPinStandardId(null);
     return null;
   };
-
   const handlePhotoSave = async (base64: string) => {
     if (!photoDialog) return;
     const res = await fetch(`${BASE}/todo/daily-completions/${photoDialog.taskId}/${dateStr}/photo`, {
@@ -274,7 +347,6 @@ export default function TodoTagesliste() {
       setCompletions(prev => prev.map(c => c.task_id === updated.task_id ? updated : c));
     }
   };
-
   const handlePhotoDelete = async () => {
     if (!photoDialog) return;
     const res = await fetch(`${BASE}/todo/daily-completions/${photoDialog.taskId}/${dateStr}/photo`, {
@@ -288,192 +360,316 @@ export default function TodoTagesliste() {
     }
   };
 
-  const priorityOrder = ["hoch", "mittel", "niedrig"];
-  const grouped = priorityOrder.reduce((acc, p) => {
-    acc[p] = tasks.filter(t => t.priority === p);
-    return acc;
-  }, {} as Record<string, Task[]>);
+  // Ad-hoc handlers
+  const handleAdhocCreate = async (data: { title: string; description: string; priority: string; deadline: string; photoData: string; pin: string }) => {
+    const res = await fetch(`${BASE}/todo/adhoc-tasks`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ marketId: selectedMarketId, tenantId: "1", ...data }),
+    });
+    if (!res.ok) { const d = await res.json(); return d.error || "Fehler"; }
+    const created = await res.json();
+    setAdhocTasks(prev => [created, ...prev]);
+    setShowNewAdhoc(false);
+    return null;
+  };
+  const handleAdhocCompletePIN = async (pin: string) => {
+    if (!pinAdhocId) return "Fehler";
+    const res = await fetch(`${BASE}/todo/adhoc-tasks/${pinAdhocId}/complete`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin, tenantId: "1" }),
+    });
+    if (!res.ok) { const d = await res.json(); return d.error || "Fehler"; }
+    const updated = await res.json();
+    setAdhocTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+    setPinAdhocId(null);
+    return null;
+  };
+  const handleAdhocReopen = async (id: number) => {
+    await fetch(`${BASE}/todo/adhoc-tasks/${id}/reopen`, { method: "PATCH" });
+    setAdhocTasks(prev => prev.map(t => t.id === id ? { ...t, is_completed: false, completed_by_name: null, completed_at: null } : t));
+  };
+  const handleAdhocDelete = async (id: number) => {
+    if (!confirm("Aufgabe wirklich löschen?")) return;
+    await fetch(`${BASE}/todo/adhoc-tasks/${id}`, { method: "DELETE" });
+    setAdhocTasks(prev => prev.filter(t => t.id !== id));
+  };
 
-  const totalDone = tasks.filter(t => completionMap.has(t.id)).length;
-  const pct = tasks.length ? Math.round((totalDone / tasks.length) * 100) : 0;
+  const openStandard = standardTasks.filter(t => !completionMap.has(t.id));
+  const doneStandard = standardTasks.filter(t => completionMap.has(t.id));
+  const openAdhoc = adhocTasks.filter(t => !t.is_completed);
+  const doneAdhoc = adhocTasks.filter(t => t.is_completed);
+  const totalStandard = standardTasks.length;
+  const doneStandardCount = doneStandard.length;
+  const pct = totalStandard ? Math.round((doneStandardCount / totalStandard) * 100) : 0;
+  const totalOpen = openStandard.length + openAdhoc.length;
+
+  const priorityOrder = ["hoch", "mittel", "niedrig"];
 
   return (
     <AppLayout>
-      {/* Vollbild-Overlay für Referenzfotos */}
       {enlargedPhoto && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80"
-          onClick={() => setEnlargedPhoto(null)}
-        >
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80" onClick={() => setEnlargedPhoto(null)}>
           <img src={enlargedPhoto} alt="Referenzfoto" className="max-w-full max-h-full rounded-xl object-contain" />
         </div>
       )}
 
       <div className="max-w-2xl mx-auto space-y-5">
+
         {/* Header */}
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h1 className="text-xl font-bold text-foreground">Tagesliste</h1>
+            <h1 className="text-xl font-bold text-foreground">Meine Aufgaben</h1>
             <p className="text-xs text-muted-foreground">
               {WEEKDAY_NAMES[weekday]}, {selectedDate.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}
+              {totalOpen > 0 && <span className="ml-2 font-semibold text-[#1a3a6b]">· {totalOpen} offen</span>}
             </p>
           </div>
-          <div className="flex items-center gap-1">
-            <button onClick={() => moveDate(-1)} className="p-2 rounded-xl border border-border/60 hover:bg-gray-50 text-muted-foreground">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setSelectedDate(new Date())}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium border ${isToday ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border/60 text-muted-foreground hover:bg-gray-50"}`}
-            >
-              Heute
-            </button>
-            <button onClick={() => moveDate(1)} className="p-2 rounded-xl border border-border/60 hover:bg-gray-50 text-muted-foreground">
-              <ChevronRight className="w-4 h-4" />
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <button onClick={() => moveDate(-1)} className="p-2 rounded-xl border border-border/60 hover:bg-gray-50 text-muted-foreground"><ChevronLeft className="w-4 h-4" /></button>
+              <button onClick={() => setSelectedDate(new Date())}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium border ${isToday ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border/60 text-muted-foreground hover:bg-gray-50"}`}>
+                Heute
+              </button>
+              <button onClick={() => moveDate(1)} className="p-2 rounded-xl border border-border/60 hover:bg-gray-50 text-muted-foreground"><ChevronRight className="w-4 h-4" /></button>
+            </div>
+            <button onClick={() => setShowNewAdhoc(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors shadow-sm">
+              <Plus className="w-4 h-4" /> Aufgabe
             </button>
           </div>
         </div>
 
-        {/* Fortschritt */}
-        {tasks.length > 0 && (
+        {/* Fortschritt Standard-Aufgaben */}
+        {totalStandard > 0 && (
           <div className="bg-white rounded-2xl border border-border/60 p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-foreground">{totalDone} / {tasks.length} erledigt</span>
+              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                <CalendarDays className="w-3.5 h-3.5" /> Standardaufgaben {doneStandardCount}/{totalStandard}
+              </span>
               <span className={`text-sm font-bold ${pct === 100 ? "text-green-600" : "text-muted-foreground"}`}>{pct}%</span>
             </div>
             <div className="w-full bg-gray-100 rounded-full h-2">
-              <div
-                className={`h-2 rounded-full transition-all duration-500 ${pct === 100 ? "bg-green-500" : "bg-[#1a3a6b]"}`}
-                style={{ width: `${pct}%` }}
-              />
+              <div className={`h-2 rounded-full transition-all duration-500 ${pct === 100 ? "bg-green-500" : "bg-[#1a3a6b]"}`} style={{ width: `${pct}%` }} />
             </div>
           </div>
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : tasks.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-border/60 p-8 text-center">
-            <Info className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-muted-foreground text-sm">Keine Standardaufgaben für {WEEKDAY_NAMES[weekday]}.</p>
-          </div>
+          <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
         ) : (
-          priorityOrder.map(p => {
-            const conf = PRIORITY_CONFIG[p as keyof typeof PRIORITY_CONFIG];
-            const Icon = conf.icon;
-            const list = grouped[p];
-            if (!list.length) return null;
-            return (
-              <div key={p}>
-                <div className="flex items-center gap-2 mb-2 px-1">
-                  <Icon className={`w-3.5 h-3.5 ${conf.color}`} />
-                  <span className={`text-xs font-bold uppercase tracking-wide ${conf.color}`}>{conf.label}</span>
+          <>
+            {/* ── STANDARD-AUFGABEN (offen) ── */}
+            {openStandard.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <CalendarDays className="w-4 h-4 text-[#1a3a6b]" />
+                  <span className="text-xs font-bold uppercase tracking-wide text-[#1a3a6b]">Standardaufgaben</span>
+                  <span className="text-xs bg-[#1a3a6b]/10 text-[#1a3a6b] px-2 py-0.5 rounded-full font-semibold">{openStandard.length}</span>
                 </div>
                 <div className="space-y-2">
-                  {list.map(task => {
-                    const comp = completionMap.get(task.id);
-                    const done = !!comp;
+                  {priorityOrder.flatMap(p => openStandard.filter(t => t.priority === p)).map(task => {
+                    const conf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.mittel;
+                    const PIcon = conf.icon;
                     return (
-                      <div
-                        key={task.id}
-                        className={`bg-white rounded-2xl border transition-all overflow-hidden ${done ? "border-green-200 bg-green-50/60" : "border-border/60"}`}
-                      >
-                        {/* Erledigungs-Foto (oben, wenn erledigt + Foto vorhanden) */}
-                        {done && comp?.photo_data && (
-                          <button
-                            onClick={() => setPhotoDialog({ taskId: task.id, taskTitle: task.title, currentPhoto: comp.photo_data })}
-                            className="w-full block"
-                          >
-                            <img
-                              src={comp.photo_data}
-                              alt="Erledigungsfoto"
-                              className="w-full h-32 object-cover hover:opacity-90 transition-opacity"
-                            />
+                      <div key={task.id} className="bg-white rounded-2xl border border-border/60 overflow-hidden border-l-4 border-l-[#1a3a6b]/30">
+                        {task.photo_data && (
+                          <button onClick={() => setEnlargedPhoto(task.photo_data)} className="w-full block relative">
+                            <img src={task.photo_data} alt="Referenz" className="w-full h-28 object-cover hover:opacity-90 transition-opacity" />
+                            <span className="absolute top-2 left-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">Referenz</span>
                           </button>
                         )}
-
-                        {/* Referenzfoto (oben, wenn noch nicht erledigt) */}
-                        {!done && task.photo_data && (
-                          <button
-                            onClick={() => setEnlargedPhoto(task.photo_data)}
-                            className="w-full block relative"
-                          >
-                            <img
-                              src={task.photo_data}
-                              alt="Referenzfoto"
-                              className="w-full h-32 object-cover hover:opacity-90 transition-opacity"
-                            />
-                            <span className="absolute top-2 left-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                              Referenz
-                            </span>
-                          </button>
-                        )}
-
                         <div className="p-4 flex items-start gap-3">
-                          {/* Checkbox */}
-                          <button onClick={() => handleToggle(task)} className="shrink-0 mt-0.5">
-                            {done
-                              ? <CheckCircle2 className="w-5 h-5 text-green-500" />
-                              : <Circle className="w-5 h-5 text-muted-foreground/40" />
-                            }
+                          <button onClick={() => handleStandardToggle(task)} className="shrink-0 mt-0.5">
+                            <Circle className="w-5 h-5 text-muted-foreground/40" />
                           </button>
-
-                          {/* Task-Info */}
-                          <div
-                            className="min-w-0 flex-1"
-                            onClick={() => !done && handleToggle(task)}
-                          >
-                            <p className={`font-semibold text-sm ${done ? "line-through text-muted-foreground" : "text-foreground cursor-pointer"}`}>
-                              {task.title}
-                            </p>
-                            {task.description && (
-                              <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>
-                            )}
-                            {done && comp && (
-                              <p className="text-xs text-green-600 mt-1 font-medium">
-                                ✓ {comp.completed_by_name} · {new Date(comp.completed_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr
-                              </p>
-                            )}
+                          <div className="min-w-0 flex-1" onClick={() => handleStandardToggle(task)}>
+                            <p className="font-semibold text-sm text-foreground cursor-pointer">{task.title}</p>
+                            {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                            <div className="flex items-center gap-1.5 mt-1.5">
+                              <PIcon className={`w-3 h-3 ${conf.color}`} />
+                              <span className={`text-[10px] font-semibold ${conf.color}`}>{conf.label}</span>
+                            </div>
                           </div>
-
-                          {/* Kamera-Button (nur bei erledigten Aufgaben) */}
-                          {done && (
-                            <button
-                              onClick={() => setPhotoDialog({ taskId: task.id, taskTitle: task.title, currentPhoto: comp?.photo_data ?? null })}
-                              className={`shrink-0 p-1.5 rounded-xl transition-colors ${comp?.photo_data ? "bg-green-100 text-green-600 hover:bg-green-200" : "bg-gray-100 text-muted-foreground hover:bg-gray-200"}`}
-                              title="Erledigungsfoto"
-                            >
-                              <Camera className="w-4 h-4" />
-                            </button>
-                          )}
                         </div>
                       </div>
                     );
                   })}
                 </div>
               </div>
-            );
-          })
-        )}
+            )}
 
-        {pct === 100 && tasks.length > 0 && (
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-5 text-center">
-            <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-2" />
-            <p className="font-bold text-green-700">Alle Aufgaben erledigt!</p>
-          </div>
+            {/* ── AD-HOC-AUFGABEN (offen) ── */}
+            {openAdhoc.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <Zap className="w-4 h-4 text-orange-500" />
+                  <span className="text-xs font-bold uppercase tracking-wide text-orange-600">Zusätzliche Aufgaben</span>
+                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">{openAdhoc.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {openAdhoc.map(task => {
+                    const conf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.mittel;
+                    const PIcon = conf.icon;
+                    const isOverdue = task.deadline && new Date(task.deadline) < new Date();
+                    return (
+                      <div key={task.id} className={`bg-white rounded-2xl border overflow-hidden border-l-4 border-l-orange-300 ${isOverdue ? "border-red-200" : "border-border/60"}`}>
+                        {task.photo_data && (
+                          <button onClick={() => setEnlargedPhoto(task.photo_data)} className="w-full block">
+                            <img src={task.photo_data} alt="Foto" className="w-full h-28 object-cover hover:opacity-90 transition-opacity" />
+                          </button>
+                        )}
+                        <div className="p-4 flex items-start gap-3">
+                          <button onClick={() => setPinAdhocId(task.id)} className="shrink-0 mt-0.5" title="Als erledigt markieren">
+                            <Circle className="w-5 h-5 text-orange-400/60" />
+                          </button>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-sm text-foreground">{task.title}</p>
+                            {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              <PIcon className={`w-3 h-3 ${conf.color}`} />
+                              <span className={`text-[10px] font-semibold ${conf.color}`}>{conf.label}</span>
+                              {task.deadline && (
+                                <span className={`text-xs flex items-center gap-0.5 ${isOverdue ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
+                                  <Clock className="w-3 h-3" />
+                                  {new Date(task.deadline).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} Uhr
+                                </span>
+                              )}
+                              {task.created_by_name && (
+                                <span className="text-[10px] text-muted-foreground">von {task.created_by_name}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => setPinAdhocId(task.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Erledigt">
+                              <CheckCircle2 className="w-4 h-4" />
+                            </button>
+                            {isAdmin && (
+                              <button onClick={() => handleAdhocDelete(task.id)} className="p-1.5 text-muted-foreground hover:text-red-500 rounded-lg">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Leerer Zustand */}
+            {openStandard.length === 0 && openAdhoc.length === 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
+                <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-3" />
+                <p className="font-bold text-green-700">Alle Aufgaben erledigt!</p>
+                <p className="text-xs text-green-600 mt-1">Großartige Arbeit heute.</p>
+              </div>
+            )}
+
+            {standardTasks.length === 0 && adhocTasks.length === 0 && (
+              <div className="bg-white rounded-2xl border border-border/60 p-8 text-center">
+                <Info className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-muted-foreground text-sm">Keine Aufgaben für {WEEKDAY_NAMES[weekday]}.</p>
+              </div>
+            )}
+
+            {/* ── ERLEDIGTE STANDARD-AUFGABEN ── */}
+            {doneStandard.length > 0 && (
+              <div>
+                <button onClick={() => setShowDoneStandard(s => !s)}
+                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide hover:text-foreground mb-2">
+                  <CalendarDays className="w-3.5 h-3.5" />
+                  Erledigt – Standard ({doneStandard.length})
+                  {showDoneStandard ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+                {showDoneStandard && (
+                  <div className="space-y-2">
+                    {doneStandard.map(task => {
+                      const comp = completionMap.get(task.id)!;
+                      return (
+                        <div key={task.id} className="bg-green-50/60 rounded-2xl border border-green-200 overflow-hidden border-l-4 border-l-green-400">
+                          {comp.photo_data && (
+                            <button onClick={() => setPhotoDialog({ taskId: task.id, taskTitle: task.title, currentPhoto: comp.photo_data })} className="w-full block">
+                              <img src={comp.photo_data} alt="Foto" className="w-full h-24 object-cover hover:opacity-90" />
+                            </button>
+                          )}
+                          <div className="p-4 flex items-start gap-3">
+                            <button onClick={() => handleStandardToggle(task)} className="shrink-0 mt-0.5">
+                              <CheckCircle2 className="w-5 h-5 text-green-500" />
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm line-through text-muted-foreground">{task.title}</p>
+                              <p className="text-xs text-green-600 mt-0.5 font-medium">
+                                ✓ {comp.completed_by_name} · {new Date(comp.completed_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => setPhotoDialog({ taskId: task.id, taskTitle: task.title, currentPhoto: comp?.photo_data ?? null })}
+                              className={`shrink-0 p-1.5 rounded-xl ${comp?.photo_data ? "bg-green-100 text-green-600" : "bg-gray-100 text-muted-foreground"}`}
+                            >
+                              <Camera className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── ERLEDIGTE AD-HOC-AUFGABEN ── */}
+            {doneAdhoc.length > 0 && (
+              <div>
+                <button onClick={() => setShowDoneAdhoc(s => !s)}
+                  className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide hover:text-foreground mb-2">
+                  <Archive className="w-3.5 h-3.5" />
+                  Erledigt – Zusatz ({doneAdhoc.length})
+                  {showDoneAdhoc ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+                {showDoneAdhoc && (
+                  <div className="space-y-2">
+                    {doneAdhoc.map(task => (
+                      <div key={task.id} className="bg-white rounded-2xl border border-border/40 opacity-60 overflow-hidden border-l-4 border-l-orange-200 p-4 flex items-start gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm line-through text-muted-foreground">{task.title}</p>
+                          {task.completed_by_name && (
+                            <p className="text-xs text-green-600 font-medium mt-0.5">✓ {task.completed_by_name}</p>
+                          )}
+                        </div>
+                        {isAdmin && (
+                          <button onClick={() => handleAdhocReopen(task.id)} className="p-1.5 text-muted-foreground hover:text-[#1a3a6b] rounded-lg" title="Wieder öffnen">
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {pinDialog && (
+      {pinStandardId && (
         <PINDialog
-          title={`Aufgabe erledigen: ${pinDialog.taskTitle}`}
-          onConfirm={handlePinConfirm}
-          onClose={() => setPinDialog(null)}
+          title={`Erledigt: ${pinStandardId.title}`}
+          onConfirm={handleStandardPIN}
+          onClose={() => setPinStandardId(null)}
         />
       )}
-
+      {pinAdhocId !== null && (
+        <PINDialog
+          title="Aufgabe als erledigt markieren"
+          onConfirm={handleAdhocCompletePIN}
+          onClose={() => setPinAdhocId(null)}
+        />
+      )}
       {photoDialog && (
         <PhotoDialog
           taskTitle={photoDialog.taskTitle}
@@ -482,6 +678,9 @@ export default function TodoTagesliste() {
           onDelete={handlePhotoDelete}
           onClose={() => setPhotoDialog(null)}
         />
+      )}
+      {showNewAdhoc && (
+        <NewAdhocDialog onSave={handleAdhocCreate} onClose={() => setShowNewAdhoc(false)} />
       )}
     </AppLayout>
   );

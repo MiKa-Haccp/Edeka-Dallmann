@@ -91,7 +91,6 @@ import MonatsberichtAdmin from "./pages/MonatsberichtAdmin";
 import TodoHub from "./pages/TodoHub";
 import TodoTagesliste from "./pages/TodoTagesliste";
 import TodoVerwaltung from "./pages/TodoVerwaltung";
-import TodoRundgang from "./pages/TodoRundgang";
 import TodoKassen from "./pages/TodoKassen";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
@@ -168,8 +167,8 @@ function Router() {
       <Route path="/verwaltung/schulungsanforderungen" component={SchulungsAnforderungen} />
       <Route path="/todo" component={TodoHub} />
       <Route path="/todo-tagesliste" component={TodoTagesliste} />
+      <Route path="/todo-rundgang" component={TodoTagesliste} />
       <Route path="/todo-verwaltung" component={TodoVerwaltung} />
-      <Route path="/todo-rundgang" component={TodoRundgang} />
       <Route path="/todo-kassen" component={TodoKassen} />
       <Route component={NotFound} />
     </Switch>
