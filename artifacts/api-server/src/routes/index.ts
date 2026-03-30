@@ -49,7 +49,7 @@ import schulungsAnforderungenRouter from "./schulungsAnforderungen";
 import monatsberichtRouter from "./monatsbericht";
 import streckenLieferantenRouter from "./streckenLieferanten";
 import todoRouter from "./todo";
-
+import feedbackRouter from "./feedback";
 
 const router: IRouter = Router();
 
@@ -103,5 +103,6 @@ router.use(schulungsAnforderungenRouter);
 router.use(monatsberichtRouter);
 router.use(streckenLieferantenRouter);
 router.use(todoRouter);
+router.use(feedbackRouter);
 
 export default router;

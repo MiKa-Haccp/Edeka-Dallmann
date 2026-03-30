@@ -1,14 +1,58 @@
 import { useState } from "react";
 import { X } from "lucide-react";
+import { useLocation } from "wouter";
+import { useAppStore } from "@/store/use-app-store";
+
+const BASE = import.meta.env.VITE_API_URL || "/api";
+
+const PAGE_LABELS: Record<string, string> = {
+  "/": "Startseite / Dashboard",
+  "/todo": "To-Do Übersicht",
+  "/todo-tagesliste": "Meine Aufgaben",
+  "/todo-verwaltung": "Aufgaben verwalten",
+  "/todo-kassen": "Kasseneinteilung",
+  "/admin/system": "Systemverwaltung",
+  "/admin/users": "Benutzerverwaltung",
+  "/wareneingaenge": "Wareneingänge",
+  "/reinigung-taeglich": "Tägliche Reinigung",
+  "/responsibilities": "Verantwortlichkeiten",
+  "/mitarbeiter-liste": "Mitarbeiter",
+  "/training-records": "Schulungsnachweise",
+  "/annual-cleaning-plan": "Jahresreinigungsplan",
+  "/betriebsbegehung": "Betriebsbegehung",
+};
+
+function getPageLabel(path: string): string {
+  if (PAGE_LABELS[path]) return PAGE_LABELS[path];
+  const clean = path.replace(/^\/+/, "");
+  return clean || "Startseite";
+}
 
 export function FeedbackButton() {
+  const [location] = useLocation();
+  const { selectedMarketId } = useAppStore();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [thanks, setThanks] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!text.trim()) return;
-    console.log("[Feedback]", text.trim());
+    setSending(true);
+    try {
+      await fetch(`${BASE}/feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: text.trim(),
+          pagePath: location,
+          marketId: selectedMarketId,
+        }),
+      });
+    } catch {
+      // still show thank you even if request fails
+    }
+    setSending(false);
     setThanks(true);
     setTimeout(() => {
       setOpen(false);
@@ -52,6 +96,11 @@ export function FeedbackButton() {
                     <X className="w-4 h-4" />
                   </button>
                 </div>
+
+                <div className="mb-3 px-3 py-2 bg-gray-50 rounded-xl border border-border/40 text-xs text-muted-foreground">
+                  📍 Aktuelle Seite: <span className="font-semibold text-foreground">{getPageLabel(location)}</span>
+                </div>
+
                 <textarea
                   autoFocus
                   value={text}
@@ -65,9 +114,9 @@ export function FeedbackButton() {
                     className="flex-1 py-2.5 border border-border/60 rounded-xl text-sm font-medium text-muted-foreground hover:bg-gray-50 transition-colors">
                     Abbrechen
                   </button>
-                  <button onClick={handleSubmit} disabled={!text.trim()}
+                  <button onClick={handleSubmit} disabled={!text.trim() || sending}
                     className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-semibold disabled:opacity-40 transition-colors">
-                    Absenden
+                    {sending ? "…" : "Absenden"}
                   </button>
                 </div>
               </>

@@ -1,6 +1,6 @@
 import { useListMarkets } from "@workspace/api-client-react";
 import { useAppStore } from "@/store/use-app-store";
-import { MapPin, LogIn, LogOut, Shield, Settings, Menu, RefreshCw, Navigation, Lock } from "lucide-react";
+import { MapPin, LogIn, LogOut, Shield, Settings, Menu, RefreshCw, Navigation, Lock, MessageSquare } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
 export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
@@ -144,13 +144,22 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
                 </span>
               </div>
               {adminSession.role === "SUPERADMIN" && (
-                <button
-                  onClick={() => navigate("/admin/system")}
-                  className="p-1.5 sm:p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-full transition-colors"
-                  title="Systemverwaltung"
-                >
-                  <Settings className="h-4 w-4" />
-                </button>
+                <>
+                  <button
+                    onClick={() => navigate("/admin/feedback")}
+                    className="p-1.5 sm:p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-full transition-colors relative"
+                    title="Feedback-Einträge"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => navigate("/admin/system")}
+                    className="p-1.5 sm:p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-full transition-colors"
+                    title="Systemverwaltung"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </button>
+                </>
               )}
               <button
                 onClick={() => {
