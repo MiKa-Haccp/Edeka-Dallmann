@@ -1,7 +1,10 @@
+import { useState, useEffect, useCallback } from "react";
 import { useListMarkets } from "@workspace/api-client-react";
 import { useAppStore } from "@/store/use-app-store";
 import { MapPin, LogIn, LogOut, Shield, Settings, Menu, RefreshCw, Navigation, Lock, MessageSquare } from "lucide-react";
 import { Link, useLocation } from "wouter";
+
+const BASE = import.meta.env.VITE_API_URL || "/api";
 
 export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const { data: markets, isLoading } = useListMarkets();
@@ -16,6 +19,26 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
     marketSelectionMode,
   } = useAppStore();
   const [, navigate] = useLocation();
+  const [unreadFeedback, setUnreadFeedback] = useState(0);
+
+  const isSuperAdmin = adminSession?.role === "SUPERADMIN";
+
+  const pollUnread = useCallback(async () => {
+    if (!isSuperAdmin) return;
+    try {
+      const res = await fetch(`${BASE}/feedback/unread-count`);
+      if (res.ok) {
+        const { count } = await res.json();
+        setUnreadFeedback(count);
+      }
+    } catch { /* ignore */ }
+  }, [isSuperAdmin]);
+
+  useEffect(() => {
+    pollUnread();
+    const id = setInterval(pollUnread, 60_000);
+    return () => clearInterval(id);
+  }, [pollUnread]);
 
   const isLoggedIn = !!adminSession;
   const gpsLocked = isGpsLocked();
@@ -146,11 +169,16 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
               {adminSession.role === "SUPERADMIN" && (
                 <>
                   <button
-                    onClick={() => navigate("/admin/feedback")}
-                    className="p-1.5 sm:p-2 text-muted-foreground hover:text-red-500 hover:bg-red-50 rounded-full transition-colors relative"
-                    title="Feedback-Einträge"
+                    onClick={() => { navigate("/admin/feedback"); setUnreadFeedback(0); }}
+                    className={`p-1.5 sm:p-2 rounded-full transition-colors relative ${unreadFeedback > 0 ? "text-red-600 bg-red-50 hover:bg-red-100" : "text-muted-foreground hover:text-red-500 hover:bg-red-50"}`}
+                    title={unreadFeedback > 0 ? `${unreadFeedback} neues Feedback` : "Feedback-Einträge"}
                   >
                     <MessageSquare className="h-4 w-4" />
+                    {unreadFeedback > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
+                        {unreadFeedback > 9 ? "9+" : unreadFeedback}
+                      </span>
+                    )}
                   </button>
                   <button
                     onClick={() => navigate("/admin/system")}

@@ -44,6 +44,7 @@ export default function FeedbackAdmin() {
     try {
       const res = await fetch(`${BASE}/feedback`);
       setEntries(await res.json());
+      await fetch(`${BASE}/feedback/mark-all-read`, { method: "PATCH" });
     } finally { setLoading(false); }
   }, []);
 
