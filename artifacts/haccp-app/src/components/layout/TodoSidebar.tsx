@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Home, CheckSquare, ClipboardList, TableProperties, X, GripVertical,
@@ -6,6 +6,8 @@ import {
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useAppStore } from "@/store/use-app-store";
+
+const BASE = import.meta.env.VITE_API_URL || "/api";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -16,11 +18,26 @@ const MAX_WIDTH = 380;
 const DEFAULT_WIDTH = 260;
 const STORAGE_KEY = "todo-sidebar-width";
 
-function NavLink({ href, label, icon: Icon, onNavigate }: {
-  href: string; label: string; icon: React.ElementType; onNavigate?: () => void;
+type AmpelColor = "red" | "amber" | "green" | null;
+
+function NavLink({ href, label, icon: Icon, onNavigate, ampel }: {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  onNavigate?: () => void;
+  ampel?: AmpelColor;
 }) {
   const [location] = useLocation();
   const isActive = location === href;
+
+  const dotColor = ampel === "green"
+    ? "bg-green-500"
+    : ampel === "amber"
+    ? "bg-amber-400"
+    : ampel === "red"
+    ? "bg-red-500"
+    : null;
+
   return (
     <Link
       href={href}
@@ -33,15 +50,59 @@ function NavLink({ href, label, icon: Icon, onNavigate }: {
       )}
     >
       <Icon className={cn("h-4 w-4 flex-shrink-0", isActive ? "text-[#1a3a6b]" : "text-muted-foreground/50 group-hover:text-muted-foreground")} />
-      <span className="truncate">{label}</span>
+      <span className="truncate flex-1">{label}</span>
+      {dotColor && (
+        <span className={cn("w-2.5 h-2.5 rounded-full shrink-0 shadow-sm", dotColor)} title={
+          ampel === "green" ? "Alle erledigt" : ampel === "amber" ? "In Bearbeitung" : "Noch viel offen"
+        } />
+      )}
     </Link>
   );
 }
 
+function useAmpel(selectedMarketId: number | null): AmpelColor {
+  const [ampel, setAmpel] = useState<AmpelColor>(null);
+
+  const fetch_ = useCallback(async () => {
+    if (!selectedMarketId) return;
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    const weekday = today.getDay() === 0 ? 7 : today.getDay();
+    try {
+      const [tRes, cRes, aRes] = await Promise.all([
+        fetch(`${BASE}/todo/standard-tasks?marketId=${selectedMarketId}&weekday=${weekday}`),
+        fetch(`${BASE}/todo/daily-completions?marketId=${selectedMarketId}&date=${todayStr}`),
+        fetch(`${BASE}/todo/adhoc-tasks?marketId=${selectedMarketId}&includeCompleted=true`),
+      ]);
+      const tasks = await tRes.json();
+      const completions = await cRes.json();
+      const adhoc = await aRes.json();
+      const completedIds = new Set(completions.map((c: { task_id: number }) => c.task_id));
+      const doneStandard = tasks.filter((t: { id: number }) => completedIds.has(t.id)).length;
+      const doneAdhoc = adhoc.filter((a: { is_completed: boolean }) => a.is_completed).length;
+      const totalAll = tasks.length + adhoc.length;
+      const doneAll = doneStandard + doneAdhoc;
+      if (totalAll === 0) { setAmpel(null); return; }
+      const pct = Math.round((doneAll / totalAll) * 100);
+      setAmpel(pct === 100 ? "green" : pct >= 33 ? "amber" : "red");
+    } catch { /* ignore */ }
+  }, [selectedMarketId]);
+
+  useEffect(() => {
+    fetch_();
+    const interval = setInterval(fetch_, 60_000);
+    return () => clearInterval(interval);
+  }, [fetch_]);
+
+  return ampel;
+}
+
 function TodoSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { adminSession } = useAppStore();
+  const { adminSession, selectedMarketId } = useAppStore();
   const isAdmin = adminSession?.role === "SUPERADMIN" || adminSession?.role === "ADMIN"
     || adminSession?.role === "MARKTLEITER" || adminSession?.role === "BEREICHSLEITUNG";
+
+  const ampel = useAmpel(selectedMarketId);
 
   return (
     <>
@@ -60,7 +121,7 @@ function TodoSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
 
         <NavLink href="/todo" label="Übersicht" icon={CheckSquare} onNavigate={onNavigate} />
-        <NavLink href="/todo-tagesliste" label="Meine Aufgaben" icon={ClipboardList} onNavigate={onNavigate} />
+        <NavLink href="/todo-tagesliste" label="Meine Aufgaben" icon={ClipboardList} onNavigate={onNavigate} ampel={ampel} />
         {isAdmin && (
           <NavLink href="/todo-verwaltung" label="Aufgaben verwalten" icon={ClipboardList} onNavigate={onNavigate} />
         )}
