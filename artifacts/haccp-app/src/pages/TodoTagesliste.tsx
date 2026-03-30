@@ -1,9 +1,9 @@
-import { type ReactNode, useEffect, useState, useCallback } from "react";
+import { type ReactNode, useEffect, useState, useCallback, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   CheckCircle2, Circle, Loader2, AlertTriangle, Info, ChevronLeft, ChevronRight,
-  Flame, Minus, ArrowDown, X,
+  Flame, Minus, ArrowDown, X, Camera, ImagePlus, Trash2, ZoomIn,
 } from "lucide-react";
 
 const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
@@ -12,13 +12,22 @@ const BASE = import.meta.env.VITE_API_URL || "/api";
 const WEEKDAY_NAMES = ["", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
 
 const PRIORITY_CONFIG = {
-  hoch:   { label: "Hoch",   icon: Flame,   color: "text-red-600",    bg: "bg-red-50",    border: "border-red-200"   },
-  mittel: { label: "Mittel", icon: Minus,   color: "text-amber-600",  bg: "bg-amber-50",  border: "border-amber-200" },
-  niedrig:{ label: "Niedrig",icon: ArrowDown,color:"text-blue-600",   bg: "bg-blue-50",   border: "border-blue-200"  },
+  hoch:   { label: "Hoch",    icon: Flame,    color: "text-red-600",   bg: "bg-red-50",   border: "border-red-200"   },
+  mittel: { label: "Mittel",  icon: Minus,    color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200" },
+  niedrig:{ label: "Niedrig", icon: ArrowDown, color: "text-blue-600", bg: "bg-blue-50",  border: "border-blue-200"  },
 };
 
 interface Task { id: number; title: string; description: string | null; priority: string; weekday: number; }
-interface Completion { task_id: number; completed_by_name: string; completed_at: string; }
+interface Completion { task_id: number; completed_by_name: string; completed_at: string; photo_data: string | null; }
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 function PINDialog({ onConfirm, onClose, title }: {
   onConfirm: (pin: string) => Promise<string | null>;
@@ -71,6 +80,112 @@ function PINDialog({ onConfirm, onClose, title }: {
   );
 }
 
+function PhotoDialog({ taskTitle, currentPhoto, onSave, onDelete, onClose }: {
+  taskTitle: string;
+  currentPhoto: string | null;
+  onSave: (base64: string) => Promise<void>;
+  onDelete: () => Promise<void>;
+  onClose: () => void;
+}) {
+  const [preview, setPreview] = useState<string | null>(currentPhoto);
+  const [saving, setSaving] = useState(false);
+  const [enlarged, setEnlarged] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const b64 = await fileToBase64(file);
+    setPreview(b64);
+  };
+
+  const handleSave = async () => {
+    if (!preview || preview === currentPhoto) { onClose(); return; }
+    setSaving(true);
+    await onSave(preview);
+    setSaving(false);
+    onClose();
+  };
+
+  const handleDelete = async () => {
+    setSaving(true);
+    await onDelete();
+    setSaving(false);
+    onClose();
+  };
+
+  return (
+    <>
+      {enlarged && preview && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80" onClick={() => setEnlarged(false)}>
+          <img src={preview} alt="Foto" className="max-w-full max-h-full rounded-xl object-contain" />
+        </div>
+      )}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-bold text-foreground flex items-center gap-2"><Camera className="w-4 h-4 text-[#1a3a6b]" /> Foto</h3>
+              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{taskTitle}</p>
+            </div>
+            <button onClick={onClose} className="p-1 rounded-lg text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
+          </div>
+
+          {preview ? (
+            <div className="relative mb-4 rounded-xl overflow-hidden bg-gray-100 aspect-video">
+              <img src={preview} alt="Vorschau" className="w-full h-full object-cover" />
+              <button
+                onClick={() => setEnlarged(true)}
+                className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-lg text-white hover:bg-black/70"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => inputRef.current?.click()}
+              className="w-full mb-4 border-2 border-dashed border-border/60 rounded-xl py-8 flex flex-col items-center gap-2 text-muted-foreground hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b] transition-colors"
+            >
+              <ImagePlus className="w-8 h-8" />
+              <span className="text-sm font-medium">Foto auswählen oder aufnehmen</span>
+            </button>
+          )}
+
+          <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
+
+          <div className="flex gap-2">
+            {preview && (
+              <button
+                onClick={() => inputRef.current?.click()}
+                className="flex-1 py-2.5 border border-border/60 rounded-xl text-sm font-medium text-muted-foreground hover:bg-gray-50 flex items-center justify-center gap-1.5"
+              >
+                <ImagePlus className="w-4 h-4" /> Ersetzen
+              </button>
+            )}
+            {currentPhoto && (
+              <button
+                onClick={handleDelete}
+                disabled={saving}
+                className="py-2.5 px-3 border border-red-200 rounded-xl text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={saving || !preview}
+              className="flex-1 py-2.5 bg-[#1a3a6b] text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {preview && preview !== currentPhoto ? "Speichern" : "Schließen"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function TodoTagesliste() {
   const { selectedMarketId } = useAppStore();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -78,6 +193,7 @@ export default function TodoTagesliste() {
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [pinDialog, setPinDialog] = useState<{ taskId: number; taskTitle: string } | null>(null);
+  const [photoDialog, setPhotoDialog] = useState<{ taskId: number; taskTitle: string; currentPhoto: string | null } | null>(null);
 
   const dateStr = selectedDate.toISOString().split("T")[0];
   const weekday = selectedDate.getDay() === 0 ? 7 : selectedDate.getDay();
@@ -129,6 +245,32 @@ export default function TodoTagesliste() {
     setCompletions(prev => [...prev.filter(c => c.task_id !== comp.task_id), comp]);
     setPinDialog(null);
     return null;
+  };
+
+  const handlePhotoSave = async (base64: string) => {
+    if (!photoDialog) return;
+    const res = await fetch(`${BASE}/todo/daily-completions/${photoDialog.taskId}/${dateStr}/photo`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ photoData: base64 }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setCompletions(prev => prev.map(c => c.task_id === updated.task_id ? updated : c));
+    }
+  };
+
+  const handlePhotoDelete = async () => {
+    if (!photoDialog) return;
+    const res = await fetch(`${BASE}/todo/daily-completions/${photoDialog.taskId}/${dateStr}/photo`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ photoData: null }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setCompletions(prev => prev.map(c => c.task_id === updated.task_id ? updated : c));
+    }
   };
 
   const priorityOrder = ["hoch", "mittel", "niedrig"];
@@ -184,7 +326,7 @@ export default function TodoTagesliste() {
             if (!list.length) return null;
             return (
               <div key={p}>
-                <div className={`flex items-center gap-2 mb-2 px-1`}>
+                <div className="flex items-center gap-2 mb-2 px-1">
                   <Icon className={`w-3.5 h-3.5 ${conf.color}`} />
                   <span className={`text-xs font-bold uppercase tracking-wide ${conf.color}`}>{conf.label}</span>
                 </div>
@@ -193,25 +335,59 @@ export default function TodoTagesliste() {
                     const comp = completionMap.get(task.id);
                     const done = !!comp;
                     return (
-                      <button
+                      <div
                         key={task.id}
-                        onClick={() => handleToggle(task)}
-                        className={`w-full text-left bg-white rounded-2xl border transition-all ${done ? "border-green-200 bg-green-50/60" : `border-border/60 hover:border-[#1a3a6b]/30`} p-4 flex items-start gap-3`}
+                        className={`bg-white rounded-2xl border transition-all ${done ? "border-green-200 bg-green-50/60" : "border-border/60"}`}
                       >
-                        {done
-                          ? <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
-                          : <Circle className="w-5 h-5 text-muted-foreground/40 shrink-0 mt-0.5" />
-                        }
-                        <div className="min-w-0 flex-1">
-                          <p className={`font-semibold text-sm ${done ? "line-through text-muted-foreground" : "text-foreground"}`}>{task.title}</p>
-                          {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
-                          {done && comp && (
-                            <p className="text-xs text-green-600 mt-1 font-medium">
-                              ✓ {comp.completed_by_name} · {new Date(comp.completed_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr
-                            </p>
+                        {/* Foto-Thumbnail wenn vorhanden */}
+                        {done && comp?.photo_data && (
+                          <button
+                            onClick={() => setPhotoDialog({ taskId: task.id, taskTitle: task.title, currentPhoto: comp.photo_data })}
+                            className="w-full overflow-hidden rounded-t-2xl"
+                          >
+                            <img
+                              src={comp.photo_data}
+                              alt="Foto"
+                              className="w-full h-32 object-cover hover:opacity-90 transition-opacity"
+                            />
+                          </button>
+                        )}
+
+                        <div className="p-4 flex items-start gap-3">
+                          {/* Checkbox-Toggle */}
+                          <button
+                            onClick={() => handleToggle(task)}
+                            className="shrink-0 mt-0.5"
+                          >
+                            {done
+                              ? <CheckCircle2 className="w-5 h-5 text-green-500" />
+                              : <Circle className="w-5 h-5 text-muted-foreground/40" />
+                            }
+                          </button>
+
+                          {/* Task-Info */}
+                          <div className="min-w-0 flex-1" onClick={() => !done && handleToggle(task)}>
+                            <p className={`font-semibold text-sm ${done ? "line-through text-muted-foreground" : "text-foreground cursor-pointer"}`}>{task.title}</p>
+                            {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                            {done && comp && (
+                              <p className="text-xs text-green-600 mt-1 font-medium">
+                                ✓ {comp.completed_by_name} · {new Date(comp.completed_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Kamera-Button für erledigte Aufgaben */}
+                          {done && (
+                            <button
+                              onClick={() => setPhotoDialog({ taskId: task.id, taskTitle: task.title, currentPhoto: comp?.photo_data ?? null })}
+                              className={`shrink-0 p-1.5 rounded-xl transition-colors ${comp?.photo_data ? "bg-green-100 text-green-600 hover:bg-green-200" : "bg-gray-100 text-muted-foreground hover:bg-gray-200"}`}
+                              title="Foto hinzufügen"
+                            >
+                              <Camera className="w-4 h-4" />
+                            </button>
                           )}
                         </div>
-                      </button>
+                      </div>
                     );
                   })}
                 </div>
@@ -233,6 +409,16 @@ export default function TodoTagesliste() {
           title={`Aufgabe erledigen: ${pinDialog.taskTitle}`}
           onConfirm={handlePinConfirm}
           onClose={() => setPinDialog(null)}
+        />
+      )}
+
+      {photoDialog && (
+        <PhotoDialog
+          taskTitle={photoDialog.taskTitle}
+          currentPhoto={photoDialog.currentPhoto}
+          onSave={handlePhotoSave}
+          onDelete={handlePhotoDelete}
+          onClose={() => setPhotoDialog(null)}
         />
       )}
     </AppLayout>

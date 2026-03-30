@@ -72,17 +72,28 @@ router.get("/todo/daily-completions", async (req, res) => {
 });
 
 router.post("/todo/daily-completions", async (req, res) => {
-  const { taskId, marketId, date, pin, tenantId = "1" } = req.body;
+  const { taskId, marketId, date, pin, tenantId = "1", photoData } = req.body;
   if (!taskId || !marketId || !date || !pin) return res.status(400).json({ error: "taskId, marketId, date, pin required" });
   const user = await validatePin(pin, tenantId);
   if (!user) return res.status(401).json({ error: "Ungültige PIN" });
   const { rows } = await pool.query(
-    `INSERT INTO todo_daily_completions (task_id, market_id, completed_date, completed_by_pin, completed_by_name)
-     VALUES ($1,$2,$3,$4,$5)
-     ON CONFLICT (task_id, completed_date) DO UPDATE SET completed_by_pin=$4, completed_by_name=$5, completed_at=NOW()
+    `INSERT INTO todo_daily_completions (task_id, market_id, completed_date, completed_by_pin, completed_by_name, photo_data)
+     VALUES ($1,$2,$3,$4,$5,$6)
+     ON CONFLICT (task_id, completed_date) DO UPDATE SET completed_by_pin=$4, completed_by_name=$5, completed_at=NOW(), photo_data=COALESCE($6, todo_daily_completions.photo_data)
      RETURNING *`,
-    [taskId, marketId, date, pin, user.name]
+    [taskId, marketId, date, pin, user.name, photoData || null]
   );
+  res.json(rows[0]);
+});
+
+router.patch("/todo/daily-completions/:taskId/:date/photo", async (req, res) => {
+  const { taskId, date } = req.params;
+  const { photoData } = req.body;
+  const { rows } = await pool.query(
+    `UPDATE todo_daily_completions SET photo_data=$1 WHERE task_id=$2 AND completed_date=$3 RETURNING *`,
+    [photoData || null, taskId, date]
+  );
+  if (!rows.length) return res.status(404).json({ error: "Not found" });
   res.json(rows[0]);
 });
 
