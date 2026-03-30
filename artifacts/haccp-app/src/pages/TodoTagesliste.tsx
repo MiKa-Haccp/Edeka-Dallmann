@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useState, useCallback, useRef } from "react"
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
-  CheckCircle2, Circle, Loader2, AlertTriangle, Info, ChevronLeft, ChevronRight,
+  CheckCircle2, Circle, Loader2, Info, ChevronLeft, ChevronRight,
   Flame, Minus, ArrowDown, X, Camera, ImagePlus, Trash2, ZoomIn,
 } from "lucide-react";
 
@@ -17,8 +17,20 @@ const PRIORITY_CONFIG = {
   niedrig:{ label: "Niedrig", icon: ArrowDown, color: "text-blue-600", bg: "bg-blue-50",  border: "border-blue-200"  },
 };
 
-interface Task { id: number; title: string; description: string | null; priority: string; weekday: number; }
-interface Completion { task_id: number; completed_by_name: string; completed_at: string; photo_data: string | null; }
+interface Task {
+  id: number;
+  title: string;
+  description: string | null;
+  priority: string;
+  weekday: number;
+  photo_data: string | null;
+}
+interface Completion {
+  task_id: number;
+  completed_by_name: string;
+  completed_at: string;
+  photo_data: string | null;
+}
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -125,7 +137,9 @@ function PhotoDialog({ taskTitle, currentPhoto, onSave, onDelete, onClose }: {
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-bold text-foreground flex items-center gap-2"><Camera className="w-4 h-4 text-[#1a3a6b]" /> Foto</h3>
+              <h3 className="font-bold text-foreground flex items-center gap-2">
+                <Camera className="w-4 h-4 text-[#1a3a6b]" /> Foto
+              </h3>
               <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{taskTitle}</p>
             </div>
             <button onClick={onClose} className="p-1 rounded-lg text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
@@ -194,6 +208,7 @@ export default function TodoTagesliste() {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [pinDialog, setPinDialog] = useState<{ taskId: number; taskTitle: string } | null>(null);
   const [photoDialog, setPhotoDialog] = useState<{ taskId: number; taskTitle: string; currentPhoto: string | null } | null>(null);
+  const [enlargedPhoto, setEnlargedPhoto] = useState<string | null>(null);
 
   const dateStr = selectedDate.toISOString().split("T")[0];
   const weekday = selectedDate.getDay() === 0 ? 7 : selectedDate.getDay();
@@ -284,21 +299,42 @@ export default function TodoTagesliste() {
 
   return (
     <AppLayout>
+      {/* Vollbild-Overlay für Referenzfotos */}
+      {enlargedPhoto && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80"
+          onClick={() => setEnlargedPhoto(null)}
+        >
+          <img src={enlargedPhoto} alt="Referenzfoto" className="max-w-full max-h-full rounded-xl object-contain" />
+        </div>
+      )}
+
       <div className="max-w-2xl mx-auto space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <div>
             <h1 className="text-xl font-bold text-foreground">Tagesliste</h1>
-            <p className="text-xs text-muted-foreground">{WEEKDAY_NAMES[weekday]}, {selectedDate.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}</p>
+            <p className="text-xs text-muted-foreground">
+              {WEEKDAY_NAMES[weekday]}, {selectedDate.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}
+            </p>
           </div>
           <div className="flex items-center gap-1">
-            <button onClick={() => moveDate(-1)} className="p-2 rounded-xl border border-border/60 hover:bg-gray-50 text-muted-foreground"><ChevronLeft className="w-4 h-4" /></button>
-            <button onClick={() => setSelectedDate(new Date())} className={`px-3 py-1.5 rounded-xl text-xs font-medium border ${isToday ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border/60 text-muted-foreground hover:bg-gray-50"}`}>Heute</button>
-            <button onClick={() => moveDate(1)} className="p-2 rounded-xl border border-border/60 hover:bg-gray-50 text-muted-foreground"><ChevronRight className="w-4 h-4" /></button>
+            <button onClick={() => moveDate(-1)} className="p-2 rounded-xl border border-border/60 hover:bg-gray-50 text-muted-foreground">
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setSelectedDate(new Date())}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium border ${isToday ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border/60 text-muted-foreground hover:bg-gray-50"}`}
+            >
+              Heute
+            </button>
+            <button onClick={() => moveDate(1)} className="p-2 rounded-xl border border-border/60 hover:bg-gray-50 text-muted-foreground">
+              <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        {/* Progress */}
+        {/* Fortschritt */}
         {tasks.length > 0 && (
           <div className="bg-white rounded-2xl border border-border/60 p-4">
             <div className="flex items-center justify-between mb-2">
@@ -306,13 +342,18 @@ export default function TodoTagesliste() {
               <span className={`text-sm font-bold ${pct === 100 ? "text-green-600" : "text-muted-foreground"}`}>{pct}%</span>
             </div>
             <div className="w-full bg-gray-100 rounded-full h-2">
-              <div className={`h-2 rounded-full transition-all duration-500 ${pct === 100 ? "bg-green-500" : "bg-[#1a3a6b]"}`} style={{ width: `${pct}%` }} />
+              <div
+                className={`h-2 rounded-full transition-all duration-500 ${pct === 100 ? "bg-green-500" : "bg-[#1a3a6b]"}`}
+                style={{ width: `${pct}%` }}
+              />
             </div>
           </div>
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
         ) : tasks.length === 0 ? (
           <div className="bg-white rounded-2xl border border-border/60 p-8 text-center">
             <Info className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
@@ -337,28 +378,42 @@ export default function TodoTagesliste() {
                     return (
                       <div
                         key={task.id}
-                        className={`bg-white rounded-2xl border transition-all ${done ? "border-green-200 bg-green-50/60" : "border-border/60"}`}
+                        className={`bg-white rounded-2xl border transition-all overflow-hidden ${done ? "border-green-200 bg-green-50/60" : "border-border/60"}`}
                       >
-                        {/* Foto-Thumbnail wenn vorhanden */}
+                        {/* Erledigungs-Foto (oben, wenn erledigt + Foto vorhanden) */}
                         {done && comp?.photo_data && (
                           <button
                             onClick={() => setPhotoDialog({ taskId: task.id, taskTitle: task.title, currentPhoto: comp.photo_data })}
-                            className="w-full overflow-hidden rounded-t-2xl"
+                            className="w-full block"
                           >
                             <img
                               src={comp.photo_data}
-                              alt="Foto"
+                              alt="Erledigungsfoto"
                               className="w-full h-32 object-cover hover:opacity-90 transition-opacity"
                             />
                           </button>
                         )}
 
-                        <div className="p-4 flex items-start gap-3">
-                          {/* Checkbox-Toggle */}
+                        {/* Referenzfoto (oben, wenn noch nicht erledigt) */}
+                        {!done && task.photo_data && (
                           <button
-                            onClick={() => handleToggle(task)}
-                            className="shrink-0 mt-0.5"
+                            onClick={() => setEnlargedPhoto(task.photo_data)}
+                            className="w-full block relative"
                           >
+                            <img
+                              src={task.photo_data}
+                              alt="Referenzfoto"
+                              className="w-full h-32 object-cover hover:opacity-90 transition-opacity"
+                            />
+                            <span className="absolute top-2 left-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                              Referenz
+                            </span>
+                          </button>
+                        )}
+
+                        <div className="p-4 flex items-start gap-3">
+                          {/* Checkbox */}
+                          <button onClick={() => handleToggle(task)} className="shrink-0 mt-0.5">
                             {done
                               ? <CheckCircle2 className="w-5 h-5 text-green-500" />
                               : <Circle className="w-5 h-5 text-muted-foreground/40" />
@@ -366,9 +421,16 @@ export default function TodoTagesliste() {
                           </button>
 
                           {/* Task-Info */}
-                          <div className="min-w-0 flex-1" onClick={() => !done && handleToggle(task)}>
-                            <p className={`font-semibold text-sm ${done ? "line-through text-muted-foreground" : "text-foreground cursor-pointer"}`}>{task.title}</p>
-                            {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                          <div
+                            className="min-w-0 flex-1"
+                            onClick={() => !done && handleToggle(task)}
+                          >
+                            <p className={`font-semibold text-sm ${done ? "line-through text-muted-foreground" : "text-foreground cursor-pointer"}`}>
+                              {task.title}
+                            </p>
+                            {task.description && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>
+                            )}
                             {done && comp && (
                               <p className="text-xs text-green-600 mt-1 font-medium">
                                 ✓ {comp.completed_by_name} · {new Date(comp.completed_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr
@@ -376,12 +438,12 @@ export default function TodoTagesliste() {
                             )}
                           </div>
 
-                          {/* Kamera-Button für erledigte Aufgaben */}
+                          {/* Kamera-Button (nur bei erledigten Aufgaben) */}
                           {done && (
                             <button
                               onClick={() => setPhotoDialog({ taskId: task.id, taskTitle: task.title, currentPhoto: comp?.photo_data ?? null })}
                               className={`shrink-0 p-1.5 rounded-xl transition-colors ${comp?.photo_data ? "bg-green-100 text-green-600 hover:bg-green-200" : "bg-gray-100 text-muted-foreground hover:bg-gray-200"}`}
-                              title="Foto hinzufügen"
+                              title="Erledigungsfoto"
                             >
                               <Camera className="w-4 h-4" />
                             </button>
