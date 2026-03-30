@@ -30,13 +30,15 @@ function NavLink({ href, label, icon: Icon, onNavigate, ampel }: {
   const [location] = useLocation();
   const isActive = location === href;
 
-  const dotColor = ampel === "green"
-    ? "bg-green-500"
+  const iconColor = ampel === "green"
+    ? "text-green-500"
     : ampel === "amber"
-    ? "bg-amber-400"
+    ? "text-amber-400"
     : ampel === "red"
-    ? "bg-red-500"
-    : null;
+    ? "text-red-500"
+    : isActive
+    ? "text-[#1a3a6b]"
+    : "text-muted-foreground/50 group-hover:text-muted-foreground";
 
   return (
     <Link
@@ -49,13 +51,8 @@ function NavLink({ href, label, icon: Icon, onNavigate, ampel }: {
           : "text-muted-foreground hover:bg-secondary hover:text-foreground"
       )}
     >
-      <Icon className={cn("h-4 w-4 flex-shrink-0", isActive ? "text-[#1a3a6b]" : "text-muted-foreground/50 group-hover:text-muted-foreground")} />
-      <span className="truncate flex-1">{label}</span>
-      {dotColor && (
-        <span className={cn("w-2.5 h-2.5 rounded-full shrink-0 shadow-sm", dotColor)} title={
-          ampel === "green" ? "Alle erledigt" : ampel === "amber" ? "In Bearbeitung" : "Noch viel offen"
-        } />
-      )}
+      <Icon className={cn("h-4 w-4 flex-shrink-0", iconColor)} />
+      <span className="truncate">{label}</span>
     </Link>
   );
 }
