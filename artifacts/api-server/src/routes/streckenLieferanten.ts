@@ -25,6 +25,25 @@ router.post("/strecken-lieferanten", async (req, res) => {
   res.json(rows[0]);
 });
 
+router.patch("/strecken-lieferanten/reorder", async (req, res) => {
+  const { updates } = req.body as { updates: { id: number; sortOrder: number }[] };
+  if (!Array.isArray(updates) || !updates.length) return res.status(400).json({ error: "updates array required" });
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    for (const { id, sortOrder } of updates) {
+      await client.query("UPDATE strecken_lieferanten SET sort_order=$1, updated_at=NOW() WHERE id=$2", [sortOrder, id]);
+    }
+    await client.query("COMMIT");
+    res.json({ ok: true });
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
+});
+
 router.put("/strecken-lieferanten/:id", async (req, res) => {
   const { id } = req.params;
   const { name, ansprechpartner, telefon, info, kuerzel, mindestbestellwert, sortOrder } = req.body;

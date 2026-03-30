@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, type ReactNode } from "react";
+import { useState, useEffect, useCallback, type ReactNode, type ElementType } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ShoppingBag, Phone, User, Info, CheckCircle2, Clock,
   ChevronDown, ChevronUp, Loader2, Trash2, X, KeyRound, Pencil, Save, Ban,
+  ArrowUp, ArrowDown, AlignLeft, ArrowDownAZ, CalendarClock,
 } from "lucide-react";
 
 const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
@@ -45,7 +46,10 @@ interface Lieferant {
   kuerzel: string | null;
   mindestbestellwert: number | null;
   wird_bestellt: boolean;
+  sort_order: number;
 }
+
+type SortMode = "eigen" | "alpha" | "datum";
 
 function formatEuro(val: number | null) {
   if (val == null) return null;
@@ -170,6 +174,8 @@ function LieferantCard({
   onDeleteBestellung,
   onUpdateLieferant,
   isAdmin,
+  onMoveUp,
+  onMoveDown,
 }: {
   lieferant: Lieferant;
   bestellungen: Bestellung[];
@@ -178,6 +184,8 @@ function LieferantCard({
   onDeleteBestellung: (id: number) => void;
   onUpdateLieferant: (id: number, data: Partial<Lieferant>) => Promise<void>;
   isAdmin: boolean;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -218,8 +226,28 @@ function LieferantCard({
       {/* Kompakte Zeile – immer sichtbar, klickbar zum Auf-/Zuklappen */}
       <div
         onClick={() => setOpen(o => !o)}
-        className="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50/60 transition-colors select-none"
+        className="px-4 py-3 flex items-center gap-2 cursor-pointer hover:bg-gray-50/60 transition-colors select-none"
       >
+        {(onMoveUp !== undefined || onMoveDown !== undefined) && (
+          <div className="flex flex-col gap-0.5 shrink-0" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={onMoveUp}
+              disabled={!onMoveUp}
+              className="p-0.5 rounded text-muted-foreground enabled:hover:text-[#1a3a6b] enabled:hover:bg-[#1a3a6b]/10 disabled:opacity-25 transition-colors"
+              title="Nach oben"
+            >
+              <ArrowUp className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={onMoveDown}
+              disabled={!onMoveDown}
+              className="p-0.5 rounded text-muted-foreground enabled:hover:text-[#1a3a6b] enabled:hover:bg-[#1a3a6b]/10 disabled:opacity-25 transition-colors"
+              title="Nach unten"
+            >
+              <ArrowDown className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-bold text-foreground text-sm">{lieferant.name}</span>
@@ -440,6 +468,8 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
   const [loading, setLoading] = useState(false);
   const [dialogLieferant, setDialogLieferant] = useState<Lieferant | null>(null);
   const [dialogMode, setDialogMode] = useState<"bestellen" | "nicht_bestellt">("bestellen");
+  const [sortMode, setSortMode] = useState<SortMode>("eigen");
+  const [reorderSaving, setReorderSaving] = useState(false);
 
   const load = useCallback(async () => {
     if (!selectedMarketId) return;
@@ -459,6 +489,39 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
   }, [selectedMarketId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // ── Sortierte Liste ──────────────────────────────────────────────
+  const lastBestellungDate = (lieferantId: number): number => {
+    const b = bestellungen.find(b => b.lieferant_id === lieferantId);
+    return b ? new Date(b.bestellt_am).getTime() : 0;
+  };
+
+  const sortedLieferanten = (() => {
+    const copy = [...lieferanten];
+    if (sortMode === "alpha") return copy.sort((a, b) => a.name.localeCompare(b.name, "de"));
+    if (sortMode === "datum") return copy.sort((a, b) => lastBestellungDate(b.id) - lastBestellungDate(a.id));
+    return copy; // "eigen" – already sorted by sort_order from server / local state
+  })();
+
+  // ── Reihenfolge ändern (eigen) ───────────────────────────────────
+  const moveItem = async (index: number, direction: "up" | "down") => {
+    const newList = [...lieferanten];
+    const target = direction === "up" ? index - 1 : index + 1;
+    if (target < 0 || target >= newList.length) return;
+    [newList[index], newList[target]] = [newList[target], newList[index]];
+    const reassigned = newList.map((l, i) => ({ ...l, sort_order: i + 1 }));
+    setLieferanten(reassigned);
+    setReorderSaving(true);
+    try {
+      await fetch(`${BASE}/strecken-lieferanten/reorder`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updates: reassigned.map(l => ({ id: l.id, sortOrder: l.sort_order })) }),
+      });
+    } finally {
+      setReorderSaving(false);
+    }
+  };
 
   const openBestellen = (l: Lieferant) => { setDialogMode("bestellen"); setDialogLieferant(l); };
   const openNichtBestellen = (l: Lieferant) => { setDialogMode("nicht_bestellt"); setDialogLieferant(l); };
@@ -514,30 +577,68 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
     );
   }
 
+  const showMoveButtons = isAdmin && sortMode === "eigen";
+
   return (
     <Wrap>
       <div className="space-y-4">
+        {/* Sortier-Leiste */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mr-1">Sortierung:</span>
+          {([
+            { key: "eigen", label: "Eigene", icon: AlignLeft },
+            { key: "alpha", label: "A–Z", icon: ArrowDownAZ },
+            { key: "datum", label: "Letztes Datum", icon: CalendarClock },
+          ] as { key: SortMode; label: string; icon: ElementType }[]).map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setSortMode(key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
+                sortMode === key
+                  ? "bg-[#1a3a6b] text-white border-[#1a3a6b]"
+                  : "bg-white text-muted-foreground border-border/60 hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b]"
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </button>
+          ))}
+          {showMoveButtons && reorderSaving && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground ml-2">
+              <Loader2 className="w-3 h-3 animate-spin" /> Reihenfolge wird gespeichert…
+            </span>
+          )}
+          {showMoveButtons && !reorderSaving && (
+            <span className="text-xs text-[#1a3a6b]/70 ml-2 italic">Reihenfolge mit ↑↓ anpassen</span>
+          )}
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
-        ) : lieferanten.length === 0 ? (
+        ) : sortedLieferanten.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground text-sm">
             Noch keine Streckenlieferanten angelegt.
           </div>
         ) : (
-          lieferanten.map(l => (
-            <LieferantCard
-              key={l.id}
-              lieferant={l}
-              bestellungen={getBestellungenForLieferant(l.id)}
-              onBestellen={openBestellen}
-              onNichtBestellen={openNichtBestellen}
-              onDeleteBestellung={handleDeleteBestellung}
-              onUpdateLieferant={handleUpdateLieferant}
-              isAdmin={isAdmin}
-            />
-          ))
+          sortedLieferanten.map((l, idx) => {
+            const eigenIdx = lieferanten.findIndex(x => x.id === l.id);
+            return (
+              <LieferantCard
+                key={l.id}
+                lieferant={l}
+                bestellungen={getBestellungenForLieferant(l.id)}
+                onBestellen={openBestellen}
+                onNichtBestellen={openNichtBestellen}
+                onDeleteBestellung={handleDeleteBestellung}
+                onUpdateLieferant={handleUpdateLieferant}
+                isAdmin={isAdmin}
+                onMoveUp={showMoveButtons && eigenIdx > 0 ? () => moveItem(eigenIdx, "up") : undefined}
+                onMoveDown={showMoveButtons && eigenIdx < lieferanten.length - 1 ? () => moveItem(eigenIdx, "down") : undefined}
+              />
+            );
+          })
         )}
       </div>
 
