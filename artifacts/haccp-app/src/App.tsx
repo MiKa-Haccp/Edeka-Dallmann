@@ -92,6 +92,7 @@ import TodoHub from "./pages/TodoHub";
 import TodoTagesliste from "./pages/TodoTagesliste";
 import TodoVerwaltung from "./pages/TodoVerwaltung";
 import TodoKassen from "./pages/TodoKassen";
+import { FeedbackButton } from "./components/FeedbackButton";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
@@ -191,6 +192,7 @@ function App() {
             <Router />
           </WouterRouter>
         </AutoLogoutWrapper>
+        <FeedbackButton />
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
