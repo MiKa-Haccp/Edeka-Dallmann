@@ -48,6 +48,7 @@ import notificationsRouter from "./notifications";
 import schulungsAnforderungenRouter from "./schulungsAnforderungen";
 import monatsberichtRouter from "./monatsbericht";
 import streckenLieferantenRouter from "./streckenLieferanten";
+import todoRouter from "./todo";
 
 
 const router: IRouter = Router();
@@ -101,5 +102,6 @@ router.use(notificationsRouter);
 router.use(schulungsAnforderungenRouter);
 router.use(monatsberichtRouter);
 router.use(streckenLieferantenRouter);
+router.use(todoRouter);
 
 export default router;

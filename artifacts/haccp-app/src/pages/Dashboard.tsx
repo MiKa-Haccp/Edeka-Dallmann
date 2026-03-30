@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ShieldCheck, ArrowRight,
-  Lock, UserCog, Package, Settings,
+  Lock, UserCog, Package, Settings, ClipboardList,
 } from "lucide-react";
 import { Link } from "wouter";
 import { FaelligkeitenWidget } from "@/components/FaelligkeitenWidget";
@@ -41,6 +41,17 @@ const MODULES: ModuleCard[] = [
     href: "/ware",
     color: "text-orange-600",
     bgColor: "bg-orange-50",
+    available: true,
+    badge: "Aktiv",
+  },
+  {
+    id: "todo",
+    icon: ClipboardList,
+    title: "To-Do & Einsatzplan",
+    description: "Tägliche Standardaufgaben, Ad-hoc-Rundgang mit Fotoerfassung und Kasseneinteilung für den Markt.",
+    href: "/todo",
+    color: "text-[#1a3a6b]",
+    bgColor: "bg-[#1a3a6b]/10",
     available: true,
     badge: "Aktiv",
   },

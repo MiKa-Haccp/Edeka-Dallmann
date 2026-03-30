@@ -2,6 +2,7 @@ import { ReactNode, useState, useEffect, useRef } from "react";
 import { Header } from "./Header";
 import { Sidebar, MobileSidebar } from "./Sidebar";
 import { WareSidebar, WareMobileSidebar } from "./WareSidebar";
+import { TodoSidebar, TodoMobileSidebar, TODO_PATHS } from "./TodoSidebar";
 import { motion } from "framer-motion";
 import { MarktwahlScreen } from "@/components/MarktwahlScreen";
 import { GeraetSperrScreen } from "@/components/GeraetSperrScreen";
@@ -28,15 +29,16 @@ const HACCP_SIDEBAR_PATHS = [
 function useActiveSidebar() {
   const [location] = useLocation();
   const isWare = location === "/ware" || location.startsWith("/ware-");
-  const isHaccp = !isWare && HACCP_SIDEBAR_PATHS.some((p) => location.startsWith(p));
-  return { isWare, isHaccp, hasSidebar: isWare || isHaccp };
+  const isTodo = TODO_PATHS.some(p => location === p);
+  const isHaccp = !isWare && !isTodo && HACCP_SIDEBAR_PATHS.some((p) => location.startsWith(p));
+  return { isWare, isHaccp, isTodo, hasSidebar: isWare || isHaccp || isTodo };
 }
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { selectedMarketId, deviceAuthorized, deviceToken, setDeviceToken, setDeviceAuthorized } = useAppStore();
   const { isLoading: marketsLoading } = useListMarkets();
-  const { isWare, isHaccp, hasSidebar } = useActiveSidebar();
+  const { isWare, isHaccp, isTodo, hasSidebar } = useActiveSidebar();
   const verifiedRef = useRef(false);
 
   useAutoLogout();
@@ -81,10 +83,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       {isHaccp && <MobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />}
       {isWare && <WareMobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />}
+      {isTodo && <TodoMobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />}
 
       <div className="flex flex-1 w-full min-h-0">
         {isHaccp && <Sidebar />}
         {isWare && <WareSidebar />}
+        {isTodo && <TodoSidebar />}
         <main className="flex-1 min-w-0 relative">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
