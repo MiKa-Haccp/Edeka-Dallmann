@@ -400,9 +400,9 @@ export default function TodoTagesliste() {
   const doneStandard = standardTasks.filter(t => completionMap.has(t.id));
   const openAdhoc = adhocTasks.filter(t => !t.is_completed);
   const doneAdhoc = adhocTasks.filter(t => t.is_completed);
-  const totalStandard = standardTasks.length;
-  const doneStandardCount = doneStandard.length;
-  const pct = totalStandard ? Math.round((doneStandardCount / totalStandard) * 100) : 0;
+  const totalAll = standardTasks.length + adhocTasks.length;
+  const doneAll = doneStandard.length + doneAdhoc.length;
+  const pct = totalAll ? Math.round((doneAll / totalAll) * 100) : 0;
   const totalOpen = openStandard.length + openAdhoc.length;
 
   const priorityOrder = ["hoch", "mittel", "niedrig"];
@@ -442,12 +442,12 @@ export default function TodoTagesliste() {
           </div>
         </div>
 
-        {/* Fortschritt Standard-Aufgaben */}
-        {totalStandard > 0 && (
+        {/* Gesamtfortschritt */}
+        {totalAll > 0 && (
           <div className="bg-white rounded-2xl border border-border/60 p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                <CalendarDays className="w-3.5 h-3.5" /> Standardaufgaben {doneStandardCount}/{totalStandard}
+                <CalendarDays className="w-3.5 h-3.5" /> Aufgaben erledigt {doneAll}/{totalAll}
               </span>
               <span className={`text-sm font-bold ${pct === 100 ? "text-green-600" : "text-muted-foreground"}`}>{pct}%</span>
             </div>
