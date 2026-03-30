@@ -499,7 +499,7 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
   const sortedLieferanten = (() => {
     const copy = [...lieferanten];
     if (sortMode === "alpha") return copy.sort((a, b) => a.name.localeCompare(b.name, "de"));
-    if (sortMode === "datum") return copy.sort((a, b) => lastBestellungDate(b.id) - lastBestellungDate(a.id));
+    if (sortMode === "datum") return copy.sort((a, b) => lastBestellungDate(a.id) - lastBestellungDate(b.id));
     return copy; // "eigen" – already sorted by sort_order from server / local state
   })();
 
