@@ -443,19 +443,27 @@ export default function TodoTagesliste() {
         </div>
 
         {/* Gesamtfortschritt */}
-        {totalAll > 0 && (
-          <div className="bg-white rounded-2xl border border-border/60 p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                <CalendarDays className="w-3.5 h-3.5" /> Aufgaben erledigt {doneAll}/{totalAll}
-              </span>
-              <span className={`text-sm font-bold ${pct === 100 ? "text-green-600" : "text-muted-foreground"}`}>{pct}%</span>
+        {totalAll > 0 && (() => {
+          const ampel = pct === 100
+            ? { dot: "bg-green-500", bar: "bg-green-500", text: "text-green-600", bg: "bg-green-50", border: "border-green-200", label: "Alle erledigt" }
+            : pct >= 33
+            ? { dot: "bg-amber-400", bar: "bg-amber-400", text: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", label: "In Bearbeitung" }
+            : { dot: "bg-red-500", bar: "bg-red-500", text: "text-red-600", bg: "bg-red-50", border: "border-red-200", label: "Noch viel offen" };
+          return (
+            <div className={`rounded-2xl border p-4 ${ampel.bg} ${ampel.border}`}>
+              <div className="flex items-center justify-between mb-2">
+                <span className={`text-xs font-semibold flex items-center gap-2 ${ampel.text}`}>
+                  <span className={`inline-block w-2.5 h-2.5 rounded-full shrink-0 ${ampel.dot}`} />
+                  {ampel.label} · {doneAll}/{totalAll} Aufgaben
+                </span>
+                <span className={`text-sm font-bold ${ampel.text}`}>{pct}%</span>
+              </div>
+              <div className="w-full bg-white/60 rounded-full h-2.5">
+                <div className={`h-2.5 rounded-full transition-all duration-500 ${ampel.bar}`} style={{ width: `${pct}%` }} />
+              </div>
             </div>
-            <div className="w-full bg-gray-100 rounded-full h-2">
-              <div className={`h-2 rounded-full transition-all duration-500 ${pct === 100 ? "bg-green-500" : "bg-[#1a3a6b]"}`} style={{ width: `${pct}%` }} />
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {loading ? (
           <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
