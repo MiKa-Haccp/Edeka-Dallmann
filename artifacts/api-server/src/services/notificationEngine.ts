@@ -239,36 +239,45 @@ async function shouldTrigger(rule: any, marketId: number): Promise<{ triggered: 
   return { triggered: false, reason: "" };
 }
 
-async function getSmtpTransporter() {
-  const r = await pool.query(`SELECT * FROM email_settings LIMIT 1`);
-  const cfg = r.rows[0];
-  const user = cfg?.smtp_user || process.env.SMTP_USER;
-  const pass = cfg?.smtp_pass || process.env.SMTP_PASS;
+async function getMarketSmtpConfig(marketId?: number) {
+  const global = await pool.query(`SELECT * FROM email_settings LIMIT 1`).then(r => r.rows[0]);
+  let market: any = null;
+  if (marketId) {
+    market = await pool.query(`SELECT * FROM market_email_configs WHERE market_id = $1`, [marketId]).then(r => r.rows[0] || null);
+  }
+  const user = market?.smtp_user || global?.smtp_user || process.env.SMTP_USER;
+  const pass = market?.smtp_pass || global?.smtp_pass || process.env.SMTP_PASS;
+  const host = global?.smtp_host || process.env.SMTP_HOST || "smtp.ionos.de";
+  const port = Number(global?.smtp_port || process.env.SMTP_PORT || 587);
+  const fromName = market?.from_name || global?.from_name || "EDEKA Dallmann HACCP";
+  return { user, pass, host, port, fromName };
+}
+
+async function getSmtpTransporter(marketId?: number) {
+  const { user, pass, host, port } = await getMarketSmtpConfig(marketId);
   if (!user || !pass) return null;
   return nodemailer.createTransport({
-    host: cfg?.smtp_host || process.env.SMTP_HOST || "smtp.ionos.de",
-    port: Number(cfg?.smtp_port || process.env.SMTP_PORT || 587),
-    secure: Number(cfg?.smtp_port || process.env.SMTP_PORT || 587) === 465,
+    host,
+    port,
+    secure: port === 465,
     auth: { user, pass },
   });
 }
 
-async function getSmtpFromAddress(): Promise<string> {
-  const r = await pool.query(`SELECT smtp_user, from_name FROM email_settings LIMIT 1`);
-  const cfg = r.rows[0];
-  const user = cfg?.smtp_user || process.env.SMTP_USER || "";
-  const name = cfg?.from_name || "EDEKA Dallmann HACCP";
-  return `"${name}" <${user}>`;
+async function getSmtpFromAddress(marketId?: number): Promise<string> {
+  const { user, fromName } = await getMarketSmtpConfig(marketId);
+  return `"${fromName}" <${user || ""}>`;
 }
 
-async function sendEmail(to: string, subject: string, body: string): Promise<boolean> {
+async function sendEmail(to: string, subject: string, body: string, marketId?: number): Promise<boolean> {
   try {
-    const transporter = await getSmtpTransporter();
+    const transporter = await getSmtpTransporter(marketId);
     if (!transporter) {
-      console.error("[Notifications] Kein SMTP-Transporter – Zugangsdaten fehlen.");
+      console.error(`[Notifications] Kein SMTP-Transporter für Markt ${marketId} – Zugangsdaten fehlen.`);
       return false;
     }
-    const from = await getSmtpFromAddress();
+    const from = await getSmtpFromAddress(marketId);
+    console.log(`[Notifications] Sende E-Mail von ${from} an ${to} (Markt ${marketId})`);
     await transporter.sendMail({ from, to, subject, html: body });
     return true;
   } catch (e) {
@@ -416,7 +425,8 @@ export async function runNotificationCheck(): Promise<{ checked: number; sent: n
             const ok = await sendEmail(
               emailTo,
               `⚠️ HACCP: ${section.label} – ${marketName}`,
-              formatEmailBody(section.label, marketName, reason, rule.trigger_type)
+              formatEmailBody(section.label, marketName, reason, rule.trigger_type),
+              marketId
             );
             status = ok ? "sent" : "failed";
             if (ok) sent++;
