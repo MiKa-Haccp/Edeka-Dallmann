@@ -166,20 +166,22 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
                   {adminSession.role}
                 </span>
               </div>
-              {adminSession.role === "SUPERADMIN" && (
+              {(adminSession.role === "SUPERADMIN" || (adminSession.permissions || []).includes("settings.manage")) && (
                 <>
-                  <button
-                    onClick={() => { navigate("/admin/feedback"); setUnreadFeedback(0); }}
-                    className={`p-1.5 sm:p-2 rounded-full transition-colors relative ${unreadFeedback > 0 ? "text-red-600 bg-red-50 hover:bg-red-100" : "text-muted-foreground hover:text-red-500 hover:bg-red-50"}`}
-                    title={unreadFeedback > 0 ? `${unreadFeedback} neues Feedback` : "Feedback-Einträge"}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    {unreadFeedback > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
-                        {unreadFeedback > 9 ? "9+" : unreadFeedback}
-                      </span>
-                    )}
-                  </button>
+                  {adminSession.role === "SUPERADMIN" && (
+                    <button
+                      onClick={() => { navigate("/admin/feedback"); setUnreadFeedback(0); }}
+                      className={`p-1.5 sm:p-2 rounded-full transition-colors relative ${unreadFeedback > 0 ? "text-red-600 bg-red-50 hover:bg-red-100" : "text-muted-foreground hover:text-red-500 hover:bg-red-50"}`}
+                      title={unreadFeedback > 0 ? `${unreadFeedback} neues Feedback` : "Feedback-Einträge"}
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      {unreadFeedback > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-red-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-0.5 leading-none">
+                          {unreadFeedback > 9 ? "9+" : unreadFeedback}
+                        </span>
+                      )}
+                    </button>
+                  )}
                   <button
                     onClick={() => navigate("/admin/system")}
                     className="p-1.5 sm:p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-full transition-colors"

@@ -19,6 +19,7 @@ interface ModuleCard {
   available: boolean;
   badge?: string;
   requiredRoles?: string[];
+  requiredPermission?: string;
 }
 
 const MODULES: ModuleCard[] = [
@@ -78,6 +79,7 @@ const MODULES: ModuleCard[] = [
     available: true,
     badge: "System",
     requiredRoles: ["SUPERADMIN"],
+    requiredPermission: "settings.manage",
   },
 ];
 
@@ -140,9 +142,17 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {MODULES.filter((mod) => {
-              if (!mod.requiredRoles) return true;
               if (!adminSession) return false;
-              return mod.requiredRoles.includes(adminSession.role);
+              // Prüfe requiredPermission zuerst (aus role_permission_defaults)
+              if (mod.requiredPermission) {
+                const perms = adminSession.permissions || [];
+                if (perms.includes(mod.requiredPermission)) return true;
+              }
+              // Fallback: requiredRoles prüfen
+              if (mod.requiredRoles) {
+                return mod.requiredRoles.includes(adminSession.role);
+              }
+              return true;
             }).map((mod) => {
               const Icon = mod.icon;
               const badgeColors: Record<string, string> = {

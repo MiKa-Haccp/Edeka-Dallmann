@@ -222,10 +222,19 @@ router.post("/admin/login", async (req, res) => {
         .where(eq(userMarketAssignmentsTable.userId, user.id))
     : [];
 
+  // Rollenberechtigungen aus role_permission_defaults laden
+  const { pool } = await import("@workspace/db");
+  const permResult = await pool.query(
+    `SELECT permissions FROM role_permission_defaults WHERE role = $1 AND tenant_id = $2 LIMIT 1`,
+    [user.role, user.tenantId]
+  );
+  const rolePermissions: string[] = permResult.rows[0]?.permissions || [];
+
   res.json({
     success: true,
     user: stripSensitive(user),
     assignedMarketIds: marketAssignments.map((a) => a.marketId),
+    permissions: rolePermissions,
   });
 });
 

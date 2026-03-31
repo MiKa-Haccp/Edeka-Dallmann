@@ -7,6 +7,7 @@ interface AdminSession {
   email: string;
   role: string;
   assignedMarketIds?: number[];
+  permissions?: string[];
 }
 
 type MarketSelectionMode = 'gps' | 'manual';

@@ -72,6 +72,7 @@ export default function AdminLogin() {
         email: data.user.email,
         role: data.user.role,
         assignedMarketIds: data.assignedMarketIds || [],
+        permissions: data.permissions || [],
       });
       navigate("/");
     } catch {
