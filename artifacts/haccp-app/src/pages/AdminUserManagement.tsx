@@ -14,6 +14,7 @@ import {
   Lock,
   Store,
   Activity,
+  Mail,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -169,6 +170,9 @@ function UserRoleRow({
 }) {
   const [role, setRole] = useState(user.role);
   const [status, setStatus] = useState<string>(user.status || "aktiv");
+  const [email, setEmail] = useState<string>(user.email || "");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailMsg, setEmailMsg] = useState("");
   const [assignedMarkets, setAssignedMarkets] = useState<number[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -224,6 +228,27 @@ function UserRoleRow({
     } catch {
     } finally {
       setStatusSaving(false);
+    }
+  };
+
+  const handleEmailSave = async () => {
+    setEmailSaving(true);
+    setEmailMsg("");
+    try {
+      const resp = await fetch(`${API_BASE}/users/${user.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email || null }),
+      });
+      if (resp.ok) {
+        setEmailMsg("E-Mail gespeichert");
+        onSaved();
+        setTimeout(() => setEmailMsg(""), 2000);
+      }
+    } catch {
+      setEmailMsg("Fehler beim Speichern");
+    } finally {
+      setEmailSaving(false);
     }
   };
 
@@ -298,6 +323,37 @@ function UserRoleRow({
             </div>
           ) : (
             <>
+              <div>
+                <label className="block text-sm font-bold text-foreground mb-2 flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  E-Mail-Adresse
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@firma.de"
+                    className="flex-1 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    onKeyDown={(e) => { if (e.key === "Enter") handleEmailSave(); }}
+                  />
+                  <button
+                    onClick={handleEmailSave}
+                    disabled={emailSaving}
+                    className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                  >
+                    <Check className="h-4 w-4" />
+                    {emailSaving ? "..." : "Speichern"}
+                  </button>
+                </div>
+                {emailMsg && (
+                  <p className="mt-1.5 text-xs text-green-600 font-medium flex items-center gap-1">
+                    <Check className="h-3.5 w-3.5" />
+                    {emailMsg}
+                  </p>
+                )}
+              </div>
+
               <div>
                 <label className="block text-sm font-bold text-foreground mb-2 flex items-center gap-2">
                   <Activity className="h-4 w-4 text-muted-foreground" />

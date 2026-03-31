@@ -233,6 +233,7 @@ router.post("/users/admin-create", async (req, res) => {
     pin?: string;
     status?: string;
     gruppe?: string;
+    email?: string;
   };
 
   if (!body.firstName?.trim() || !body.lastName?.trim()) {
@@ -283,6 +284,7 @@ router.post("/users/admin-create", async (req, res) => {
     role: "USER",
     status: body.status || "aktiv",
     gruppe: body.gruppe && VALID_GRUPPEN.includes(body.gruppe) ? body.gruppe : null,
+    email: body.email?.trim() || null,
     isRegistered: true,
   }).returning();
 
@@ -292,7 +294,7 @@ router.post("/users/admin-create", async (req, res) => {
 // Admin updates basic employee info
 router.put("/users/:userId", async (req, res) => {
   const userId = Number(req.params.userId);
-  const body = req.body as { firstName?: string; lastName?: string; birthDate?: string; status?: string; initials?: string; gruppe?: string | null };
+  const body = req.body as { firstName?: string; lastName?: string; birthDate?: string; status?: string; initials?: string; gruppe?: string | null; email?: string | null };
 
   const VALID_GRUPPEN = ["gesamter_markt", "markt", "metzgerei"];
   const updates: Record<string, any> = {};
@@ -301,6 +303,7 @@ router.put("/users/:userId", async (req, res) => {
   if (body.firstName && body.lastName) { updates.name = `${body.firstName.trim()} ${body.lastName.trim()}`; }
   if (body.birthDate !== undefined) updates.birthDate = body.birthDate || null;
   if (body.status) updates.status = body.status;
+  if ("email" in body) updates.email = body.email?.trim() || null;
   if ("gruppe" in body) updates.gruppe = body.gruppe && VALID_GRUPPEN.includes(body.gruppe) ? body.gruppe : null;
 
   if (body.initials) {

@@ -29,6 +29,7 @@ interface Employee {
   birthDate: string | null;
   initials: string | null;
   pin: string | null;
+  email: string | null;
   status: Status;
   gruppe: Gruppe;
   role: string;
@@ -102,6 +103,7 @@ function NeuerMitarbeiterForm({ onSave, onCancel, existingInitials }: {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [birthDate, setBirthDate] = useState("");
+  const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("aktiv");
   const [gruppe, setGruppe] = useState<string>("");
   const [initials, setInitials] = useState("");
@@ -134,7 +136,7 @@ function NeuerMitarbeiterForm({ onSave, onCancel, existingInitials }: {
     if (pin && !/^\d{4}$/.test(pin)) { setError("PIN muss genau 4 Ziffern enthalten."); return; }
     setSaving(true);
     setError("");
-    const res = await onSave({ firstName, lastName, birthDate, status, gruppe: gruppe || null, initials: initials || undefined, pin: pin || undefined });
+    const res = await onSave({ firstName, lastName, birthDate, email: email || undefined, status, gruppe: gruppe || null, initials: initials || undefined, pin: pin || undefined });
     if (res.error) setError(res.error);
     setSaving(false);
   };
@@ -156,6 +158,11 @@ function NeuerMitarbeiterForm({ onSave, onCancel, existingInitials }: {
         <div className="flex flex-col gap-1">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Geburtsdatum</label>
           <input type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">E-Mail-Adresse</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@firma.de"
             className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
         </div>
         <div className="flex flex-col gap-1">
@@ -388,6 +395,7 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
   const [firstName, setFirstName] = useState(emp.firstName);
   const [lastName, setLastName] = useState(emp.lastName);
   const [birthDate, setBirthDate] = useState(emp.birthDate || "");
+  const [email, setEmail] = useState(emp.email || "");
   const [status, setStatus] = useState<Status>(emp.status);
   const [gruppe, setGruppe] = useState<string>(emp.gruppe || "");
   const [initials, setInitials] = useState(emp.initials || "");
@@ -398,7 +406,7 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
 
   const handleSaveEdit = async () => {
     setSaving(true); setError("");
-    const res = await onUpdate(emp.id, { firstName, lastName, birthDate, status, gruppe: gruppe || null, initials });
+    const res = await onUpdate(emp.id, { firstName, lastName, birthDate, email: email || null, status, gruppe: gruppe || null, initials });
     if (res.error) { setError(res.error); } else { setEditing(false); }
     setSaving(false);
   };
@@ -486,6 +494,11 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
                     className="px-3 py-2 rounded-lg border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
                 </div>
                 <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">E-Mail-Adresse</label>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@firma.de"
+                    className="px-3 py-2 rounded-lg border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+                </div>
+                <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</label>
                   <select value={status} onChange={(e) => setStatus(e.target.value as Status)}
                     className="px-3 py-2 rounded-lg border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20">
@@ -531,7 +544,7 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
                   className="flex items-center gap-1.5 px-4 py-2 bg-[#1a3a6b] text-white rounded-lg text-xs font-bold hover:bg-[#2d5aa0] disabled:opacity-40">
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Speichern
                 </button>
-                <button onClick={() => { setEditing(false); setError(""); setFirstName(emp.firstName); setLastName(emp.lastName); setBirthDate(emp.birthDate || ""); setStatus(emp.status); setGruppe(emp.gruppe || ""); setInitials(emp.initials || ""); }}
+                <button onClick={() => { setEditing(false); setError(""); setFirstName(emp.firstName); setLastName(emp.lastName); setBirthDate(emp.birthDate || ""); setEmail(emp.email || ""); setStatus(emp.status); setGruppe(emp.gruppe || ""); setInitials(emp.initials || ""); }}
                   className="px-4 py-2 bg-white border border-border/60 rounded-lg text-xs font-semibold text-muted-foreground">Abbrechen</button>
               </div>
             </div>
