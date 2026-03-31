@@ -12,30 +12,32 @@ function hashPassword(password: string): string {
 }
 
 async function getSmtpTransporter() {
-  // 1. Globale email_settings versuchen
+  // Globale email_settings: smtp_host, smtp_port (und ggf. globale Zugangsdaten)
   const globalR = await pool.query(`SELECT * FROM email_settings LIMIT 1`);
-  const cfg = globalR.rows[0];
-  const globalUser = cfg?.smtp_user || process.env.SMTP_USER;
-  const globalPass = cfg?.smtp_pass || process.env.SMTP_PASS;
+  const global = globalR.rows[0];
+  const host = global?.smtp_host || process.env.SMTP_HOST || "smtp.ionos.de";
+  const port = Number(global?.smtp_port || process.env.SMTP_PORT || 587);
+
+  // 1. Globale Zugangsdaten versuchen
+  const globalUser = global?.smtp_user || process.env.SMTP_USER;
+  const globalPass = global?.smtp_pass || process.env.SMTP_PASS;
   if (globalUser && globalPass) {
-    const host = cfg?.smtp_host || process.env.SMTP_HOST || "smtp.ionos.de";
-    const port = Number(cfg?.smtp_port || process.env.SMTP_PORT || 587);
     const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user: globalUser, pass: globalPass } });
-    return { transporter, fromUser: globalUser, fromName: cfg?.from_name || "EDEKA Dallmann HACCP" };
+    return { transporter, fromUser: globalUser, fromName: global?.from_name || "EDEKA Dallmann HACCP" };
   }
 
-  // 2. Fallback: erste verfügbare Markt-SMTP-Konfiguration (bevorzugt market_id=1, markt@edeka-dallmann.de)
+  // 2. Markt-Zugangsdaten (market_id=1 = markt@edeka-dallmann.de bevorzugt)
   const marketR = await pool.query(
     `SELECT * FROM market_email_configs WHERE smtp_user IS NOT NULL AND smtp_pass IS NOT NULL ORDER BY market_id ASC LIMIT 1`
   );
   const mCfg = marketR.rows[0];
   if (mCfg?.smtp_user && mCfg?.smtp_pass) {
-    const host = mCfg.smtp_host || "smtp.ionos.de";
-    const port = Number(mCfg.smtp_port || 587);
+    console.log(`[Auth] Verwende Markt-SMTP: ${mCfg.smtp_user} via ${host}:${port}`);
     const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user: mCfg.smtp_user, pass: mCfg.smtp_pass } });
-    return { transporter, fromUser: mCfg.smtp_user, fromName: "EDEKA Dallmann HACCP" };
+    return { transporter, fromUser: mCfg.smtp_user, fromName: mCfg.from_name || "EDEKA Dallmann HACCP" };
   }
 
+  console.error("[Auth] Keine SMTP-Zugangsdaten gefunden (weder global noch marktspezifisch).");
   return { transporter: null, fromUser: "", fromName: "EDEKA Dallmann HACCP" };
 }
 
