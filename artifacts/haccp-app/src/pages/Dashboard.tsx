@@ -114,7 +114,7 @@ export default function Dashboard() {
               {isOnline ? "Online" : "Offline"}
             </div>
             <h1 className="text-2xl sm:text-4xl font-bold mb-2 leading-tight">
-              {getGreeting()}{adminSession?.name ? `, ${adminSession.id === 17 ? "Michi" : adminSession.name.split(" ")[0]}` : ""}!
+              {getGreeting()}{adminSession?.name ? `, ${adminSession.userId === 17 ? "Michi" : adminSession.name.split(" ")[0]}` : ""}!
             </h1>
             <p className="text-blue-100 text-sm sm:text-base max-w-xl">
               Willkommen bei Edeka Dallmann. Wählen Sie ein Modul um fortzufahren.
