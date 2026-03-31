@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import {
   ChevronLeft, Bell, Plus, Trash2, Check, X, AlertTriangle,
   Mail, Send, Clock, Users, RefreshCw, Eye, MessageCircle,
-  BellOff, Play, CheckCircle, XCircle, Settings, Save, Store,
+  BellOff, Play, CheckCircle, XCircle, Settings, Save, Store, Pencil,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -183,11 +183,35 @@ function RegelnTab({ sections, triggerTypes, checkRhythms, rules, users, onSaved
   sections: Section[]; triggerTypes: TriggerType[]; checkRhythms: CheckRhythm[]; rules: Rule[]; users: UserChannel[]; onSaved: () => void;
 }) {
   const [showForm, setShowForm] = useState(false);
+  const [editingRule, setEditingRule] = useState<Rule | null>(null);
   const [form, setForm] = useState({ sectionKey: "", triggerType: "no_entry_days", triggerValue: 7, notifyUserIds: [] as number[], marketIds: [] as number[], checkRhythm: "daily" });
   const [saving, setSaving] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+
+  const openCreate = () => {
+    setEditingRule(null);
+    setForm({ sectionKey: "", triggerType: "no_entry_days", triggerValue: 7, notifyUserIds: [], marketIds: [], checkRhythm: "daily" });
+    setUserSearch("");
+    setShowForm(true);
+  };
+
+  const openEdit = (rule: Rule) => {
+    setEditingRule(rule);
+    setForm({
+      sectionKey: rule.section_key,
+      triggerType: rule.trigger_type,
+      triggerValue: rule.trigger_value,
+      notifyUserIds: [...rule.notify_user_ids],
+      marketIds: rule.market_ids ? [...rule.market_ids] : [],
+      checkRhythm: rule.check_rhythm || "daily",
+    });
+    setUserSearch("");
+    setShowForm(true);
+  };
+
+  const closeForm = () => { setShowForm(false); setEditingRule(null); };
 
   const groups = [...new Set(sections.map(s => s.group))];
 
@@ -207,9 +231,30 @@ function RegelnTab({ sections, triggerTypes, checkRhythms, rules, users, onSaved
           checkRhythm: form.checkRhythm,
         }),
       });
-      setForm({ sectionKey: "", triggerType: "no_entry_days", triggerValue: 7, notifyUserIds: [], marketIds: [], checkRhythm: "daily" });
-      setUserSearch("");
-      setShowForm(false);
+      closeForm();
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (!editingRule || !form.sectionKey) return;
+    setSaving(true);
+    try {
+      await fetch(`${API_BASE}/notifications/rules/${editingRule.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sectionKey: form.sectionKey,
+          triggerType: form.triggerType,
+          triggerValue: form.triggerValue,
+          notifyUserIds: form.notifyUserIds,
+          marketIds: form.marketIds,
+          checkRhythm: form.checkRhythm,
+        }),
+      });
+      closeForm();
       onSaved();
     } finally {
       setSaving(false);
@@ -283,7 +328,7 @@ function RegelnTab({ sections, triggerTypes, checkRhythms, rules, users, onSaved
       <div className="flex items-center justify-between">
         <h3 className="text-base font-bold text-foreground">Aktive Regeln ({rules.length})</h3>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={openCreate}
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 text-white text-sm font-bold hover:bg-orange-600 transition-colors"
         >
           <Plus className="h-4 w-4" /> Neue Regel
@@ -292,7 +337,10 @@ function RegelnTab({ sections, triggerTypes, checkRhythms, rules, users, onSaved
 
       {showForm && (
         <div className="bg-white rounded-2xl border border-orange-200 shadow-sm p-5 space-y-4">
-          <h4 className="font-bold text-foreground flex items-center gap-2"><Bell className="h-4 w-4 text-orange-500" /> Neue Benachrichtigungsregel</h4>
+          <h4 className="font-bold text-foreground flex items-center gap-2">
+            {editingRule ? <Pencil className="h-4 w-4 text-orange-500" /> : <Bell className="h-4 w-4 text-orange-500" />}
+            {editingRule ? "Regel bearbeiten" : "Neue Benachrichtigungsregel"}
+          </h4>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -470,14 +518,14 @@ function RegelnTab({ sections, triggerTypes, checkRhythms, rules, users, onSaved
 
           <div className="flex items-center gap-3 pt-1">
             <button
-              onClick={handleCreate}
+              onClick={editingRule ? handleUpdate : handleCreate}
               disabled={saving || !form.sectionKey || form.notifyUserIds.length === 0}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-500 text-white text-sm font-bold hover:bg-orange-600 transition-colors disabled:opacity-40"
             >
-              <Plus className="h-4 w-4" />
-              {saving ? "Speichert..." : "Regel erstellen"}
+              {editingRule ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {saving ? "Speichert..." : editingRule ? "Änderungen speichern" : "Regel erstellen"}
             </button>
-            <button onClick={() => setShowForm(false)} className="px-4 py-2.5 rounded-xl border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-gray-50 transition-colors">
+            <button onClick={closeForm} className="px-4 py-2.5 rounded-xl border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-gray-50 transition-colors">
               Abbrechen
             </button>
           </div>
@@ -529,6 +577,13 @@ function RegelnTab({ sections, triggerTypes, checkRhythms, rules, users, onSaved
                     )}
                   >
                     {rule.is_active ? <><Check className="h-3 w-3" /> Aktiv</> : "Inaktiv"}
+                  </button>
+                  <button
+                    onClick={() => openEdit(rule)}
+                    title="Bearbeiten"
+                    className="p-2 rounded-lg text-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                  >
+                    <Pencil className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(rule.id)}
