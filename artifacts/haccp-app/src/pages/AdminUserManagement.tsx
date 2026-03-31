@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Lock,
+  Unlock,
   Store,
   Activity,
   Mail,
@@ -19,6 +20,7 @@ import {
   CheckCircle,
   AlertTriangle,
   Loader2,
+  KeyRound,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -198,339 +200,262 @@ function UserRoleRow({
   }, [isExpanded, loaded, user.id]);
 
   const handleRoleChange = async (newRole: string) => {
-    setSaving(true);
-    setSaveMsg("");
+    setSaving(true); setSaveMsg("");
     try {
       const resp = await fetch(`${API_BASE}/permissions/user/${user.id}/role`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: newRole }),
       });
-      if (resp.ok) {
-        setRole(newRole);
-        setSaveMsg("Rolle gespeichert");
-        onSaved();
-        setTimeout(() => setSaveMsg(""), 2000);
-      }
-    } catch {
-      setSaveMsg("Fehler beim Speichern");
-    } finally {
-      setSaving(false);
-    }
+      if (resp.ok) { setRole(newRole); setSaveMsg("Rolle gespeichert"); onSaved(); setTimeout(() => setSaveMsg(""), 2500); }
+    } catch { setSaveMsg("Fehler beim Speichern"); } finally { setSaving(false); }
   };
 
   const handleStatusChange = async (newStatus: string) => {
     setStatusSaving(true);
     try {
       const resp = await fetch(`${API_BASE}/users/${user.id}/status`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (resp.ok) {
-        setStatus(newStatus);
-        onSaved();
-      }
-    } catch {
-    } finally {
-      setStatusSaving(false);
-    }
+      if (resp.ok) { setStatus(newStatus); onSaved(); }
+    } catch { } finally { setStatusSaving(false); }
   };
 
   const handleEmailSave = async () => {
-    setEmailSaving(true);
-    setEmailMsg("");
+    setEmailSaving(true); setEmailMsg("");
     try {
       const resp = await fetch(`${API_BASE}/users/${user.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email || null }),
       });
-      if (resp.ok) {
-        setEmailMsg("E-Mail gespeichert");
-        onSaved();
-        setTimeout(() => setEmailMsg(""), 2000);
-      }
-    } catch {
-      setEmailMsg("Fehler beim Speichern");
-    } finally {
-      setEmailSaving(false);
-    }
+      if (resp.ok) { setEmailMsg("E-Mail gespeichert"); onSaved(); setTimeout(() => setEmailMsg(""), 2500); }
+    } catch { setEmailMsg("Fehler beim Speichern"); } finally { setEmailSaving(false); }
   };
 
   const handleSendInvite = async (type: "invite" | "reset") => {
-    setInviteStatus("sending");
-    setInviteMessage("");
+    setInviteStatus("sending"); setInviteMessage("");
     try {
       const appBaseUrl = window.location.origin + (import.meta.env.BASE_URL || "").replace(/\/$/, "");
       const resp = await fetch(`${API_BASE}/auth/send-invite`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, type, appBaseUrl }),
       });
       const data = await resp.json();
-      if (!resp.ok) {
-        setInviteStatus("error");
-        setInviteMessage(data.error || "Fehler aufgetreten.");
-        return;
-      }
+      if (!resp.ok) { setInviteStatus("error"); setInviteMessage(data.error || "Fehler aufgetreten."); return; }
       setInviteStatus("success");
-      setInviteMessage(data.emailSent
-        ? `E-Mail an ${email || user.email} gesendet.`
-        : `Link erstellt (E-Mail konnte nicht gesendet werden): ${data.setPasswordUrl}`
-      );
-    } catch {
-      setInviteStatus("error");
-      setInviteMessage("Verbindungsfehler.");
-    }
+      setInviteMessage(data.emailSent ? `E-Mail an ${email || user.email} gesendet.` : `Link: ${data.setPasswordUrl}`);
+    } catch { setInviteStatus("error"); setInviteMessage("Verbindungsfehler."); }
   };
 
   const toggleMarket = (marketId: number) => {
-    setAssignedMarkets((prev) =>
-      prev.includes(marketId) ? prev.filter((id) => id !== marketId) : [...prev, marketId]
-    );
+    setAssignedMarkets((prev) => prev.includes(marketId) ? prev.filter((id) => id !== marketId) : [...prev, marketId]);
   };
 
   const saveMarkets = async () => {
     setSaving(true);
     try {
       await fetch(`${API_BASE}/permissions/user/${user.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        method: "PUT", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ marketIds: assignedMarkets }),
       });
-      setSaveMsg("Märkte gespeichert");
-      onSaved();
-      setTimeout(() => setSaveMsg(""), 2000);
-    } catch {
-      setSaveMsg("Fehler");
-    } finally {
-      setSaving(false);
-    }
+      setSaveMsg("Märkte gespeichert"); onSaved(); setTimeout(() => setSaveMsg(""), 2500);
+    } catch { setSaveMsg("Fehler"); } finally { setSaving(false); }
   };
 
   const Icon = ROLE_ICONS[role] || Users;
   const isSuperAdmin = role === "SUPERADMIN";
   const showMarkets = role === "MARKTLEITER";
+  const isLocked = status === "inaktiv";
 
   return (
-    <div>
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center gap-4 px-6 py-4 hover:bg-gray-50/50 transition-colors text-left"
-      >
-        <div className="flex-shrink-0">
-          {isExpanded ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          )}
-        </div>
+    <div className={cn(isLocked && "bg-red-50/30")}>
+      {/* ── Zeilen-Header ── */}
+      <div className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50/60 transition-colors">
+        {/* Expand-Trigger */}
+        <button onClick={onToggle} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+          <span className={cn(
+            "inline-flex items-center justify-center h-9 w-10 font-mono font-bold text-sm rounded-lg flex-shrink-0",
+            isLocked ? "bg-red-100 text-red-500" : "bg-primary/10 text-primary"
+          )}>
+            {user.initials || "—"}
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold text-foreground">{user.name}</span>
+              {isLocked && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-600 rounded-full text-xs font-bold border border-red-200">
+                  <Lock className="h-3 w-3" /> Gesperrt
+                </span>
+              )}
+              <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border", ROLE_COLORS[role] || ROLE_COLORS["USER"])}>
+                <Icon className="h-3 w-3" />
+                {ROLE_LABELS[role] || role}
+              </span>
+            </div>
+            <div className="text-xs text-muted-foreground mt-0.5">
+              {user.email ? (
+                <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{user.email}</span>
+              ) : (
+                <span className="italic text-muted-foreground/60">Keine E-Mail hinterlegt</span>
+              )}
+            </div>
+          </div>
+          <div className="flex-shrink-0 text-muted-foreground">
+            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </div>
+        </button>
 
-        <span className="inline-flex items-center justify-center h-9 w-12 bg-primary/10 text-primary font-mono font-bold text-sm rounded-lg flex-shrink-0">
-          {user.initials || "—"}
-        </span>
+        {/* Schnell-Sperren-Button – immer sichtbar, außer bei Superadmin */}
+        {!isSuperAdmin && (
+          <button
+            onClick={(e) => { e.stopPropagation(); handleStatusChange(isLocked ? "aktiv" : "inaktiv"); }}
+            disabled={statusSaving}
+            title={isLocked ? "Benutzer entsperren" : "Benutzer sperren"}
+            className={cn(
+              "flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all",
+              isLocked
+                ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100",
+              statusSaving && "opacity-50 cursor-wait"
+            )}
+          >
+            {statusSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : isLocked ? <Unlock className="h-3.5 w-3.5" /> : <Lock className="h-3.5 w-3.5" />}
+            {isLocked ? "Entsperren" : "Sperren"}
+          </button>
+        )}
+      </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-foreground">{user.name}</div>
-          <div className="text-xs text-muted-foreground">{user.email || "Kein E-Mail"}</div>
-        </div>
-
-        <span className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border", STATUS_COLORS[status] || STATUS_COLORS["aktiv"])}>
-          {STATUS_LABELS[status] || status}
-        </span>
-        <span className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border", ROLE_COLORS[role] || ROLE_COLORS["USER"])}>
-          <Icon className="h-3.5 w-3.5" />
-          {ROLE_LABELS[role] || role}
-        </span>
-      </button>
-
+      {/* ── Aufgeklappter Bereich ── */}
       {isExpanded && (
-        <div className="px-6 pb-6 pl-16 space-y-5 border-t border-border/30 pt-4">
+        <div className="px-5 pb-6 pl-[68px] border-t border-border/30 pt-4 space-y-5 bg-gray-50/40">
           {isSuperAdmin ? (
             <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl flex items-center gap-3 text-sm text-purple-700">
               <ShieldCheck className="h-5 w-5 flex-shrink-0" />
-              <div>
-                <span className="font-bold">Superadmin</span> — Hat automatisch vollen Zugriff auf alle Bereiche und Märkte.
-              </div>
+              <div><span className="font-bold">Superadmin</span> — Hat automatisch vollen Zugriff auf alle Bereiche und Märkte.</div>
             </div>
           ) : (
             <>
+              {/* E-Mail */}
               <div>
-                <label className="block text-sm font-bold text-foreground mb-2 flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  E-Mail-Adresse
-                </label>
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">E-Mail-Adresse</label>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@firma.de"
-                    className="flex-1 border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                    className="flex-1 border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-white"
                     onKeyDown={(e) => { if (e.key === "Enter") handleEmailSave(); }}
                   />
-                  <button
-                    onClick={handleEmailSave}
-                    disabled={emailSaving}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                  >
-                    <Check className="h-4 w-4" />
-                    {emailSaving ? "..." : "Speichern"}
+                  <button onClick={handleEmailSave} disabled={emailSaving}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors whitespace-nowrap">
+                    <Check className="h-4 w-4" />{emailSaving ? "..." : "Speichern"}
                   </button>
                 </div>
-                {emailMsg && (
-                  <p className="mt-1.5 text-xs text-green-600 font-medium flex items-center gap-1">
-                    <Check className="h-3.5 w-3.5" />
-                    {emailMsg}
-                  </p>
-                )}
+                {emailMsg && <p className="mt-1 text-xs text-green-600 font-medium flex items-center gap-1"><Check className="h-3 w-3" />{emailMsg}</p>}
               </div>
 
+              {/* Einladung & Passwort */}
               <div>
-                <label className="block text-sm font-bold text-foreground mb-2">
-                  Einladung & Zugang
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                  <span className="flex items-center gap-1.5"><KeyRound className="h-3.5 w-3.5" />Passwort & Zugang</span>
                 </label>
                 {email ? (
                   <div className="space-y-2">
                     <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => handleSendInvite("invite")}
-                        disabled={inviteStatus === "sending"}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-xl text-sm font-semibold hover:bg-green-100 disabled:opacity-50 transition-colors"
-                      >
+                      <button onClick={() => handleSendInvite("invite")} disabled={inviteStatus === "sending"}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-xl text-sm font-semibold hover:bg-green-100 disabled:opacity-50 transition-colors">
                         {inviteStatus === "sending" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
                         Einladung senden
                       </button>
-                      <button
-                        onClick={() => handleSendInvite("reset")}
-                        disabled={inviteStatus === "sending"}
-                        className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-sm font-semibold hover:bg-amber-100 disabled:opacity-50 transition-colors"
-                      >
+                      <button onClick={() => handleSendInvite("reset")} disabled={inviteStatus === "sending"}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-sm font-semibold hover:bg-amber-100 disabled:opacity-50 transition-colors">
                         {inviteStatus === "sending" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
                         Passwort zurücksetzen
                       </button>
                     </div>
                     {inviteStatus === "success" && (
                       <div className="flex items-start gap-2 p-2.5 bg-green-50 border border-green-200 rounded-xl text-xs text-green-700">
-                        <CheckCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
-                        <span className="break-all">{inviteMessage}</span>
+                        <CheckCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" /><span className="break-all">{inviteMessage}</span>
                       </div>
                     )}
                     {inviteStatus === "error" && (
                       <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
-                        <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-                        {inviteMessage}
+                        <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />{inviteMessage}
                       </div>
                     )}
-                    <p className="text-xs text-muted-foreground">
-                      Der Benutzer erhält einen Link per E-Mail, um sein Passwort zu setzen (48h gültig).
-                    </p>
+                    <p className="text-xs text-muted-foreground">Link ist 48 Stunden gültig und kann nur einmal verwendet werden.</p>
                   </div>
                 ) : (
-                  <p className="text-xs text-muted-foreground italic">
-                    Bitte zuerst eine E-Mail-Adresse hinterlegen, um eine Einladung senden zu können.
+                  <p className="text-xs text-muted-foreground/70 italic bg-white border border-border/50 rounded-xl px-3 py-2">
+                    Zuerst E-Mail-Adresse eintragen, dann kann eine Einladung versendet werden.
                   </p>
                 )}
               </div>
 
+              {/* Status */}
               <div>
-                <label className="block text-sm font-bold text-foreground mb-2 flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-muted-foreground" />
-                  Kontostatus
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                  <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5" />Kontostatus</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {(["onboarding", "aktiv", "inaktiv"] as const).map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => handleStatusChange(s)}
-                      disabled={statusSaving}
+                    <button key={s} onClick={() => handleStatusChange(s)} disabled={statusSaving}
                       className={cn(
                         "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all",
-                        status === s
-                          ? STATUS_COLORS[s] + " ring-2 ring-offset-1"
-                          : "bg-white text-muted-foreground border-border hover:border-primary/50"
+                        s === "inaktiv" && status !== "inaktiv" && "hover:bg-red-50 hover:border-red-300 hover:text-red-600",
+                        status === s ? STATUS_COLORS[s] + " ring-2 ring-offset-1" : "bg-white text-muted-foreground border-border"
                       )}
                     >
+                      {s === "inaktiv" && <Lock className="h-3.5 w-3.5" />}
                       {STATUS_LABELS[s]}
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  Inaktive Benutzer können sich nicht mehr anmelden. Daten bleiben erhalten.
-                </p>
+                <p className="text-xs text-muted-foreground mt-1.5">Gesperrte Benutzer können sich nicht mehr anmelden. Alle Daten bleiben erhalten.</p>
               </div>
 
+              {/* Rolle */}
               <div>
-                <label className="block text-sm font-bold text-foreground mb-2 flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-blue-600" />
-                  Rolle
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                  <span className="flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-blue-600" />Rolle</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {(["ADMIN", "BEREICHSLEITUNG", "MARKTLEITER", "USER"] as const).map((r) => {
                     const RIcon = ROLE_ICONS[r] || Users;
                     return (
-                      <button
-                        key={r}
-                        onClick={() => handleRoleChange(r)}
-                        disabled={saving}
+                      <button key={r} onClick={() => handleRoleChange(r)} disabled={saving}
                         className={cn(
-                          "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all",
-                          role === r
-                            ? ROLE_COLORS[r] + " ring-2 ring-offset-1 ring-primary/30"
-                            : "bg-white text-muted-foreground border-border hover:border-primary/50"
+                          "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold border-2 transition-all",
+                          role === r ? ROLE_COLORS[r] + " ring-2 ring-offset-1 ring-primary/20" : "bg-white text-muted-foreground border-border hover:border-primary/40"
                         )}
                       >
-                        <RIcon className="h-4 w-4" />
-                        {ROLE_LABELS[r]}
+                        <RIcon className="h-4 w-4" />{ROLE_LABELS[r]}
                       </button>
                     );
                   })}
                 </div>
-                {saveMsg && (
-                  <p className="mt-1.5 text-xs text-green-600 font-medium flex items-center gap-1">
-                    <Check className="h-3.5 w-3.5" />
-                    {saveMsg}
-                  </p>
-                )}
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  Die Berechtigungen je Rolle werden zentral unter Systemverwaltung → Rollen & Berechtigungen verwaltet.
-                </p>
+                {saveMsg && <p className="mt-1 text-xs text-green-600 font-medium flex items-center gap-1"><Check className="h-3 w-3" />{saveMsg}</p>}
               </div>
 
+              {/* Märkte (nur Marktleiter) */}
               {showMarkets && (
                 <div>
-                  <label className="block text-sm font-bold text-foreground mb-2 flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-emerald-600" />
-                    Zugewiesene Märkte
+                  <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                    <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-emerald-600" />Zugewiesene Märkte</span>
                   </label>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Marktleiter haben nur Zugriff auf ihre zugewiesenen Filialen.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 mb-3">
                     {markets.map((market) => (
-                      <button
-                        key={market.id}
-                        onClick={() => toggleMarket(market.id)}
+                      <button key={market.id} onClick={() => toggleMarket(market.id)}
                         className={cn(
-                          "inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all",
-                          assignedMarkets.includes(market.id)
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                            : "bg-white text-muted-foreground border-border hover:border-emerald-300"
+                          "inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold border-2 transition-all",
+                          assignedMarkets.includes(market.id) ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-muted-foreground border-border hover:border-emerald-300"
                         )}
                       >
-                        <MapPin className="h-4 w-4" />
-                        {market.name} ({market.code})
+                        <MapPin className="h-4 w-4" />{market.name}
                       </button>
                     ))}
                   </div>
-                  <button
-                    onClick={saveMarkets}
-                    disabled={saving}
-                    className="mt-3 flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-                  >
-                    <Check className="h-4 w-4" />
-                    {saving ? "Speichert..." : "Märkte speichern"}
+                  <button onClick={saveMarkets} disabled={saving}
+                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 disabled:opacity-50 transition-colors">
+                    <Check className="h-4 w-4" />{saving ? "Speichert..." : "Märkte speichern"}
                   </button>
                 </div>
               )}
