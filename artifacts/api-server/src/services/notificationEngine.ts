@@ -315,14 +315,19 @@ async function getTelegramBotToken(): Promise<string | null> {
 
 async function sendTelegram(chatId: string, message: string): Promise<boolean> {
   const token = await getTelegramBotToken();
-  if (!token) return false;
+  if (!token) { console.error("[Notifications] Kein Telegram-Bot-Token konfiguriert."); return false; }
   try {
     const resp = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: "HTML" }),
     });
-    return resp.ok;
+    if (!resp.ok) {
+      const body = await resp.json().catch(() => ({}));
+      console.error(`[Notifications] Telegram-Fehler für Chat-ID ${chatId}: ${body.description || resp.statusText} (Code: ${body.error_code || resp.status})`);
+      return false;
+    }
+    return true;
   } catch (e) {
     console.error("[Notifications] Telegram-Fehler:", e);
     return false;
