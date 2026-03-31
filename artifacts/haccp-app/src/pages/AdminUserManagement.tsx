@@ -101,7 +101,7 @@ export default function AdminUserManagement() {
           <div>
             <h1 className="text-xl font-bold text-foreground">Benutzerverwaltung</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Rollen für registrierte Mitarbeiter zuweisen.
+              Rollen und Status für alle Mitarbeiter verwalten.
             </p>
           </div>
         </div>
@@ -117,28 +117,28 @@ function UserRoleList() {
   const { data: markets } = useListMarkets();
   const [expandedUser, setExpandedUser] = useState<number | null>(null);
 
-  const registeredUsers = users?.filter((u) => u.isRegistered) || [];
+  const allUsers = users || [];
 
   return (
     <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
       <div className="bg-[#1a3a6b] text-white px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Users className="h-5 w-5" />
-          <h2 className="text-lg font-bold">Registrierte Benutzer</h2>
+          <h2 className="text-lg font-bold">Alle Benutzer</h2>
         </div>
         <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
-          {registeredUsers.length} Benutzer
+          {allUsers.length} Benutzer
         </span>
       </div>
 
-      {registeredUsers.length === 0 ? (
+      {allUsers.length === 0 ? (
         <div className="p-12 text-center">
           <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-muted-foreground text-sm">Noch keine Benutzer registriert.</p>
+          <p className="text-muted-foreground text-sm">Noch keine Benutzer angelegt.</p>
         </div>
       ) : (
         <div className="divide-y divide-border/40">
-          {registeredUsers.map((user) => (
+          {allUsers.map((user) => (
             <UserRoleRow
               key={user.id}
               user={user}
