@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, usersTable, adminInvitationsTable, userMarketAssignmentsTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { randomBytes, scryptSync } from "crypto";
 
 const router: IRouter = Router();
@@ -44,7 +44,7 @@ router.post("/admin/invite", async (req, res) => {
     .from(usersTable)
     .where(
       and(
-        eq(usersTable.email, adminEmail.toLowerCase()),
+        sql`lower(${usersTable.email}) = lower(${adminEmail})`,
         eq(usersTable.tenantId, tenantId)
       )
     );
@@ -199,7 +199,7 @@ router.post("/admin/login", async (req, res) => {
   const users = await db
     .select()
     .from(usersTable)
-    .where(eq(usersTable.email, email.toLowerCase()));
+    .where(sql`lower(${usersTable.email}) = lower(${email})`);
 
   const ADMIN_ROLES = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER"];
 
