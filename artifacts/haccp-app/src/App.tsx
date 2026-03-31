@@ -37,6 +37,8 @@ import Responsibilities from "./pages/Responsibilities";
 import UserRegistry from "./pages/UserRegistry";
 import AdminLogin from "./pages/AdminLogin";
 import AdminRegister from "./pages/AdminRegister";
+import SetPassword from "./pages/SetPassword";
+import ForgotPassword from "./pages/ForgotPassword";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import GeraeteVerwaltung from "./pages/GeraeteVerwaltung";
 import TrainingBesprechung from "./pages/TrainingBesprechung";
@@ -159,6 +161,8 @@ function Router() {
       <Route path="/training-records" component={TrainingRecords} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/register" component={AdminRegister} />
+      <Route path="/set-password" component={SetPassword} />
+      <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/admin/users" component={AdminUserManagement} />
       <Route path="/admin/geraete" component={GeraeteVerwaltung} />
       <Route path="/admin/system" component={SystemAdminHub} />

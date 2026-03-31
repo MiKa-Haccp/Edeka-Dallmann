@@ -50,6 +50,7 @@ import monatsberichtRouter from "./monatsbericht";
 import streckenLieferantenRouter from "./streckenLieferanten";
 import todoRouter from "./todo";
 import feedbackRouter from "./feedback";
+import authRouter from "./auth";
 
 const router: IRouter = Router();
 
@@ -104,5 +105,6 @@ router.use(monatsberichtRouter);
 router.use(streckenLieferantenRouter);
 router.use(todoRouter);
 router.use(feedbackRouter);
+router.use(authRouter);
 
 export default router;

@@ -147,6 +147,16 @@ export default function AdminLogin() {
               <LogIn className="h-4 w-4" />
               {loading ? "Anmeldung..." : "Anmelden"}
             </button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline-offset-2 hover:underline"
+              >
+                Passwort vergessen?
+              </button>
+            </div>
           </form>
         </div>
       </div>
