@@ -1,7 +1,7 @@
 import { useListCategories, useListSections } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import * as Accordion from "@radix-ui/react-accordion";
-import { ChevronDown, Folder, FileText, ClipboardList, GripVertical, X, Home } from "lucide-react";
+import { ChevronDown, Folder, FileText, ClipboardList, GripVertical, X, Home, ShieldCheck, ShoppingCart, Beef } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
@@ -14,6 +14,15 @@ const MARKET_SECTION_TITLE_OVERRIDES: Record<number, Record<string, string>> = {
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+function getCategoryIcon(categoryId: number) {
+  switch (categoryId) {
+    case 1: return { Icon: ShieldCheck, bg: "bg-[#1a3a6b]/10", text: "text-[#1a3a6b]", hoverBg: "group-hover:bg-[#1a3a6b]" };
+    case 2: return { Icon: ShoppingCart, bg: "bg-orange-100", text: "text-orange-600", hoverBg: "group-hover:bg-orange-500" };
+    case 3: return { Icon: Beef, bg: "bg-red-100", text: "text-red-700", hoverBg: "group-hover:bg-red-700" };
+    default: return { Icon: Folder, bg: "bg-primary/10", text: "text-primary", hoverBg: "group-hover:bg-primary" };
+  }
 }
 
 const MIN_WIDTH = 200;
@@ -163,7 +172,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             onValueChange={handleValueChange}
             className="space-y-2"
           >
-            {categories?.map((category) => (
+            {categories?.map((category) => {
+              const { Icon, bg, text, hoverBg } = getCategoryIcon(category.id);
+              return (
               <Accordion.Item 
                 key={category.id} 
                 value={category.id.toString()}
@@ -177,8 +188,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                       className="flex items-center gap-3 min-w-0 flex-1"
                       onClick={(e) => { e.stopPropagation(); navigate(`/category/${category.id}`); onNavigate?.(); }}
                     >
-                      <div className="p-1.5 rounded-md bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors flex-shrink-0">
-                        <Folder className="h-4 w-4" />
+                      <div className={`p-1.5 rounded-md ${bg} ${text} ${hoverBg} group-hover:text-white transition-colors flex-shrink-0`}>
+                        <Icon className="h-4 w-4" />
                       </div>
                       <span className="truncate text-left">{category.label}</span>
                     </div>
@@ -193,7 +204,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   </div>
                 </Accordion.Content>
               </Accordion.Item>
-            ))}
+            );
+            })}
           </Accordion.Root>
         )}
       </div>
