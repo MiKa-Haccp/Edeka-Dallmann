@@ -15,6 +15,10 @@ import {
   Store,
   Activity,
   Mail,
+  RotateCcw,
+  CheckCircle,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -178,6 +182,8 @@ function UserRoleRow({
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [statusSaving, setStatusSaving] = useState(false);
+  const [inviteStatus, setInviteStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [inviteMessage, setInviteMessage] = useState("");
 
   useEffect(() => {
     if (isExpanded && !loaded) {
@@ -249,6 +255,33 @@ function UserRoleRow({
       setEmailMsg("Fehler beim Speichern");
     } finally {
       setEmailSaving(false);
+    }
+  };
+
+  const handleSendInvite = async (type: "invite" | "reset") => {
+    setInviteStatus("sending");
+    setInviteMessage("");
+    try {
+      const appBaseUrl = window.location.origin + (import.meta.env.BASE_URL || "").replace(/\/$/, "");
+      const resp = await fetch(`${API_BASE}/auth/send-invite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: user.id, type, appBaseUrl }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        setInviteStatus("error");
+        setInviteMessage(data.error || "Fehler aufgetreten.");
+        return;
+      }
+      setInviteStatus("success");
+      setInviteMessage(data.emailSent
+        ? `E-Mail an ${email || user.email} gesendet.`
+        : `Link erstellt (E-Mail konnte nicht gesendet werden): ${data.setPasswordUrl}`
+      );
+    } catch {
+      setInviteStatus("error");
+      setInviteMessage("Verbindungsfehler.");
     }
   };
 
@@ -350,6 +383,53 @@ function UserRoleRow({
                   <p className="mt-1.5 text-xs text-green-600 font-medium flex items-center gap-1">
                     <Check className="h-3.5 w-3.5" />
                     {emailMsg}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-foreground mb-2">
+                  Einladung & Zugang
+                </label>
+                {email ? (
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleSendInvite("invite")}
+                        disabled={inviteStatus === "sending"}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-xl text-sm font-semibold hover:bg-green-100 disabled:opacity-50 transition-colors"
+                      >
+                        {inviteStatus === "sending" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                        Einladung senden
+                      </button>
+                      <button
+                        onClick={() => handleSendInvite("reset")}
+                        disabled={inviteStatus === "sending"}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-sm font-semibold hover:bg-amber-100 disabled:opacity-50 transition-colors"
+                      >
+                        {inviteStatus === "sending" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                        Passwort zurücksetzen
+                      </button>
+                    </div>
+                    {inviteStatus === "success" && (
+                      <div className="flex items-start gap-2 p-2.5 bg-green-50 border border-green-200 rounded-xl text-xs text-green-700">
+                        <CheckCircle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                        <span className="break-all">{inviteMessage}</span>
+                      </div>
+                    )}
+                    {inviteStatus === "error" && (
+                      <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
+                        <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                        {inviteMessage}
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Der Benutzer erhält einen Link per E-Mail, um sein Passwort zu setzen (48h gültig).
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">
+                    Bitte zuerst eine E-Mail-Adresse hinterlegen, um eine Einladung senden zu können.
                   </p>
                 )}
               </div>

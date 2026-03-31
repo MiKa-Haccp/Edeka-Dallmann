@@ -7,7 +7,6 @@ import {
   CheckCircle2, Clock, UserX, Loader2, Search, Printer,
   ShieldCheck, AlertTriangle, Lock, RefreshCcw, Eye, EyeOff,
   Building2, ChevronDown, ChevronUp, ChevronLeft, GraduationCap, AlarmClock, ShieldAlert,
-  Mail, RotateCcw, CheckCircle,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -404,32 +403,6 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
   const [showNewPin, setShowNewPin] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [inviteStatus, setInviteStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
-  const [inviteMessage, setInviteMessage] = useState("");
-
-  const handleSendInvite = async (type: "invite" | "reset") => {
-    setInviteStatus("sending");
-    setInviteMessage("");
-    try {
-      const appBaseUrl = window.location.origin + (import.meta.env.BASE_URL || "").replace(/\/$/, "");
-      const resp = await fetch(`${BASE}/auth/send-invite`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: emp.id, type, appBaseUrl }),
-      });
-      const data = await resp.json();
-      if (!resp.ok) { setInviteStatus("error"); setInviteMessage(data.error || "Fehler aufgetreten."); return; }
-      setInviteStatus("success");
-      setInviteMessage(data.emailSent
-        ? `E-Mail an ${emp.email} gesendet.`
-        : `Link erstellt (E-Mail konnte nicht gesendet werden): ${data.setPasswordUrl}`
-      );
-    } catch {
-      setInviteStatus("error");
-      setInviteMessage("Verbindungsfehler.");
-    }
-  };
-
   const handleSaveEdit = async () => {
     setSaving(true); setError("");
     const res = await onUpdate(emp.id, { firstName, lastName, birthDate, email: email || null, status, gruppe: gruppe || null, initials });
@@ -475,66 +448,27 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
       {expanded && (
         <div className="px-5 pb-5 border-t border-border/30 space-y-4 pt-4">
           {!editing && !pinMode && (
-            <div className="space-y-2">
-              <div className="flex flex-wrap gap-2">
-                <button onClick={() => { setEditing(true); setError(""); }}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b]/5 text-[#1a3a6b] border border-[#1a3a6b]/20 rounded-xl text-xs font-bold hover:bg-[#1a3a6b]/10 transition-colors">
-                  <Pencil className="w-3.5 h-3.5" /> Bearbeiten
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => { setEditing(true); setError(""); }}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b]/5 text-[#1a3a6b] border border-[#1a3a6b]/20 rounded-xl text-xs font-bold hover:bg-[#1a3a6b]/10 transition-colors">
+                <Pencil className="w-3.5 h-3.5" /> Bearbeiten
+              </button>
+              <button onClick={() => { setPinMode(true); setError(""); }}
+                className="flex items-center gap-1.5 px-3 py-2 bg-purple-50 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold hover:bg-purple-100 transition-colors">
+                <KeyRound className="w-3.5 h-3.5" /> PIN {emp.hasPin ? "ändern" : "setzen"}
+              </button>
+              {!confirmDelete ? (
+                <button onClick={() => setConfirmDelete(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" /> Löschen
                 </button>
-                <button onClick={() => { setPinMode(true); setError(""); }}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-purple-50 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold hover:bg-purple-100 transition-colors">
-                  <KeyRound className="w-3.5 h-3.5" /> PIN {emp.hasPin ? "ändern" : "setzen"}
-                </button>
-                {emp.email && (
-                  <>
-                    <button
-                      onClick={() => handleSendInvite("invite")}
-                      disabled={inviteStatus === "sending"}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-green-50 text-green-700 border border-green-200 rounded-xl text-xs font-bold hover:bg-green-100 transition-colors disabled:opacity-50"
-                    >
-                      {inviteStatus === "sending" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
-                      Einladen
-                    </button>
-                    <button
-                      onClick={() => handleSendInvite("reset")}
-                      disabled={inviteStatus === "sending"}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-xs font-bold hover:bg-amber-100 transition-colors disabled:opacity-50"
-                    >
-                      {inviteStatus === "sending" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RotateCcw className="w-3.5 h-3.5" />}
-                      Passwort zurücksetzen
-                    </button>
-                  </>
-                )}
-                {!confirmDelete ? (
-                  <button onClick={() => setConfirmDelete(true)}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">
-                    <Trash2 className="w-3.5 h-3.5" /> Löschen
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-                    <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
-                    <span className="text-xs text-red-700 font-medium">Unwiderruflich löschen?</span>
-                    <button onClick={handleDelete} className="px-2 py-1 bg-red-600 text-white rounded-lg text-xs font-bold">Ja</button>
-                    <button onClick={() => setConfirmDelete(false)} className="px-2 py-1 bg-white border border-border/60 rounded-lg text-xs font-semibold text-muted-foreground">Nein</button>
-                  </div>
-                )}
-              </div>
-              {inviteStatus === "success" && (
-                <div className="flex items-start gap-2 p-2.5 bg-green-50 border border-green-200 rounded-xl text-xs text-green-700">
-                  <CheckCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                  <span className="break-all">{inviteMessage}</span>
+              ) : (
+                <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                  <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                  <span className="text-xs text-red-700 font-medium">Unwiderruflich löschen?</span>
+                  <button onClick={handleDelete} className="px-2 py-1 bg-red-600 text-white rounded-lg text-xs font-bold">Ja</button>
+                  <button onClick={() => setConfirmDelete(false)} className="px-2 py-1 bg-white border border-border/60 rounded-lg text-xs font-semibold text-muted-foreground">Nein</button>
                 </div>
-              )}
-              {inviteStatus === "error" && (
-                <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700">
-                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                  {inviteMessage}
-                </div>
-              )}
-              {!emp.email && (
-                <p className="text-xs text-muted-foreground/70 italic">
-                  Keine E-Mail-Adresse — Einladung nicht möglich. Bitte zuerst E-Mail hinterlegen.
-                </p>
               )}
             </div>
           )}
