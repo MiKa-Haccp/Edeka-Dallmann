@@ -125,13 +125,14 @@ router.post("/admin/email-settings/test", async (req, res) => {
   const fromName = marketConfig?.fromName || global.fromName || "EDEKA Dallmann HACCP";
   const label = marketId ? `Markt ${MARKETS[marketId]?.name || marketId}` : "Global";
   try {
+    const testRecipient = "kai.martin@edeka-dallmann.de";
     await transporter.sendMail({
       from: `"${fromName}" <${fromUser}>`,
-      to: adminEmail,
+      to: testRecipient,
       subject: `HACCP System – Test-E-Mail (${label})`,
       html: `<div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;"><div style="background:#1a3a6b;color:white;padding:20px 24px;border-radius:8px 8px 0 0;"><h2 style="margin:0;">EDEKA Dallmann – HACCP System</h2><p style="margin:4px 0 0;opacity:0.8;font-size:13px;">Test-E-Mail · ${label}</p></div><div style="background:#f8f9fa;padding:20px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;"><p style="color:#374151;">Die E-Mail-Konfiguration für <strong>${label}</strong> ist erfolgreich.</p><p style="color:#6b7280;font-size:13px;">Absender: ${fromUser}</p></div></div>`,
     });
-    res.json({ success: true, message: `Test-E-Mail von ${fromUser} an ${adminEmail} gesendet.` });
+    res.json({ success: true, message: `Test-E-Mail von ${fromUser} an ${testRecipient} gesendet.` });
   } catch (err: any) {
     res.status(500).json({ error: `SMTP-Fehler: ${err.message}` });
   }
