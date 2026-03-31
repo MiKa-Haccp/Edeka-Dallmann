@@ -242,25 +242,34 @@ async function shouldTrigger(rule: any, marketId: number): Promise<{ triggered: 
 async function getSmtpTransporter() {
   const r = await pool.query(`SELECT * FROM email_settings LIMIT 1`);
   const cfg = r.rows[0];
-  if (!cfg?.smtp_user || !cfg?.smtp_pass) return null;
+  const user = cfg?.smtp_user || process.env.SMTP_USER;
+  const pass = cfg?.smtp_pass || process.env.SMTP_PASS;
+  if (!user || !pass) return null;
   return nodemailer.createTransport({
-    host: cfg.smtp_host || "smtp.gmail.com",
-    port: cfg.smtp_port || 587,
-    secure: (cfg.smtp_port || 587) === 465,
-    auth: { user: cfg.smtp_user, pass: cfg.smtp_pass },
+    host: cfg?.smtp_host || process.env.SMTP_HOST || "smtp.ionos.de",
+    port: Number(cfg?.smtp_port || process.env.SMTP_PORT || 587),
+    secure: Number(cfg?.smtp_port || process.env.SMTP_PORT || 587) === 465,
+    auth: { user, pass },
   });
+}
+
+async function getSmtpFromAddress(): Promise<string> {
+  const r = await pool.query(`SELECT smtp_user, from_name FROM email_settings LIMIT 1`);
+  const cfg = r.rows[0];
+  const user = cfg?.smtp_user || process.env.SMTP_USER || "";
+  const name = cfg?.from_name || "EDEKA Dallmann HACCP";
+  return `"${name}" <${user}>`;
 }
 
 async function sendEmail(to: string, subject: string, body: string): Promise<boolean> {
   try {
     const transporter = await getSmtpTransporter();
-    if (!transporter) return false;
-    await transporter.sendMail({
-      from: `"EDEKA Dallmann HACCP" <${(await pool.query(`SELECT smtp_user FROM email_settings LIMIT 1`)).rows[0]?.smtp_user}>`,
-      to,
-      subject,
-      html: body,
-    });
+    if (!transporter) {
+      console.error("[Notifications] Kein SMTP-Transporter – Zugangsdaten fehlen.");
+      return false;
+    }
+    const from = await getSmtpFromAddress();
+    await transporter.sendMail({ from, to, subject, html: body });
     return true;
   } catch (e) {
     console.error("[Notifications] Email-Fehler:", e);
@@ -394,7 +403,7 @@ export async function runNotificationCheck(): Promise<{ checked: number; sent: n
         if (channel === "off") continue;
 
         const alreadySent = await pool.query(
-          `SELECT id FROM notification_log WHERE rule_id = $1 AND user_id = $2 AND market_id = $3 AND sent_at > NOW() - INTERVAL '20 hours'`,
+          `SELECT id FROM notification_log WHERE rule_id = $1 AND user_id = $2 AND market_id = $3 AND status = 'sent' AND sent_at > NOW() - INTERVAL '20 hours'`,
           [rule.id, userId, marketId]
         );
         if (alreadySent.rows.length > 0) continue;

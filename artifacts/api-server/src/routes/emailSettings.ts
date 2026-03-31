@@ -32,13 +32,15 @@ async function getMarketConfig(marketId: number) {
 }
 
 async function buildTransporter(global: typeof emailSettingsTable.$inferSelect, marketConfig?: typeof marketEmailConfigsTable.$inferSelect | null) {
-  const user = marketConfig?.smtpUser || global.smtpUser;
-  const pass = marketConfig?.smtpPass || global.smtpPass;
+  const user = marketConfig?.smtpUser || global.smtpUser || process.env.SMTP_USER;
+  const pass = marketConfig?.smtpPass || global.smtpPass || process.env.SMTP_PASS;
   if (!user || !pass) return null;
+  const host = global.smtpHost || process.env.SMTP_HOST || "smtp.ionos.de";
+  const port = global.smtpPort || Number(process.env.SMTP_PORT) || 587;
   return nodemailer.createTransport({
-    host: global.smtpHost,
-    port: global.smtpPort,
-    secure: global.smtpPort === 465,
+    host,
+    port,
+    secure: port === 465,
     auth: { user, pass },
   });
 }
