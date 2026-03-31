@@ -11,20 +11,36 @@ function hashPassword(password: string): string {
   return `${salt}:${hash}`;
 }
 
-async function getGlobalSmtpTransporter() {
-  const r = await pool.query(`SELECT * FROM email_settings LIMIT 1`);
-  const cfg = r.rows[0];
-  const user = cfg?.smtp_user || process.env.SMTP_USER;
-  const pass = cfg?.smtp_pass || process.env.SMTP_PASS;
-  const host = cfg?.smtp_host || process.env.SMTP_HOST || "smtp.ionos.de";
-  const port = Number(cfg?.smtp_port || process.env.SMTP_PORT || 587);
-  if (!user || !pass) return { transporter: null, fromUser: user || "", fromName: cfg?.from_name || "EDEKA Dallmann HACCP" };
-  const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
-  return { transporter, fromUser: user, fromName: cfg?.from_name || "EDEKA Dallmann HACCP" };
+async function getSmtpTransporter() {
+  // 1. Globale email_settings versuchen
+  const globalR = await pool.query(`SELECT * FROM email_settings LIMIT 1`);
+  const cfg = globalR.rows[0];
+  const globalUser = cfg?.smtp_user || process.env.SMTP_USER;
+  const globalPass = cfg?.smtp_pass || process.env.SMTP_PASS;
+  if (globalUser && globalPass) {
+    const host = cfg?.smtp_host || process.env.SMTP_HOST || "smtp.ionos.de";
+    const port = Number(cfg?.smtp_port || process.env.SMTP_PORT || 587);
+    const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user: globalUser, pass: globalPass } });
+    return { transporter, fromUser: globalUser, fromName: cfg?.from_name || "EDEKA Dallmann HACCP" };
+  }
+
+  // 2. Fallback: erste verfügbare Markt-SMTP-Konfiguration (bevorzugt market_id=1, markt@edeka-dallmann.de)
+  const marketR = await pool.query(
+    `SELECT * FROM market_email_configs WHERE smtp_user IS NOT NULL AND smtp_pass IS NOT NULL ORDER BY market_id ASC LIMIT 1`
+  );
+  const mCfg = marketR.rows[0];
+  if (mCfg?.smtp_user && mCfg?.smtp_pass) {
+    const host = mCfg.smtp_host || "smtp.ionos.de";
+    const port = Number(mCfg.smtp_port || 587);
+    const transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user: mCfg.smtp_user, pass: mCfg.smtp_pass } });
+    return { transporter, fromUser: mCfg.smtp_user, fromName: "EDEKA Dallmann HACCP" };
+  }
+
+  return { transporter: null, fromUser: "", fromName: "EDEKA Dallmann HACCP" };
 }
 
 async function sendAuthEmail(toEmail: string, toName: string, setPasswordUrl: string, type: "invite" | "reset") {
-  const { transporter, fromUser, fromName } = await getGlobalSmtpTransporter();
+  const { transporter, fromUser, fromName } = await getSmtpTransporter();
   if (!transporter) {
     console.error("[Auth] Kein SMTP-Transporter für Auth-E-Mail.");
     return false;
