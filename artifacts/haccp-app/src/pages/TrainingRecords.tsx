@@ -1031,32 +1031,32 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
   return (
     <Wrap>
       <div className="max-w-5xl mx-auto space-y-5">
-        <div className="bg-white rounded-xl border border-border p-5 sm:p-6">
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-primary/10 rounded-xl shrink-0">
-                <GraduationCap className="w-6 h-6 text-primary" />
+              <div className="p-2.5 bg-white/15 rounded-xl shrink-0">
+                <GraduationCap className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-foreground">1.4 Schulungsnachweise</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">Schulungsprotokolle und Teilnehmerbestätigung</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-white">1.4 Schulungsnachweise</h1>
+                <p className="text-sm text-white/70 mt-0.5">Schulungsprotokolle und Teilnehmerbestätigung</p>
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={() => setDate(selectedYear - 1, selectedMonth)}
-                className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                className="p-1.5 rounded-lg hover:bg-white/15 text-white/75 hover:text-white transition-colors"
                 title="Vorjahr"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-sm font-bold min-w-[4.5rem] justify-center">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 text-white text-sm font-bold min-w-[4.5rem] justify-center">
                 <Calendar className="w-3.5 h-3.5" />
                 {selectedYear}
               </span>
               <button
                 onClick={() => setDate(selectedYear + 1, selectedMonth)}
-                className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                className="p-1.5 rounded-lg hover:bg-white/15 text-white/75 hover:text-white transition-colors"
                 title="Nächstes Jahr"
               >
                 <ChevronRight className="w-5 h-5" />
