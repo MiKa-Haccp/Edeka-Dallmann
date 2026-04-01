@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 export const tenantsTable = pgTable("tenants", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  masterPassword: text("master_password"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

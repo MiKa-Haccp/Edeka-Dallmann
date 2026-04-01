@@ -1,12 +1,9 @@
 import { Router, type IRouter } from "express";
-import { db, registeredDevicesTable } from "@workspace/db";
+import { db, registeredDevicesTable, tenantsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { randomBytes } from "crypto";
 
 const router: IRouter = Router();
-
-const DEVICE_MASTER_PASSWORD =
-  process.env.DEVICE_MASTER_PASSWORD || "Dallmann2025!";
 
 router.post("/device/register", async (req, res) => {
   const { password, name } = req.body as { password?: string; name?: string };
@@ -16,7 +13,14 @@ router.post("/device/register", async (req, res) => {
     return;
   }
 
-  if (password !== DEVICE_MASTER_PASSWORD) {
+  const [tenant] = await db
+    .select()
+    .from(tenantsTable)
+    .where(eq(tenantsTable.id, 1));
+
+  const validPassword = tenant?.masterPassword ?? process.env.DEVICE_MASTER_PASSWORD ?? "Dallmann2025!";
+
+  if (password !== validPassword) {
     res.status(401).json({ authorized: false, error: "Falsches Master-Passwort." });
     return;
   }
