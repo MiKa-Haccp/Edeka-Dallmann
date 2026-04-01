@@ -1,8 +1,10 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { ExternalLink, Globe, KeyRound, User, Copy, Check } from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { ExternalLink, Globe, KeyRound, User, Copy, Check, ChevronLeft } from "lucide-react";
 import { useState } from "react";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
+import { Link } from "wouter";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -66,18 +68,22 @@ export default function CarrierPortal() {
       <div className="max-w-2xl mx-auto space-y-8 pb-10">
 
         {/* HEADER */}
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-[#1a3a6b]/10">
-            <Globe className="w-6 h-6 text-[#1a3a6b]" />
+        <PageHeader>
+          <div className="flex items-center gap-3">
+            <Link href="/haccp" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="w-5 h-5" />
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <Globe className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold leading-tight">2.4 Zugangsdaten {config.name}</h1>
+              <p className="text-white/70 text-sm">
+                Online-Serviceportal für Kühlsysteme{market ? ` — ${market.name}` : ""}
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">2.4 Zugangsdaten {config.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              Online-Serviceportal für Kühlsysteme
-              {market ? ` — ${market.name}` : ""}
-            </p>
-          </div>
-        </div>
+        </PageHeader>
 
         {/* PORTAL-LINK */}
         <div className="bg-white rounded-xl border border-border/60 p-6 space-y-3">
