@@ -253,7 +253,7 @@ export default function Responsibilities() {
         {/* Document Header */}
         <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
           {/* Title Bar - blue like the original */}
-          <div className="bg-[#1a3a6b] text-white px-6 py-3 flex items-center justify-between">
+          <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white px-6 py-3 flex items-center justify-between">
             <h1 className="text-lg font-bold">1.1 Verantwortlichkeiten im Markt</h1>
             <div className="flex items-center gap-2">
               {!isEditing ? (
@@ -397,7 +397,7 @@ export default function Responsibilities() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-[#1a3a6b] text-white">
+                <tr className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white">
                   <th className="text-left px-4 py-3 text-sm font-semibold w-[250px]">Bereich / Abteilung</th>
                   <th className="text-center px-2 py-3 text-xs font-medium w-[30px]"></th>
                   <th className="text-left px-4 py-3 text-sm font-semibold">
