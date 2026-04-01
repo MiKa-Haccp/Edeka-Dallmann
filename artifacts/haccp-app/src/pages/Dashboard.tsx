@@ -142,6 +142,9 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {MODULES.filter((mod) => {
+              // Module ohne Rollenbeschränkung sind für alle sichtbar
+              if (!mod.requiredRoles && !mod.requiredPermission) return true;
+              // Eingeschränkte Module nur für eingeloggte Admins
               if (!adminSession) return false;
               // Prüfe requiredPermission zuerst (aus role_permission_defaults)
               if (mod.requiredPermission) {
