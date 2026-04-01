@@ -156,13 +156,18 @@ export default function MHDKontrolle() {
       <div className="max-w-3xl mx-auto space-y-5">
 
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Link href="/ware" className="p-2 rounded-xl hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
-            <ChevronLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">MHD Kontrolle</h1>
-            <p className="text-sm text-muted-foreground">Mindesthaltbarkeitsdatum Ueberwachung</p>
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+          <div className="flex items-center gap-3">
+            <Link href="/ware" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="w-5 h-5" />
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <Tag className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">MHD Kontrolle</h1>
+              <p className="text-sm text-white/75">Mindesthaltbarkeitsdatum Ueberwachung</p>
+            </div>
           </div>
         </div>
 

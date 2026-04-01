@@ -413,16 +413,18 @@ export default function AntiVektorZugang() {
       <div className="max-w-3xl mx-auto space-y-4 pb-10">
 
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors shrink-0">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-          <div className="w-10 h-10 bg-[#1a3a6b]/10 rounded-2xl flex items-center justify-center shrink-0">
-            <Shield className="w-5 h-5 text-[#1a3a6b]" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">1.10 Anti-Vektor Zugang</h1>
-            <p className="text-xs text-muted-foreground">Schädlingsbekämpfung — Zugangsdaten & Sachkundenachweise</p>
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2 shrink-0">
+              <Shield className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-white">1.10 Anti-Vektor Zugang</h1>
+              <p className="text-sm text-white/75">Schädlingsbekämpfung — Zugangsdaten & Sachkundenachweise</p>
+            </div>
           </div>
         </div>
 

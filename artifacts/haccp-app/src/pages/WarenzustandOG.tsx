@@ -439,26 +439,28 @@ export default function WarenzustandOG() {
       <div className="max-w-6xl mx-auto space-y-4 pb-10">
 
         {/* HEADER */}
-        <div className="bg-white rounded-2xl border border-border p-5 shadow-sm">
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-green-100 rounded-2xl flex items-center justify-center shrink-0">
-                <Salad className="w-6 h-6 text-green-700" />
+              <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                <Salad className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">2.2 Warenzustand Obst & Gemüse</h1>
-                <p className="text-xs text-muted-foreground mt-0.5">EDEKA Formblatt 3.7 &mdash; Kontrolle je Zeitfenster</p>
+                <h1 className="text-xl font-bold text-white">2.2 Warenzustand Obst & Gemüse</h1>
+                <p className="text-sm text-white/75">EDEKA Formblatt 3.7 &mdash; Kontrolle je Zeitfenster</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors">
+              <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white text-sm font-medium transition-colors">
                 <Printer className="w-4 h-4" /> Drucken
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Monats-Navigation + Tagesfortschritt */}
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/60">
+        {/* Monats-Navigation + Tagesfortschritt */}
+        <div className="bg-card border border-border/60 rounded-2xl px-5 py-4">
+          <div className="flex items-center justify-between">
             <button onClick={prevMonth} className="p-2 rounded-xl hover:bg-muted transition-colors">
               <ChevronLeft className="w-5 h-5" />
             </button>

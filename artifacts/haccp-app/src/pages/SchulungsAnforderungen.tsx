@@ -672,13 +672,18 @@ export default function SchulungsAnforderungen() {
     <AppLayout>
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
 
-        <div className="flex items-center gap-3">
-          <Link href="/verwaltung" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-foreground">Schulungsanforderungen</h1>
-            <p className="text-sm text-muted-foreground">Schulungen, Bescheinigungen und Compliance-Status verwalten.</p>
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+          <div className="flex items-center gap-3">
+            <Link href="/verwaltung" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <GraduationCap className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-xl font-bold text-white">Schulungsanforderungen</h1>
+              <p className="text-sm text-white/75">Schulungen, Bescheinigungen und Compliance-Status verwalten.</p>
+            </div>
           </div>
         </div>
 

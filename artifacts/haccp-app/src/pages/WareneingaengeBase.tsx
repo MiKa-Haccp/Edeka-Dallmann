@@ -1073,28 +1073,30 @@ function WareneingaengeContent() {
   return(
     <AppLayout>
       <div className="space-y-4 pb-10">
-        <div className="flex items-start justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors shrink-0">
-              <ChevronLeft className="w-5 h-5"/>
-            </Link>
-            <div className="p-2.5 rounded-xl bg-[#1a3a6b]/10 shrink-0"><ClipboardList className="w-6 h-6 text-[#1a3a6b]"/></div>
-            <div>
-              <h1 className="text-xl font-bold">{pageTitle}</h1>
-              <p className="text-sm text-muted-foreground">{pageSubtitle}</p>
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+                <ChevronLeft className="w-5 h-5"/>
+              </Link>
+              <div className="bg-white/15 rounded-xl p-2.5 shrink-0"><ClipboardList className="w-6 h-6 text-white"/></div>
+              <div>
+                <h1 className="text-xl font-bold text-white">{pageTitle}</h1>
+                <p className="text-sm text-white/75">{pageSubtitle}</p>
+              </div>
             </div>
+            {viewMode==="month"&&activeTypeId!=="admin"&&activeType&&(
+              <div className="flex items-center gap-2 flex-wrap">
+                <button onClick={prevMonth} className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors"><ChevronLeft className="w-4 h-4"/></button>
+                <span className="text-sm font-semibold min-w-[100px] text-center text-white">{new Date(year,month-1).toLocaleDateString("de-DE",{month:"long"})} {year}</span>
+                <button onClick={nextMonth} className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors"><ChevronRight className="w-4 h-4"/></button>
+                <button onClick={()=>generatePrintWindow(activeType,entries,year,month,selectedMarketId!,holidays,allCrit)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-white/15 text-white/75 hover:text-white text-xs font-medium transition-colors">
+                  <Printer className="w-3.5 h-3.5"/> PDF / Drucken
+                </button>
+              </div>
+            )}
           </div>
-          {viewMode==="month"&&activeTypeId!=="admin"&&activeType&&(
-            <div className="flex items-center gap-2 flex-wrap">
-              <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-muted"><ChevronLeft className="w-4 h-4"/></button>
-              <span className="text-sm font-semibold min-w-[100px] text-center">{new Date(year,month-1).toLocaleDateString("de-DE",{month:"long"})} {year}</span>
-              <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-muted"><ChevronRight className="w-4 h-4"/></button>
-              <button onClick={()=>generatePrintWindow(activeType,entries,year,month,selectedMarketId!,holidays,allCrit)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-muted">
-                <Printer className="w-3.5 h-3.5"/> PDF / Drucken
-              </button>
-            </div>
-          )}
         </div>
 
         {loadingTypes?(

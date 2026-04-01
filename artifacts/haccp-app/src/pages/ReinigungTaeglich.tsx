@@ -452,22 +452,24 @@ export default function ReinigungTaeglich() {
       <div className="max-w-7xl mx-auto space-y-4 pb-10">
 
         {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 print:hidden">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-[#1a3a6b]/10">
-              <ClipboardCheck className="w-6 h-6 text-[#1a3a6b]" />
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg print:hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                <ClipboardCheck className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-white">2.3 Reinigungsdokumentation</h1>
+                <p className="text-sm text-white/75">{selectedMarketName || "Kein Markt"} &mdash; tägliche Kontrolle</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">2.3 Reinigungsdokumentation</h1>
-              <p className="text-sm text-muted-foreground">{selectedMarketName || "Kein Markt"} &mdash; tägliche Kontrolle</p>
-            </div>
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/15 text-white/75 hover:text-white text-sm transition-colors"
+            >
+              <Printer className="w-4 h-4" /> Drucken
+            </button>
           </div>
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm text-muted-foreground hover:bg-secondary transition-colors"
-          >
-            <Printer className="w-4 h-4" /> Drucken
-          </button>
         </div>
 
         {/* MONATSNAVIGATION + Tages-Badge */}

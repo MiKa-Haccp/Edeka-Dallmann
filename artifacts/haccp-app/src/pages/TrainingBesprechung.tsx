@@ -13,11 +13,16 @@ export default function TrainingBesprechung() {
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto mb-4">
-        <div className="flex items-center gap-3 mb-4">
-          <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors shrink-0">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-          <h1 className="text-lg font-bold text-foreground">1.4 Schulung & Besprechungsprotokoll</h1>
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg mb-4">
+          <div className="flex items-center gap-3">
+            <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <GraduationCap className="w-5 h-5 text-white" />
+            </div>
+            <h1 className="text-xl font-bold text-white">1.4 Schulung & Besprechungsprotokoll</h1>
+          </div>
         </div>
       </div>
       {/* Tab-Leiste */}

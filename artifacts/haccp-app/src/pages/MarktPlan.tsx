@@ -770,18 +770,23 @@ export default function MarktPlan() {
       <div className="space-y-3">
 
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Link href="/mhd-kontrolle" className="p-2 rounded-xl hover:bg-secondary text-muted-foreground">
-            <ChevronLeft className="w-5 h-5" />
-          </Link>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">Interaktiver Marktplan</h1>
-            <p className="text-sm text-muted-foreground">MHD-Kontroll-Regalmeter · EDEKA DALLMANN Leeder</p>
-          </div>
-          <div className="hidden sm:flex items-center gap-3 text-xs font-bold">
-            {counts.faellig > 0 && <span className="flex items-center gap-1 text-red-700"><span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"/>{counts.faellig} Ueberfaellig</span>}
-            {counts.bald    > 0 && <span className="flex items-center gap-1 text-amber-700"><span className="w-2 h-2 rounded-full bg-amber-400"/>{counts.bald} Bald</span>}
-            {counts.ok      > 0 && <span className="flex items-center gap-1 text-green-700"><span className="w-2 h-2 rounded-full bg-green-500"/>{counts.ok} OK</span>}
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+          <div className="flex items-center gap-3">
+            <Link href="/mhd-kontrolle" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="w-5 h-5" />
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <MapPin className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-xl font-bold text-white">Interaktiver Marktplan</h1>
+              <p className="text-sm text-white/75">MHD-Kontroll-Regalmeter · EDEKA DALLMANN</p>
+            </div>
+            <div className="hidden sm:flex items-center gap-3 text-xs font-bold">
+              {counts.faellig > 0 && <span className="flex items-center gap-1 text-white/90"><span className="w-2 h-2 rounded-full bg-red-400 animate-pulse"/>{counts.faellig} Überfällig</span>}
+              {counts.bald    > 0 && <span className="flex items-center gap-1 text-white/80"><span className="w-2 h-2 rounded-full bg-amber-300"/>{counts.bald} Bald</span>}
+              {counts.ok      > 0 && <span className="flex items-center gap-1 text-white/80"><span className="w-2 h-2 rounded-full bg-green-400"/>{counts.ok} OK</span>}
+            </div>
           </div>
         </div>
 

@@ -380,17 +380,22 @@ export default function MetzgereiReinigung() {
       <div className="max-w-5xl mx-auto space-y-4 print:max-w-none print:space-y-2">
 
         {/* ── Header ───────────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-3 print:hidden">
-          <Link href="/metzgerei-wareneingaenge" className="p-2 rounded-xl hover:bg-secondary text-muted-foreground">
-            <ChevronLeft className="w-5 h-5"/>
-          </Link>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold">Reinigungsplan Metzgerei</h1>
-            <p className="text-sm text-muted-foreground">Formblatt 3.6-1 · EDEKA DALLMANN</p>
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg print:hidden">
+          <div className="flex items-center gap-3">
+            <Link href="/metzgerei-wareneingaenge" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="w-5 h-5"/>
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <ListChecks className="w-5 h-5 text-white"/>
+            </div>
+            <div className="flex-1">
+              <h1 className="text-xl font-bold text-white">Reinigungsplan Metzgerei</h1>
+              <p className="text-sm text-white/75">Formblatt 3.6-1 · EDEKA DALLMANN</p>
+            </div>
+            <button onClick={()=>window.print()} className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors">
+              <Printer className="w-5 h-5"/>
+            </button>
           </div>
-          <button onClick={()=>window.print()} className="p-2 rounded-xl hover:bg-secondary text-muted-foreground">
-            <Printer className="w-5 h-5"/>
-          </button>
         </div>
 
         {/* ── Tabs ─────────────────────────────────────────────────────────── */}

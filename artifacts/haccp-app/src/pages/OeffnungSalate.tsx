@@ -410,27 +410,29 @@ export default function OeffnungSalate() {
       <div className="max-w-5xl mx-auto space-y-4 pb-10">
 
         {/* HEADER */}
-        <div className="bg-white rounded-2xl border border-border p-5 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-amber-100 rounded-2xl flex items-center justify-center shrink-0">
-                <Package className="w-6 h-6 text-amber-700"/>
+              <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                <Package className="w-6 h-6 text-white"/>
               </div>
               <div>
-                <h1 className="text-xl font-bold">3.3 Oeffnung Salate &amp; Eigenherstellung</h1>
-                <p className="text-xs text-muted-foreground mt-0.5">EDEKA Formblatt 3.18</p>
+                <h1 className="text-xl font-bold text-white">3.3 Öffnung Salate &amp; Eigenherstellung</h1>
+                <p className="text-sm text-white/75">EDEKA Formblatt 3.18</p>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <SalateAmpel entries={entries}/>
-              <button onClick={()=>window.print()} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors">
+              <button onClick={()=>window.print()} className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white text-sm font-medium transition-colors">
                 <Printer className="w-4 h-4"/> Drucken
               </button>
             </div>
           </div>
+        </div>
 
-          {/* Monats-Navigation */}
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/60">
+        {/* Monats-Navigation */}
+        <div className="bg-card border border-border/60 rounded-2xl px-5 py-4">
+          <div className="flex items-center justify-between">
             <button onClick={prevMonth} className="p-2 rounded-xl hover:bg-muted transition-colors">
               <ChevronLeft className="w-5 h-5"/>
             </button>

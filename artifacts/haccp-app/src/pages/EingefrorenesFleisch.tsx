@@ -398,21 +398,23 @@ export default function EingefrorenesFleisch() {
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-5">
         {/* Header */}
-        <div className="flex items-start gap-3">
-          <button onClick={()=>navigate("/semmelliste")}
-            className="mt-1 p-2 rounded-lg border hover:bg-secondary transition-colors shrink-0" title="Zurueck">
-            <ArrowLeft className="w-4 h-4"/>
-          </button>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-0.5">
-              <Snowflake className="w-5 h-5 text-primary"/>
-              <h1 className="text-xl font-bold">3.6 Eingefrorenes Fleisch</h1>
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+          <div className="flex items-center gap-3">
+            <button onClick={()=>navigate("/semmelliste")}
+              className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0" title="Zurueck">
+              <ArrowLeft className="w-4 h-4"/>
+            </button>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <Snowflake className="w-5 h-5 text-white"/>
             </div>
-            <p className="text-xs text-muted-foreground">Bestandsliste eingefrorenes Fleisch – Formblatt 9.3</p>
+            <div className="flex-1">
+              <h1 className="text-xl font-bold text-white">3.6 Eingefrorenes Fleisch</h1>
+              <p className="text-sm text-white/75">Bestandsliste eingefrorenes Fleisch – Formblatt 9.3</p>
+            </div>
+            <button onClick={()=>window.print()} className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <Printer className="w-4 h-4"/><span className="hidden sm:inline">Drucken</span>
+            </button>
           </div>
-          <button onClick={()=>window.print()} className="mt-1 flex items-center gap-1.5 text-sm border rounded-lg px-3 py-2 hover:bg-secondary shrink-0">
-            <Printer className="w-4 h-4"/><span className="hidden sm:inline">Drucken</span>
-          </button>
         </div>
 
         {/* Jahresnavigation + Header */}

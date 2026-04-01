@@ -269,11 +269,13 @@ export default function AbteilungsfremdePersonen() {
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/10 rounded-xl p-2.5"><Users className="h-6 w-6 text-primary" /></div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">3.9 Abteilungsfremde Personen</h1>
-            <p className="text-sm text-gray-500">{market?.name ?? "Kein Markt gewählt"}</p>
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0"><Users className="h-6 w-6 text-white" /></div>
+            <div>
+              <h1 className="text-xl font-bold text-white">3.9 Abteilungsfremde Personen</h1>
+              <p className="text-sm text-white/75">{market?.name ?? "Kein Markt gewählt"}</p>
+            </div>
           </div>
         </div>
 

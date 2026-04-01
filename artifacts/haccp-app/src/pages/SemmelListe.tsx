@@ -362,28 +362,30 @@ export default function SemmelListe() {
       <div className="max-w-3xl mx-auto flex flex-col" style={{ height: "calc(100vh - 5rem)" }}>
 
         {/* Seitenheader */}
-        <div className="flex items-start gap-3 mb-3 shrink-0">
-          <button onClick={() => navigate("/kaesetheke-kontrolle")}
-            className="mt-1 p-2 rounded-lg border hover:bg-secondary transition-colors shrink-0">
-            <ArrowLeft className="w-4 h-4" />
-          </button>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-0.5">
-              <ShoppingBag className="w-5 h-5 text-primary" />
-              <h1 className="text-xl font-bold">3.5 Semmelliste</h1>
-            </div>
-            <p className="text-xs text-muted-foreground">Zusätzliches Kontingent Bäckerei – on top zum Standard</p>
-          </div>
-          <div className="flex gap-2 mt-1 shrink-0">
-            {adminSession && (
-              <button onClick={() => setKontingentModal(true)}
-                className="flex items-center gap-1.5 text-sm border rounded-lg px-3 py-2 hover:bg-secondary" title="Standardkontingent bearbeiten">
-                <Settings2 className="w-4 h-4" /><span className="hidden sm:inline">Kontingent</span>
-              </button>
-            )}
-            <button onClick={() => window.print()} className="flex items-center gap-1.5 text-sm border rounded-lg px-3 py-2 hover:bg-secondary">
-              <Printer className="w-4 h-4" /><span className="hidden sm:inline">Drucken</span>
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg mb-3 shrink-0">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate("/kaesetheke-kontrolle")}
+              className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ArrowLeft className="w-4 h-4" />
             </button>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <ShoppingBag className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h1 className="text-xl font-bold text-white">3.5 Semmelliste</h1>
+              <p className="text-sm text-white/75">Zusätzliches Kontingent Bäckerei – on top zum Standard</p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              {adminSession && (
+                <button onClick={() => setKontingentModal(true)}
+                  className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors" title="Standardkontingent bearbeiten">
+                  <Settings2 className="w-4 h-4" /><span className="hidden sm:inline">Kontingent</span>
+                </button>
+              )}
+              <button onClick={() => window.print()} className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors">
+                <Printer className="w-4 h-4" /><span className="hidden sm:inline">Drucken</span>
+              </button>
+            </div>
           </div>
         </div>
 
