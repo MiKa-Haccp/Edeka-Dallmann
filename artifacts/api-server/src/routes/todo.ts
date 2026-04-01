@@ -173,15 +173,15 @@ router.get("/todo/till-assignments", async (req, res) => {
 });
 
 router.put("/todo/till-assignments", async (req, res) => {
-  const { marketId, date, shift, tillNumber, userId, userName, notes } = req.body;
+  const { marketId, date, shift, tillNumber, userId, userName, notes, uhrzeit } = req.body;
   if (!marketId || !date || !shift || !tillNumber) return res.status(400).json({ error: "marketId, date, shift, tillNumber required" });
   const { rows } = await pool.query(
-    `INSERT INTO till_assignments (market_id, assignment_date, shift, till_number, user_id, user_name, notes)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)
+    `INSERT INTO till_assignments (market_id, assignment_date, shift, till_number, user_id, user_name, notes, uhrzeit)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
      ON CONFLICT (market_id, assignment_date, shift, till_number)
-     DO UPDATE SET user_id=$5, user_name=$6, notes=$7, updated_at=NOW()
+     DO UPDATE SET user_id=$5, user_name=$6, notes=$7, uhrzeit=$8, updated_at=NOW()
      RETURNING *`,
-    [marketId, date, shift, tillNumber, userId || null, userName || null, notes || null]
+    [marketId, date, shift, tillNumber, userId || null, userName || null, notes || null, uhrzeit || null]
   );
   res.json(rows[0]);
 });
