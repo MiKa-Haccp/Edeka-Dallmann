@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { useGetMarketInfo } from "@workspace/api-client-react";
 import {
@@ -335,7 +336,7 @@ export default function Probeentnahme() {
       <div className="max-w-3xl mx-auto space-y-4 pb-10">
 
         {/* Header */}
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
@@ -352,7 +353,7 @@ export default function Probeentnahme() {
               </button>
             )}
           </div>
-        </div>
+        </PageHeader>
 
         {/* LIST VIEW — Gesamtprotokoll (3.22-3) */}
         {view === "list" && (

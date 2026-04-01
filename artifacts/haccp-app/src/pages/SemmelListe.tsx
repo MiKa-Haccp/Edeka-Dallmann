@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
@@ -362,7 +363,7 @@ export default function SemmelListe() {
       <div className="max-w-3xl mx-auto flex flex-col" style={{ height: "calc(100vh - 5rem)" }}>
 
         {/* Seitenheader */}
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg mb-3 shrink-0">
+        <PageHeader className="mb-3 shrink-0">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate("/kaesetheke-kontrolle")}
               className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
@@ -387,7 +388,7 @@ export default function SemmelListe() {
               </button>
             </div>
           </div>
-        </div>
+        </PageHeader>
 
         {/* Monatsnavigation */}
         <div className="flex items-center justify-between bg-card border rounded-xl px-4 py-3 mb-2 shrink-0">

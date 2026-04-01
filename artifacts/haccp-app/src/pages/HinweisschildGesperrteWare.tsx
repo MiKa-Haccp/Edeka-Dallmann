@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Printer, ChevronLeft } from "lucide-react";
 
 export default function HinweisschildGesperrteWare() {
@@ -42,7 +43,7 @@ export default function HinweisschildGesperrteWare() {
           </Link>
           <h1 className="text-lg font-bold text-foreground">Hinweisschild gesperrte Ware</h1>
         </div>
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 md:p-7 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
               <Printer className="w-5 h-5" />
@@ -53,7 +54,7 @@ export default function HinweisschildGesperrteWare() {
             </div>
           </div>
           <p className="text-blue-100 text-sm mt-3">Füllen Sie die Felder aus und drucken Sie das Schild mit einem Klick.</p>
-        </div>
+        </PageHeader>
 
         <div className="bg-white rounded-2xl border border-border/60 shadow-sm p-5">
           <h2 className="font-semibold text-sm text-foreground mb-4">Angaben für das Schild</h2>

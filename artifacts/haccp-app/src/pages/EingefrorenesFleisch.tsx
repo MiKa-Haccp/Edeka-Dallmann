@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
@@ -398,7 +399,7 @@ export default function EingefrorenesFleisch() {
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-5">
         {/* Header */}
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center gap-3">
             <button onClick={()=>navigate("/semmelliste")}
               className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0" title="Zurueck">
@@ -415,7 +416,7 @@ export default function EingefrorenesFleisch() {
               <Printer className="w-4 h-4"/><span className="hidden sm:inline">Drucken</span>
             </button>
           </div>
-        </div>
+        </PageHeader>
 
         {/* Jahresnavigation + Header */}
         <div className="flex items-center justify-between bg-card border rounded-xl px-4 py-3">

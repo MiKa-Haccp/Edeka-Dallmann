@@ -1,5 +1,6 @@
 import type { ReactNode, ElementType } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import BesprechungsprotokollPage from "./Besprechungsprotokoll";
 import {
@@ -1031,7 +1032,7 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
   return (
     <Wrap>
       <div className="max-w-5xl mx-auto space-y-5">
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-white/15 rounded-xl shrink-0">
@@ -1063,7 +1064,7 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
               </button>
             </div>
           </div>
-        </div>
+        </PageHeader>
 
         <div className="bg-white rounded-xl border border-border overflow-hidden">
           <div className="flex overflow-x-auto border-b border-border">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ChevronLeft, ChevronRight, Check, X, Lock, Loader2,
@@ -380,7 +381,7 @@ export default function MetzgereiReinigung() {
       <div className="max-w-5xl mx-auto space-y-4 print:max-w-none print:space-y-2">
 
         {/* ── Header ───────────────────────────────────────────────────────── */}
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg print:hidden">
+        <PageHeader className="print:hidden">
           <div className="flex items-center gap-3">
             <Link href="/metzgerei-wareneingaenge" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
               <ChevronLeft className="w-5 h-5"/>
@@ -396,7 +397,7 @@ export default function MetzgereiReinigung() {
               <Printer className="w-5 h-5"/>
             </button>
           </div>
-        </div>
+        </PageHeader>
 
         {/* ── Tabs ─────────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 gap-3 print:hidden">

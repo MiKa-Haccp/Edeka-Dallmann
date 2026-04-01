@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   AlertTriangle, ChevronLeft, ChevronRight, Save, Plus, Trash2,
@@ -362,7 +363,7 @@ export default function Produktfehlermeldung() {
       <div className="max-w-3xl mx-auto space-y-4 pb-10">
 
         {/* Header */}
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 md:p-7 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
               <PackageX className="w-5 h-5" />
@@ -389,7 +390,7 @@ export default function Produktfehlermeldung() {
               <Plus className="w-4 h-4" /> Neue Meldung
             </button>
           </div>
-        </div>
+        </PageHeader>
 
         {/* List view */}
         {view === "list" && (

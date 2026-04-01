@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   CalendarDays, Plus, Trash2, Package, AlertTriangle,
@@ -156,7 +157,7 @@ export default function MHDKontrolle() {
       <div className="max-w-3xl mx-auto space-y-5">
 
         {/* Header */}
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center gap-3">
             <Link href="/ware" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
               <ChevronLeft className="w-5 h-5" />
@@ -169,7 +170,7 @@ export default function MHDKontrolle() {
               <p className="text-sm text-white/75">Mindesthaltbarkeitsdatum Ueberwachung</p>
             </div>
           </div>
-        </div>
+        </PageHeader>
 
         {/* Marktplan-Shortcut */}
         <Link

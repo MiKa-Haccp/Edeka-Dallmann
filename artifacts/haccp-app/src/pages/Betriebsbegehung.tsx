@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ClipboardCheck, ChevronLeft, ChevronRight, Save, Plus, Trash2,
@@ -417,7 +418,7 @@ export default function Betriebsbegehung() {
           completedQuartals={completedQuartals}
         />
 
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 md:p-7 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
               <ClipboardCheck className="w-5 h-5" />
@@ -479,7 +480,7 @@ export default function Betriebsbegehung() {
               </span>
             )}
           </div>
-        </div>
+        </PageHeader>
 
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white rounded-xl border border-border/60 p-4 text-center">

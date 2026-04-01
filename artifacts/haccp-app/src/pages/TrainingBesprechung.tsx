@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { GraduationCap, ClipboardList, ChevronLeft } from "lucide-react";
 import TrainingRecords from "./TrainingRecords";
 import Besprechungsprotokoll from "./Besprechungsprotokoll";
@@ -13,7 +14,7 @@ export default function TrainingBesprechung() {
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto mb-4">
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg mb-4">
+        <PageHeader className="mb-4">
           <div className="flex items-center gap-3">
             <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
               <ChevronLeft className="h-5 w-5" />
@@ -23,7 +24,7 @@ export default function TrainingBesprechung() {
             </div>
             <h1 className="text-xl font-bold text-white">1.4 Schulung & Besprechungsprotokoll</h1>
           </div>
-        </div>
+        </PageHeader>
       </div>
       {/* Tab-Leiste */}
       <div className="max-w-5xl mx-auto mb-4">

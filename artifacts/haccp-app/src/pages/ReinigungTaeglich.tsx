@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ClipboardCheck, ChevronLeft, ChevronRight, Loader2, Check,
@@ -452,7 +453,7 @@ export default function ReinigungTaeglich() {
       <div className="max-w-7xl mx-auto space-y-4 pb-10">
 
         {/* HEADER */}
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg print:hidden">
+        <PageHeader className="print:hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
@@ -470,7 +471,7 @@ export default function ReinigungTaeglich() {
               <Printer className="w-4 h-4" /> Drucken
             </button>
           </div>
-        </div>
+        </PageHeader>
 
         {/* MONATSNAVIGATION + Tages-Badge */}
         <div className="bg-white rounded-xl border border-border/60 p-4 flex items-center justify-between gap-4 print:hidden">

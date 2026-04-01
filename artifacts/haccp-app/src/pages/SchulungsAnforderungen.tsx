@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   GraduationCap, Plus, Pencil, Trash2, Save, X, AlertTriangle,
@@ -672,7 +673,7 @@ export default function SchulungsAnforderungen() {
     <AppLayout>
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
 
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center gap-3">
             <Link href="/verwaltung" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
               <ChevronLeft className="h-5 w-5" />
@@ -685,7 +686,7 @@ export default function SchulungsAnforderungen() {
               <p className="text-sm text-white/75">Schulungen, Bescheinigungen und Compliance-Status verwalten.</p>
             </div>
           </div>
-        </div>
+        </PageHeader>
 
         <div className="flex gap-1 p-1 bg-muted/40 rounded-2xl border border-border/30">
           {[

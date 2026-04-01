@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { FileText, Archive, Clock, Info, BookOpen, Folder, ChevronLeft } from "lucide-react";
 
 const retentionData = [
@@ -53,7 +54,7 @@ export default function InfoDocumentation() {
           </Link>
           <h1 className="text-lg font-bold text-foreground">1.3 Info Dokumentation</h1>
         </div>
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-6 md:p-8 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">
               <FileText className="w-5 h-5" />
@@ -67,7 +68,7 @@ export default function InfoDocumentation() {
             Übersicht über die gesetzlichen und betrieblichen Aufbewahrungsfristen für alle HACCP-relevanten Dokumente. 
             Diese Informationen dienen als Orientierungshilfe für die korrekte Archivierung.
           </p>
-        </div>
+        </PageHeader>
 
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
           <Info className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />

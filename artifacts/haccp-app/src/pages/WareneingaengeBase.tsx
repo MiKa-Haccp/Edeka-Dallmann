@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef, createContext, useContext } from "react";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ClipboardList, ChevronLeft, ChevronRight, Loader2, Check, X,
@@ -1073,7 +1074,7 @@ function WareneingaengeContent() {
   return(
     <AppLayout>
       <div className="space-y-4 pb-10">
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
@@ -1097,7 +1098,7 @@ function WareneingaengeContent() {
               </div>
             )}
           </div>
-        </div>
+        </PageHeader>
 
         {loadingTypes?(
           <div className="flex justify-center py-6"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground"/></div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { Smartphone, Trash2, ShieldOff, ShieldCheck, Loader2, RefreshCw, Calendar, AlertTriangle, ChevronLeft } from "lucide-react";
 import { useLocation } from "wouter";
@@ -92,7 +93,7 @@ export default function GeraeteVerwaltung() {
           Systemverwaltung
         </button>
 
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 md:p-7 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -125,7 +126,7 @@ export default function GeraeteVerwaltung() {
               <div className="text-xs text-blue-200">Gesperrte Geräte</div>
             </div>
           </div>
-        </div>
+        </PageHeader>
 
         {loading && (
           <div className="flex items-center justify-center py-12 text-muted-foreground">

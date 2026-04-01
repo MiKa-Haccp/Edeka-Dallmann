@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { TransformWrapper, TransformComponent, useControls } from "react-zoom-pan-pinch";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Link } from "wouter";
 import {
   ChevronLeft, ZoomIn, ZoomOut, Maximize2, MapPin,
@@ -770,7 +771,7 @@ export default function MarktPlan() {
       <div className="space-y-3">
 
         {/* Header */}
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center gap-3">
             <Link href="/mhd-kontrolle" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
               <ChevronLeft className="w-5 h-5" />
@@ -788,7 +789,7 @@ export default function MarktPlan() {
               {counts.ok      > 0 && <span className="flex items-center gap-1 text-white/80"><span className="w-2 h-2 rounded-full bg-green-400"/>{counts.ok} OK</span>}
             </div>
           </div>
-        </div>
+        </PageHeader>
 
         {/* Karte */}
         <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">

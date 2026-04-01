@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
 import { CheckCircle2, X, Loader2, KeyRound, Check, AlertCircle, ChevronLeft, ChevronRight, Brush, Clock, CalendarCheck } from "lucide-react";
@@ -341,7 +342,7 @@ export default function AnnualCleaningPlan() {
   return (
     <AppLayout>
       <div className="max-w-full space-y-4 pb-8">
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 md:p-7 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
               <Brush className="w-5 h-5" />
@@ -370,7 +371,7 @@ export default function AnnualCleaningPlan() {
             </div>
             <div className="ml-auto text-xs text-blue-200 italic">(Bestätigung durch Namenskürzel)</div>
           </div>
-        </div>
+        </PageHeader>
 
         {isAdmin && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center gap-2 text-sm text-amber-700">

@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
 import { Users, Plus, Trash2, ChevronLeft, ChevronRight, Loader2, Lock, RotateCcw } from "lucide-react";
@@ -269,7 +270,7 @@ export default function AbteilungsfremdePersonen() {
   return (
     <AppLayout>
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center gap-3">
             <div className="bg-white/15 rounded-xl p-2.5 shrink-0"><Users className="h-6 w-6 text-white" /></div>
             <div>
@@ -277,7 +278,7 @@ export default function AbteilungsfremdePersonen() {
               <p className="text-sm text-white/75">{market?.name ?? "Kein Markt gewählt"}</p>
             </div>
           </div>
-        </div>
+        </PageHeader>
 
         <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-sm text-blue-800">
           Dokumentation der Hygienebelehrung für abteilungsfremde Personen gemäß §&nbsp;43 Abs.&nbsp;1 Infektionsschutzgesetz.

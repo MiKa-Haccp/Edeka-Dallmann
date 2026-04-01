@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ChevronLeft,
@@ -413,7 +414,7 @@ export default function AntiVektorZugang() {
       <div className="max-w-3xl mx-auto space-y-4 pb-10">
 
         {/* Header */}
-        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-5 sm:p-6 text-white shadow-lg">
+        <PageHeader>
           <div className="flex items-center gap-3">
             <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
               <ChevronLeft className="h-5 w-5" />
@@ -426,7 +427,7 @@ export default function AntiVektorZugang() {
               <p className="text-sm text-white/75">Schädlingsbekämpfung — Zugangsdaten & Sachkundenachweise</p>
             </div>
           </div>
-        </div>
+        </PageHeader>
 
         {/* Tabs */}
         <div className="flex gap-1 p-1 bg-muted/40 rounded-2xl border border-border/30">
