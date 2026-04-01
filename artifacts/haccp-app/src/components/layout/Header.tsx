@@ -42,7 +42,8 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
 
   const isLoggedIn = !!adminSession;
   const gpsLocked = isGpsLocked();
-  const selectedMarket = markets?.find((m) => m.id === selectedMarketId);
+  const marketsArray = Array.isArray(markets) ? markets : [];
+  const selectedMarket = marketsArray.find((m) => m.id === selectedMarketId);
 
   const handleMarketChange = (newId: number) => {
     if (gpsLocked) return;

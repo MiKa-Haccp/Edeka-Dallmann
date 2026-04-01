@@ -89,7 +89,7 @@ export function MarktwahlScreen() {
   }, [requestGeo]);
 
   useEffect(() => {
-    if (position && markets && markets.length > 0) {
+    if (position && Array.isArray(markets) && markets.length > 0) {
       const geoMarkets = markets as MarketWithGeo[];
       const nearest = findNearestMarket(position, geoMarkets);
       if (nearest) {
