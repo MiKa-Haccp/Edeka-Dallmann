@@ -37,8 +37,11 @@ function useActiveSidebar() {
 export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { selectedMarketId, deviceAuthorized, deviceToken, setDeviceToken, setDeviceAuthorized } = useAppStore();
-  const { isLoading: marketsLoading } = useListMarkets();
+  const { data: rawMarkets, isLoading: marketsLoading, isError: marketsError } = useListMarkets();
   const { isWare, isHaccp, isTodo, hasSidebar } = useActiveSidebar();
+
+  // Gerät-Verifizierung läuft noch (null = unbekannt, true/false = abgeschlossen)
+  const [deviceVerifying, setDeviceVerifying] = useState(true);
   const verifiedRef = useRef(false);
 
   useAutoLogout();
@@ -50,6 +53,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
     if (!deviceToken) {
       setDeviceAuthorized(false);
+      setDeviceVerifying(false);
       return;
     }
 
@@ -60,7 +64,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     })
       .then((r) => r.json())
       .then((data) => {
-        if (!data.valid) {
+        if (!data?.valid) {
           setDeviceToken(null);
           setDeviceAuthorized(false);
         } else {
@@ -68,17 +72,39 @@ export function AppLayout({ children }: { children: ReactNode }) {
         }
       })
       .catch(() => {
+        // Bei Netzwerkfehler: autorisiert lassen damit Offline-Nutzung möglich bleibt
         setDeviceAuthorized(true);
+      })
+      .finally(() => {
+        setDeviceVerifying(false);
       });
   }, [deviceToken, setDeviceToken, setDeviceAuthorized]);
 
-  const showGeraetSperre = !deviceAuthorized;
-  const showMarktwahlScreen = deviceAuthorized && !marketsLoading && !selectedMarketId;
+  // Gerät noch nicht verifiziert → nichts anzeigen (verhindert kurzes Flackern)
+  if (deviceVerifying) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Gerät nicht autorisiert → nur Registrierungsscreen, kein Header/Layout
+  if (!deviceAuthorized) {
+    return <GeraetSperrScreen />;
+  }
+
+  // Marktdaten: sicher als Array normalisieren
+  const markets = Array.isArray(rawMarkets) ? rawMarkets : [];
+
+  // Märkte werden noch geladen oder konnten nicht geladen werden → kein Markt wählbar
+  const marketsReady = !marketsLoading && !marketsError && markets.length > 0;
+  const showMarktwahlScreen = marketsReady && !selectedMarketId;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {showGeraetSperre && <GeraetSperrScreen />}
       {showMarktwahlScreen && <MarktwahlScreen />}
+
       <Header onMenuToggle={hasSidebar ? () => setMobileMenuOpen(true) : undefined} />
 
       {isHaccp && <MobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />}

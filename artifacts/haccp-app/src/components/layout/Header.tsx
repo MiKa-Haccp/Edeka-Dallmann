@@ -7,7 +7,7 @@ import { Link, useLocation } from "wouter";
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
-  const { data: markets, isLoading } = useListMarkets();
+  const { data: rawMarkets, isLoading } = useListMarkets();
   const {
     selectedMarketId,
     setSelectedMarketId,
@@ -23,13 +23,17 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
 
   const isSuperAdmin = adminSession?.role === "SUPERADMIN";
 
+  // Sicherstellen, dass markets immer ein Array ist – nie abstürzen bei
+  // unerwarteten API-Antworten (HTML, Objekt, null, String …)
+  const markets = Array.isArray(rawMarkets) ? rawMarkets : [];
+
   const pollUnread = useCallback(async () => {
     if (!isSuperAdmin) return;
     try {
       const res = await fetch(`${BASE}/feedback/unread-count`);
       if (res.ok) {
-        const { count } = await res.json();
-        setUnreadFeedback(count);
+        const data = await res.json();
+        if (typeof data?.count === "number") setUnreadFeedback(data.count);
       }
     } catch { /* ignore */ }
   }, [isSuperAdmin]);
@@ -42,8 +46,7 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
 
   const isLoggedIn = !!adminSession;
   const gpsLocked = isGpsLocked();
-  const marketsArray = Array.isArray(markets) ? markets : [];
-  const selectedMarket = marketsArray.find((m) => m.id === selectedMarketId);
+  const selectedMarket = markets.find((m) => m.id === selectedMarketId);
 
   const handleMarketChange = (newId: number) => {
     if (gpsLocked) return;
@@ -109,10 +112,10 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
                     <select
                       value={selectedMarketId || ""}
                       onChange={(e) => handleMarketChange(Number(e.target.value))}
-                      disabled={isLoading || !markets?.length}
+                      disabled={isLoading || markets.length === 0}
                       className="appearance-none bg-secondary/50 hover:bg-secondary border border-border/50 text-foreground text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl pl-8 sm:pl-10 pr-8 sm:pr-10 py-2 sm:py-2.5 outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 cursor-pointer disabled:opacity-50 max-w-[160px] sm:max-w-none"
                     >
-                      {markets?.map((market) => (
+                      {markets.map((market) => (
                         <option key={market.id} value={market.id} disabled={!canAccessMarket(market.id)}>
                           {market.name}{!canAccessMarket(market.id) ? " 🔒" : ""}
                         </option>
