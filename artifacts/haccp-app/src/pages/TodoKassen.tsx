@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Fragment } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
@@ -8,15 +8,9 @@ import { Loader2, ChevronLeft, ChevronRight, Info, TableProperties } from "lucid
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 const SHIFTS = [
-  { key: "frueh",  label: "Frühschicht",  short: "F",
-    headerBg: "bg-amber-100",  headerText: "text-amber-900",
-    cellBg:   "bg-amber-50/60", border: "border-amber-200" },
-  { key: "mittel", label: "Mittelschicht", short: "M",
-    headerBg: "bg-teal-100",   headerText: "text-teal-900",
-    cellBg:   "bg-teal-50/60", border: "border-teal-200" },
-  { key: "spaet",  label: "Spätschicht",  short: "S",
-    headerBg: "bg-purple-100", headerText: "text-purple-900",
-    cellBg:   "bg-purple-50/60", border: "border-purple-200" },
+  { key: "frueh",  label: "Frühschicht"   },
+  { key: "mittel", label: "Mittelschicht" },
+  { key: "spaet",  label: "Spätschicht"   },
 ];
 const TILLS = [1, 2, 3, 4];
 
@@ -28,10 +22,10 @@ export default function TodoKassen() {
   const isAdmin = adminSession?.role === "SUPERADMIN" || adminSession?.role === "ADMIN"
     || adminSession?.role === "MARKTLEITER" || adminSession?.role === "BEREICHSLEITUNG";
 
-  const [users, setUsers]             = useState<MarketUser[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading]         = useState(false);
-  const [savingKey, setSavingKey]     = useState<string | null>(null);
+  const [users, setUsers]               = useState<MarketUser[]>([]);
+  const [assignments, setAssignments]   = useState<Assignment[]>([]);
+  const [loading, setLoading]           = useState(false);
+  const [savingKey, setSavingKey]       = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => new Date());
 
   const dateStr = selectedDate.toISOString().split("T")[0];
@@ -55,7 +49,10 @@ export default function TodoKassen() {
   const getAssignment = (shift: string, till: number) =>
     assignments.find(a => a.shift === shift && a.till_number === till);
 
-  const save = async (shift: string, till: number, patch: Partial<{ userId: number | null; userName: string | null; uhrzeit: string | null }>) => {
+  const saveField = async (
+    shift: string, till: number,
+    patch: Partial<{ userId: number | null; userName: string | null; uhrzeit: string | null }>
+  ) => {
     if (!selectedMarketId || !isAdmin) return;
     const key = `${shift}-${till}`;
     const existing = getAssignment(shift, till);
@@ -64,47 +61,35 @@ export default function TodoKassen() {
       const uid   = "userId"   in patch ? patch.userId   : (existing?.user_id   ?? null);
       const uname = "userName" in patch ? patch.userName : (existing?.user_name ?? null);
       const zeit  = "uhrzeit"  in patch ? patch.uhrzeit  : (existing?.uhrzeit   ?? null);
-
       const res = await fetch(`${BASE}/todo/till-assignments`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          marketId: selectedMarketId,
-          date: dateStr,
-          shift,
-          tillNumber: till,
-          userId:   uid,
-          userName: uname,
-          uhrzeit:  zeit,
-        }),
+        body: JSON.stringify({ marketId: selectedMarketId, date: dateStr, shift, tillNumber: till, userId: uid, userName: uname, uhrzeit: zeit }),
       });
       const updated: Assignment = await res.json();
-      setAssignments(prev => {
-        const filtered = prev.filter(a => !(a.shift === shift && a.till_number === till));
-        return [...filtered, updated];
-      });
+      setAssignments(prev => [...prev.filter(a => !(a.shift === shift && a.till_number === till)), updated]);
     } finally { setSavingKey(null); }
   };
 
   const handleNameChange = (shift: string, till: number, userId: string) => {
-    const uid  = userId ? Number(userId) : null;
-    const user = uid ? users.find(u => u.id === uid) : null;
+    const uid   = userId ? Number(userId) : null;
+    const user  = uid ? users.find(u => u.id === uid) : null;
     const uname = user ? (user.name || `${user.first_name} ${user.last_name}`.trim()) : null;
-    save(shift, till, { userId: uid, userName: uname });
+    saveField(shift, till, { userId: uid, userName: uname });
   };
 
   const handleZeitBlur = (shift: string, till: number, value: string) => {
     const trimmed = value.trim() || null;
-    const existing = getAssignment(shift, till);
-    if (trimmed === (existing?.uhrzeit ?? null)) return;
-    save(shift, till, { uhrzeit: trimmed });
+    if (trimmed === (getAssignment(shift, till)?.uhrzeit ?? null)) return;
+    saveField(shift, till, { uhrzeit: trimmed });
   };
 
-  const moveDate = (days: number) => {
+  const moveDate = (days: number) =>
     setSelectedDate(d => { const n = new Date(d); n.setDate(n.getDate() + days); return n; });
-  };
 
   const displayName = (u: MarketUser) => u.name || `${u.first_name} ${u.last_name}`.trim();
+
+  const inputClass = "w-full border border-border/50 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0f766e]/25 placeholder:text-muted-foreground/40";
 
   return (
     <AppLayout>
@@ -161,62 +146,94 @@ export default function TodoKassen() {
           <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
             <table className="w-full border-collapse text-sm">
               <thead>
-                {/* Schicht-Header (Zeile 1) */}
-                <tr>
-                  <th className="w-24 bg-gray-50 border-b border-r border-border/50" rowSpan={2}>
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide px-3">Kasse</span>
+                {/* Zeile 1: Schicht-Gruppen-Header */}
+                <tr className="bg-gray-100 border-b border-border/50">
+                  <th rowSpan={2} className="border-r border-border/40 px-3 py-2.5 text-center align-middle">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Kasse</span>
                   </th>
-                  {SHIFTS.map(s => (
-                    <th key={s.key} colSpan={2} className={`${s.headerBg} ${s.headerText} border-b border-r border-border/30 text-center py-2.5 text-sm font-bold tracking-wide`}>
+                  <th rowSpan={2} className="border-r border-border/40 px-3 py-2.5 text-center align-middle w-28">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Uhrzeit</span>
+                  </th>
+                  {SHIFTS.map((s, i) => (
+                    <th key={s.key} colSpan={2}
+                      className={`text-center py-2.5 text-sm font-bold text-gray-700 ${i < SHIFTS.length - 1 ? "border-r border-border/40" : ""}`}>
                       {s.label}
                     </th>
                   ))}
                 </tr>
-                {/* Unterheader: Wer / Uhr (Zeile 2) */}
-                <tr>
-                  {SHIFTS.map(s => (
-                    <>
-                      <th key={`${s.key}-wer`} className={`${s.headerBg} ${s.headerText} border-b border-r border-border/20 text-left px-3 py-1.5 text-xs font-semibold w-40`}>
+                {/* Zeile 2: Unterheader Mitarbeiter / Uhr */}
+                <tr className="bg-gray-50 border-b border-border/50">
+                  {SHIFTS.map((s, i) => (
+                    <Fragment key={s.key}>
+                      <th className="px-3 py-1.5 text-left text-xs font-semibold text-muted-foreground border-r border-border/30 w-44">
                         Mitarbeiter
                       </th>
-                      <th key={`${s.key}-uhr`} className={`${s.headerBg} ${s.headerText} border-b border-r border-border/20 text-left px-3 py-1.5 text-xs font-semibold w-24`}>
-                        Uhrzeit
+                      <th className={`px-3 py-1.5 text-left text-xs font-semibold text-muted-foreground w-24 ${i < SHIFTS.length - 1 ? "border-r border-border/40" : ""}`}>
+                        Uhr
                       </th>
-                    </>
+                    </Fragment>
                   ))}
                 </tr>
               </thead>
+
               <tbody>
                 {TILLS.map((till, tillIdx) => {
-                  const isLast = tillIdx === TILLS.length - 1;
+                  const isLast       = tillIdx === TILLS.length - 1;
+                  const generalKey   = `allgemein-${till}`;
+                  const generalEntry = getAssignment("allgemein", till);
+
                   return (
-                    <tr key={till} className={`${isLast ? "" : "border-b border-border/40"} hover:bg-gray-50/50 transition-colors`}>
+                    <tr key={till} className={`${!isLast ? "border-b border-border/40" : ""} hover:bg-gray-50/50 transition-colors`}>
+
                       {/* Kassen-Label */}
-                      <td className="border-r border-border/50 bg-gray-50 px-3 py-3 text-center">
-                        <span className="text-sm font-bold text-foreground">Kasse {till}</span>
+                      <td className="border-r border-border/40 bg-gray-50 px-3 py-3 text-center font-bold text-sm text-foreground whitespace-nowrap">
+                        Kasse {till}
+                      </td>
+
+                      {/* Allgemeine Uhrzeit */}
+                      <td className="border-r border-border/40 px-2.5 py-2.5 bg-gray-50/40">
+                        {isAdmin ? (
+                          <div className="relative">
+                            {savingKey === generalKey && (
+                              <Loader2 className="w-3 h-3 animate-spin absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
+                            )}
+                            <input
+                              type="text"
+                              defaultValue={generalEntry?.uhrzeit ?? ""}
+                              key={`${generalKey}-${generalEntry?.uhrzeit}`}
+                              onBlur={e => handleZeitBlur("allgemein", till, e.target.value)}
+                              placeholder="z.B. 8–20"
+                              className={inputClass}
+                            />
+                          </div>
+                        ) : (
+                          <span className={`text-xs ${generalEntry?.uhrzeit ? "font-medium text-foreground" : "text-muted-foreground"}`}>
+                            {generalEntry?.uhrzeit ?? "—"}
+                          </span>
+                        )}
                       </td>
 
                       {/* Schicht-Zellen */}
                       {SHIFTS.map((shift, shiftIdx) => {
-                        const key  = `${shift.key}-${till}`;
-                        const a    = getAssignment(shift.key, till);
-                        const busy = savingKey === key;
-                        const isLastShift = shiftIdx === SHIFTS.length - 1;
+                        const key          = `${shift.key}-${till}`;
+                        const a            = getAssignment(shift.key, till);
+                        const busy         = savingKey === key;
+                        const isLastShift  = shiftIdx === SHIFTS.length - 1;
 
                         return (
-                          <>
-                            {/* Mitarbeiter-Spalte */}
-                            <td key={`${key}-wer`} className={`${shift.cellBg} px-2.5 py-2.5 border-r border-border/20`}>
+                          <Fragment key={key}>
+                            {/* Mitarbeiter */}
+                            <td className="px-2.5 py-2.5 border-r border-border/30">
                               {isAdmin ? (
                                 <div className="relative">
                                   {busy && (
-                                    <Loader2 className="w-3 h-3 animate-spin absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
+                                    <Loader2 className="w-3 h-3 animate-spin absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
                                   )}
                                   <select
                                     value={a?.user_id ?? ""}
                                     onChange={e => handleNameChange(shift.key, till, e.target.value)}
                                     disabled={busy}
-                                    className="w-full border border-border/50 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0f766e]/25 disabled:opacity-50 appearance-none cursor-pointer pr-6 min-w-0"
+                                    className={`${inputClass} appearance-none cursor-pointer`}
                                   >
                                     <option value="">– Frei –</option>
                                     {users.map(u => (
@@ -231,8 +248,8 @@ export default function TodoKassen() {
                               )}
                             </td>
 
-                            {/* Uhrzeit-Spalte */}
-                            <td key={`${key}-uhr`} className={`${shift.cellBg} px-2.5 py-2.5 ${isLastShift ? "" : "border-r border-border/20"}`}>
+                            {/* Uhr pro Schicht */}
+                            <td className={`px-2.5 py-2.5 ${!isLastShift ? "border-r border-border/40" : ""}`}>
                               {isAdmin ? (
                                 <input
                                   type="text"
@@ -240,7 +257,7 @@ export default function TodoKassen() {
                                   key={`${key}-zeit-${a?.uhrzeit}`}
                                   onBlur={e => handleZeitBlur(shift.key, till, e.target.value)}
                                   placeholder="z.B. 6–14"
-                                  className="w-full border border-border/50 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0f766e]/25 placeholder:text-muted-foreground/50"
+                                  className={inputClass}
                                 />
                               ) : (
                                 <span className={`text-xs ${a?.uhrzeit ? "font-medium text-foreground" : "text-muted-foreground"}`}>
@@ -248,7 +265,7 @@ export default function TodoKassen() {
                                 </span>
                               )}
                             </td>
-                          </>
+                          </Fragment>
                         );
                       })}
                     </tr>
