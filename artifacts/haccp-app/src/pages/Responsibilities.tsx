@@ -1,8 +1,10 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets, useListResponsibilities, useGetMarketInfo, useUpsertResponsibilities, useUpsertMarketInfo } from "@workspace/api-client-react";
 import { useState, useEffect } from "react";
-import { Save, Pencil, X, Plus, Trash2, Building2, ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { Save, Pencil, X, Plus, Trash2, Building2, ChevronLeft, ChevronRight, Calendar, Users } from "lucide-react";
+import { Link } from "wouter";
 import { JaehrlicheErinnerung } from "@/components/JaehrlicheErinnerung";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -226,6 +228,21 @@ export default function Responsibilities() {
   return (
     <AppLayout>
       <div className="max-w-6xl mx-auto p-6 space-y-4">
+        <PageHeader>
+          <div className="flex items-center gap-3">
+            <Link href="/haccp" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="w-5 h-5" />
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold leading-tight">Verantwortlichkeiten</h1>
+              <p className="text-white/70 text-sm">Zuständigkeiten und Vertretungen je Abteilung</p>
+            </div>
+          </div>
+        </PageHeader>
+
         <JaehrlicheErinnerung
           lastUpdatedYear={reminderYear}
           lastUpdatedDate={reminderDate}
