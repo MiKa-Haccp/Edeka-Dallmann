@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
@@ -897,22 +898,26 @@ export default function KaesethekeKontrolle() {
     <AppLayout>
       <div className="max-w-5xl mx-auto space-y-5">
         {/* Header mit Zurück-Button */}
-        <div className="flex items-start gap-3">
-          <button onClick={()=>navigate("/metzgerei-wareneingaenge")}
-            className="mt-1 p-2 rounded-lg border hover:bg-secondary transition-colors shrink-0" title="Zurueck">
-            <ArrowLeft className="w-4 h-4"/>
-          </button>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-0.5">
-              <Thermometer className="w-5 h-5 text-primary"/>
-              <h1 className="text-xl font-bold">3.4 Kaesetheke und Reifeschrank</h1>
+        <PageHeader className="print:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button onClick={()=>navigate("/metzgerei-wareneingaenge")}
+                className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0" title="Zurueck">
+                <ChevronLeft className="w-5 h-5"/>
+              </button>
+              <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                <Thermometer className="w-5 h-5"/>
+              </div>
+              <div>
+                <h1 className="text-lg font-bold leading-tight">3.4 Käsetheke und Reifeschrank</h1>
+                <p className="text-white/70 text-sm">Temperaturkontrolle Reifeschrank · Käsekühlschrank · Heiße Theke</p>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">Temperaturkontrolle Reifeschrank (FB 9.5) | Kaesekühlschrank | Heisse Theke (FB 9.7)</p>
+            <button onClick={()=>window.print()} className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors text-sm shrink-0">
+              <Printer className="w-4 h-4"/><span className="hidden sm:inline">Drucken</span>
+            </button>
           </div>
-          <button onClick={()=>window.print()} className="mt-1 flex items-center gap-1.5 text-sm border rounded-lg px-3 py-2 hover:bg-secondary shrink-0">
-            <Printer className="w-4 h-4"/><span className="hidden sm:inline">Drucken</span>
-          </button>
-        </div>
+        </PageHeader>
 
         {/* Monatsnavigation */}
         <div className="flex items-center justify-between bg-card border rounded-xl px-4 py-3">

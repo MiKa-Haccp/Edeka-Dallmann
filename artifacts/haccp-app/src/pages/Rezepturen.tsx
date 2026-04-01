@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { ChefHat, Search, Plus, X, Upload, ChevronDown, ChevronUp, Trash2, Edit2, Check, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 const API = import.meta.env.BASE_URL.replace(/\/$/, "") + "/api";
 
@@ -51,7 +52,7 @@ function RezepturBild({ dateiname }: { dateiname: string | null }) {
   const [err, setErr] = useState(false);
   if (!dateiname || err) {
     return (
-      <div className="w-full h-full bg-amber-50 flex items-center justify-center">
+      <div className="w-full h-full bg-[#1a3a6b]/5 flex items-center justify-center">
         <ChefHat className="w-14 h-14 text-amber-200" />
       </div>
     );
@@ -95,7 +96,7 @@ function DetailModal({ r, onClose, onDelete }: {
             <h2 className="text-xl font-bold text-gray-900">{r.name}</h2>
             <div className="flex gap-2 mt-1 flex-wrap">
               {r.kategorie_name && (
-                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                <span className="text-xs bg-[#1a3a6b]/10 text-[#1a3a6b] px-2 py-0.5 rounded-full font-medium">
                   {r.kategorie_name}
                 </span>
               )}
@@ -125,7 +126,7 @@ function DetailModal({ r, onClose, onDelete }: {
                 onClick={() => setTab(t)}
                 className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                   tab === t
-                    ? "border-amber-500 text-amber-600"
+                    ? "border-[#1a3a6b] text-[#1a3a6b]"
                     : "border-transparent text-gray-500 hover:text-gray-700"
                 }`}
               >
@@ -147,7 +148,7 @@ function DetailModal({ r, onClose, onDelete }: {
               )}
               {r.allergene && (
                 <div>
-                  <div className="font-semibold text-amber-600 mb-1 text-xs uppercase tracking-wide">Allergene</div>
+                  <div className="font-semibold text-[#1a3a6b] mb-1 text-xs uppercase tracking-wide">Allergene</div>
                   <div className="whitespace-pre-wrap">{r.allergene}</div>
                 </div>
               )}
@@ -294,7 +295,7 @@ function NeuAnlegenModal({ kategorien, onClose, onSaved, defaultKategorieId }: {
               value={form.name}
               onChange={set("name")}
               placeholder="z.B. Kraeuterbratwurst"
-              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40"
             />
           </div>
 
@@ -303,7 +304,7 @@ function NeuAnlegenModal({ kategorien, onClose, onSaved, defaultKategorieId }: {
             <select
               value={form.kategorieId}
               onChange={set("kategorieId")}
-              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40"
             >
               <option value="">-- Keine Kategorie --</option>
               {kategorien.map(k => (
@@ -318,7 +319,7 @@ function NeuAnlegenModal({ kategorien, onClose, onSaved, defaultKategorieId }: {
               onDrop={handleDrop}
               onDragOver={e => e.preventDefault()}
               onClick={() => fileRef.current?.click()}
-              className="border-2 border-dashed border-gray-200 rounded-xl p-5 flex flex-col items-center gap-2 cursor-pointer hover:border-amber-400 hover:bg-amber-50/30 transition-colors"
+              className="border-2 border-dashed border-gray-200 rounded-xl p-5 flex flex-col items-center gap-2 cursor-pointer hover:border-[#1a3a6b]/50 hover:bg-[#1a3a6b]/5/30 transition-colors"
             >
               {fotoPreview ? (
                 <div className="relative w-full">
@@ -351,7 +352,7 @@ function NeuAnlegenModal({ kategorien, onClose, onSaved, defaultKategorieId }: {
 
           <button
             onClick={() => setShowDetails(v => !v)}
-            className="flex items-center gap-2 text-sm text-amber-600 font-medium hover:text-amber-700"
+            className="flex items-center gap-2 text-sm text-[#1a3a6b] font-medium hover:text-[#1a3a6b]"
           >
             {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             {showDetails ? "Weitere Details ausblenden" : "Weitere Details hinzufuegen (optional)"}
@@ -362,42 +363,42 @@ function NeuAnlegenModal({ kategorien, onClose, onSaved, defaultKategorieId }: {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">PLU / Artikelnummer</label>
                 <input type="text" value={form.plu} onChange={set("plu")}
-                  placeholder="z.B. 1234" className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                  placeholder="z.B. 1234" className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Zutaten</label>
                 <textarea value={form.zutatenText} onChange={set("zutatenText")} rows={3}
-                  placeholder="Zutaten und Mengen..." className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none" />
+                  placeholder="Zutaten und Mengen..." className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40 resize-none" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Zutatenverzeichnis (fuer Etikett)</label>
                 <textarea value={form.zutatenverzeichnis} onChange={set("zutatenverzeichnis")} rows={2}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none" />
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40 resize-none" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Allergene</label>
                 <textarea value={form.allergene} onChange={set("allergene")} rows={2}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none" />
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40 resize-none" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Spuren von Allergenen</label>
                 <textarea value={form.allergeneSpuren} onChange={set("allergeneSpuren")} rows={2}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none" />
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40 resize-none" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Naehrwerte</label>
                 <textarea value={form.naehrwerte} onChange={set("naehrwerte")} rows={4}
-                  placeholder="Energie: ..., Fett: ..., Kohlenhydrate: ..." className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none" />
+                  placeholder="Energie: ..., Fett: ..., Kohlenhydrate: ..." className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40 resize-none" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Herstellungsablauf</label>
                 <textarea value={form.herstellungsablauf} onChange={set("herstellungsablauf")} rows={5}
-                  placeholder="1. Fleisch wolfen...&#10;2. Gewuerze untermischen..." className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none" />
+                  placeholder="1. Fleisch wolfen...&#10;2. Gewuerze untermischen..." className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40 resize-none" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Rezepturdatum</label>
                 <input type="date" value={form.rezepturDatum} onChange={set("rezepturDatum")}
-                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                  className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40" />
               </div>
             </div>
           )}
@@ -412,7 +413,7 @@ function NeuAnlegenModal({ kategorien, onClose, onSaved, defaultKategorieId }: {
           <button
             onClick={handleSave}
             disabled={saving || !form.name.trim()}
-            className="flex-1 px-4 py-2.5 bg-amber-500 text-white rounded-xl text-sm font-medium hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-medium hover:bg-[#2d5aa0] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? "Speichern..." : "Speichern"}
           </button>
@@ -453,12 +454,12 @@ function NeueKategorieModal({ onClose, onSaved }: { onClose: () => void; onSaved
           onKeyDown={e => e.key === "Enter" && handleSave()}
           placeholder="z.B. Saucen und Marinaden"
           autoFocus
-          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+          className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40"
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50">Abbrechen</button>
-          <button onClick={handleSave} disabled={saving || !name.trim()} className="flex-1 px-4 py-2.5 bg-amber-500 text-white rounded-xl text-sm font-medium hover:bg-amber-600 disabled:opacity-50">
+          <button onClick={handleSave} disabled={saving || !name.trim()} className="flex-1 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-medium hover:bg-[#2d5aa0] disabled:opacity-50">
             {saving ? "..." : "Anlegen"}
           </button>
         </div>
@@ -509,28 +510,32 @@ export default function Rezepturen() {
   return (
     <AppLayout>
     <div className="max-w-5xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => navigate("/")}
-          className="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center flex-shrink-0 transition-colors"
-          title="Zurück"
-        >
-          <ArrowLeft className="w-5 h-5 text-gray-600" />
-        </button>
-        <div className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-          <ChefHat className="w-5 h-5 text-amber-600" />
+      <PageHeader className="mb-6">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/")}
+              className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0"
+              title="Zurück"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <ChefHat className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold leading-tight">3.7 Eigenherstellung / Rezepturen</h1>
+              <p className="text-white/70 text-sm">Rezepturübersicht und Eigenherstellungen</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowNeu(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white rounded-xl text-sm font-medium transition-colors shrink-0"
+          >
+            <Plus className="w-4 h-4" /> Neu anlegen
+          </button>
         </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-bold text-gray-900 leading-tight">3.7 Eigenherstellung / Rezepturen</h1>
-          <p className="text-xs text-gray-500">Rezepturuebersicht</p>
-        </div>
-        <button
-          onClick={() => setShowNeu(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white rounded-xl text-sm font-medium hover:bg-amber-600 shadow-sm flex-shrink-0"
-        >
-          <Plus className="w-4 h-4" /> Neu anlegen
-        </button>
-      </div>
+      </PageHeader>
 
       <div className="relative mb-4">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -539,7 +544,7 @@ export default function Rezepturen() {
           placeholder="Rezeptur suchen..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+          className="w-full pl-10 pr-10 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40"
         />
         {search && (
           <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -553,8 +558,8 @@ export default function Rezepturen() {
           onClick={() => setActiveKatId(null)}
           className={`flex-shrink-0 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
             activeKatId === null
-              ? "bg-amber-500 text-white shadow-sm"
-              : "bg-white border border-gray-200 text-gray-600 hover:border-amber-300 hover:bg-amber-50"
+              ? "bg-[#1a3a6b] text-white shadow-sm"
+              : "bg-white border border-gray-200 text-gray-600 hover:border-[#1a3a6b]/30 hover:bg-[#1a3a6b]/5"
           }`}
         >
           Alle ({rezLoading ? "..." : allRezepturen.length})
@@ -568,8 +573,8 @@ export default function Rezepturen() {
               key={k.id}
               className={`flex-shrink-0 flex items-center gap-1 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
                 isActive
-                  ? "bg-amber-500 text-white shadow-sm"
-                  : "bg-white border border-gray-200 text-gray-600 hover:border-amber-300 hover:bg-amber-50"
+                  ? "bg-[#1a3a6b] text-white shadow-sm"
+                  : "bg-white border border-gray-200 text-gray-600 hover:border-[#1a3a6b]/30 hover:bg-[#1a3a6b]/5"
               }`}
               onClick={() => !isEditing && setActiveKatId(k.id)}
             >
@@ -603,7 +608,7 @@ export default function Rezepturen() {
 
         <button
           onClick={() => setShowNeueKat(true)}
-          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-amber-600 border-2 border-dashed border-amber-200 hover:bg-amber-50 hover:border-amber-400 transition-colors"
+          className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium text-[#1a3a6b] border-2 border-dashed border-[#1a3a6b]/20 hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/50 transition-colors"
         >
           <Plus className="w-4 h-4" /> Kategorie
         </button>
@@ -629,7 +634,7 @@ export default function Rezepturen() {
             {search ? `Keine Treffer fuer "${search}"` : "Lege die erste Rezeptur an."}
           </p>
           {!search && (
-            <button onClick={() => setShowNeu(true)} className="mt-5 px-5 py-2.5 bg-amber-500 text-white rounded-xl text-sm font-medium hover:bg-amber-600">
+            <button onClick={() => setShowNeu(true)} className="mt-5 px-5 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-medium hover:bg-[#2d5aa0]">
               Erste Rezeptur anlegen
             </button>
           )}
@@ -640,17 +645,17 @@ export default function Rezepturen() {
             <button
               key={r.id}
               onClick={() => setSelected(r)}
-              className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm hover:shadow-md hover:border-amber-200 transition-all text-left group"
+              className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm hover:shadow-md hover:border-[#1a3a6b]/20 transition-all text-left group"
             >
-              <div className="h-44 overflow-hidden bg-amber-50">
+              <div className="h-44 overflow-hidden bg-[#1a3a6b]/5">
                 <RezepturBild dateiname={r.bild_dateiname} />
               </div>
               <div className="p-3">
-                <div className="font-semibold text-gray-900 text-sm leading-tight group-hover:text-amber-700 transition-colors line-clamp-2">
+                <div className="font-semibold text-gray-900 text-sm leading-tight group-hover:text-[#1a3a6b] transition-colors line-clamp-2">
                   {r.name}
                 </div>
                 {r.kategorie_name && (
-                  <div className="text-xs text-amber-600 font-medium mt-1">{r.kategorie_name}</div>
+                  <div className="text-xs text-[#1a3a6b] font-medium mt-1">{r.kategorie_name}</div>
                 )}
               </div>
             </button>
