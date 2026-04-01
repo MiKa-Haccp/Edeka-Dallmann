@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { Link } from "wouter";
-import { Loader2, ChevronLeft, ChevronRight, Info, TableProperties, X, Clock, ShoppingCart } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Info, TableProperties, X, Clock, ShoppingCart, Package } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -21,6 +21,13 @@ const LEERGUT_SHIFTS = [
   { key: "leergut_spaet", label: "Spätschicht", defaultTime: "18:00" },
 ];
 const LEERGUT_ROWS = [{ id: 1, label: "Leergut" }];
+
+// MoPro: nur 2 Schichten, 1 Zeile
+const MOPRO_SHIFTS = [
+  { key: "mopro_frueh", label: "Frühschicht", defaultTime: "11:00" },
+  { key: "mopro_spaet", label: "Spätschicht", defaultTime: "18:00" },
+];
+const MOPRO_ROWS = [{ id: 1, label: "MoPro" }];
 
 // Halbstundentakt 5:00–22:00
 const TIMES: string[] = [];
@@ -450,6 +457,20 @@ export default function TodoKassen() {
               icon={ShoppingCart}
               shifts={LEERGUT_SHIFTS}
               rows={LEERGUT_ROWS}
+              assignments={assignments}
+              users={users}
+              savingKey={savingKey}
+              isAdmin={isAdmin}
+              generalDefaultTime="6:00"
+              onSave={saveField}
+            />
+
+            {/* MoPro */}
+            <AssignmentTable
+              title="MoPro"
+              icon={Package}
+              shifts={MOPRO_SHIFTS}
+              rows={MOPRO_ROWS}
               assignments={assignments}
               users={users}
               savingKey={savingKey}
