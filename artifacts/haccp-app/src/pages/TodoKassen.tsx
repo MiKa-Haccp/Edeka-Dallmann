@@ -218,7 +218,7 @@ function AssignmentTable({
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="bg-gray-100 border-b border-border/50">
-              <th rowSpan={2} className="border-r border-border/40 px-3 py-2.5 text-center align-middle">
+              <th rowSpan={2} className="border-r border-border/40 px-1.5 py-2.5 text-center align-middle w-14">
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Bereich</span>
               </th>
               <th rowSpan={2} className="border-r border-border/40 px-3 py-2.5 text-center align-middle w-28">
@@ -252,7 +252,7 @@ function AssignmentTable({
 
               return (
                 <tr key={row.id} className={`${!isLast ? "border-b border-border/40" : ""} hover:bg-gray-50/50 transition-colors`}>
-                  <td className="border-r border-border/40 bg-gray-50 px-3 py-3 text-center font-bold text-sm text-foreground whitespace-nowrap">
+                  <td className="border-r border-border/40 bg-gray-50 px-1.5 py-3 text-center font-bold text-xs text-foreground whitespace-nowrap w-14">
                     {row.label}
                   </td>
                   <td className="border-r border-border/40 px-2.5 py-2.5 bg-gray-50/40">
