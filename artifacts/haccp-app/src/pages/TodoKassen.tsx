@@ -3,21 +3,32 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { Link } from "wouter";
-import { Loader2, ChevronLeft, ChevronRight, Info, TableProperties, X } from "lucide-react";
+import { Loader2, ChevronLeft, ChevronRight, Info, TableProperties, X, Clock } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 const SHIFTS = [
-  { key: "frueh",  label: "Frühschicht"   },
-  { key: "mittel", label: "Mittelschicht" },
-  { key: "spaet",  label: "Spätschicht"   },
+  { key: "frueh",  label: "Frühschicht",   defaultTime: "11:00" },
+  { key: "mittel", label: "Mittelschicht",  defaultTime: "15:00" },
+  { key: "spaet",  label: "Spätschicht",    defaultTime: "18:00" },
 ];
 const TILLS = [1, 2, 3, 4];
+
+// Halbstundentakt 5:00–22:00
+const TIMES: string[] = [];
+for (let h = 5; h <= 22; h++) {
+  TIMES.push(`${h}:00`);
+  if (h < 22) TIMES.push(`${h}:30`);
+}
 
 interface MarketUser { id: number; name: string; first_name: string; last_name: string; initials: string; role: string; }
 interface Assignment { id: number; shift: string; till_number: number; user_id: number | null; user_name: string | null; notes: string | null; uhrzeit: string | null; }
 
 // ─── Searchable Employee Picker ───────────────────────────────────────────────
+function displayName(u: MarketUser) {
+  return u.name || `${u.first_name} ${u.last_name}`.trim();
+}
+
 interface EmployeePickerProps {
   users: MarketUser[];
   value: number | null;
@@ -25,24 +36,18 @@ interface EmployeePickerProps {
   disabled?: boolean;
 }
 
-function displayName(u: MarketUser) {
-  return u.name || `${u.first_name} ${u.last_name}`.trim();
-}
-
 function EmployeePicker({ users, value, onChange, disabled }: EmployeePickerProps) {
-  const selectedUser   = value ? users.find(u => u.id === value) ?? null : null;
+  const selectedUser = value ? users.find(u => u.id === value) ?? null : null;
   const [open, setOpen]   = useState(false);
   const [query, setQuery] = useState("");
   const wrapRef  = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Close on outside click
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setQuery("");
+        setOpen(false); setQuery("");
       }
     };
     document.addEventListener("mousedown", handler);
@@ -55,34 +60,103 @@ function EmployeePicker({ users, value, onChange, disabled }: EmployeePickerProp
 
   const select = (u: MarketUser | null) => {
     onChange(u ? u.id : null, u ? displayName(u) : null);
-    setOpen(false);
-    setQuery("");
+    setOpen(false); setQuery("");
   };
 
-  const handleOpen = () => {
-    if (disabled) return;
-    setOpen(true);
-    setQuery("");
-    setTimeout(() => inputRef.current?.focus(), 30);
-  };
+  return (
+    <div ref={wrapRef} className="relative w-full">
+      <div
+        onClick={() => { if (!disabled) { setOpen(true); setQuery(""); setTimeout(() => inputRef.current?.focus(), 30); } }}
+        className={`flex items-center justify-between gap-1 border border-border/50 rounded-lg px-2 py-1.5 text-xs bg-white min-h-[30px] ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-[#0f766e]/40"}`}
+      >
+        <span className={selectedUser ? "text-foreground font-medium" : "text-muted-foreground/60 italic"}>
+          {selectedUser ? displayName(selectedUser) : "– Frei –"}
+        </span>
+        {selectedUser && !disabled && (
+          <button onMouseDown={e => { e.stopPropagation(); select(null); }} className="text-muted-foreground hover:text-red-500 transition-colors shrink-0">
+            <X className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="absolute z-50 top-full mt-1 left-0 w-48 bg-white border border-border/60 rounded-xl shadow-lg overflow-hidden">
+          <div className="p-1.5 border-b border-border/40">
+            <input ref={inputRef} type="text" value={query} onChange={e => setQuery(e.target.value)}
+              placeholder="Name suchen…"
+              className="w-full px-2 py-1 text-xs rounded-lg border border-border/40 focus:outline-none focus:ring-2 focus:ring-[#0f766e]/25 bg-gray-50" />
+          </div>
+          <ul className="max-h-40 overflow-y-auto">
+            <li onMouseDown={() => select(null)} className="px-3 py-1.5 text-xs text-muted-foreground italic cursor-pointer hover:bg-gray-50">– Frei –</li>
+            {filtered.length === 0
+              ? <li className="px-3 py-1.5 text-xs text-muted-foreground">Keine Ergebnisse</li>
+              : filtered.map(u => (
+                <li key={u.id} onMouseDown={() => select(u)}
+                  className={`px-3 py-1.5 text-xs cursor-pointer hover:bg-teal-50 hover:text-teal-800 transition-colors ${value === u.id ? "bg-teal-50 text-teal-800 font-semibold" : "text-foreground"}`}>
+                  {displayName(u)}
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Time Scroll Picker ───────────────────────────────────────────────────────
+interface TimePickerProps {
+  value: string | null;
+  onChange: (val: string | null) => void;
+  defaultTime?: string;
+  disabled?: boolean;
+}
+
+function TimeScrollPicker({ value, onChange, defaultTime = "6:00", disabled }: TimePickerProps) {
+  const [open, setOpen]   = useState(false);
+  const wrapRef  = useRef<HTMLDivElement>(null);
+  const listRef  = useRef<HTMLUListElement>(null);
+  const activeRef = useRef<HTMLLIElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  // Scroll to active / default when opening
+  useEffect(() => {
+    if (!open) return;
+    setTimeout(() => {
+      if (activeRef.current) {
+        activeRef.current.scrollIntoView({ block: "center" });
+      }
+    }, 30);
+  }, [open]);
+
+  const targetTime = value ?? defaultTime;
+  const handleOpen = () => { if (!disabled) setOpen(true); };
+
+  const select = (t: string) => { onChange(t); setOpen(false); };
+  const clear  = (e: React.MouseEvent) => { e.stopPropagation(); onChange(null); };
 
   return (
     <div ref={wrapRef} className="relative w-full">
       {/* Trigger */}
       <div
         onClick={handleOpen}
-        className={`flex items-center justify-between gap-1 border border-border/50 rounded-lg px-2 py-1.5 text-xs bg-white cursor-pointer select-none min-h-[30px] ${
-          disabled ? "opacity-50 cursor-not-allowed" : "hover:border-[#0f766e]/40"
+        className={`flex items-center gap-1.5 border border-border/50 rounded-lg px-2 py-1.5 text-xs bg-white min-h-[30px] group ${
+          disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-[#0f766e]/40"
         }`}
       >
-        <span className={selectedUser ? "text-foreground font-medium" : "text-muted-foreground/60 italic"}>
-          {selectedUser ? displayName(selectedUser) : "– Frei –"}
+        <Clock className="w-3 h-3 text-muted-foreground/60 shrink-0" />
+        <span className={`flex-1 ${value ? "text-foreground font-medium" : "text-muted-foreground/60"}`}>
+          {value ?? "—"}
         </span>
-        {selectedUser && !disabled && (
-          <button
-            onMouseDown={e => { e.stopPropagation(); select(null); }}
-            className="text-muted-foreground hover:text-red-500 transition-colors shrink-0"
-          >
+        {value && !disabled && (
+          <button onMouseDown={clear} className="text-muted-foreground hover:text-red-500 transition-colors shrink-0">
             <X className="w-3 h-3" />
           </button>
         )}
@@ -90,41 +164,28 @@ function EmployeePicker({ users, value, onChange, disabled }: EmployeePickerProp
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 w-48 bg-white border border-border/60 rounded-xl shadow-lg overflow-hidden">
-          {/* Search input */}
-          <div className="p-1.5 border-b border-border/40">
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Name suchen…"
-              className="w-full px-2 py-1 text-xs rounded-lg border border-border/40 focus:outline-none focus:ring-2 focus:ring-[#0f766e]/25 bg-gray-50"
-            />
-          </div>
-          {/* Options list */}
-          <ul className="max-h-40 overflow-y-auto">
-            <li
-              onMouseDown={() => select(null)}
-              className="px-3 py-1.5 text-xs text-muted-foreground italic cursor-pointer hover:bg-gray-50"
-            >
-              – Frei –
-            </li>
-            {filtered.length === 0 ? (
-              <li className="px-3 py-1.5 text-xs text-muted-foreground">Keine Ergebnisse</li>
-            ) : (
-              filtered.map(u => (
+        <div className="absolute z-50 top-full mt-1 left-0 w-28 bg-white border border-border/60 rounded-xl shadow-lg overflow-hidden">
+          <ul ref={listRef} className="max-h-44 overflow-y-auto py-1 scroll-smooth">
+            {TIMES.map(t => {
+              const isSelected = value === t;
+              const isDefault  = !value && t === defaultTime;
+              return (
                 <li
-                  key={u.id}
-                  onMouseDown={() => select(u)}
-                  className={`px-3 py-1.5 text-xs cursor-pointer hover:bg-teal-50 hover:text-teal-800 transition-colors ${
-                    value === u.id ? "bg-teal-50 text-teal-800 font-semibold" : "text-foreground"
+                  key={t}
+                  ref={isSelected || (!value && isDefault) ? activeRef : undefined}
+                  onMouseDown={() => select(t)}
+                  className={`px-3 py-1.5 text-xs cursor-pointer transition-colors ${
+                    isSelected
+                      ? "bg-[#0f766e] text-white font-bold"
+                      : isDefault
+                      ? "bg-teal-50 text-teal-700 font-semibold"
+                      : "text-foreground hover:bg-teal-50 hover:text-teal-800"
                   }`}
                 >
-                  {displayName(u)}
+                  {t} Uhr
                 </li>
-              ))
-            )}
+              );
+            })}
           </ul>
         </div>
       )}
@@ -170,7 +231,7 @@ export default function TodoKassen() {
     patch: Partial<{ userId: number | null; userName: string | null; uhrzeit: string | null }>
   ) => {
     if (!selectedMarketId || !isAdmin) return;
-    const key     = `${shift}-${till}`;
+    const key      = `${shift}-${till}`;
     const existing = getAssignment(shift, till);
     setSavingKey(key);
     try {
@@ -187,16 +248,8 @@ export default function TodoKassen() {
     } finally { setSavingKey(null); }
   };
 
-  const handleZeitBlur = (shift: string, till: number, value: string) => {
-    const trimmed = value.trim() || null;
-    if (trimmed === (getAssignment(shift, till)?.uhrzeit ?? null)) return;
-    saveField(shift, till, { uhrzeit: trimmed });
-  };
-
   const moveDate = (days: number) =>
     setSelectedDate(d => { const n = new Date(d); n.setDate(n.getDate() + days); return n; });
-
-  const inputClass = "w-full border border-border/50 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#0f766e]/25 placeholder:text-muted-foreground/40";
 
   return (
     <AppLayout>
@@ -225,9 +278,7 @@ export default function TodoKassen() {
               </button>
               <button
                 onClick={() => setSelectedDate(new Date())}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${
-                  isToday ? "bg-white text-[#0f766e]" : "bg-white/15 hover:bg-white/25 text-white"
-                }`}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors ${isToday ? "bg-white text-[#0f766e]" : "bg-white/15 hover:bg-white/25 text-white"}`}
               >
                 Heute
               </button>
@@ -284,8 +335,8 @@ export default function TodoKassen() {
               <tbody>
                 {TILLS.map((till, tillIdx) => {
                   const isLast       = tillIdx === TILLS.length - 1;
-                  const generalKey   = `allgemein-${till}`;
                   const generalEntry = getAssignment("allgemein", till);
+                  const generalKey   = `allgemein-${till}`;
 
                   return (
                     <tr key={till} className={`${!isLast ? "border-b border-border/40" : ""} hover:bg-gray-50/50 transition-colors`}>
@@ -300,15 +351,13 @@ export default function TodoKassen() {
                         {isAdmin ? (
                           <div className="relative">
                             {savingKey === generalKey && (
-                              <Loader2 className="w-3 h-3 animate-spin absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
+                              <Loader2 className="w-3 h-3 animate-spin absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground z-10" />
                             )}
-                            <input
-                              type="text"
-                              defaultValue={generalEntry?.uhrzeit ?? ""}
-                              key={`${generalKey}-${generalEntry?.uhrzeit}`}
-                              onBlur={e => handleZeitBlur("allgemein", till, e.target.value)}
-                              placeholder="z.B. 8–20"
-                              className={inputClass}
+                            <TimeScrollPicker
+                              value={generalEntry?.uhrzeit ?? null}
+                              defaultTime="6:00"
+                              disabled={savingKey === generalKey}
+                              onChange={val => saveField("allgemein", till, { uhrzeit: val })}
                             />
                           </div>
                         ) : (
@@ -351,13 +400,11 @@ export default function TodoKassen() {
                             {/* Uhr */}
                             <td className={`px-2.5 py-2.5 ${!isLastShift ? "border-r border-border/40" : ""}`}>
                               {isAdmin ? (
-                                <input
-                                  type="text"
-                                  defaultValue={a?.uhrzeit ?? ""}
-                                  key={`${key}-zeit-${a?.uhrzeit}`}
-                                  onBlur={e => handleZeitBlur(shift.key, till, e.target.value)}
-                                  placeholder="z.B. 6–14"
-                                  className={inputClass}
+                                <TimeScrollPicker
+                                  value={a?.uhrzeit ?? null}
+                                  defaultTime={shift.defaultTime}
+                                  disabled={busy}
+                                  onChange={val => saveField(shift.key, till, { uhrzeit: val })}
                                 />
                               ) : (
                                 <span className={`text-xs ${a?.uhrzeit ? "font-medium text-foreground" : "text-muted-foreground"}`}>
