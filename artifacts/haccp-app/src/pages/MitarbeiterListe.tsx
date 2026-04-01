@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Users, Loader2, ChevronLeft } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -51,18 +52,20 @@ export default function MitarbeiterListe() {
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-4 pb-10">
 
-        <div className="flex items-center gap-3">
-          <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors shrink-0">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-          <div className="w-10 h-10 bg-[#1a3a6b]/10 rounded-2xl flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5 text-[#1a3a6b]" />
+        <PageHeader>
+          <div className="flex items-center gap-3">
+            <Link href="/haccp" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="w-5 h-5" />
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold leading-tight">1.2 Mitarbeiter & Kürzel</h1>
+              <p className="text-white/70 text-sm">Übersicht aller Mitarbeiter mit Kürzel</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">1.2 Mitarbeiter & Kürzel</h1>
-            <p className="text-xs text-muted-foreground">Übersicht aller Mitarbeiter mit Kürzel</p>
-          </div>
-        </div>
+        </PageHeader>
 
         {loading ? (
           <div className="flex justify-center py-16">
