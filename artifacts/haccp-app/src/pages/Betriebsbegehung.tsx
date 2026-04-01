@@ -565,7 +565,7 @@ export default function Betriebsbegehung() {
 
         {SECTIONS.map((section) => (
           <div key={section.id} className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
-            <div className="bg-[#1a3a6b] text-white px-5 py-3">
+            <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white px-5 py-3">
               <h2 className="font-bold text-sm">{section.title}</h2>
             </div>
             <div className="divide-y divide-border/40">

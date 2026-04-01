@@ -460,7 +460,7 @@ export default function AntiVektorZugang() {
         {tab === "zugang" && (
           <>
             {/* Protokollierungs-Link */}
-            <div className="bg-[#1a3a6b] rounded-2xl p-6 text-white">
+            <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-6 text-white">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
                   <ExternalLink className="w-6 h-6 text-white" />

@@ -115,7 +115,7 @@ function PinDialog({ open, onConfirm, onClose, error, loading, periodLabel }: Pi
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="bg-[#1a3a6b] text-white px-5 py-3 flex items-center gap-3">
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white px-5 py-3 flex items-center gap-3">
           <KeyRound className="h-5 w-5" />
           <h3 className="font-bold text-base">Reinigung bestätigen</h3>
         </div>
@@ -384,7 +384,7 @@ export default function AnnualCleaningPlan() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse min-w-[900px]">
               <thead>
-                <tr className="bg-[#1a3a6b] text-white">
+                <tr className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white">
                   <th className="text-left px-3 py-2.5 font-semibold w-[200px] border-r border-white/20">Gegenstand</th>
                   <th className="text-center px-2 py-2.5 font-semibold w-[100px] border-r border-white/20 text-xs">Reinigung</th>
                   {MONTHS.map((m: string) => (

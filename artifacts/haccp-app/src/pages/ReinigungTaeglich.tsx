@@ -510,7 +510,7 @@ export default function ReinigungTaeglich() {
             >
               <table className="w-full text-sm border-collapse">
                 <thead className="sticky top-0 z-20">
-                  <tr className="bg-[#1a3a6b] text-white">
+                  <tr className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white">
                     <th className="px-3 py-3 text-left text-xs font-bold sticky left-0 top-0 bg-[#1a3a6b] z-30 min-w-[48px]">Tag</th>
                     <th className="px-2 py-3 text-center text-xs font-bold min-w-[36px]">WT</th>
                     {AREAS.map(a => (

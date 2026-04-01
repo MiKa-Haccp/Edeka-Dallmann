@@ -617,7 +617,7 @@ function KuerzelVerzeichnis({ employees }: { employees: Employee[] }) {
       </div>
 
       <div className="bg-white rounded-2xl border border-border/60 overflow-hidden">
-        <div className="bg-[#1a3a6b] text-white px-5 py-3">
+        <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white px-5 py-3">
           <p className="text-sm font-bold">EDEKA DALLMANN — Mitarbeiter-Kürzel-Verzeichnis</p>
           <p className="text-xs text-blue-200">Stand: {new Date().toLocaleDateString("de-DE")} · Gesamt: {employees.length} Einträge</p>
         </div>

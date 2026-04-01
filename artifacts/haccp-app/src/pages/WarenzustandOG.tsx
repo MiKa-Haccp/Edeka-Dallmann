@@ -502,7 +502,7 @@ export default function WarenzustandOG() {
             >
               <table className="w-full text-sm border-collapse">
                 <thead className="sticky top-0 z-20">
-                  <tr className="bg-[#1a3a6b] text-white">
+                  <tr className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white">
                     <th className="px-3 py-3 text-left font-semibold text-xs w-16 sticky left-0 top-0 bg-[#1a3a6b] z-30">Tag</th>
                     <th className="px-2 py-2 text-center font-semibold text-xs w-10 opacity-70">Wt</th>
                     {SLOTS.map(s => (
