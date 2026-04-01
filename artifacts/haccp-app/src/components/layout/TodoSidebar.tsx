@@ -37,7 +37,7 @@ function NavLink({ href, label, icon: Icon, onNavigate, ampel }: {
     : ampel === "red"
     ? "text-red-500"
     : isActive
-    ? "text-[#1a3a6b]"
+    ? "text-[#0f766e]"
     : "text-muted-foreground/50 group-hover:text-muted-foreground";
 
   return (
@@ -47,7 +47,7 @@ function NavLink({ href, label, icon: Icon, onNavigate, ampel }: {
       className={cn(
         "flex items-center gap-3 px-4 py-2.5 text-sm rounded-xl transition-all duration-200 group",
         isActive
-          ? "bg-[#1a3a6b]/10 text-[#1a3a6b] font-semibold"
+          ? "bg-[#0f766e]/10 text-[#0f766e] font-semibold"
           : "text-muted-foreground hover:bg-secondary hover:text-foreground"
       )}
     >
@@ -188,15 +188,15 @@ export function TodoSidebar() {
       <div
         onMouseDown={e => { e.preventDefault(); setIsDragging(true); }}
         className={cn(
-          "absolute top-0 right-0 w-1.5 h-full cursor-col-resize z-10 group flex items-center justify-center hover:bg-[#1a3a6b]/20 transition-colors",
-          isDragging && "bg-[#1a3a6b]/30"
+          "absolute top-0 right-0 w-1.5 h-full cursor-col-resize z-10 group flex items-center justify-center hover:bg-[#0f766e]/20 transition-colors",
+          isDragging && "bg-[#0f766e]/30"
         )}
       >
         <div className={cn(
-          "absolute top-1/2 -translate-y-1/2 right-0 w-4 h-10 flex items-center justify-center rounded-r-md opacity-0 group-hover:opacity-100 transition-opacity bg-[#1a3a6b]/10",
+          "absolute top-1/2 -translate-y-1/2 right-0 w-4 h-10 flex items-center justify-center rounded-r-md opacity-0 group-hover:opacity-100 transition-opacity bg-[#0f766e]/10",
           isDragging && "opacity-100"
         )}>
-          <GripVertical className="h-4 w-4 text-[#1a3a6b]/50" />
+          <GripVertical className="h-4 w-4 text-[#0f766e]/50" />
         </div>
       </div>
     </aside>

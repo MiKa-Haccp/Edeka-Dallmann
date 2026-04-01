@@ -14,7 +14,7 @@ const BASE = import.meta.env.VITE_API_URL || "/api";
 const PRIORITY_CONFIG = {
   hoch:   { label: "Hoch",    icon: Flame,    color: "text-red-600",   bg: "bg-red-100",    badge: "bg-red-100 text-red-700"   },
   mittel: { label: "Mittel",  icon: Minus,    color: "text-amber-600", bg: "bg-amber-100",  badge: "bg-amber-100 text-amber-700" },
-  niedrig:{ label: "Niedrig", icon: ArrowDown, color: "text-blue-600", bg: "bg-blue-100",   badge: "bg-blue-100 text-blue-700"  },
+  niedrig:{ label: "Niedrig", icon: ArrowDown, color: "text-teal-600", bg: "bg-teal-100",   badge: "bg-teal-100 text-teal-700"  },
 };
 
 interface AdhocTask {
@@ -58,11 +58,11 @@ function PINDialog({ title, onConfirm, onClose }: {
           onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
           onKeyDown={e => e.key === "Enter" && handleConfirm()}
           placeholder="• • • •"
-          className="w-full border border-border/60 rounded-xl px-4 py-3 text-center text-2xl tracking-widest mb-3 focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+          className="w-full border border-border/60 rounded-xl px-4 py-3 text-center text-2xl tracking-widest mb-3 focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30"
         />
         {error && <p className="text-xs text-red-600 text-center mb-3">{error}</p>}
         <button onClick={handleConfirm} disabled={saving || pin.length !== 4}
-          className="w-full py-2.5 bg-[#1a3a6b] text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+          className="w-full py-2.5 bg-[#0f766e] text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
           {saving && <Loader2 className="w-4 h-4 animate-spin" />} Bestätigen
         </button>
       </div>
@@ -113,25 +113,25 @@ function NewTaskDialog({ onSave, onClose }: {
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Titel *</label>
             <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Was muss erledigt werden?"
-              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30" />
           </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Beschreibung</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder="Details (optional)"
-              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none" />
+              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30 resize-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dringlichkeit</label>
               <select value={priority} onChange={e => setPriority(e.target.value)}
-                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
+                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30">
                 {Object.entries(PRIORITY_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Zieluhrzeit</label>
               <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)}
-                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30" />
             </div>
           </div>
           <div>
@@ -144,7 +144,7 @@ function NewTaskDialog({ onSave, onClose }: {
                 </div>
               ) : (
                 <button onClick={() => fileRef.current?.click()}
-                  className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border/60 rounded-xl text-sm text-muted-foreground hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b] w-full justify-center transition-colors">
+                  className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border/60 rounded-xl text-sm text-muted-foreground hover:border-[#0f766e]/40 hover:text-[#0f766e] w-full justify-center transition-colors">
                   <Camera className="w-4 h-4" /> Foto aufnehmen / auswählen
                 </button>
               )}
@@ -156,11 +156,11 @@ function NewTaskDialog({ onSave, onClose }: {
             <input type="password" inputMode="numeric" maxLength={4} value={pin}
               onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
               placeholder="• • • •"
-              className="mt-1 w-full border border-border/60 rounded-xl px-4 py-2.5 text-center text-xl tracking-widest focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+              className="mt-1 w-full border border-border/60 rounded-xl px-4 py-2.5 text-center text-xl tracking-widest focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30" />
           </div>
           {error && <p className="text-xs text-red-600">{error}</p>}
           <button onClick={handleSubmit} disabled={saving || !title.trim() || pin.length !== 4}
-            className="w-full py-3 bg-[#1a3a6b] text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+            className="w-full py-3 bg-[#0f766e] text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
             {saving && <Loader2 className="w-4 h-4 animate-spin" />} Aufgabe speichern
           </button>
         </div>
@@ -217,7 +217,7 @@ function TaskCard({ task, isAdmin, onComplete, onReopen, onDelete }: {
             </button>
           )}
           {task.is_completed && isAdmin && (
-            <button onClick={() => onReopen(task.id)} className="p-1.5 text-muted-foreground hover:text-[#1a3a6b] rounded-lg transition-colors" title="Wieder öffnen">
+            <button onClick={() => onReopen(task.id)} className="p-1.5 text-muted-foreground hover:text-[#0f766e] rounded-lg transition-colors" title="Wieder öffnen">
               <RotateCcw className="w-4 h-4" />
             </button>
           )}
@@ -303,7 +303,7 @@ export default function TodoRundgang() {
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-5">
-        <PageHeader>
+        <PageHeader className="from-[#0f766e] to-[#14b8a6]">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Link href="/todo" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">

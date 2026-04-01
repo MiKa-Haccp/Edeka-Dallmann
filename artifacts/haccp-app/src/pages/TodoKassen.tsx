@@ -10,7 +10,7 @@ const BASE = import.meta.env.VITE_API_URL || "/api";
 
 const SHIFTS = [
   { key: "frueh",   label: "Frühschicht",  color: "bg-amber-50  border-amber-200", headColor: "bg-amber-100  text-amber-800"  },
-  { key: "mittel",  label: "Mittelschicht", color: "bg-blue-50   border-blue-200",  headColor: "bg-blue-100   text-blue-800"   },
+  { key: "mittel",  label: "Mittelschicht", color: "bg-teal-50   border-teal-200",  headColor: "bg-teal-100   text-teal-800"   },
   { key: "spaet",   label: "Spätschicht",  color: "bg-purple-50 border-purple-200", headColor: "bg-purple-100 text-purple-800" },
 ];
 const TILLS = [1, 2, 3, 4];
@@ -87,7 +87,7 @@ export default function TodoKassen() {
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-5">
         {/* Header */}
-        <PageHeader>
+        <PageHeader className="from-[#0f766e] to-[#14b8a6]">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
               <Link href="/todo" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
@@ -103,14 +103,14 @@ export default function TodoKassen() {
             </div>
             <div className="flex items-center gap-1">
               <button onClick={() => moveDate(-1)} className="p-2 rounded-xl bg-white/15 hover:bg-white/25 text-white"><ChevronLeft className="w-4 h-4" /></button>
-              <button onClick={() => setSelectedDate(new Date())} className={`px-3 py-1.5 rounded-xl text-xs font-medium ${isToday ? "bg-white text-[#1a3a6b]" : "bg-white/15 hover:bg-white/25 text-white"}`}>Heute</button>
+              <button onClick={() => setSelectedDate(new Date())} className={`px-3 py-1.5 rounded-xl text-xs font-medium ${isToday ? "bg-white text-[#0f766e]" : "bg-white/15 hover:bg-white/25 text-white"}`}>Heute</button>
               <button onClick={() => moveDate(1)} className="p-2 rounded-xl bg-white/15 hover:bg-white/25 text-white"><ChevronRight className="w-4 h-4" /></button>
             </div>
           </div>
         </PageHeader>
 
         {!isAdmin && (
-          <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-700 text-sm">
+          <div className="flex items-center gap-2 px-4 py-3 bg-teal-50 border border-teal-200 rounded-xl text-teal-700 text-sm">
             <Info className="w-4 h-4 shrink-0" />
             Nur zur Ansicht – Änderungen sind dem Marktleiter vorbehalten.
           </div>
@@ -138,7 +138,7 @@ export default function TodoKassen() {
                               value={a?.user_id ?? ""}
                               onChange={e => handleChange(shift.key, till, e.target.value)}
                               disabled={isSaving}
-                              className="w-full border border-border/60 rounded-xl px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 bg-white disabled:opacity-50 pr-6"
+                              className="w-full border border-border/60 rounded-xl px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30 bg-white disabled:opacity-50 pr-6"
                             >
                               <option value="">– Frei –</option>
                               {users.map(u => (

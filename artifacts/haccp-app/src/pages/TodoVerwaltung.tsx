@@ -12,7 +12,7 @@ const WEEKDAY_NAMES = ["", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Frei
 const PRIORITIES = [
   { value: "hoch",    label: "Hoch",    icon: Flame,    color: "text-red-600"   },
   { value: "mittel",  label: "Mittel",  icon: Minus,    color: "text-amber-600" },
-  { value: "niedrig", label: "Niedrig", icon: ArrowDown, color: "text-blue-600"  },
+  { value: "niedrig", label: "Niedrig", icon: ArrowDown, color: "text-teal-600"  },
 ];
 
 interface Task {
@@ -82,7 +82,7 @@ function TaskForm({
           <img src={photoData} alt="Referenzfoto" className="max-w-full max-h-full rounded-xl object-contain" />
         </div>
       )}
-      <div className="bg-white rounded-2xl border border-[#1a3a6b]/30 shadow-sm p-5 space-y-4">
+      <div className="bg-white rounded-2xl border border-[#0f766e]/30 shadow-sm p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-foreground">{initial?.id ? "Aufgabe bearbeiten" : "Neue Aufgabe"}</h3>
           <button onClick={onCancel} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground"><X className="w-4 h-4" /></button>
@@ -94,7 +94,7 @@ function TaskForm({
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="z.B. Einkaufswagen aufräumen"
-            className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+            className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30"
           />
         </div>
 
@@ -104,7 +104,7 @@ function TaskForm({
             value={description ?? ""}
             onChange={e => setDescription(e.target.value)}
             rows={2}
-            className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none"
+            className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30 resize-none"
           />
         </div>
 
@@ -114,7 +114,7 @@ function TaskForm({
             <select
               value={weekday}
               onChange={e => setWeekday(Number(e.target.value))}
-              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30"
             >
               {WEEKDAY_NAMES.slice(1).map((name, i) => (
                 <option key={i + 1} value={i + 1}>{name}</option>
@@ -126,7 +126,7 @@ function TaskForm({
             <select
               value={priority}
               onChange={e => setPriority(e.target.value)}
-              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30"
             >
               {PRIORITIES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
             </select>
@@ -171,7 +171,7 @@ function TaskForm({
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="mt-2 w-full border-2 border-dashed border-border/60 rounded-xl py-5 flex items-center justify-center gap-2 text-muted-foreground hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b] transition-colors text-sm"
+              className="mt-2 w-full border-2 border-dashed border-border/60 rounded-xl py-5 flex items-center justify-center gap-2 text-muted-foreground hover:border-[#0f766e]/40 hover:text-[#0f766e] transition-colors text-sm"
             >
               <ImagePlus className="w-4 h-4" /> Referenzfoto hinzufügen
             </button>
@@ -185,7 +185,7 @@ function TaskForm({
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="flex-1 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+            className="flex-1 py-2.5 rounded-xl bg-[#0f766e] text-white text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Speichern
@@ -284,7 +284,7 @@ export default function TodoVerwaltung() {
       )}
       <AppLayout>
         <div className="max-w-3xl mx-auto space-y-5">
-          <PageHeader>
+          <PageHeader className="from-[#0f766e] to-[#14b8a6]">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-3">
                 <Link href="/todo" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
@@ -313,7 +313,7 @@ export default function TodoVerwaltung() {
           <div className="flex gap-1.5 flex-wrap">
             <button
               onClick={() => setFilterDay(null)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${filterDay === null ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border/60 text-muted-foreground hover:border-[#1a3a6b]/40"}`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${filterDay === null ? "bg-[#0f766e] text-white border-[#0f766e]" : "border-border/60 text-muted-foreground hover:border-[#0f766e]/40"}`}
             >
               Alle
             </button>
@@ -321,7 +321,7 @@ export default function TodoVerwaltung() {
               <button
                 key={i + 1}
                 onClick={() => setFilterDay(i + 1)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${filterDay === i + 1 ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border/60 text-muted-foreground hover:border-[#1a3a6b]/40"}`}
+                className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${filterDay === i + 1 ? "bg-[#0f766e] text-white border-[#0f766e]" : "border-border/60 text-muted-foreground hover:border-[#0f766e]/40"}`}
               >
                 {name.slice(0, 2)}
               </button>
@@ -373,7 +373,7 @@ export default function TodoVerwaltung() {
                               {task.description && <p className="text-xs text-muted-foreground">{task.description}</p>}
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
-                              <button onClick={() => setEditTask(task)} className="p-1.5 text-muted-foreground hover:text-[#1a3a6b] rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => setEditTask(task)} className="p-1.5 text-muted-foreground hover:text-[#0f766e] rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>
                               <button onClick={() => handleDelete(task.id)} className="p-1.5 text-muted-foreground hover:text-red-500 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                             </div>
                           </div>

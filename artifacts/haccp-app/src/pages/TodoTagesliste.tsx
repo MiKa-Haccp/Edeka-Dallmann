@@ -17,7 +17,7 @@ const WEEKDAY_NAMES = ["", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Frei
 const PRIORITY_CONFIG = {
   hoch:   { label: "Hoch",    icon: Flame,    color: "text-red-600",   bg: "bg-red-50",   border: "border-red-200",   badge: "bg-red-100 text-red-700"    },
   mittel: { label: "Mittel",  icon: Minus,    color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", badge: "bg-amber-100 text-amber-700" },
-  niedrig:{ label: "Niedrig", icon: ArrowDown, color: "text-blue-600", bg: "bg-blue-50",  border: "border-blue-200",  badge: "bg-blue-100 text-blue-700"   },
+  niedrig:{ label: "Niedrig", icon: ArrowDown, color: "text-teal-600", bg: "bg-teal-50",  border: "border-teal-200",  badge: "bg-teal-100 text-teal-700"   },
 };
 
 interface StandardTask {
@@ -85,11 +85,11 @@ function PINDialog({ title, onConfirm, onClose }: {
           onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
           onKeyDown={e => e.key === "Enter" && handleConfirm()}
           placeholder="• • • •"
-          className="w-full border border-border/60 rounded-xl px-4 py-3 text-center text-2xl tracking-widest mb-3 focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+          className="w-full border border-border/60 rounded-xl px-4 py-3 text-center text-2xl tracking-widest mb-3 focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30"
         />
         {error && <p className="text-xs text-red-600 text-center mb-3">{error}</p>}
         <button onClick={handleConfirm} disabled={saving || pin.length !== 4}
-          className="w-full py-2.5 bg-[#1a3a6b] text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+          className="w-full py-2.5 bg-[#0f766e] text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
           {saving && <Loader2 className="w-4 h-4 animate-spin" />} Bestätigen
         </button>
       </div>
@@ -131,7 +131,7 @@ function PhotoDialog({ taskTitle, currentPhoto, onSave, onDelete, onClose }: {
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-bold text-foreground flex items-center gap-2"><Camera className="w-4 h-4 text-[#1a3a6b]" /> Foto</h3>
+              <h3 className="font-bold text-foreground flex items-center gap-2"><Camera className="w-4 h-4 text-[#0f766e]" /> Foto</h3>
               <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{taskTitle}</p>
             </div>
             <button onClick={onClose}><X className="w-4 h-4 text-muted-foreground" /></button>
@@ -143,7 +143,7 @@ function PhotoDialog({ taskTitle, currentPhoto, onSave, onDelete, onClose }: {
             </div>
           ) : (
             <button onClick={() => inputRef.current?.click()}
-              className="w-full mb-4 border-2 border-dashed border-border/60 rounded-xl py-8 flex flex-col items-center gap-2 text-muted-foreground hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b] transition-colors">
+              className="w-full mb-4 border-2 border-dashed border-border/60 rounded-xl py-8 flex flex-col items-center gap-2 text-muted-foreground hover:border-[#0f766e]/40 hover:text-[#0f766e] transition-colors">
               <ImagePlus className="w-8 h-8" />
               <span className="text-sm font-medium">Foto auswählen oder aufnehmen</span>
             </button>
@@ -162,7 +162,7 @@ function PhotoDialog({ taskTitle, currentPhoto, onSave, onDelete, onClose }: {
               </button>
             )}
             <button onClick={handleSave} disabled={saving || !preview}
-              className="flex-1 py-2.5 bg-[#1a3a6b] text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+              className="flex-1 py-2.5 bg-[#0f766e] text-white rounded-xl font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {preview && preview !== currentPhoto ? "Speichern" : "Schließen"}
             </button>
@@ -214,25 +214,25 @@ function NewAdhocDialog({ onSave, onClose }: {
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Titel *</label>
             <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Was muss erledigt werden?"
-              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30" />
           </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Beschreibung</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2}
-              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none" />
+              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30 resize-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dringlichkeit</label>
               <select value={priority} onChange={e => setPriority(e.target.value)}
-                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30">
+                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30">
                 {Object.entries(PRIORITY_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Zieluhrzeit</label>
               <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)}
-                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30" />
             </div>
           </div>
           <div>
@@ -256,7 +256,7 @@ function NewAdhocDialog({ onSave, onClose }: {
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dein PIN *</label>
             <input type="password" inputMode="numeric" maxLength={4} value={pin}
               onChange={e => setPin(e.target.value.replace(/\D/g, ""))} placeholder="• • • •"
-              className="mt-1 w-full border border-border/60 rounded-xl px-4 py-2.5 text-center text-xl tracking-widest focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30" />
+              className="mt-1 w-full border border-border/60 rounded-xl px-4 py-2.5 text-center text-xl tracking-widest focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30" />
           </div>
           {error && <p className="text-xs text-red-600">{error}</p>}
           <button onClick={handleSubmit} disabled={saving || !title.trim() || pin.length !== 4}
@@ -420,7 +420,7 @@ export default function TodoTagesliste() {
       <div className="max-w-2xl mx-auto space-y-5">
 
         {/* Header */}
-        <PageHeader>
+        <PageHeader className="from-[#0f766e] to-[#14b8a6]">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-3">
               <Link href="/todo" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
@@ -441,7 +441,7 @@ export default function TodoTagesliste() {
               <div className="flex items-center gap-1">
                 <button onClick={() => moveDate(-1)} className="p-2 rounded-xl bg-white/15 hover:bg-white/25 text-white"><ChevronLeft className="w-4 h-4" /></button>
                 <button onClick={() => setSelectedDate(new Date())}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-medium ${isToday ? "bg-white text-[#1a3a6b]" : "bg-white/15 hover:bg-white/25 text-white"}`}>
+                  className={`px-3 py-1.5 rounded-xl text-xs font-medium ${isToday ? "bg-white text-[#0f766e]" : "bg-white/15 hover:bg-white/25 text-white"}`}>
                   Heute
                 </button>
                 <button onClick={() => moveDate(1)} className="p-2 rounded-xl bg-white/15 hover:bg-white/25 text-white"><ChevronRight className="w-4 h-4" /></button>
@@ -485,16 +485,16 @@ export default function TodoTagesliste() {
             {openStandard.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3 px-1">
-                  <CalendarDays className="w-4 h-4 text-[#1a3a6b]" />
-                  <span className="text-xs font-bold uppercase tracking-wide text-[#1a3a6b]">Standardaufgaben</span>
-                  <span className="text-xs bg-[#1a3a6b]/10 text-[#1a3a6b] px-2 py-0.5 rounded-full font-semibold">{openStandard.length}</span>
+                  <CalendarDays className="w-4 h-4 text-[#0f766e]" />
+                  <span className="text-xs font-bold uppercase tracking-wide text-[#0f766e]">Standardaufgaben</span>
+                  <span className="text-xs bg-[#0f766e]/10 text-[#0f766e] px-2 py-0.5 rounded-full font-semibold">{openStandard.length}</span>
                 </div>
                 <div className="space-y-2">
                   {priorityOrder.flatMap(p => openStandard.filter(t => t.priority === p)).map(task => {
                     const conf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.mittel;
                     const PIcon = conf.icon;
                     return (
-                      <div key={task.id} className="bg-white rounded-2xl border border-border/60 overflow-hidden border-l-4 border-l-[#1a3a6b]/30">
+                      <div key={task.id} className="bg-white rounded-2xl border border-border/60 overflow-hidden border-l-4 border-l-[#0f766e]/30">
                         {task.photo_data && (
                           <button onClick={() => setEnlargedPhoto(task.photo_data)} className="w-full block relative">
                             <img src={task.photo_data} alt="Referenz" className="w-full h-28 object-cover hover:opacity-90 transition-opacity" />
@@ -662,7 +662,7 @@ export default function TodoTagesliste() {
                           )}
                         </div>
                         {isAdmin && (
-                          <button onClick={() => handleAdhocReopen(task.id)} className="p-1.5 text-muted-foreground hover:text-[#1a3a6b] rounded-lg" title="Wieder öffnen">
+                          <button onClick={() => handleAdhocReopen(task.id)} className="p-1.5 text-muted-foreground hover:text-[#0f766e] rounded-lg" title="Wieder öffnen">
                             <RotateCcw className="w-3.5 h-3.5" />
                           </button>
                         )}

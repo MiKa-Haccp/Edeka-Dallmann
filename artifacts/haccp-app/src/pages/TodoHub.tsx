@@ -41,7 +41,7 @@ export default function TodoHub() {
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-6">
-        <PageHeader>
+        <PageHeader className="from-[#0f766e] to-[#14b8a6]">
           <div className="flex items-center gap-3">
             <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
               <ChevronLeft className="h-5 w-5" />
@@ -58,11 +58,11 @@ export default function TodoHub() {
 
         <div className="grid gap-4">
           <Link href="/todo-tagesliste">
-            <div className="bg-white rounded-2xl border border-border/60 shadow-sm p-5 hover:shadow-md hover:border-[#1a3a6b]/30 transition-all cursor-pointer group">
+            <div className="bg-white rounded-2xl border border-border/60 shadow-sm p-5 hover:shadow-md hover:border-[#0f766e]/30 transition-all cursor-pointer group">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-[#1a3a6b]/10 rounded-xl group-hover:bg-[#1a3a6b]/20 transition-colors">
-                    <ClipboardList className="w-6 h-6 text-[#1a3a6b]" />
+                  <div className="p-3 bg-[#0f766e]/10 rounded-xl group-hover:bg-[#0f766e]/20 transition-colors">
+                    <ClipboardList className="w-6 h-6 text-[#0f766e]" />
                   </div>
                   <div>
                     <h2 className="font-bold text-foreground">Meine Aufgaben</h2>
