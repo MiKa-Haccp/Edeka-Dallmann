@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ShoppingCart, Plus, Trash2, Check, ChevronLeft,
@@ -102,21 +103,28 @@ export default function WareBestellungen() {
       <div className="max-w-3xl mx-auto space-y-5">
 
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Link href="/ware-bestellungen" className="p-2 rounded-xl hover:bg-secondary transition-colors text-muted-foreground">
-            <ChevronLeft className="w-5 h-5" />
-          </Link>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-foreground">Bestellungen</h1>
-            <p className="text-sm text-muted-foreground">Marktubersicht Rayons</p>
-          </div>
+        <PageHeader>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Link href="/ware-bestellungen" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+                <ChevronLeft className="w-5 h-5" />
+              </Link>
+              <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                <ShoppingCart className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h1 className="text-lg font-bold leading-tight">Bestellungen</h1>
+                <p className="text-white/70 text-sm">Marktübersicht Rayons</p>
+              </div>
+            </div>
           {isAdmin && (
             <button onClick={() => setTab(t => t === "admin" ? "dashboard" : "admin")}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-colors ${tab==="admin" ? "bg-[#1a3a6b] text-white" : "bg-secondary text-foreground hover:bg-secondary/80"}`}>
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-sm font-semibold transition-colors shrink-0`}>
               <Settings className="w-4 h-4" /> {tab==="admin" ? "Fertig" : "Verwaltung"}
             </button>
           )}
-        </div>
+          </div>
+        </PageHeader>
 
         {/* Admin-Tab */}
         {tab === "admin" && (

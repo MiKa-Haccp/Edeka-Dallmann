@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, type ReactNode } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { Link } from "wouter";
 import {
@@ -177,28 +178,30 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
 
         {/* Header – nur im Standalone-Modus */}
         {!noLayout && (
-          <div className="flex items-center gap-3">
-            <Link href="/ware-streckenbestellung" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
-              <ChevronLeft className="h-5 w-5" />
-            </Link>
-            <div className="w-10 h-10 rounded-xl bg-[#1a3a6b]/10 flex items-center justify-center flex-shrink-0">
-              <List className="w-5 h-5 text-[#1a3a6b]" />
+          <PageHeader>
+            <div className="flex items-center gap-3">
+              <Link href="/ware-streckenbestellung" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+                <ChevronLeft className="h-5 w-5" />
+              </Link>
+              <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                <List className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg font-bold leading-tight">Übersicht Streckenlieferanten</h1>
+                <p className="text-white/70 text-sm">
+                  {lieferanten.length > 0 ? `${lieferanten.length} Lieferanten` : "Alle Streckenlieferanten"}
+                </p>
+              </div>
+              {isAdmin && (
+                <button
+                  onClick={() => { setShowAdd(true); setAddData({ ...EMPTY, sort_order: lieferanten.length + 1 }); }}
+                  className="flex items-center gap-2 px-3 py-2 bg-white/15 hover:bg-white/25 text-white rounded-xl text-sm font-semibold transition-colors shrink-0"
+                >
+                  <Plus className="w-4 h-4" /> Neu
+                </button>
+              )}
             </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl font-bold text-foreground">Übersicht Streckenlieferanten</h1>
-              <p className="text-sm text-muted-foreground">
-                {lieferanten.length > 0 ? `${lieferanten.length} Lieferanten` : "Alle Streckenlieferanten"}
-              </p>
-            </div>
-            {isAdmin && (
-              <button
-                onClick={() => { setShowAdd(true); setAddData({ ...EMPTY, sort_order: lieferanten.length + 1 }); }}
-                className="flex items-center gap-2 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-semibold hover:bg-[#2d5aa0] transition-colors"
-              >
-                <Plus className="w-4 h-4" /> Neu
-              </button>
-            )}
-          </div>
+          </PageHeader>
         )}
 
         {/* Tab-Modus: kompakte Aktionszeile */}

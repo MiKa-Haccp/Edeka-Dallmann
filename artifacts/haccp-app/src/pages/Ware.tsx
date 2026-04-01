@@ -1,4 +1,5 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Link } from "wouter";
 import { Package, ArrowRight, ShoppingCart, Truck, CalendarCheck, ChevronLeft } from "lucide-react";
 
@@ -46,18 +47,20 @@ export default function Ware() {
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
 
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-          <div className="w-10 h-10 rounded-xl bg-[#1a3a6b]/10 flex items-center justify-center flex-shrink-0">
-            <Package className="w-5 h-5 text-[#1a3a6b]" />
+        <PageHeader>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <Package className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold leading-tight">Ware</h1>
+              <p className="text-white/70 text-sm">Bestellungen, Einräumservice und MHD-Kontrolle.</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground mb-0.5">Ware</h1>
-            <p className="text-muted-foreground text-sm">Bestellungen, Einräumservice und MHD-Kontrolle.</p>
-          </div>
-        </div>
+        </PageHeader>
 
         {/* Karten */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ChevronLeft, Save, Plus, Trash2, Loader2, Check, X,
   Users, ClipboardList, KeyRound, UserCheck, Printer, AlertCircle,
 } from "lucide-react";
+import { Link } from "wouter";
 import { UnterschriftPad } from "@/components/UnterschriftPad";
 import ReactDOM from "react-dom";
 
@@ -435,22 +437,27 @@ export default function Besprechungsprotokoll({ noLayout }: { noLayout?: boolean
       <div className="max-w-3xl mx-auto space-y-4 pb-10">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#1a3a6b]/10 rounded-2xl flex items-center justify-center">
-              <ClipboardList className="w-5 h-5 text-[#1a3a6b]" />
+        <PageHeader>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+                <ChevronLeft className="h-5 w-5" />
+              </Link>
+              <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                <ClipboardList className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold leading-tight">Besprechungsprotokoll</h1>
+                <p className="text-white/70 text-sm">EDEKA Formblatt 2.5 — Teilnehmerbestätigung per PIN</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">Besprechungsprotokoll</h1>
-              <p className="text-xs text-muted-foreground">EDEKA Formblatt 2.5 — Teilnehmerbestätigung per PIN</p>
-            </div>
+            {view === "list" && (
+              <button onClick={handleNew} className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white rounded-xl text-sm font-bold transition-colors shrink-0">
+                <Plus className="w-4 h-4" /> Neue Besprechung
+              </button>
+            )}
           </div>
-          {view === "list" && (
-            <button onClick={handleNew} className="flex items-center gap-2 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors shadow-sm">
-              <Plus className="w-4 h-4" /> Neue Besprechung
-            </button>
-          )}
-        </div>
+        </PageHeader>
 
         {/* LIST VIEW */}
         {view === "list" && (

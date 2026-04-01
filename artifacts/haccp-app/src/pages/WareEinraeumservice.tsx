@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   Truck, Plus, Trash2, ChevronLeft, Users, Package,
@@ -91,15 +92,20 @@ export default function WareEinraeumservice() {
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-5">
 
-        <div className="flex items-center gap-3">
-          <Link href="/ware" className="p-2 rounded-xl hover:bg-secondary transition-colors text-muted-foreground">
-            <ChevronLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Einraumservice</h1>
-            <p className="text-sm text-muted-foreground">Leistungsdokumentation externer Dienstleister</p>
+        <PageHeader>
+          <div className="flex items-center gap-3">
+            <Link href="/ware" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="w-5 h-5" />
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <Truck className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold leading-tight">Einraumservice</h1>
+              <p className="text-white/70 text-sm">Leistungsdokumentation externer Dienstleister</p>
+            </div>
           </div>
-        </div>
+        </PageHeader>
 
         {/* Datum + Stats */}
         <div className="bg-white rounded-2xl border border-border/60 shadow-sm p-5">

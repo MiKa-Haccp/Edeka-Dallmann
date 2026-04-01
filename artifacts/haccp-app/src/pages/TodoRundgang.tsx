@@ -1,9 +1,11 @@
 import { type ReactNode, useEffect, useState, useCallback, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Link } from "wouter";
 import { useAppStore } from "@/store/use-app-store";
 import {
   Plus, Flame, Minus, ArrowDown, CheckCircle2, Clock, Loader2, X, Camera,
-  Archive, RotateCcw, Trash2, ChevronDown, ChevronUp,
+  Archive, RotateCcw, Trash2, ChevronDown, ChevronUp, ChevronLeft,
 } from "lucide-react";
 
 const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
@@ -301,15 +303,28 @@ export default function TodoRundgang() {
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-5">
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="text-xl font-bold text-foreground">Schneller Rundgang</h1>
-          <button
-            onClick={() => setShowNewForm(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors shadow-sm"
-          >
-            <Plus className="w-4 h-4" /> Neue Aufgabe
-          </button>
-        </div>
+        <PageHeader>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Link href="/todo" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+                <ChevronLeft className="w-5 h-5" />
+              </Link>
+              <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                <RotateCcw className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold leading-tight">Schneller Rundgang</h1>
+                <p className="text-white/70 text-sm">Offene Aufgaben im Überblick</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowNewForm(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white rounded-xl text-sm font-semibold transition-colors shrink-0"
+            >
+              <Plus className="w-4 h-4" /> Neue Aufgabe
+            </button>
+          </div>
+        </PageHeader>
 
         {loading ? (
           <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>

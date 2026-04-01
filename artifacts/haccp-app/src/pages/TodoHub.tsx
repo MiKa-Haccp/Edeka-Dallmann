@@ -1,8 +1,9 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Link } from "wouter";
 import { useAppStore } from "@/store/use-app-store";
-import { ClipboardList, TableProperties, CheckCircle2, AlertCircle } from "lucide-react";
+import { ClipboardList, TableProperties, CheckCircle2, AlertCircle, ChevronLeft } from "lucide-react";
 
 const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -40,12 +41,20 @@ export default function TodoHub() {
   return (
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">To-Do & Einsatzplan</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            {WEEKDAY_NAMES[weekday]}, {today.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
-          </p>
-        </div>
+        <PageHeader>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <ClipboardList className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold leading-tight">To-Do & Einsatzplan</h1>
+              <p className="text-white/70 text-sm">{WEEKDAY_NAMES[weekday]}, {today.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}</p>
+            </div>
+          </div>
+        </PageHeader>
 
         <div className="grid gap-4">
           <Link href="/todo-tagesliste">

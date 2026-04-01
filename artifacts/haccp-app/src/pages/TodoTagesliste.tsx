@@ -1,5 +1,7 @@
 import { type ReactNode, useEffect, useState, useCallback, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Link } from "wouter";
 import { useAppStore } from "@/store/use-app-store";
 import {
   CheckCircle2, Circle, Loader2, Info, ChevronLeft, ChevronRight,
@@ -418,29 +420,39 @@ export default function TodoTagesliste() {
       <div className="max-w-2xl mx-auto space-y-5">
 
         {/* Header */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Meine Aufgaben</h1>
-            <p className="text-xs text-muted-foreground">
-              {WEEKDAY_NAMES[weekday]}, {selectedDate.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}
-              {totalOpen > 0 && <span className="ml-2 font-semibold text-[#1a3a6b]">· {totalOpen} offen</span>}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1">
-              <button onClick={() => moveDate(-1)} className="p-2 rounded-xl border border-border/60 hover:bg-gray-50 text-muted-foreground"><ChevronLeft className="w-4 h-4" /></button>
-              <button onClick={() => setSelectedDate(new Date())}
-                className={`px-3 py-1.5 rounded-xl text-xs font-medium border ${isToday ? "bg-[#1a3a6b] text-white border-[#1a3a6b]" : "border-border/60 text-muted-foreground hover:bg-gray-50"}`}>
-                Heute
-              </button>
-              <button onClick={() => moveDate(1)} className="p-2 rounded-xl border border-border/60 hover:bg-gray-50 text-muted-foreground"><ChevronRight className="w-4 h-4" /></button>
+        <PageHeader>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              <Link href="/todo" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+                <ChevronLeft className="w-5 h-5" />
+              </Link>
+              <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                <CalendarDays className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold leading-tight">Meine Aufgaben</h1>
+                <p className="text-white/70 text-sm">
+                  {WEEKDAY_NAMES[weekday]}, {selectedDate.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                  {totalOpen > 0 && <span className="ml-2 font-semibold text-white">· {totalOpen} offen</span>}
+                </p>
+              </div>
             </div>
-            <button onClick={() => setShowNewAdhoc(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-orange-500 text-white rounded-xl text-sm font-semibold hover:bg-orange-600 transition-colors shadow-sm">
-              <Plus className="w-4 h-4" /> Aufgabe
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <button onClick={() => moveDate(-1)} className="p-2 rounded-xl bg-white/15 hover:bg-white/25 text-white"><ChevronLeft className="w-4 h-4" /></button>
+                <button onClick={() => setSelectedDate(new Date())}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-medium ${isToday ? "bg-white text-[#1a3a6b]" : "bg-white/15 hover:bg-white/25 text-white"}`}>
+                  Heute
+                </button>
+                <button onClick={() => moveDate(1)} className="p-2 rounded-xl bg-white/15 hover:bg-white/25 text-white"><ChevronRight className="w-4 h-4" /></button>
+              </div>
+              <button onClick={() => setShowNewAdhoc(true)}
+                className="flex items-center gap-1.5 px-3 py-2 bg-white/15 hover:bg-white/25 text-white rounded-xl text-sm font-semibold transition-colors">
+                <Plus className="w-4 h-4" /> Aufgabe
+              </button>
+            </div>
           </div>
-        </div>
+        </PageHeader>
 
         {/* Gesamtfortschritt */}
         {totalAll > 0 && (() => {

@@ -1,7 +1,9 @@
 import { type ReactNode, useEffect, useState, useCallback, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Link } from "wouter";
 import { useAppStore } from "@/store/use-app-store";
-import { Plus, Pencil, Trash2, Loader2, X, Save, Flame, Minus, ArrowDown, ImagePlus, ZoomIn, Camera } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, X, Save, Flame, Minus, ArrowDown, ImagePlus, ZoomIn, Camera, ChevronLeft } from "lucide-react";
 
 const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -282,17 +284,30 @@ export default function TodoVerwaltung() {
       )}
       <AppLayout>
         <div className="max-w-3xl mx-auto space-y-5">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <h1 className="text-xl font-bold text-foreground">Standardaufgaben verwalten</h1>
-            {!showForm && !editTask && (
-              <button
-                onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-semibold hover:bg-[#2d5aa0] transition-colors"
-              >
-                <Plus className="w-4 h-4" /> Neue Aufgabe
-              </button>
-            )}
-          </div>
+          <PageHeader>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <Link href="/todo" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+                  <ChevronLeft className="w-5 h-5" />
+                </Link>
+                <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold leading-tight">Standardaufgaben verwalten</h1>
+                  <p className="text-white/70 text-sm">Aufgaben erstellen und bearbeiten</p>
+                </div>
+              </div>
+              {!showForm && !editTask && (
+                <button
+                  onClick={() => setShowForm(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white rounded-xl text-sm font-semibold transition-colors shrink-0"
+                >
+                  <Plus className="w-4 h-4" /> Neue Aufgabe
+                </button>
+              )}
+            </div>
+          </PageHeader>
 
           {/* Wochentag Filter */}
           <div className="flex gap-1.5 flex-wrap">

@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback, type ReactNode, type ElementType } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
+import { Link } from "wouter";
 import {
   ShoppingBag, Phone, User, Info, CheckCircle2, Clock,
   ChevronDown, ChevronUp, Loader2, Trash2, X, KeyRound, Pencil, Save, Ban,
-  ArrowUp, ArrowDown, AlignLeft, ArrowDownAZ, CalendarClock,
+  ArrowUp, ArrowDown, AlignLeft, ArrowDownAZ, CalendarClock, ChevronLeft,
 } from "lucide-react";
 
 const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
@@ -582,6 +584,24 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
   return (
     <Wrap>
       <div className="space-y-4">
+        {/* Header – nur im Standalone-Modus */}
+        {!noLayout && (
+          <PageHeader>
+            <div className="flex items-center gap-3">
+              <Link href="/ware-streckenbestellung" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+                <ChevronLeft className="h-5 w-5" />
+              </Link>
+              <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                <ShoppingBag className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg font-bold leading-tight">Streckenbestellung</h1>
+                <p className="text-white/70 text-sm">Lieferanten & Bestellungen</p>
+              </div>
+            </div>
+          </PageHeader>
+        )}
+
         {/* Sortier-Leiste */}
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mr-1">Sortierung:</span>

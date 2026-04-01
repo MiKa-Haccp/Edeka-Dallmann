@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ChevronLeft,
@@ -384,30 +385,30 @@ export default function ArzneimittelSachkunde() {
       <div className="max-w-3xl mx-auto space-y-4 pb-10">
 
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors shrink-0">
-              <ChevronLeft className="h-5 w-5" />
-            </Link>
-            <div className="w-10 h-10 bg-[#1a3a6b]/10 rounded-2xl flex items-center justify-center shrink-0">
-              <Pill className="w-5 h-5 text-[#1a3a6b]" />
+        <PageHeader>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+                <ChevronLeft className="h-5 w-5" />
+              </Link>
+              <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                <Pill className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold leading-tight">1.11 Sachkundenachweis Arzneimittel</h1>
+                <p className="text-white/70 text-sm">Schulungen &amp; Nachweise der Mitarbeiter</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground leading-tight">
-                1.11 Sachkundenachweis freiverkäufliche Arzneimittel
-              </h1>
-              <p className="text-xs text-muted-foreground">Schulungen &amp; Nachweise der Mitarbeiter</p>
-            </div>
+            {!showForm && (
+              <button
+                onClick={() => setShowForm(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white rounded-xl text-sm font-bold transition-colors shrink-0"
+              >
+                <Plus className="w-4 h-4" /> Hinzufügen
+              </button>
+            )}
           </div>
-          {!showForm && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors shadow-sm"
-            >
-              <Plus className="w-4 h-4" /> Hinzufügen
-            </button>
-          )}
-        </div>
+        </PageHeader>
 
         {/* Warnkacheln */}
         {eintraege.length > 0 && (abgelaufen > 0 || bald > 0) && (

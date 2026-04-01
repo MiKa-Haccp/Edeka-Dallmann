@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { Link } from "wouter";
 import {
   ChevronLeft, Plus, Pencil, Check, X,
   GripVertical, Loader2, ChevronRight, LayoutGrid, List,
-  Trash2, CheckCircle2, Circle, Truck, Clock, AlertTriangle, CalendarDays,
+  Trash2, CheckCircle2, Circle, Truck, Clock, AlertTriangle, CalendarDays, ShoppingBag,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -394,28 +395,31 @@ export default function WareLadenbestellung() {
       <div className="max-w-full space-y-4 pb-8">
 
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Link href="/ware-bestellungen" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-foreground">Ladenbestellung</h1>
-            <p className="text-sm text-muted-foreground">Bestellgebiete markieren</p>
+        <PageHeader>
+          <div className="flex items-center gap-3">
+            <Link href="/ware-bestellungen" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <ShoppingBag className="w-5 h-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-bold leading-tight">Ladenbestellung</h1>
+              <p className="text-white/70 text-sm">Bestellgebiete markieren</p>
+            </div>
+            {isAdmin && (
+              <button
+                onClick={() => setEditMode(e => !e)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all shrink-0 ${
+                  editMode ? "bg-white text-[#1a3a6b]" : "bg-white/15 hover:bg-white/25 text-white"
+                }`}
+              >
+                <Pencil className="w-4 h-4" />
+                {editMode ? "Bearbeiten aktiv" : "Bearbeiten"}
+              </button>
+            )}
           </div>
-          {isAdmin && (
-            <button
-              onClick={() => setEditMode(e => !e)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
-                editMode
-                  ? "bg-amber-500 text-white shadow-md"
-                  : "bg-secondary text-foreground hover:bg-secondary/80"
-              }`}
-            >
-              <Pencil className="w-4 h-4" />
-              {editMode ? "Bearbeiten aktiv" : "Bearbeiten"}
-            </button>
-          )}
-        </div>
+        </PageHeader>
 
         {/* Tab switcher */}
         <div className="flex items-center gap-1 bg-secondary/40 p-1 rounded-2xl w-fit">

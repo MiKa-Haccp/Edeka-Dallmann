@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Link } from "wouter";
 import { Truck, List, ShoppingBag, ChevronLeft } from "lucide-react";
 import WareStreckenUebersicht from "./WareStreckenUebersicht";
@@ -26,20 +27,20 @@ export default function WareStreckenbestellungHub() {
       <div className="max-w-6xl mx-auto space-y-5 px-4 py-6">
 
         {/* Header */}
-        <div className="bg-white rounded-xl border border-border p-5 sm:p-6">
+        <PageHeader>
           <div className="flex items-center gap-3">
-            <Link href="/ware-bestellungen" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
+            <Link href="/ware-bestellungen" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
               <ChevronLeft className="h-5 w-5" />
             </Link>
-            <div className="p-2.5 bg-primary/10 rounded-xl shrink-0">
-              <Truck className="w-6 h-6 text-primary" />
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <Truck className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Streckenbestellung</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Übersicht und Bestellung für Streckenlieferanten</p>
+              <h1 className="text-lg font-bold leading-tight">Streckenbestellung</h1>
+              <p className="text-white/70 text-sm">Übersicht und Bestellung für Streckenlieferanten</p>
             </div>
           </div>
-        </div>
+        </PageHeader>
 
         {/* Tabs + Inhalt */}
         <div className="bg-white rounded-xl border border-border overflow-hidden">

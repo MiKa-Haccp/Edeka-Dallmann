@@ -1,4 +1,5 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { Link, useLocation } from "wouter";
 import { Users, KeyRound, ArrowRight, UserCog, ChevronLeft, GraduationCap } from "lucide-react";
@@ -21,15 +22,20 @@ export default function VerwaltungHub() {
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-          <div>
-            <h1 className="text-xl font-bold text-foreground mb-0.5">Verwaltung</h1>
-            <p className="text-muted-foreground text-sm">Mitarbeiterstammdaten, Kürzel und PIN-Verwaltung für Ihr Team.</p>
+        <PageHeader>
+          <div className="flex items-center gap-3">
+            <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold leading-tight">Verwaltung</h1>
+              <p className="text-white/70 text-sm">Mitarbeiterstammdaten, Kürzel und PIN-Verwaltung.</p>
+            </div>
           </div>
-        </div>
+        </PageHeader>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Link href="/mitarbeiterverwaltung">

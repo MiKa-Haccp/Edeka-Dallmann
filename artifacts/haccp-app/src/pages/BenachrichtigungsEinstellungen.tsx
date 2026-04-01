@@ -1,4 +1,5 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { useLocation } from "wouter";
 import { useEffect, useState } from "react";
@@ -105,36 +106,38 @@ export default function BenachrichtigungsEinstellungen() {
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-5">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/admin/system")} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
-              <ChevronLeft className="h-5 w-5" />
-            </button>
-            <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center">
-              <Bell className="w-5 h-5 text-orange-600" />
+        <PageHeader>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <button onClick={() => navigate("/admin/system")} className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                <Bell className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold leading-tight">Benachrichtigungen</h1>
+                <p className="text-white/70 text-sm">Automatische Hinweise bei fehlenden HACCP-Einträgen.</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground mb-0.5">Benachrichtigungen</h1>
-              <p className="text-muted-foreground text-sm">Automatische Hinweise bei fehlenden HACCP-Einträgen.</p>
+            <div className="flex items-center gap-2">
+              {checkResult && (
+                <span className="text-xs font-medium px-3 py-1.5 rounded-lg bg-white/15 text-white flex items-center gap-1.5">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  {checkResult.sent} gesendet · {checkResult.errors} Fehler
+                </span>
+              )}
+              <button
+                onClick={runCheck}
+                disabled={checkRunning}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-sm font-bold transition-colors disabled:opacity-50"
+              >
+                <Play className={cn("h-4 w-4", checkRunning && "animate-pulse")} />
+                {checkRunning ? "Prüft..." : "Jetzt prüfen"}
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {checkResult && (
-              <span className="text-xs font-medium px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 flex items-center gap-1.5">
-                <CheckCircle className="h-3.5 w-3.5" />
-                {checkResult.sent} gesendet · {checkResult.errors} Fehler
-              </span>
-            )}
-            <button
-              onClick={runCheck}
-              disabled={checkRunning}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-orange-500 text-white text-sm font-bold hover:bg-orange-600 transition-colors disabled:opacity-50"
-            >
-              <Play className={cn("h-4 w-4", checkRunning && "animate-pulse")} />
-              {checkRunning ? "Prüft..." : "Jetzt prüfen"}
-            </button>
-          </div>
-        </div>
+        </PageHeader>
 
         <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
           {tabs.map(t => {

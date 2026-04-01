@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { Link, useLocation } from "wouter";
 import {
@@ -179,18 +180,20 @@ export default function MonatsberichtAdmin() {
     <AppLayout>
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <Link href="/admin/system" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-          <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
-            <FileText className="w-5 h-5 text-purple-600" />
+        <PageHeader>
+          <div className="flex items-center gap-3">
+            <Link href="/admin/system" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold leading-tight">Monatsbericht</h1>
+              <p className="text-white/70 text-sm">HACCP-Daten aggregieren und per E-Mail versenden.</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground mb-0.5">Monatsbericht</h1>
-            <p className="text-muted-foreground text-sm">HACCP-Daten aggregieren, als HTML-Bericht ausgeben und per E-Mail versenden.</p>
-          </div>
-        </div>
+        </PageHeader>
 
         {/* Bericht generieren */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">

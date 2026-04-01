@@ -1,4 +1,5 @@
 import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { useListUsers, useListMarkets } from "@workspace/api-client-react";
 import { useState, useEffect } from "react";
@@ -21,6 +22,7 @@ import {
   AlertTriangle,
   Loader2,
   KeyRound,
+  UserCog,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -98,20 +100,23 @@ export default function AdminUserManagement() {
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate("/admin/system")}
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Benutzerverwaltung</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Rollen und Status für alle Mitarbeiter verwalten.
-            </p>
+        <PageHeader>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate("/admin/system")}
+              className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+              <UserCog className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold leading-tight">Benutzerverwaltung</h1>
+              <p className="text-white/70 text-sm">Rollen und Status für alle Mitarbeiter verwalten.</p>
+            </div>
           </div>
-        </div>
+        </PageHeader>
 
         <UserRoleList />
       </div>
