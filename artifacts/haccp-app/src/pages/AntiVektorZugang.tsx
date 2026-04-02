@@ -337,8 +337,8 @@ function ZertifikatKarte({ z, onDelete, isAdmin }: { z: Zertifikat; onDelete: ()
 
 // ===== HAUPTSEITE =====
 export default function AntiVektorZugang() {
-  const { adminSession, selectedMarketId } = useAppStore();
-  const isAdmin = !!adminSession;
+  const { adminSession, selectedMarketId, hasPermission } = useAppStore();
+  const canDelete = hasPermission("entries.delete");
 
   const [tab, setTab] = useState<Tab>("zugang");
   const [zugangsdaten, setZugangsdaten] = useState<Zugangsdaten>({
@@ -568,7 +568,7 @@ export default function AntiVektorZugang() {
               </div>
 
               {/* Edit / Save Actions */}
-              {isAdmin && (
+              {canDelete && (
                 <div className="flex gap-3 pt-2">
                   {!editMode ? (
                     <button
@@ -652,7 +652,7 @@ export default function AntiVektorZugang() {
                   <ZertifikatKarte
                     key={z.id}
                     z={z}
-                    isAdmin={isAdmin}
+                    isAdmin={canDelete}
                     onDelete={() => handleDeleteZertifikat(z.id)}
                   />
                 ))}

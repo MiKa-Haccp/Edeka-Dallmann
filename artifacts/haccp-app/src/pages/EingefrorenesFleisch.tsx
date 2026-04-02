@@ -357,7 +357,7 @@ function FleischKarte({entry,onEntnahme,onDelete,canDelete}:{
 
 // ─── Hauptseite ───────────────────────────────────────────────────────────────
 export default function EingefrorenesFleisch() {
-  const { selectedMarketId, adminSession } = useAppStore();
+  const { selectedMarketId, adminSession, hasPermission } = useAppStore();
   const { data: markets } = useListMarkets();
   const marketName = useMemo(() => markets?.find(m => m.id === selectedMarketId)?.name ?? null, [markets, selectedMarketId]);
   const [,navigate] = useLocation();
@@ -449,7 +449,7 @@ export default function EingefrorenesFleisch() {
                 {aktiv.map(e=>(
                   <FleischKarte key={e.id} entry={e}
                     onEntnahme={()=>setEntnahmeFor(e)}
-                    onDelete={()=>handleDelete(e.id)} canDelete={!!adminSession}/>
+                    onDelete={()=>handleDelete(e.id)} canDelete={hasPermission("entries.delete")}/>
                 ))}
               </div>
             )}
@@ -472,7 +472,7 @@ export default function EingefrorenesFleisch() {
                 {showAufgebraucht&&aufgebraucht.map(e=>(
                   <FleischKarte key={e.id} entry={e}
                     onEntnahme={()=>setEntnahmeFor(e)}
-                    onDelete={()=>handleDelete(e.id)} canDelete={!!adminSession}/>
+                    onDelete={()=>handleDelete(e.id)} canDelete={hasPermission("entries.delete")}/>
                 ))}
               </div>
             )}

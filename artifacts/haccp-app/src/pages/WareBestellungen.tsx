@@ -21,8 +21,8 @@ interface Bestellung { id: number; rayonId: number; datum: string; kuerzel: stri
 const FARBEN = ["#1a3a6b","#059669","#d97706","#dc2626","#7c3aed","#0891b2","#be185d","#374151"];
 
 export default function WareBestellungen() {
-  const { selectedMarketId, adminSession } = useAppStore();
-  const isAdmin = !!adminSession;
+  const { selectedMarketId, adminSession, hasPermission } = useAppStore();
+  const isAdmin = hasPermission("verwaltung.access");
   const [datum, setDatum] = useState(todayIso());
   const [rayons, setRayons] = useState<Rayon[]>([]);
   const [bestellungen, setBestellungen] = useState<Bestellung[]>([]);

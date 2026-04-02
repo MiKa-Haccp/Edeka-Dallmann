@@ -980,8 +980,8 @@ function tabTrafficColor(row:TodaySummaryRow|undefined,holidays:Set<string>):Tra
 // ── MAIN CONTENT ───────────────────────────────────────────────
 function WareneingaengeContent() {
   const { section, pageTitle, pageSubtitle, allCrit } = useWEConfig();
-  const { adminSession, selectedMarketId } = useAppStore();
-  const isAdmin=!!adminSession;
+  const { adminSession, selectedMarketId, hasPermission } = useAppStore();
+  const canDelete = hasPermission("entries.delete");
   const now=new Date();
   const [year,setYear]=useState(now.getFullYear());
   const [month,setMonth]=useState(now.getMonth()+1);
@@ -1117,7 +1117,7 @@ function WareneingaengeContent() {
                   </button>
                 );
               })}
-              {isAdmin&&(
+              {canDelete&&(
                 <button onClick={()=>setActiveTypeId("admin")}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ml-1 ${activeTypeId==="admin"?"bg-amber-500 text-white shadow-md":"bg-white border border-dashed border-amber-400 text-amber-600 hover:bg-amber-50"}`}>
                   <Settings2 className="w-3.5 h-3.5"/> Verwaltung

@@ -115,8 +115,8 @@ function borderColor(hex: string) {
 }
 
 export default function WareLadenbestellung() {
-  const { selectedMarketId, adminSession } = useAppStore();
-  const isAdmin = !!adminSession;
+  const { selectedMarketId, adminSession, hasPermission } = useAppStore();
+  const isAdmin = hasPermission("entries.edit");
 
   const [activeTab, setActiveTab] = useState<"plan" | "liste" | "lieferplan">("liste");
   const [datum, setDatum] = useState(todayIso());

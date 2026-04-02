@@ -300,8 +300,8 @@ function BulkSignModal({
 
 // ===== HAUPTSEITE =====
 export default function ReinigungTaeglich() {
-  const { selectedMarketId, selectedMarketName, adminSession } = useAppStore();
-  const isAdmin = !!adminSession;
+  const { selectedMarketId, selectedMarketName, adminSession, hasPermission } = useAppStore();
+  const canDelete = hasPermission("entries.delete");
 
   const now = new Date();
   const [year, setYear]   = useState(now.getFullYear());
@@ -582,7 +582,7 @@ export default function ReinigungTaeglich() {
                                         <Check className="w-2.5 h-2.5 text-green-600 shrink-0" />
                                         {entry.kuerzel}
                                       </div>
-                                      {isAdmin && (
+                                      {canDelete && (
                                         <button
                                           onClick={() => handleDelete(entry.id)}
                                           disabled={deletingId === entry.id}

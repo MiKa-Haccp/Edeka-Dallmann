@@ -378,7 +378,8 @@ function SessionDetailView({ sessionId, onBack }: { sessionId: number; onBack: (
   const queryClient = useQueryClient();
   const [showAttendanceDialog, setShowAttendanceDialog] = useState(false);
   const adminSession = useAppStore((s) => s.adminSession);
-  const isAdmin = adminSession?.role === "SUPERADMIN" || adminSession?.role === "ADMIN" || adminSession?.role === "MARKTLEITER";
+  const hasPermission = useAppStore((s) => s.hasPermission);
+  const isAdmin = hasPermission("entries.delete");
 
   const handleToggleTopic = async (topicId: number, currentChecked: boolean) => {
     if (!session) return;
@@ -989,7 +990,8 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
   const selectedMonth = useAppStore((s) => s.selectedMonth);
   const setDate = useAppStore((s) => s.setDate);
   const adminSession = useAppStore((s) => s.adminSession);
-  const isAdmin = adminSession?.role === "SUPERADMIN" || adminSession?.role === "ADMIN" || adminSession?.role === "MARKTLEITER";
+  const hasPermission = useAppStore((s) => s.hasPermission);
+  const isAdmin = hasPermission("entries.delete");
   const Wrap = noLayout
     ? ({ children }: { children: ReactNode }) => <>{children}</>
     : AppLayout;

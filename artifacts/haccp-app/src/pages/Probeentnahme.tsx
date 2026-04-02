@@ -171,8 +171,8 @@ function ToggleGroup<T extends string>({ label, value, onChange, options }: {
 }
 
 export default function Probeentnahme() {
-  const { adminSession, selectedMarketId } = useAppStore();
-  const isAdmin = !!adminSession;
+  const { adminSession, selectedMarketId, hasPermission } = useAppStore();
+  const canDelete = hasPermission("entries.delete");
   const currentYear = new Date().getFullYear();
 
   const { data: marketInfo } = useGetMarketInfo(
@@ -743,7 +743,7 @@ export default function Probeentnahme() {
                 )}
               </div>
 
-              {isAdmin && current && !deleteConfirm && (
+              {canDelete && current && !deleteConfirm && (
                 <button onClick={() => setDeleteConfirm(true)} className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-sm font-semibold hover:bg-red-100 transition-colors">
                   <Trash2 className="w-4 h-4" /> Löschen
                 </button>

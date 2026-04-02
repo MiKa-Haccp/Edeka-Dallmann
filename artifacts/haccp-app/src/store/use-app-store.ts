@@ -23,6 +23,7 @@ interface AppState {
   adminSession: AdminSession | null;
   setAdminSession: (session: AdminSession | null) => void;
   isAdmin: () => boolean;
+  hasPermission: (key: string) => boolean;
   canAccessMarket: (marketId: number) => boolean;
   isGpsLocked: () => boolean;
   deviceAuthorized: boolean;
@@ -46,6 +47,11 @@ export const useAppStore = create<AppState>()(
       isAdmin: () => {
         const s = get().adminSession;
         return s?.role === 'ADMIN' || s?.role === 'SUPERADMIN' || s?.role === 'BEREICHSLEITUNG';
+      },
+      hasPermission: (key: string) => {
+        const s = get().adminSession;
+        if (!s) return false;
+        return s.permissions?.includes(key) ?? false;
       },
       canAccessMarket: (marketId: number) => {
         const s = get().adminSession;

@@ -229,8 +229,8 @@ function StatusDot({status, active}:{status:TrafficLight; active:boolean}) {
 
 // ─── Hauptkomponente ──────────────────────────────────────────────────────────
 export default function MetzgereiReinigung() {
-  const { selectedMarketId, adminSession } = useAppStore();
-  const isAdmin = !!adminSession;
+  const { selectedMarketId, adminSession, hasPermission } = useAppStore();
+  const canDelete = hasPermission("entries.delete");
   const now     = new Date();
 
   const wocheStatus = useMetzgereiReinigungWocheStatus();
@@ -561,7 +561,7 @@ export default function MetzgereiReinigung() {
                                       <span className="flex items-center gap-2 text-xs font-semibold text-green-700">
                                         <Check className="w-3.5 h-3.5"/>
                                         Diese Woche erledigt &middot; {weekEntry.kuerzel}
-                                        {isAdmin&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(weekEntry.id);}}
+                                        {canDelete&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(weekEntry.id);}}
                                           className="ml-1 text-[10px] text-red-400 hover:text-red-600 cursor-pointer">✕</span>}
                                       </span>
                                     ) : allFut ? (
@@ -600,7 +600,7 @@ export default function MetzgereiReinigung() {
                                     <span className="flex flex-col items-center leading-tight">
                                       <Check className="w-3 h-3 text-green-600"/>
                                       <span className="text-[9px] text-green-700 font-mono">{entry.kuerzel}</span>
-                                      {isAdmin&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}}
+                                      {canDelete&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}}
                                         className="text-[8px] text-red-400 hover:text-red-600 hidden group-hover:block cursor-pointer">✕</span>}
                                     </span>
                                   ) : fut ? null : (
@@ -740,7 +740,7 @@ export default function MetzgereiReinigung() {
                                   <>
                                     <Check className="w-3.5 h-3.5 text-green-600"/>
                                     <span className="text-[9px] text-green-700 font-mono">{entry.kuerzel}</span>
-                                    {isAdmin&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}}
+                                    {canDelete&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}}
                                       className="text-[8px] text-red-400 hover:text-red-600 cursor-pointer leading-none">✕</span>}
                                   </>
                                 ) : isFut ? (
@@ -785,7 +785,7 @@ export default function MetzgereiReinigung() {
                                     <Check className="w-3.5 h-3.5 text-green-600"/>
                                     <span className="text-[9px] text-green-700 font-mono">{entry.kuerzel}</span>
                                     <span className="text-[8px] text-green-600">{h.label}</span>
-                                    {isAdmin&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}}
+                                    {canDelete&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}}
                                       className="text-[8px] text-red-400 hover:text-red-600 cursor-pointer leading-none">✕</span>}
                                   </>
                                 ) : isFut ? (
@@ -822,7 +822,7 @@ export default function MetzgereiReinigung() {
                                     <>
                                       <Check className="w-3 h-3 text-green-600"/>
                                       <span className="text-[8px] text-green-700 font-mono">{entry.kuerzel}</span>
-                                      {isAdmin&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}}
+                                      {canDelete&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}}
                                         className="text-[7px] text-red-400 hover:text-red-600 cursor-pointer leading-none hidden group-hover/cell:block">✕</span>}
                                     </>
                                   ) : isFut ? null : (

@@ -173,8 +173,8 @@ function compressImage(file: File, maxPx = 1400, quality = 0.75): Promise<string
 }
 
 export default function Produktfehlermeldung() {
-  const { adminSession, selectedMarketId } = useAppStore();
-  const isAdmin = !!adminSession;
+  const { adminSession, selectedMarketId, hasPermission } = useAppStore();
+  const canDelete = hasPermission("entries.delete");
 
   const [page, setPage] = useState<1 | 2>(1);
   const [view, setView] = useState<"list" | "form">("list");
@@ -894,7 +894,7 @@ export default function Produktfehlermeldung() {
                 <Printer className="w-4 h-4" /> Formular drucken
               </button>
 
-              {isAdmin && currentReport && !deleteConfirm && (
+              {canDelete && currentReport && !deleteConfirm && (
                 <button
                   onClick={() => setDeleteConfirm(true)}
                   className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-xl text-sm font-semibold hover:bg-red-100 transition-colors"

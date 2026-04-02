@@ -269,8 +269,8 @@ function StatusButton({
 }
 
 export default function Betriebsbegehung() {
-  const { adminSession, selectedMarketId } = useAppStore();
-  const isAdmin = !!adminSession;
+  const { adminSession, selectedMarketId, hasPermission } = useAppStore();
+  const canDelete = hasPermission("entries.delete");
 
   const [quartal, setQuartal] = useState(Math.ceil((new Date().getMonth() + 1) / 3));
   const [year, setYear] = useState(CURRENT_YEAR);
@@ -656,7 +656,7 @@ export default function Betriebsbegehung() {
             )}
           </div>
           <div className="flex items-center gap-3">
-            {currentReport && isAdmin && (
+            {currentReport && canDelete && (
               deleteConfirm ? (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-red-600">Bericht löschen?</span>

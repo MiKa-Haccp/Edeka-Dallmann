@@ -272,7 +272,7 @@ function EntryChip({
           <span className="text-[10px] text-slate-500 no-underline">
             Aufgebraucht{entry.aufgebrauchtKuerzel ? ` · ${entry.aufgebrauchtKuerzel}` : ""}
           </span>
-          {isAdmin&&(
+          {canDelete&&(
             <button onClick={()=>onRueckgaengig(entry.id)}
               className="ml-1 text-[10px] px-1.5 py-0.5 rounded border border-slate-300 text-slate-500 hover:bg-slate-50 no-underline" style={{textDecoration:"none"}}>
               ↩ Rueckgaengig
@@ -290,7 +290,7 @@ function EntryChip({
         </button>
       ) : null}
 
-      {isAdmin&&(
+      {canDelete&&(
         <button
           onClick={()=>onDelete(entry.id)}
           disabled={deletingId===entry.id}
@@ -305,10 +305,10 @@ function EntryChip({
 
 // ─── Haupt-Seite ──────────────────────────────────────────────────────────────
 export default function OeffnungSalate() {
-  const { selectedMarketId, adminSession } = useAppStore();
+  const { selectedMarketId, adminSession, hasPermission } = useAppStore();
   const { data: markets } = useListMarkets();
   const selectedMarketName = useMemo(()=>markets?.find((m:{id:number;name:string})=>m.id===selectedMarketId)?.name??"",[markets,selectedMarketId]);
-  const isAdmin = !!adminSession;
+  const canDelete = hasPermission("entries.delete");
 
   const now = new Date();
   const [year,  setYear]  = useState(now.getFullYear());
@@ -555,7 +555,7 @@ export default function OeffnungSalate() {
                                 </span>
                               )}
                               {de.map(entry=>(
-                                <EntryChip key={entry.id} entry={entry} isAdmin={isAdmin}
+                                <EntryChip key={entry.id} entry={entry} isAdmin={canDelete}
                                   deletingId={deletingId} markingId={markingId}
                                   onDelete={handleDelete}
                                   onAufgebraucht={handleAufgebrauchtPin}

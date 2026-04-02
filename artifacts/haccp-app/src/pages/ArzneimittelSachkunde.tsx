@@ -319,7 +319,7 @@ function EintragKarte({ z, onDelete, isAdmin }: { z: Eintrag; onDelete: () => vo
 
           <p className="text-xs text-muted-foreground">Hinzugefügt: {new Date(z.createdAt).toLocaleDateString("de-DE")}</p>
 
-          {isAdmin && (
+          {canDelete && (
             <div className="flex gap-2 pt-1">
               {!confirmDelete ? (
                 <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">
@@ -341,8 +341,8 @@ function EintragKarte({ z, onDelete, isAdmin }: { z: Eintrag; onDelete: () => vo
 
 // ===== HAUPTSEITE =====
 export default function ArzneimittelSachkunde() {
-  const { adminSession, selectedMarketId } = useAppStore();
-  const isAdmin = !!adminSession;
+  const { adminSession, selectedMarketId, hasPermission } = useAppStore();
+  const canDelete = hasPermission("entries.delete");
 
   const [eintraege, setEintraege] = useState<Eintrag[]>([]);
   const [loading, setLoading] = useState(false);
@@ -456,7 +456,7 @@ export default function ArzneimittelSachkunde() {
               <EintragKarte
                 key={z.id}
                 z={z}
-                isAdmin={isAdmin}
+                isAdmin={canDelete}
                 onDelete={() => handleDelete(z.id)}
               />
             ))}

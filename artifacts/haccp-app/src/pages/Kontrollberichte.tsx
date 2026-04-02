@@ -844,8 +844,8 @@ function BerichtKarte({ b, tab, onDelete, isAdmin }: {
 
 // ===== HAUPTSEITE =====
 export default function Kontrollberichte() {
-  const { adminSession, selectedMarketId } = useAppStore();
-  const isAdmin = !!adminSession;
+  const { adminSession, selectedMarketId, hasPermission } = useAppStore();
+  const canDelete = hasPermission("entries.delete");
 
   const currentYear = new Date().getFullYear();
   const [aktiveTab, setAktiveTab] = useState<Kategorie>("lebensmittelkontrolle");
@@ -1041,7 +1041,7 @@ export default function Kontrollberichte() {
                     key={b.id}
                     b={b}
                     tab={tab}
-                    isAdmin={isAdmin}
+                    isAdmin={canDelete}
                     onDelete={() => handleDelete(b.id)}
                   />
                 ))}

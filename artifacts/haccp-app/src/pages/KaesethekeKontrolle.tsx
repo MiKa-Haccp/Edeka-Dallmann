@@ -848,7 +848,7 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
 type Tab = "reifeschrank" | "kaesekühlschrank" | "heisse_theke";
 
 export default function KaesethekeKontrolle() {
-  const { selectedMarketId, adminSession } = useAppStore();
+  const { selectedMarketId, adminSession, hasPermission } = useAppStore();
   const { data: markets } = useListMarkets();
   const marketName = useMemo(() => markets?.find(m => m.id === selectedMarketId)?.name ?? null, [markets, selectedMarketId]);
   const [,navigate] = useLocation();
@@ -953,17 +953,17 @@ export default function KaesethekeKontrolle() {
           <>
             {tab==="reifeschrank"&&(
               <TempTab art="reifeschrank" entries={filteredEntries} year={year} month={month} marketId={marketId}
-                onSaved={fetchEntries} onDeleted={handleDeleted} adminSession={!!adminSession}
+                onSaved={fetchEntries} onDeleted={handleDeleted} adminSession={hasPermission("entries.delete")}
                 openTodayModal={openTodayFor==="reifeschrank"} onTodayModalHandled={()=>setOpenTodayFor(null)}/>
             )}
             {tab==="kaesekühlschrank"&&(
               <TempTab art="kaesekühlschrank" entries={filteredEntries} year={year} month={month} marketId={marketId}
-                onSaved={fetchEntries} onDeleted={handleDeleted} adminSession={!!adminSession}
+                onSaved={fetchEntries} onDeleted={handleDeleted} adminSession={hasPermission("entries.delete")}
                 openTodayModal={openTodayFor==="kaesekühlschrank"} onTodayModalHandled={()=>setOpenTodayFor(null)}/>
             )}
             {tab==="heisse_theke"&&(
               <HeisseThekeTab entries={filteredEntries} year={year} month={month} marketId={marketId}
-                onSaved={fetchEntries} onDeleted={handleDeleted} adminSession={!!adminSession}
+                onSaved={fetchEntries} onDeleted={handleDeleted} adminSession={hasPermission("entries.delete")}
                 openTodayModal={openTodayFor==="heisse_theke"} onTodayModalHandled={()=>setOpenTodayFor(null)}/>
             )}
           </>

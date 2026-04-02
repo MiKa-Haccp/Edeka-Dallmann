@@ -172,14 +172,14 @@ function SpanningPeriodCell({
   period,
   conf,
   status,
-  isAdmin,
+  canDelete,
   onClick,
   onRemove,
 }: {
   period: Period;
   conf: Confirmation | undefined;
   status: "confirmed" | "past" | "current" | "future";
-  isAdmin: boolean;
+  canDelete: boolean;
   onClick: () => void;
   onRemove: () => void;
 }) {
@@ -192,11 +192,11 @@ function SpanningPeriodCell({
         <div
           className={`w-full h-full rounded-lg flex items-center justify-center gap-2 font-bold text-sm
             bg-green-100 text-green-700 border border-green-300
-            ${isAdmin ? "cursor-pointer hover:bg-red-100 hover:text-red-600 hover:border-red-300 group transition-colors" : ""}`}
-          title={isAdmin
+            ${canDelete ? "cursor-pointer hover:bg-red-100 hover:text-red-600 hover:border-red-300 group transition-colors" : ""}`}
+          title={canDelete
             ? `${conf.initials} – ${new Date(conf.confirmedAt).toLocaleDateString("de-DE")} – Klicken zum Entfernen`
             : `${conf.initials} – ${new Date(conf.confirmedAt).toLocaleDateString("de-DE")}`}
-          onClick={isAdmin ? onRemove : undefined}
+          onClick={canDelete ? onRemove : undefined}
         >
           <CheckCircle2 className="w-4 h-4 group-hover:hidden" />
           <X className="w-4 h-4 hidden group-hover:block" />
@@ -256,9 +256,10 @@ function SpanningPeriodCell({
 export default function AnnualCleaningPlan() {
   const selectedMarketId = useAppStore((s) => s.selectedMarketId);
   const adminSession = useAppStore((s) => s.adminSession);
+  const hasPermission = useAppStore((s) => s.hasPermission);
   const { data: markets } = useListMarkets();
   const selectedMarket = useMemo(() => markets?.find((m) => m.id === selectedMarketId), [markets, selectedMarketId]);
-  const isAdmin = !!adminSession;
+  const canDelete = hasPermission("entries.delete");
 
   const [year, setYear] = useState(new Date().getFullYear());
   const [confirmations, setConfirmations] = useState<Confirmation[]>([]);
@@ -297,7 +298,7 @@ export default function AnnualCleaningPlan() {
     const isFuture = year > currentYear || (year === currentYear && month > currentMonth);
     const existing = getConfirmation(itemKey, month);
     if (existing) {
-      if (!isAdmin) return;
+      if (!canDelete) return;
       handleRemove(existing.id);
       return;
     }
@@ -377,7 +378,7 @@ export default function AnnualCleaningPlan() {
           </div>
         </PageHeader>
 
-        {isAdmin && (
+        {canDelete && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center gap-2 text-sm text-amber-700">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>Als Admin können Sie Bestätigungen durch Klick auf ein Kürzel wieder entfernen.</span>
@@ -451,7 +452,7 @@ export default function AnnualCleaningPlan() {
                                     period={period}
                                     conf={conf}
                                     status={status}
-                                    isAdmin={isAdmin}
+                                    canDelete={canDelete}
                                     onClick={() => handleCellClick(item.key, period.activeMonth, activeMonths, periodMonthLabel)}
                                     onRemove={() => conf && handleRemove(conf.id)}
                                   />
@@ -475,8 +476,8 @@ export default function AnnualCleaningPlan() {
                                   >
                                     {conf ? (
                                       <div className={`inline-flex items-center justify-center w-8 h-7 rounded font-bold text-xs font-mono
-                                        ${isAdmin ? "bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-600 group cursor-pointer" : "bg-green-100 text-green-700"}`}
-                                        title={isAdmin ? `${conf.initials} – ${new Date(conf.confirmedAt).toLocaleDateString("de-DE")} (Klicken zum Entfernen)` : `${conf.initials} – ${new Date(conf.confirmedAt).toLocaleDateString("de-DE")}`}
+                                        ${canDelete ? "bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-600 group cursor-pointer" : "bg-green-100 text-green-700"}`}
+                                        title={canDelete ? `${conf.initials} – ${new Date(conf.confirmedAt).toLocaleDateString("de-DE")} (Klicken zum Entfernen)` : `${conf.initials} – ${new Date(conf.confirmedAt).toLocaleDateString("de-DE")}`}
                                       >
                                         <span className="group-hover:hidden">{conf.initials}</span>
                                         <X className="w-3 h-3 hidden group-hover:block" />

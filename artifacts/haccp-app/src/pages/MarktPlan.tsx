@@ -529,9 +529,9 @@ function MarkerModal({
 
 // ─── Hauptseite ───────────────────────────────────────────────────────────────
 export default function MarktPlan() {
-  const { adminSession, selectedMarketId } = useAppStore();
-  const isAdmin = !!adminSession;
-  const canEditSettings = !!adminSession;
+  const { adminSession, selectedMarketId, hasPermission } = useAppStore();
+  const isAdmin = hasPermission("entries.edit");
+  const canEditSettings = hasPermission("entries.edit");
 
   const [markers, setMarkers]     = useState<Marker[]>([]);
   const [hotspotMode, setHotspotMode] = useState(false);

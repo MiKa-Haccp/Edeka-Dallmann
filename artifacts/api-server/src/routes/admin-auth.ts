@@ -222,19 +222,30 @@ router.post("/admin/login", async (req, res) => {
         .where(eq(userMarketAssignmentsTable.userId, user.id))
     : [];
 
-  // Rollenberechtigungen aus role_permission_defaults laden
+  // Individuelle Benutzer-Berechtigungen laden (überschreiben Rollen-Standard)
   const { pool } = await import("@workspace/db");
-  const permResult = await pool.query(
-    `SELECT permissions FROM role_permission_defaults WHERE role = $1 AND tenant_id = $2 LIMIT 1`,
-    [user.role, user.tenantId]
+  const userPermResult = await pool.query(
+    `SELECT permission_type FROM user_permissions WHERE user_id = $1 AND granted = true`,
+    [user.id]
   );
-  const rolePermissions: string[] = permResult.rows[0]?.permissions || [];
+  let effectivePermissions: string[];
+  if (userPermResult.rows.length > 0) {
+    // Individuelle Overrides vorhanden → diese verwenden
+    effectivePermissions = userPermResult.rows.map((r: any) => r.permission_type);
+  } else {
+    // Fallback: Rollen-Standard aus role_permission_defaults
+    const rolePermResult = await pool.query(
+      `SELECT permissions FROM role_permission_defaults WHERE role = $1 AND tenant_id = $2 LIMIT 1`,
+      [user.role, user.tenantId]
+    );
+    effectivePermissions = rolePermResult.rows[0]?.permissions || [];
+  }
 
   res.json({
     success: true,
     user: stripSensitive(user),
     assignedMarketIds: marketAssignments.map((a) => a.marketId),
-    permissions: rolePermissions,
+    permissions: effectivePermissions,
   });
 });
 

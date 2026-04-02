@@ -300,7 +300,7 @@ function ZeugnisKarte({ z, onDelete, isAdmin }: { z: Gesundheitszeugnis; onDelet
             Hinzugefügt: {new Date(z.createdAt).toLocaleDateString("de-DE")}
           </p>
 
-          {isAdmin && (
+          {canDelete && (
             <div className="flex gap-2 pt-1">
               {!confirmDelete ? (
                 <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">
@@ -322,8 +322,8 @@ function ZeugnisKarte({ z, onDelete, isAdmin }: { z: Gesundheitszeugnis; onDelet
 
 // ===== HAUPTSEITE =====
 export default function Gesundheitszeugnisse() {
-  const { adminSession, selectedMarketId } = useAppStore();
-  const isAdmin = !!adminSession;
+  const { adminSession, selectedMarketId, hasPermission } = useAppStore();
+  const canDelete = hasPermission("entries.delete");
 
   const [zeugnisse, setZeugnisse] = useState<Gesundheitszeugnis[]>([]);
   const [loading, setLoading] = useState(false);
@@ -437,7 +437,7 @@ export default function Gesundheitszeugnisse() {
               <ZeugnisKarte
                 key={z.id}
                 z={z}
-                isAdmin={isAdmin}
+                isAdmin={canDelete}
                 onDelete={() => handleDelete(z.id)}
               />
             ))}

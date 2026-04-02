@@ -253,8 +253,8 @@ function QuickCheckPanel({
 
 // ===== HAUPTSEITE =====
 export default function WarenzustandOG() {
-  const { selectedMarketId, selectedMarketName, adminSession } = useAppStore();
-  const isAdmin = !!adminSession;
+  const { selectedMarketId, selectedMarketName, adminSession, hasPermission } = useAppStore();
+  const canDelete = hasPermission("entries.delete");
   const [, navigate] = useLocation();
 
   const now = new Date();
@@ -572,7 +572,7 @@ export default function WarenzustandOG() {
                                         <Check className="w-3 h-3 text-green-600 shrink-0" />
                                         {entry.kuerzel}
                                       </div>
-                                      {isAdmin && (
+                                      {canDelete && (
                                         <button
                                           onClick={() => handleDelete(entry.id)}
                                           disabled={deletingId === entry.id}
