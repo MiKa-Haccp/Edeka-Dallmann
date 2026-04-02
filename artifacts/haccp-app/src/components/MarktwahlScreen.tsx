@@ -107,9 +107,16 @@ export function MarktwahlScreen() {
     }
   }, [position, markets, geoStatus]);
 
+  // Fallback: wenn keine Filiale GPS-Koordinaten hat, GPS-Sperre aufheben (Konfigurationsfehler)
+  const noMarketsHaveGps =
+    Array.isArray(markets) &&
+    markets.length > 0 &&
+    (markets as MarketWithGeo[]).every((m) => !m.lat || !m.lng);
+  const gpsConfigMissing = gpsLocked && noMarketsHaveGps;
+
   const handleSelect = (marketId: number, isGpsDetected: boolean) => {
     if (gpsLocked) {
-      if (marketId !== detectedMarketId) return;
+      if (!gpsConfigMissing && marketId !== detectedMarketId) return;
       if (!canAccessMarket(marketId)) return;
     } else {
       if (!canAccessMarket(marketId)) return;
@@ -121,6 +128,7 @@ export function MarktwahlScreen() {
   const canSelectMarket = (marketId: number): boolean => {
     if (!canAccessMarket(marketId)) return false;
     if (gpsLocked) {
+      if (gpsConfigMissing) return true;
       if (geoStatus === "denied" || geoStatus === "unavailable" || geoStatus === "error") return false;
       if (geoStatus === "requesting" || !gpsInitialized) return false;
       return marketId === detectedMarketId;
@@ -188,6 +196,7 @@ export function MarktwahlScreen() {
 
   const showGpsLockedWarning =
     gpsLocked &&
+    !gpsConfigMissing &&
     gpsInitialized &&
     (geoStatus === "denied" || geoStatus === "unavailable" || geoStatus === "error" || outsideAllMarkets);
 
@@ -266,6 +275,20 @@ export function MarktwahlScreen() {
                   Erneut versuchen
                 </button>
               )}
+            </motion.div>
+          )}
+
+          {gpsConfigMissing && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full max-w-2xl mb-6 bg-amber-500/20 border border-amber-400/30 rounded-2xl p-5 text-center"
+            >
+              <AlertCircle className="w-8 h-8 text-amber-300 mx-auto mb-2" />
+              <p className="text-amber-100 font-semibold mb-1">GPS-Koordinaten nicht konfiguriert</p>
+              <p className="text-amber-200 text-sm">
+                Für diesen Server sind noch keine GPS-Koordinaten hinterlegt. Manuelle Auswahl ist aktiv — bitte im Admin-Bereich die Filial-Koordinaten eintragen.
+              </p>
             </motion.div>
           )}
 

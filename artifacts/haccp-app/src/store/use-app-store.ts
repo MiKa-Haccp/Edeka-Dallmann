@@ -71,6 +71,8 @@ export const useAppStore = create<AppState>()(
       name: 'haccp-app-storage',
       partialize: (state) => ({
         adminSession: state.adminSession,
+        selectedMarketId: state.selectedMarketId,
+        marketSelectionMode: state.marketSelectionMode,
         selectedYear: state.selectedYear,
         selectedMonth: state.selectedMonth,
         deviceAuthorized: state.deviceAuthorized,
