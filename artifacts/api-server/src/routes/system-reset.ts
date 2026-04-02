@@ -21,6 +21,16 @@ async function ensureLogTable() {
 
 ensureLogTable().catch(console.error);
 
+/**
+ * Datumslogik-Strategie (Stichtag = INKLUSIVE):
+ *  - Spalte ist DATE (datum, completed_date, assignment_date, entry_date):
+ *      spalte <= $2::date
+ *  - Spalte ist year/month/day (INTEGER-Felder):
+ *      make_date(year, month, day) <= $2::date
+ *  - Spalte ist nur TIMESTAMP created_at (kein explizites Datumsfeld):
+ *      created_at < ($2::date + INTERVAL '1 day')
+ *    d.h. alles vor Mitternacht des Folgetages wird gelöscht.
+ */
 router.post("/system-reset", async (req, res) => {
   const { adminPin, adminName, marketId, marketName, cutoffDate, categories } = req.body;
 
@@ -36,105 +46,161 @@ router.post("/system-reset", async (req, res) => {
     for (const category of categories as string[]) {
       switch (category) {
         case "hygiene": {
+          // form_entries hat entry_date (DATE) → direkt vergleichen
           const fe = await pool.query(
-            `DELETE FROM form_entries WHERE form_instance_id IN (
-               SELECT id FROM form_instances WHERE market_id=$1 AND created_at < $2
-             )`,
+            `DELETE FROM form_entries
+             WHERE entry_date <= $2::date
+               AND form_instance_id IN (
+                 SELECT id FROM form_instances WHERE market_id=$1
+               )`,
             [marketId, cutoffDate]
           );
+          // form_instances: nach dem Entry-Delete verwaiste Instanzen entfernen
           const fi = await pool.query(
-            `DELETE FROM form_instances WHERE market_id=$1 AND created_at < $2`,
-            [marketId, cutoffDate]
+            `DELETE FROM form_instances
+             WHERE market_id=$1
+               AND NOT EXISTS (
+                 SELECT 1 FROM form_entries WHERE form_instance_id = form_instances.id
+               )`,
+            [marketId]
           );
-          const bb = await pool.query(
-            `DELETE FROM betriebsbegehung WHERE market_id=$1 AND created_at < $2`,
-            [marketId, cutoffDate]
-          );
+
+          // reinigung_taeglich: year/month/day → make_date()
           const rt = await pool.query(
-            `DELETE FROM reinigung_taeglich WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM reinigung_taeglich
+             WHERE market_id=$1 AND make_date(year, month, day) <= $2::date`,
             [marketId, cutoffDate]
           );
+
+          // kaesetheke_kontrolle: year/month/day → make_date()
           const kk = await pool.query(
-            `DELETE FROM kaesetheke_kontrolle WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM kaesetheke_kontrolle
+             WHERE market_id=$1 AND make_date(year, month, day) <= $2::date`,
             [marketId, cutoffDate]
           );
+
+          // oeffnung_salate: year/month/day → make_date()
           const os = await pool.query(
-            `DELETE FROM oeffnung_salate WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM oeffnung_salate
+             WHERE market_id=$1 AND make_date(year, month, day) <= $2::date`,
             [marketId, cutoffDate]
           );
-          const gq = await pool.query(
-            `DELETE FROM gq_begehung WHERE market_id=$1 AND created_at < $2`,
-            [marketId, cutoffDate]
-          );
-          const pe = await pool.query(
-            `DELETE FROM probeentnahme WHERE market_id=$1 AND created_at < $2`,
-            [marketId, cutoffDate]
-          );
+
+          // metz_reinigung: datum (DATE)
           const mr = await pool.query(
-            `DELETE FROM metz_reinigung WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM metz_reinigung
+             WHERE market_id=$1 AND datum <= $2::date`,
             [marketId, cutoffDate]
           );
+
+          // betriebsbegehung: nur created_at (kein Datumsfeld) → +1 Tag
+          const bb = await pool.query(
+            `DELETE FROM betriebsbegehung
+             WHERE market_id=$1 AND created_at < ($2::date + INTERVAL '1 day')`,
+            [marketId, cutoffDate]
+          );
+
+          // gq_begehung: nur created_at → +1 Tag
+          const gq = await pool.query(
+            `DELETE FROM gq_begehung
+             WHERE market_id=$1 AND created_at < ($2::date + INTERVAL '1 day')`,
+            [marketId, cutoffDate]
+          );
+
+          // probeentnahme: nur created_at → +1 Tag
+          const pe = await pool.query(
+            `DELETE FROM probeentnahme
+             WHERE market_id=$1 AND created_at < ($2::date + INTERVAL '1 day')`,
+            [marketId, cutoffDate]
+          );
+
+          // kontrollberichte: nur created_at → +1 Tag
           const kb = await pool.query(
-            `DELETE FROM kontrollberichte WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM kontrollberichte
+             WHERE market_id=$1 AND created_at < ($2::date + INTERVAL '1 day')`,
             [marketId, cutoffDate]
           );
+
+          // eingefrorenes_fleisch: nur created_at → +1 Tag
           const ef = await pool.query(
-            `DELETE FROM eingefrorenes_fleisch WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM eingefrorenes_fleisch
+             WHERE market_id=$1 AND created_at < ($2::date + INTERVAL '1 day')`,
             [marketId, cutoffDate]
           );
+
           deletedCounts.hygiene =
             (fe.rowCount || 0) +
             (fi.rowCount || 0) +
-            (bb.rowCount || 0) +
             (rt.rowCount || 0) +
             (kk.rowCount || 0) +
             (os.rowCount || 0) +
+            (mr.rowCount || 0) +
+            (bb.rowCount || 0) +
             (gq.rowCount || 0) +
             (pe.rowCount || 0) +
-            (mr.rowCount || 0) +
             (kb.rowCount || 0) +
             (ef.rowCount || 0);
           break;
         }
 
         case "mhd": {
+          // ware_mhd_kontrollen: datum (DATE)
           const wm = await pool.query(
-            `DELETE FROM ware_mhd_kontrollen WHERE market_id=$1 AND datum < $2`,
+            `DELETE FROM ware_mhd_kontrollen
+             WHERE market_id=$1 AND datum <= $2::date`,
             [marketId, cutoffDate]
           );
+
+          // warencheck_og: year/month/day → make_date()
           const wc = await pool.query(
-            `DELETE FROM warencheck_og WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM warencheck_og
+             WHERE market_id=$1 AND make_date(year, month, day) <= $2::date`,
             [marketId, cutoffDate]
           );
+
+          // wareneingang_og: year/month/day → make_date()
           const wo = await pool.query(
-            `DELETE FROM wareneingang_og WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM wareneingang_og
+             WHERE market_id=$1 AND make_date(year, month, day) <= $2::date`,
             [marketId, cutoffDate]
           );
+
+          // wareneingang_entries: year/month/day → make_date()
           const we = await pool.query(
-            `DELETE FROM wareneingang_entries WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM wareneingang_entries
+             WHERE market_id=$1 AND make_date(year, month, day) <= $2::date`,
             [marketId, cutoffDate]
           );
+
           deletedCounts.mhd =
             (wm.rowCount || 0) + (wc.rowCount || 0) + (wo.rowCount || 0) + (we.rowCount || 0);
           break;
         }
 
         case "todo": {
+          // todo_daily_completions: completed_date (DATE)
           const dc = await pool.query(
-            `DELETE FROM todo_daily_completions WHERE market_id=$1 AND completed_date < $2`,
+            `DELETE FROM todo_daily_completions
+             WHERE market_id=$1 AND completed_date <= $2::date`,
             [marketId, cutoffDate]
           );
+
+          // todo_adhoc_tasks: created_at → +1 Tag
           const at2 = await pool.query(
-            `DELETE FROM todo_adhoc_tasks WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM todo_adhoc_tasks
+             WHERE market_id=$1 AND created_at < ($2::date + INTERVAL '1 day')`,
             [marketId, cutoffDate]
           );
+
           deletedCounts.todo = (dc.rowCount || 0) + (at2.rowCount || 0);
           break;
         }
 
         case "kassen": {
+          // till_assignments: assignment_date (DATE)
           const ta = await pool.query(
-            `DELETE FROM till_assignments WHERE market_id=$1 AND assignment_date < $2`,
+            `DELETE FROM till_assignments
+             WHERE market_id=$1 AND assignment_date <= $2::date`,
             [marketId, cutoffDate]
           );
           deletedCounts.kassen = ta.rowCount || 0;
@@ -151,24 +217,30 @@ router.post("/system-reset", async (req, res) => {
         }
 
         case "zeugnisse": {
+          // Alle haben nur created_at → +1 Tag
           const gz = await pool.query(
-            `DELETE FROM gesundheitszeugnisse WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM gesundheitszeugnisse
+             WHERE market_id=$1 AND created_at < ($2::date + INTERVAL '1 day')`,
             [marketId, cutoffDate]
           );
           const ha = await pool.query(
-            `DELETE FROM hygienebelehrung_abt WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM hygienebelehrung_abt
+             WHERE market_id=$1 AND created_at < ($2::date + INTERVAL '1 day')`,
             [marketId, cutoffDate]
           );
           const bz = await pool.query(
-            `DELETE FROM bescheinigungen WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM bescheinigungen
+             WHERE market_id=$1 AND created_at < ($2::date + INTERVAL '1 day')`,
             [marketId, cutoffDate]
           );
           const av = await pool.query(
-            `DELETE FROM anti_vektor_zertifikate WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM anti_vektor_zertifikate
+             WHERE market_id=$1 AND created_at < ($2::date + INTERVAL '1 day')`,
             [marketId, cutoffDate]
           );
           const as2 = await pool.query(
-            `DELETE FROM arzneimittel_sachkunde WHERE market_id=$1 AND created_at < $2`,
+            `DELETE FROM arzneimittel_sachkunde
+             WHERE market_id=$1 AND created_at < ($2::date + INTERVAL '1 day')`,
             [marketId, cutoffDate]
           );
           deletedCounts.zeugnisse =

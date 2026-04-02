@@ -249,7 +249,7 @@ export default function DatenBereinigung() {
                   <span className="text-red-500">*</span>
                 </label>
                 <p className="text-xs text-gray-500">
-                  Alle Datensätze <strong>vor</strong> diesem Datum werden gelöscht.
+                  Alle Datensätze <strong>bis einschließlich</strong> diesem Datum werden gelöscht.
                 </p>
                 <input
                   type="date"
