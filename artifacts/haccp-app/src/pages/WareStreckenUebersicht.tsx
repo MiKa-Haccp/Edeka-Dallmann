@@ -178,7 +178,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
 
         {/* Header – nur im Standalone-Modus */}
         {!noLayout && (
-          <PageHeader className="from-[#c2410c] to-[#ea580c]">
+          <PageHeader className="from-[#c73d00] to-[#f94d00]">
             <div className="flex items-center gap-3">
               <Link href="/ware-streckenbestellung" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
                 <ChevronLeft className="h-5 w-5" />
@@ -213,7 +213,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
             {isAdmin && (
               <button
                 onClick={() => { setShowAdd(true); setAddData({ ...EMPTY, sort_order: lieferanten.length + 1 }); }}
-                className="flex items-center gap-2 px-3 py-2 bg-[#c2410c] text-white rounded-xl text-sm font-semibold hover:bg-[#ea580c] transition-colors"
+                className="flex items-center gap-2 px-3 py-2 bg-[#f94d00] text-white rounded-xl text-sm font-semibold hover:bg-[#f94d00] transition-colors"
               >
                 <Plus className="w-4 h-4" /> Neu
               </button>
@@ -229,7 +229,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Lieferant, Ansprechpartner oder Info suchen …"
-              className="w-full pl-9 pr-4 py-2.5 border border-border/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30 bg-white"
+              className="w-full pl-9 pr-4 py-2.5 border border-border/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f94d00]/30 bg-white"
             />
             {search && (
               <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -248,7 +248,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
 
         {loading && (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-6 h-6 animate-spin text-[#c2410c]" />
+            <Loader2 className="w-6 h-6 animate-spin text-[#f94d00]" />
           </div>
         )}
 
@@ -277,21 +277,21 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                         <>
                           <td className="px-3 py-2">
                             <input value={editData.name} onChange={e => setEditData(p => ({ ...p, name: e.target.value }))}
-                              className="w-full border border-[#c2410c]/40 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30 font-semibold" />
+                              className="w-full border border-[#f94d00]/40 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f94d00]/30 font-semibold" />
                           </td>
                           <td className="px-3 py-2">
                             <input value={editData.ansprechpartner ?? ""} onChange={e => setEditData(p => ({ ...p, ansprechpartner: e.target.value }))}
-                              className="w-full border border-border/60 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30" />
+                              className="w-full border border-border/60 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f94d00]/30" />
                           </td>
                           <td className="px-3 py-2">
                             <textarea value={editData.telefon ?? ""} onChange={e => setEditData(p => ({ ...p, telefon: e.target.value }))}
                               rows={2}
-                              className="w-full border border-border/60 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30 resize-none" />
+                              className="w-full border border-border/60 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f94d00]/30 resize-none" />
                           </td>
                           <td className="px-3 py-2">
                             <textarea value={editData.info ?? ""} onChange={e => setEditData(p => ({ ...p, info: e.target.value }))}
                               rows={2}
-                              className="w-full border border-border/60 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30 resize-none" />
+                              className="w-full border border-border/60 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f94d00]/30 resize-none" />
                           </td>
                           <td className="px-3 py-2">
                             <div className="relative">
@@ -301,7 +301,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                                 value={editData.mindestbestellwert ?? ""}
                                 onChange={e => setEditData(p => ({ ...p, mindestbestellwert: e.target.value ? parseFloat(e.target.value) : null }))}
                                 placeholder="–"
-                                className="w-full border border-border/60 rounded-lg pl-6 pr-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30" />
+                                className="w-full border border-border/60 rounded-lg pl-6 pr-2 py-1.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#f94d00]/30" />
                             </div>
                           </td>
                           <td className="px-3 py-2 text-center text-muted-foreground text-xs">–</td>
@@ -309,7 +309,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                           <td className="px-3 py-2">
                             <div className="flex items-center gap-1">
                               <button onClick={saveEdit} disabled={saving}
-                                className="p-1.5 bg-[#c2410c] text-white rounded-lg hover:bg-[#ea580c] disabled:opacity-50">
+                                className="p-1.5 bg-[#f94d00] text-white rounded-lg hover:bg-[#f94d00] disabled:opacity-50">
                                 {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                               </button>
                               <button onClick={() => setEditId(null)}
@@ -350,7 +350,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                             <td className="px-2 py-2.5">
                               <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button onClick={() => startEdit(l)}
-                                  className="p-1 text-[#c2410c] hover:bg-orange-100 rounded-lg">
+                                  className="p-1 text-[#f94d00] hover:bg-orange-100 rounded-lg">
                                   <Pencil className="w-3.5 h-3.5" />
                                 </button>
                                 <button onClick={() => handleDelete(l.id)}
@@ -393,11 +393,11 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       {l.kuerzel && (
-                        <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-orange-100 text-[#c2410c]">{l.kuerzel}</span>
+                        <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-orange-100 text-[#f94d00]">{l.kuerzel}</span>
                       )}
                       {isAdmin && (
                         <>
-                          <button onClick={() => startEdit(l)} className="p-1.5 text-[#c2410c] hover:bg-orange-100 rounded-lg">
+                          <button onClick={() => startEdit(l)} className="p-1.5 text-[#f94d00] hover:bg-orange-100 rounded-lg">
                             <Pencil className="w-4 h-4" />
                           </button>
                           <button onClick={() => handleDelete(l.id)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg">
@@ -409,7 +409,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                   </div>
                   {l.ansprechpartner && <p className="text-sm text-muted-foreground">{l.ansprechpartner}</p>}
                   {l.telefon && (
-                    <a href={`tel:${l.telefon.split(" ")[0]}`} className="text-sm text-[#c2410c] font-medium">
+                    <a href={`tel:${l.telefon.split(" ")[0]}`} className="text-sm text-[#f94d00] font-medium">
                       {l.telefon}
                     </a>
                   )}
@@ -453,7 +453,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                       onChange={e => setAddData(p => ({ ...p, [f.key]: e.target.value }))}
                       placeholder={f.placeholder}
                       maxLength={f.key === "kuerzel" ? 5 : undefined}
-                      className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30"
+                      className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f94d00]/30"
                     />
                   </div>
                 ))}
@@ -464,7 +464,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                     onChange={e => setAddData(p => ({ ...p, telefon: e.target.value }))}
                     placeholder={"z.B. 0151/42259352\n0800/1234567"}
                     rows={2}
-                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30 resize-none"
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f94d00]/30 resize-none"
                   />
                 </div>
                 <div>
@@ -476,7 +476,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                       value={addData.mindestbestellwert ?? ""}
                       onChange={e => setAddData(p => ({ ...p, mindestbestellwert: e.target.value ? parseFloat(e.target.value) : null }))}
                       placeholder="z.B. 150"
-                      className="w-full border border-border/60 rounded-xl pl-7 pr-3 py-2.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30"
+                      className="w-full border border-border/60 rounded-xl pl-7 pr-3 py-2.5 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#f94d00]/30"
                     />
                   </div>
                 </div>
@@ -487,7 +487,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                     onChange={e => setAddData(p => ({ ...p, info: e.target.value }))}
                     placeholder="z.B. Kommt ca. alle 4 Wochen. Füllt selbst auf."
                     rows={3}
-                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30 resize-none"
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#f94d00]/30 resize-none"
                   />
                 </div>
                 <div className="flex gap-2 pt-1">
@@ -498,7 +498,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
                   <button
                     onClick={handleAdd}
                     disabled={!addData.name.trim() || adding}
-                    className="flex-1 px-4 py-2.5 bg-[#c2410c] text-white rounded-xl text-sm font-bold hover:bg-[#ea580c] disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-2.5 bg-[#f94d00] text-white rounded-xl text-sm font-bold hover:bg-[#f94d00] disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {adding ? <><Loader2 className="w-4 h-4 animate-spin" /> Speichern…</> : <><Plus className="w-4 h-4" /> Hinzufügen</>}
                   </button>

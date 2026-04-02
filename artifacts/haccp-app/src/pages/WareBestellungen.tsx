@@ -103,7 +103,7 @@ export default function WareBestellungen() {
       <div className="max-w-3xl mx-auto space-y-5">
 
         {/* Header */}
-        <PageHeader className="from-[#c2410c] to-[#ea580c]">
+        <PageHeader className="from-[#c73d00] to-[#f94d00]">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <Link href="/ware-bestellungen" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
@@ -128,7 +128,7 @@ export default function WareBestellungen() {
 
         {/* Admin-Tab */}
         {tab === "admin" && (
-          <div className="bg-white rounded-2xl border-2 border-[#c2410c]/20 shadow-sm p-5 space-y-4">
+          <div className="bg-white rounded-2xl border-2 border-[#f94d00]/20 shadow-sm p-5 space-y-4">
             <h2 className="font-bold text-foreground">Rayons verwalten</h2>
             <div className="space-y-2">
               {rayons.map(r => (
@@ -157,7 +157,7 @@ export default function WareBestellungen() {
                 ))}
               </div>
               <button onClick={handleAddRayon} disabled={saving || !newName.trim()}
-                className="w-full flex items-center justify-center gap-2 bg-[#c2410c] hover:bg-[#c2410c]/90 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition-colors text-sm">
+                className="w-full flex items-center justify-center gap-2 bg-[#f94d00] hover:bg-[#f94d00]/90 disabled:opacity-50 text-white font-bold py-2.5 rounded-xl transition-colors text-sm">
                 <Plus className="w-4 h-4" /> Rayon hinzufugen
               </button>
             </div>

@@ -40,7 +40,7 @@ const MODULES: ModuleCard[] = [
     title: "Ware",
     description: "Wareneingangskontrolle für Markt und Metzgerei. Temperatur, Qualität, MSC-Prüfung und Lieferantenbewertung.",
     href: "/ware",
-    color: "text-orange-600",
+    color: "text-[#f94d00]",
     bgColor: "bg-orange-50",
     available: true,
     badge: "Aktiv",
