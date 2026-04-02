@@ -37,7 +37,7 @@ router.post("/system-reset", async (req, res) => {
       switch (category) {
         case "hygiene": {
           const fe = await pool.query(
-            `DELETE FROM form_entries WHERE instance_id IN (
+            `DELETE FROM form_entries WHERE form_instance_id IN (
                SELECT id FROM form_instances WHERE market_id=$1 AND created_at < $2
              )`,
             [marketId, cutoffDate]
