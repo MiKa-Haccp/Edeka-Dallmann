@@ -460,19 +460,19 @@ export default function AntiVektorZugang() {
         {tab === "zugang" && (
           <>
             {/* Protokollierungs-Link */}
-            <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] rounded-2xl p-6 text-white">
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
-                  <ExternalLink className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
+                  <ExternalLink className="w-6 h-6 text-blue-500" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs font-semibold text-white/60 uppercase tracking-wide mb-1">Online-Protokollierung Schädlingsbekämpfung</p>
-                  <h2 className="text-lg font-bold mb-3">AV-ODS Portal</h2>
+                  <p className="text-xs font-semibold text-blue-400 uppercase tracking-wide mb-1">Online-Protokollierung Schädlingsbekämpfung</p>
+                  <h2 className="text-lg font-bold mb-3 text-[#1a3a6b]">AV-ODS Portal</h2>
                   <a
                     href={zugangsdaten.websiteUrl || "https://www.av-ods.de"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-white text-[#1a3a6b] rounded-xl text-sm font-bold hover:bg-white/90 transition-colors shadow-sm"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-blue-200 text-[#1a3a6b] rounded-xl text-sm font-bold hover:bg-blue-50 transition-colors shadow-sm"
                   >
                     <ExternalLink className="w-4 h-4" />
                     {zugangsdaten.websiteUrl || "www.av-ods.de"} aufrufen
