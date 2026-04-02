@@ -48,26 +48,19 @@ export default function InfoDocumentation() {
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto space-y-6 pb-8">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors shrink-0">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-          <h1 className="text-lg font-bold text-foreground">1.3 Info Dokumentation</h1>
-        </div>
         <PageHeader>
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center">
+          <div className="flex items-center gap-3">
+            <Link href="/category/1" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
+            <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center shrink-0">
               <FileText className="w-5 h-5" />
             </div>
             <div>
               <p className="text-xs text-blue-200 font-medium tracking-wide uppercase">Sektion 1.3</p>
-              <h1 className="text-xl md:text-2xl font-bold">Info Dokumentation und Ablagefristen</h1>
+              <h1 className="text-lg font-bold leading-tight">Info Dokumentation und Ablagefristen</h1>
             </div>
           </div>
-          <p className="text-blue-100 text-sm mt-2 leading-relaxed">
-            Übersicht über die gesetzlichen und betrieblichen Aufbewahrungsfristen für alle HACCP-relevanten Dokumente. 
-            Diese Informationen dienen als Orientierungshilfe für die korrekte Archivierung.
-          </p>
         </PageHeader>
 
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
