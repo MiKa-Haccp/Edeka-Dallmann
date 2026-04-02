@@ -236,7 +236,7 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
               <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
                 <LogIn className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               </div>
-              <span className="text-xs sm:text-sm font-medium hidden sm:block">Admin Login</span>
+              <span className="text-xs sm:text-sm font-medium hidden sm:block">Persönliche Anmeldung</span>
             </button>
           )}
         </div>
