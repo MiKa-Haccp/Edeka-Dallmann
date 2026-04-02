@@ -77,9 +77,9 @@ const TABS: {
     label: "TÜV",
     kurzLabel: "TÜV",
     icon: <ShieldCheck className="w-4 h-4" />,
-    color: "text-indigo-600",
-    bgColor: "bg-indigo-50",
-    borderColor: "border-indigo-200",
+    color: "text-blue-600",
+    bgColor: "bg-blue-50",
+    borderColor: "border-blue-200",
     kontrollstelleBeispiel: "z.B. TÜV Süd / TÜV Nord / DEKRA",
     bezeichnungPlaceholder: "z.B. ISO 22000, HACCP-Zertifizierung",
     hinweis: "TÜV-Zertifikate belegen die Konformität mit Qualitäts- und Sicherheitsstandards. Ablaufdatum im Blick behalten.",
@@ -89,9 +89,9 @@ const TABS: {
     label: "Bio-Kontrollberichte",
     kurzLabel: "Bio",
     icon: <Leaf className="w-4 h-4" />,
-    color: "text-green-600",
-    bgColor: "bg-green-50",
-    borderColor: "border-green-200",
+    color: "text-blue-600",
+    bgColor: "bg-blue-50",
+    borderColor: "border-blue-200",
     kontrollstelleBeispiel: "z.B. Bioland, Naturland, DE-ÖKO-001",
     bezeichnungPlaceholder: "z.B. Jahreskontrolle Bio-Sortiment",
     hinweis: "EU-Bio-Verordnung (EG) 834/2007: Jährliche Kontrolle durch zugelassene Kontrollstellen erforderlich. Zertifikat sichern.",
@@ -101,9 +101,9 @@ const TABS: {
     label: "Sonstige Kontrollen",
     kurzLabel: "Sonstige",
     icon: <FileText className="w-4 h-4" />,
-    color: "text-slate-600",
-    bgColor: "bg-slate-50",
-    borderColor: "border-slate-200",
+    color: "text-blue-600",
+    bgColor: "bg-blue-50",
+    borderColor: "border-blue-200",
     kontrollstelleBeispiel: "z.B. Interne Revision, Brandschutzbehörde",
     bezeichnungPlaceholder: "Bezeichnung des Berichts / der Prüfung",
     hinweis: undefined,
@@ -542,8 +542,8 @@ function TuevPanel({ year }: { year: number }) {
           />
         </div>
       ) : (
-        <div className="text-center py-12 rounded-2xl border-2 border-dashed border-indigo-200 bg-indigo-50">
-          <ShieldCheck className="w-8 h-8 text-indigo-400 mx-auto mb-3" />
+        <div className="text-center py-12 rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50">
+          <ShieldCheck className="w-8 h-8 text-blue-400 mx-auto mb-3" />
           <p className="text-sm font-medium text-muted-foreground">Noch kein TÜV-Bericht für {year}</p>
           <p className="text-xs text-muted-foreground mt-1">Klicken Sie auf "Eintragen" um zu beginnen</p>
         </div>
