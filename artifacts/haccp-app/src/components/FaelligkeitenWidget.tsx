@@ -24,6 +24,11 @@ function getQuartalDayProgress() {
   return now.getDate() + (now.getMonth() % 3) * 30;
 }
 
+function getDayOfYear(date: Date): number {
+  const start = new Date(date.getFullYear(), 0, 1);
+  return Math.ceil((date.getTime() - start.getTime()) / 86400000) + 1;
+}
+
 function StatusIcon({ status }: { status: ItemStatus }) {
   if (status === "aktuell") return <CheckCircle2 className="w-4 h-4 text-green-500" />;
   if (status === "ueberfaellig") return <AlertCircle className="w-4 h-4 text-red-500" />;
@@ -68,7 +73,11 @@ export function FaelligkeitenWidget() {
 
   const respStatus: ItemStatus = (() => {
     if (!currentYearResp) return "ausstehend";
-    if (currentYearResp.length === 0) return "ueberfaellig";
+    if (currentYearResp.length === 0) {
+      // Erst nach 120 Tagen (Ende April) als überfällig markieren —
+      // Neustart/Reset zu Jahresbeginn oder nach Q1 zeigt zunächst Gelb.
+      return getDayOfYear(new Date()) > 120 ? "ueberfaellig" : "ausstehend";
+    }
     return "aktuell";
   })();
 
@@ -88,6 +97,8 @@ export function FaelligkeitenWidget() {
           ? `Einträge für ${currentYear} vorhanden`
           : respStatus === "ueberfaellig"
           ? `Für ${currentYear} noch kein Eintrag — bitte baldmöglich ausfüllen`
+          : currentYearResp !== undefined
+          ? `Für ${currentYear} noch nicht ausgefüllt — bitte bei Gelegenheit eintragen`
           : "Wird geprüft …",
       href: "/responsibilities",
     },
