@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAppStore } from "@/store/use-app-store";
@@ -73,7 +74,7 @@ export function FeedbackButton({ isOpen, onClose }: FeedbackButtonProps) {
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[9001] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
         {thanks ? (
@@ -119,6 +120,7 @@ export function FeedbackButton({ isOpen, onClose }: FeedbackButtonProps) {
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
