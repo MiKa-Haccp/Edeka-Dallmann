@@ -51,6 +51,7 @@ import streckenLieferantenRouter from "./streckenLieferanten";
 import todoRouter from "./todo";
 import feedbackRouter from "./feedback";
 import authRouter from "./auth";
+import systemResetRouter from "./system-reset";
 
 const router: IRouter = Router();
 
@@ -106,5 +107,6 @@ router.use(streckenLieferantenRouter);
 router.use(todoRouter);
 router.use(feedbackRouter);
 router.use(authRouter);
+router.use(systemResetRouter);
 
 export default router;

@@ -96,6 +96,7 @@ import TodoVerwaltung from "./pages/TodoVerwaltung";
 import TodoKassen from "./pages/TodoKassen";
 import { FeedbackButton } from "./components/FeedbackButton";
 import FeedbackAdmin from "./pages/FeedbackAdmin";
+import DatenBereinigung from "./pages/DatenBereinigung";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
@@ -171,6 +172,7 @@ function Router() {
       <Route path="/admin/feedback" component={FeedbackAdmin} />
       <Route path="/admin/benachrichtigungen" component={BenachrichtigungsEinstellungen} />
       <Route path="/admin/monatsbericht" component={MonatsberichtAdmin} />
+      <Route path="/admin/daten-bereinigung" component={DatenBereinigung} />
       <Route path="/verwaltung/schulungsanforderungen" component={SchulungsAnforderungen} />
       <Route path="/todo" component={TodoHub} />
       <Route path="/todo-tagesliste" component={TodoTagesliste} />
