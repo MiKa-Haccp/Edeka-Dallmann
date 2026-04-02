@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict uKpUazfp2OFIf6PNhsS1KkoIH6qMPEdHrKhiHY7cCwoRUdeyJtQFgQMH0fA9Zsn
+\restrict araDlZhUM4qPcgUtWXqaBUStGJGvRaxd0RoGhZg2OLjgw7qdxlOebLOKQ6hg81b
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -1274,6 +1274,43 @@ ALTER SEQUENCE public.mhd_kontrolle_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.mhd_kontrolle_id_seq OWNED BY public.mhd_kontrolle.id;
+
+
+--
+-- Name: module_visibility; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.module_visibility (
+    id integer NOT NULL,
+    tenant_id integer DEFAULT 1 NOT NULL,
+    module_id character varying(50) NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    updated_at timestamp with time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.module_visibility OWNER TO postgres;
+
+--
+-- Name: module_visibility_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.module_visibility_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.module_visibility_id_seq OWNER TO postgres;
+
+--
+-- Name: module_visibility_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.module_visibility_id_seq OWNED BY public.module_visibility.id;
 
 
 --
@@ -3523,6 +3560,13 @@ ALTER TABLE ONLY public.mhd_kontrolle ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
+-- Name: module_visibility id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.module_visibility ALTER COLUMN id SET DEFAULT nextval('public.module_visibility_id_seq'::regclass);
+
+
+--
 -- Name: monatsbericht_config id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -4212,6 +4256,7 @@ COPY public.laden_bestellgebiete (id, market_id, tenant_id, name, farbe, x, y, w
 --
 
 COPY public.laden_bestellungen (id, market_id, tenant_id, gebiet_id, datum, kuerzel, anmerkung, created_at) FROM stdin;
+3	1	1	1	2026-04-02	1328	\N	2026-04-02 12:28:09.817417
 \.
 
 
@@ -4563,6 +4608,16 @@ COPY public.metz_reinigung (id, market_id, item_key, datum, kuerzel, user_id, cr
 --
 
 COPY public.mhd_kontrolle (id, market_id, datum, bereich, artikel, mhd_datum, menge, aktion, bemerkung, kuerzel, created_at) FROM stdin;
+\.
+
+
+--
+-- Data for Name: module_visibility; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.module_visibility (id, tenant_id, module_id, enabled, updated_at) FROM stdin;
+1	1	todo	f	2026-04-02 12:37:16.751003+00
+4	1	ware	f	2026-04-02 12:37:17.910879+00
 \.
 
 
@@ -4997,8 +5052,8 @@ COPY public.role_permission_defaults (id, tenant_id, role, label, color, is_cust
 1	1	SUPERADMIN	Superadmin	purple	f	{users.view,users.manage,users.invite_admin,entries.create,entries.view_all,entries.edit,entries.delete,reports.view,reports.export,verwaltung.access,devices.manage,settings.manage}	1	2026-03-26 13:59:42.081789
 3	1	BEREICHSLEITUNG	Bereichsleitung	indigo	f	{users.view,users.manage,entries.create,entries.view_all,entries.edit,reports.view,reports.export,verwaltung.access}	3	2026-03-26 13:59:42.081789
 4	1	MARKTLEITER	Marktleiter	emerald	f	{users.view,entries.create,entries.view_all,entries.edit,reports.view,verwaltung.access}	4	2026-03-26 13:59:42.081789
-5	1	USER	Mitarbeiter	gray	f	{entries.create}	5	2026-03-26 13:59:42.081789
 2	1	ADMIN	Administrator	blue	f	{users.view,users.manage,users.invite_admin,entries.create,entries.view_all,entries.edit,entries.delete,reports.view,reports.export,verwaltung.access,settings.manage,devices.manage}	2	2026-03-26 13:59:42.081789
+5	1	USER	Mitarbeiter	gray	f	{entries.create,entries.view_all}	5	2026-03-26 13:59:42.081789
 \.
 
 
@@ -5270,6 +5325,8 @@ COPY public.strecken_bestellungen (id, market_id, tenant_id, lieferant_id, beste
 53	1	1	40	2026-02-25 08:00:00+00	Ahmet	\N	2026-03-29 16:00:01.750318+00
 54	1	1	40	2026-03-10 08:00:00+00	Landchen	\N	2026-03-29 16:00:01.750318+00
 55	1	1	40	2026-03-25 08:00:00+00	Kol	\N	2026-03-29 16:00:01.750318+00
+56	1	1	43	2026-04-02 12:22:46.922911+00	1328	test	2026-04-02 12:22:46.922911+00
+57	1	1	41	2026-04-02 12:24:20.241235+00	4747	nicht bestellt weil noch alles da	2026-04-02 12:24:20.241235+00
 \.
 
 
@@ -5552,14 +5609,6 @@ COPY public.user_permissions (id, user_id, permission_type, resource_type, resou
 33	5	entries.delete	global	\N	t	2026-03-25 12:02:43.889617
 34	5	reports.view	global	\N	t	2026-03-25 12:02:43.889617
 35	5	reports.export	global	\N	t	2026-03-25 12:02:43.889617
-36	16	users.view	global	\N	t	2026-03-31 07:30:26.042987
-37	16	users.manage	global	\N	t	2026-03-31 07:30:26.042987
-38	16	entries.create	global	\N	t	2026-03-31 07:30:26.042987
-39	16	entries.view_all	global	\N	t	2026-03-31 07:30:26.042987
-40	16	entries.edit	global	\N	t	2026-03-31 07:30:26.042987
-41	16	reports.view	global	\N	t	2026-03-31 07:30:26.042987
-42	16	reports.export	global	\N	t	2026-03-31 07:30:26.042987
-43	16	verwaltung.access	global	\N	t	2026-03-31 07:30:26.042987
 44	17	users.view	global	\N	t	2026-03-31 09:04:51.116844
 45	17	users.manage	global	\N	t	2026-03-31 09:04:51.116844
 46	17	users.invite_admin	global	\N	t	2026-03-31 09:04:51.116844
@@ -5572,6 +5621,12 @@ COPY public.user_permissions (id, user_id, permission_type, resource_type, resou
 53	17	verwaltung.access	global	\N	t	2026-03-31 09:04:51.116844
 54	17	settings.manage	global	\N	t	2026-03-31 10:29:26.275995
 55	17	devices.manage	global	\N	t	2026-03-31 10:29:26.275995
+56	16	users.view	global	\N	t	2026-04-02 12:39:05.843292
+57	16	entries.create	global	\N	t	2026-04-02 12:39:05.843292
+58	16	entries.view_all	global	\N	t	2026-04-02 12:39:05.843292
+59	16	entries.edit	global	\N	t	2026-04-02 12:39:05.843292
+60	16	reports.view	global	\N	t	2026-04-02 12:39:05.843292
+61	16	verwaltung.access	global	\N	t	2026-04-02 12:39:05.843292
 \.
 
 
@@ -5589,8 +5644,8 @@ COPY public.users (id, tenant_id, name, email, role, initials, pin, created_at, 
 13	1	Hinter Schuber	\N	USER	HSC	2222	2026-03-25 10:41:45.546557	Hinter	Schuber	1979-03-14	t	\N	aktiv	\N	\N
 5	1	Anna Schmidt	\N	ADMIN	AS	5678	2026-03-17 12:56:53.828016	Anna	Schmidt	1995-06-15	t	\N	aktiv	\N	\N
 15	1	Onur	\N	USER	ON	\N	2026-03-26 10:09:58.100091	Onur		\N	t	\N	aktiv	\N	\N
-16	1	Kai Martin	kai.martin@edeka-dallmann.de	BEREICHSLEITUNG	KMA	4429	2026-03-31 07:26:05.333152	Kai	Martin	1982-09-13	t	a4be3b89ad9afbea9b7065676f7452ed:c2cda7be2899caef3d832457e68ff5deb4c829689eb1c5e3f1cc60df40dcbd33a11028d64b39fc3923bc1e420ae2e1a09d8fa5ed6f7e0f40beac35171f26a6fe	aktiv	gesamter_markt	\N
 17	1	Michael Dallmann	Michael.Dallmann@edeka-dallmann.de	ADMIN	DM	4747	2026-03-31 09:04:04.63336	Michael	Dallmann	1983-02-16	t	252ff03816a35adbb4d9bfc7662f1b73:de6d9fdb9c4bbd2095f21d31442c3677274c6375d6f63fc915431a1875c1dec71c5ce458ed3331eba36b728cb09949a147a54ec7a145c1a4bebb5893ef8e5027	aktiv	\N	\N
+16	1	Kai Martin	kai.martin@edeka-dallmann.de	MARKTLEITER	KMA	4429	2026-03-31 07:26:05.333152	Kai	Martin	1982-09-13	t	a4be3b89ad9afbea9b7065676f7452ed:c2cda7be2899caef3d832457e68ff5deb4c829689eb1c5e3f1cc60df40dcbd33a11028d64b39fc3923bc1e420ae2e1a09d8fa5ed6f7e0f40beac35171f26a6fe	aktiv	gesamter_markt	\N
 \.
 
 
@@ -6048,6 +6103,14 @@ COPY public.warencheck_og (id, tenant_id, market_id, year, month, day, slot, kue
 67	1	1	2026	3	29	s3	HSC	13	2026-03-29 10:25:56.083646
 70	1	3	2026	4	2	s1	DM	17	2026-04-02 09:59:51.48344
 71	1	3	2026	4	2	s2	DM	17	2026-04-02 09:59:56.601817
+72	1	1	2026	4	2	s1	DM	17	2026-04-02 10:57:11.943267
+73	1	1	2026	4	2	s2	DM	17	2026-04-02 10:57:16.577452
+74	1	1	2026	4	2	s3	DM	17	2026-04-02 10:57:19.736764
+75	1	1	2026	4	1	s1	DM	17	2026-04-02 10:57:23.668714
+76	1	1	2026	4	1	s2	DM	17	2026-04-02 10:57:26.783002
+77	1	1	2026	4	1	s3	DM	17	2026-04-02 10:57:29.719207
+78	1	1	2026	4	1	s4	DM	17	2026-04-02 10:57:33.125695
+79	1	1	2026	4	1	s5	DM	17	2026-04-02 10:57:36.707058
 \.
 
 
@@ -6085,6 +6148,7 @@ COPY public.wareneingang_entries (id, tenant_id, market_id, type_id, year, month
 29	1	1	10	2026	3	29	{"mhd": "io", "hygiene": "io", "bio_kennz": "io", "qualitaet": "io", "bio_geliefert": "io", "etikettierung": "io", "bio_zertifikat": "io", "bio_vermischung": "io", "bio_kennz_stimmt": "io", "bio_warenbegleit": "io", "temp_kuehl_molkerei": "5"}	KM	8		2026-03-29 10:27:21.200709
 30	1	1	9	2026	3	30	{"_ausgefallen": "ja"}	HSC	13		2026-03-30 08:09:08.577351
 31	1	1	10	2026	3	30	{"mhd": "io", "hygiene": "io", "bio_kennz": "io", "qualitaet": "io", "bio_geliefert": "io", "etikettierung": "io", "bio_zertifikat": "io", "bio_vermischung": "io", "bio_kennz_stimmt": "io", "bio_warenbegleit": "io", "temp_kuehl_molkerei": "5"}	KM	8		2026-03-30 12:21:28.343474
+33	1	1	9	2026	4	2	{"mhd": "io", "qs_by": "io", "qs_qs": "io", "hygiene": "io", "qualitaet": "io", "qs_biosiegel": "io", "etikettierung": "io", "kistenetikett": "io", "temp_kuehl_og": "3.5"}	KM	8		2026-04-02 12:20:51.734625
 \.
 
 
@@ -6335,7 +6399,7 @@ SELECT pg_catalog.setval('public.laden_bestellgebiete_id_seq', 12, true);
 -- Name: laden_bestellungen_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.laden_bestellungen_id_seq', 2, true);
+SELECT pg_catalog.setval('public.laden_bestellungen_id_seq', 3, true);
 
 
 --
@@ -6378,6 +6442,13 @@ SELECT pg_catalog.setval('public.metz_reinigung_id_seq', 284, true);
 --
 
 SELECT pg_catalog.setval('public.mhd_kontrolle_id_seq', 1, false);
+
+
+--
+-- Name: module_visibility_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.module_visibility_id_seq', 4, true);
 
 
 --
@@ -6531,7 +6602,7 @@ SELECT pg_catalog.setval('public.shelf_markers_id_seq', 60, true);
 -- Name: strecken_bestellungen_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.strecken_bestellungen_id_seq', 55, true);
+SELECT pg_catalog.setval('public.strecken_bestellungen_id_seq', 57, true);
 
 
 --
@@ -6629,7 +6700,7 @@ SELECT pg_catalog.setval('public.user_market_assignments_id_seq', 1, true);
 -- Name: user_permissions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.user_permissions_id_seq', 55, true);
+SELECT pg_catalog.setval('public.user_permissions_id_seq', 61, true);
 
 
 --
@@ -6678,14 +6749,14 @@ SELECT pg_catalog.setval('public.ware_rayons_id_seq', 8, true);
 -- Name: warencheck_og_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.warencheck_og_id_seq', 71, true);
+SELECT pg_catalog.setval('public.warencheck_og_id_seq', 79, true);
 
 
 --
 -- Name: wareneingang_entries_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.wareneingang_entries_id_seq', 32, true);
+SELECT pg_catalog.setval('public.wareneingang_entries_id_seq', 33, true);
 
 
 --
@@ -6979,6 +7050,22 @@ ALTER TABLE ONLY public.metz_reinigung
 
 ALTER TABLE ONLY public.mhd_kontrolle
     ADD CONSTRAINT mhd_kontrolle_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: module_visibility module_visibility_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.module_visibility
+    ADD CONSTRAINT module_visibility_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: module_visibility module_visibility_tenant_id_module_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.module_visibility
+    ADD CONSTRAINT module_visibility_tenant_id_module_id_key UNIQUE (tenant_id, module_id);
 
 
 --
@@ -7789,5 +7876,5 @@ ALTER TABLE ONLY public.wareneingang_entries
 -- PostgreSQL database dump complete
 --
 
-\unrestrict uKpUazfp2OFIf6PNhsS1KkoIH6qMPEdHrKhiHY7cCwoRUdeyJtQFgQMH0fA9Zsn
+\unrestrict araDlZhUM4qPcgUtWXqaBUStGJGvRaxd0RoGhZg2OLjgw7qdxlOebLOKQ6hg81b
 
