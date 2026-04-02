@@ -3,6 +3,7 @@ import { useListMarkets } from "@workspace/api-client-react";
 import { useAppStore } from "@/store/use-app-store";
 import { MapPin, LogIn, LogOut, Shield, Settings, Menu, RefreshCw, Navigation, Lock, MessageSquare } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { FeedbackButton } from "@/components/FeedbackButton";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -20,6 +21,7 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
   } = useAppStore();
   const [, navigate] = useLocation();
   const [unreadFeedback, setUnreadFeedback] = useState(0);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const isSuperAdmin = adminSession?.role === "SUPERADMIN";
 
@@ -62,7 +64,7 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-white border-b border-border/60 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/90">
+    <header className="sticky top-0 z-40 w-full bg-white border-b border-border/60 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-white/90 relative">
       <div className="flex h-14 sm:h-16 items-center px-3 sm:px-4 md:px-6 gap-2 sm:gap-4">
         {onMenuToggle && (
           <button
@@ -83,6 +85,17 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
         </Link>
 
         <div className="h-6 w-px bg-border hidden md:block"></div>
+
+        {/* Zentrierter Feedback-Button – nur Desktop */}
+        <div className="absolute inset-y-0 left-0 right-0 hidden md:flex items-center justify-center pointer-events-none">
+          <button
+            onClick={() => setFeedbackOpen(true)}
+            className="pointer-events-auto flex items-center gap-2 bg-red-600 hover:bg-red-700 active:scale-95 text-white text-sm font-semibold px-4 py-2 rounded-2xl shadow-sm transition-all"
+            title="Was nervt gerade?"
+          >
+            🤯 Was nervt gerade?
+          </button>
+        </div>
 
         <div className="flex-1 flex items-center gap-2">
           {selectedMarketId ? (
@@ -159,6 +172,15 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-3">
+          {/* Runder Feedback-Punkt – nur Handy */}
+          <button
+            onClick={() => setFeedbackOpen(true)}
+            className="md:hidden w-9 h-9 flex items-center justify-center rounded-full bg-red-600 hover:bg-red-700 active:scale-95 text-lg shadow-sm transition-all"
+            title="Was nervt gerade?"
+          >
+            🤯
+          </button>
+
           <div className="h-8 w-px bg-border hidden sm:block"></div>
 
           {isLoggedIn ? (
@@ -219,6 +241,8 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
           )}
         </div>
       </div>
+
+      <FeedbackButton isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </header>
   );
 }
