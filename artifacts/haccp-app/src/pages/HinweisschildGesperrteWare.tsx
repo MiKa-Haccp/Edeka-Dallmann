@@ -7,7 +7,7 @@ import { Printer, ChevronLeft, KeyRound, CheckCircle2, X, Loader2 } from "lucide
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 export default function HinweisschildGesperrteWare() {
-  const [datum, setDatum] = useState("");
+  const [datum, setDatum] = useState(() => new Date().toISOString().slice(0, 10));
   const [durch, setDurch] = useState("");
   const [pin, setPin] = useState("");
   const [pinStatus, setPinStatus] = useState<"idle" | "loading" | "ok" | "error">("idle");
