@@ -37,23 +37,19 @@ export default function HinweisschildGesperrteWare() {
       `}</style>
 
       <div className="max-w-4xl space-y-4 pb-8">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors shrink-0">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-          <h1 className="text-lg font-bold text-foreground">Hinweisschild gesperrte Ware</h1>
-        </div>
         <PageHeader>
           <div className="flex items-center gap-3">
+            <Link href="/category/1" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
             <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center flex-shrink-0">
               <Printer className="w-5 h-5" />
             </div>
             <div>
               <p className="text-xs text-blue-200 font-medium tracking-wide uppercase">Sektion 1.7</p>
-              <h1 className="text-xl md:text-2xl font-bold">Hinweisschild gesperrte Ware</h1>
+              <h1 className="text-lg font-bold leading-tight">Hinweisschild gesperrte Ware</h1>
             </div>
           </div>
-          <p className="text-blue-100 text-sm mt-3">Füllen Sie die Felder aus und drucken Sie das Schild mit einem Klick.</p>
         </PageHeader>
 
         <div className="bg-white rounded-2xl border border-border/60 shadow-sm p-5">
