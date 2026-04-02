@@ -90,9 +90,12 @@ function getGreeting() {
   return "Guten Abend";
 }
 
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
+
 export default function Dashboard() {
   const { adminSession } = useAppStore();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [moduleSettings, setModuleSettings] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const on = () => setIsOnline(true);
@@ -100,6 +103,13 @@ export default function Dashboard() {
     window.addEventListener("online", on);
     window.addEventListener("offline", off);
     return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
+  }, []);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/module-visibility?tenantId=1`)
+      .then(r => r.json())
+      .then(data => setModuleSettings(data.settings || {}))
+      .catch(() => {});
   }, []);
 
   return (
@@ -131,6 +141,12 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {MODULES.filter((mod) => {
+              // SUPERADMIN sieht immer alle Module
+              const isSuperAdmin = adminSession?.role === "SUPERADMIN";
+
+              // Modul-Sichtbarkeit: ausgeblendete Module für normale Nutzer verstecken
+              if (!isSuperAdmin && moduleSettings[mod.id] === false) return false;
+
               // Module ohne Rollenbeschränkung sind für alle sichtbar
               if (!mod.requiredRoles && !mod.requiredPermission) return true;
               // Eingeschränkte Module nur für eingeloggte Admins
