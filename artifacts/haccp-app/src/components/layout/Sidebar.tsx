@@ -19,8 +19,8 @@ function cn(...inputs: ClassValue[]) {
 function getCategoryIcon(categoryId: number) {
   switch (categoryId) {
     case 1: return { Icon: ShieldCheck, bg: "bg-[#1a3a6b]/10", text: "text-[#1a3a6b]", hoverBg: "group-hover:bg-[#1a3a6b]" };
-    case 2: return { Icon: ShoppingCart, bg: "bg-orange-100", text: "text-orange-600", hoverBg: "group-hover:bg-orange-500" };
-    case 3: return { Icon: Beef, bg: "bg-red-100", text: "text-red-700", hoverBg: "group-hover:bg-red-700" };
+    case 2: return { Icon: ShoppingCart, bg: "bg-[#1a3a6b]/10", text: "text-[#1a3a6b]", hoverBg: "group-hover:bg-[#1a3a6b]" };
+    case 3: return { Icon: Beef, bg: "bg-[#1a3a6b]/10", text: "text-[#1a3a6b]", hoverBg: "group-hover:bg-[#1a3a6b]" };
     default: return { Icon: Folder, bg: "bg-primary/10", text: "text-primary", hoverBg: "group-hover:bg-primary" };
   }
 }
