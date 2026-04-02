@@ -74,7 +74,7 @@ export function FeedbackButton({ isOpen, onClose }: FeedbackButtonProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[9001] flex items-end sm:items-center justify-center p-4 sm:p-6 bg-black/30 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9001] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-5">
         {thanks ? (
           <div className="py-6 text-center">
