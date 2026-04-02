@@ -575,8 +575,8 @@ type ContentSection = { heading: string; items: string[] };
 const TAB_META: Record<SessionType, { icon: ElementType; color: string; bgColor: string; desc: string; sections: ContentSection[] }> = {
   schulungsprotokoll: {
     icon: GraduationCap,
-    color: "text-primary",
-    bgColor: "bg-primary/5 border-primary/20",
+    color: "text-blue-600",
+    bgColor: "bg-blue-50 border-blue-200",
     desc: "Jährliche Schulungen gem. HACCP, IfSG, Arbeitssicherheit u.a.",
     sections: [],
   },
@@ -626,8 +626,8 @@ const TAB_META: Record<SessionType, { icon: ElementType; color: string; bgColor:
   },
   lebensmittelleitkultur: {
     icon: Leaf,
-    color: "text-green-600",
-    bgColor: "bg-green-50 border-green-200",
+    color: "text-blue-600",
+    bgColor: "bg-blue-50 border-blue-200",
     desc: "Information der QM-Abteilung 12/2022 – Neue Vorgaben für die Lebensmittelwirtschaft: Lebensmittelsicherheitskultur.",
     sections: [
       {
@@ -679,8 +679,8 @@ const TAB_META: Record<SessionType, { icon: ElementType; color: string; bgColor:
   },
   strohschwein: {
     icon: Ham,
-    color: "text-amber-600",
-    bgColor: "bg-amber-50 border-amber-200",
+    color: "text-blue-600",
+    bgColor: "bg-blue-50 border-blue-200",
     desc: "Schulungsprotokoll: Strohschwein & Bestes vom Huhn – gem. Qualitätssicherungs-Handbuch Einzelhandel Kapitel 9.4, Version 03/2023.",
     sections: [
       {
