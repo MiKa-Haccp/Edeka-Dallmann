@@ -186,8 +186,8 @@ function QuickCheckPanel({
       <div className="max-w-sm mx-auto px-4 py-10 flex flex-col items-center gap-6">
 
         {/* Icon */}
-        <div className="w-16 h-16 rounded-2xl bg-green-100 flex items-center justify-center">
-          <ClipboardCheck className="w-8 h-8 text-green-700" />
+        <div className="w-16 h-16 rounded-2xl bg-blue-50 flex items-center justify-center">
+          <ClipboardCheck className="w-8 h-8 text-blue-600" />
         </div>
 
         {/* Titel */}
