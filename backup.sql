@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Sp96DVh5AgzkwuGVf43Vu9DxOCAKoCulZp9Tf0lUdb6W4NpKdIEiyK7dk5E9Chk
+\restrict K4NQ5CqQhYIaYtSlccd6KXTIHVDve9gAvj0eRwUqwdRebjj2AeTZ0KBLXwuzjOf
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -2320,7 +2320,8 @@ ALTER SEQUENCE public.strecken_lieferanten_id_seq OWNED BY public.strecken_liefe
 CREATE TABLE public.tenants (
     id integer NOT NULL,
     name text NOT NULL,
-    created_at timestamp without time zone DEFAULT now() NOT NULL
+    created_at timestamp without time zone DEFAULT now() NOT NULL,
+    master_password text
 );
 
 
@@ -2362,7 +2363,8 @@ CREATE TABLE public.till_assignments (
     user_name text,
     notes text,
     created_at timestamp without time zone DEFAULT now() NOT NULL,
-    updated_at timestamp without time zone DEFAULT now() NOT NULL
+    updated_at timestamp without time zone DEFAULT now() NOT NULL,
+    uhrzeit character varying(20)
 );
 
 
@@ -3971,6 +3973,7 @@ COPY public.email_settings (id, smtp_host, smtp_port, smtp_user, smtp_pass, from
 COPY public.feedback (id, text, page_path, market_id, created_at, is_read) FROM stdin;
 1	viel zu wenig farbe hier	/	1	2026-03-30 20:03:55.188375	t
 2	Vieles!	/admin/system	1	2026-03-31 07:35:15.994473	t
+3	Der Kai seine Art Schach zu spielen Kotzt mich an	/	1	2026-04-01 12:01:02.539852	f
 \.
 
 
@@ -4568,6 +4571,16 @@ COPY public.notification_log (id, rule_id, user_id, market_id, channel_type, mes
 27	5	17	2	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-03-31 09:42:37.842521
 28	5	17	1	telegram	Seit 6 Tagen (25.3.2026) kein neuer Eintrag.	sent	2026-03-31 09:42:38.034763
 29	5	17	3	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-03-31 09:42:38.295541
+30	2	16	1	telegram	Seit 4 Tagen (29.3.2026) kein neuer Eintrag.	sent	2026-04-02 05:00:00.992265
+31	2	16	2	telegram	Seit 29 Tagen (4.3.2026) kein neuer Eintrag.	sent	2026-04-02 05:00:01.360999
+32	2	16	3	telegram	Seit 7 Tagen (26.3.2026) kein neuer Eintrag.	sent	2026-04-02 05:00:01.637412
+33	3	16	1	telegram	Seit 3 Tagen (30.3.2026) kein neuer Eintrag.	sent	2026-04-02 05:00:01.856092
+34	3	16	2	telegram	Seit 13 Tagen (20.3.2026) kein neuer Eintrag.	sent	2026-04-02 05:00:02.059749
+35	4	16	1	telegram	Seit 4 Tagen (29.3.2026) kein neuer Eintrag.	sent	2026-04-02 05:00:02.254943
+36	4	17	1	telegram	Seit 4 Tagen (29.3.2026) kein neuer Eintrag.	sent	2026-04-02 05:00:02.448017
+37	5	17	2	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-04-02 05:00:02.639278
+38	5	17	1	telegram	Seit 2 Tagen (31.3.2026) kein neuer Eintrag.	sent	2026-04-02 05:00:02.834112
+39	5	17	3	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-04-02 05:00:03.030741
 \.
 
 
@@ -4648,6 +4661,10 @@ COPY public.registered_devices (id, tenant_id, name, token, is_active, created_a
 7	1	Mac Book Michi	0fd23ae0c8e76535e35b58cf316cf3217898e18d2aa038201af5e79af8aaac18	t	2026-03-26 10:24:29.058048	\N
 8	1	Mac Michi	a8919fd7b7384bea572ba1a477817bb3b212264a9b3331e5d3c02929951e283f	t	2026-03-27 16:46:09.072894	\N
 9	1	I Pad Michi	9ceb18093b4ae372dabd6627990c5ad0a9eb022c769a853eaf74b01f56e7b9d8	t	2026-03-29 10:23:44.357556	\N
+10	1	Test Gerät	225b9cfaf6ea2eb18615fc8269271312fe9186073da28c72e420ecf3fef8e5fd	t	2026-04-01 11:22:50.623306	\N
+11	1	Test-Geraet-2	439257dd79a655f2d478fea61c0e649853b5392c8e7ca3c079b2d8c560b72476	t	2026-04-01 11:24:38.655535	\N
+12	1	Proxy-Test-Geraet	aeccfe9a054d0766c297b8a43cb06db6e1372e2398e4b632066d82bb048245ea	t	2026-04-01 11:24:47.628154	\N
+13	1	Live-Test	233d6994ce4d562f0607adde41df777dd96bb7c97e053d4cb44af7beeec32363	t	2026-04-01 11:40:53.991839	\N
 \.
 
 
@@ -5263,8 +5280,8 @@ COPY public.strecken_lieferanten (id, market_id, tenant_id, name, ansprechpartne
 -- Data for Name: tenants; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.tenants (id, name, created_at) FROM stdin;
-1	EDEKA Mustermarkt	2026-03-17 12:22:22.107069
+COPY public.tenants (id, name, created_at, master_password) FROM stdin;
+1	EDEKA Mustermarkt	2026-03-17 12:22:22.107069	Dallmann2025!
 \.
 
 
@@ -5272,7 +5289,9 @@ COPY public.tenants (id, name, created_at) FROM stdin;
 -- Data for Name: till_assignments; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.till_assignments (id, market_id, assignment_date, shift, till_number, user_id, user_name, notes, created_at, updated_at) FROM stdin;
+COPY public.till_assignments (id, market_id, assignment_date, shift, till_number, user_id, user_name, notes, created_at, updated_at, uhrzeit) FROM stdin;
+1	1	2026-04-01	allgemein	1	\N	\N	\N	2026-04-01 12:49:00.01399	2026-04-01 12:49:18.465919	\N
+3	1	2026-04-01	frueh	1	\N	\N	\N	2026-04-01 12:49:12.16605	2026-04-01 12:49:24.768365	\N
 \.
 
 
@@ -5283,8 +5302,8 @@ COPY public.till_assignments (id, market_id, assignment_date, shift, till_number
 COPY public.todo_adhoc_tasks (id, tenant_id, market_id, title, description, priority, deadline, photo_data, created_by_pin, created_by_name, created_at, updated_at, is_completed, completed_by_pin, completed_by_name, completed_at, notify_at) FROM stdin;
 1	1	1	Glasscherben im Getränkemarkt	Bitte zusammenkehren und später mit Putzmaschine damit sich Geruch neutralisiert	hoch	2026-03-30 23:00:00	\N	1328	Kai Martin	2026-03-30 19:03:55.914432	2026-03-30 19:12:37.032506	t	1328	Kai Martin	2026-03-30 19:12:37.032506	2026-03-30 23:00:00
 2	1	1	test	test	niedrig	2026-03-31 13:18:00	\N	2222	Hinter Schuber	2026-03-30 19:17:01.505683	2026-03-30 19:17:17.83046	t	1328	Kai Martin	2026-03-30 19:17:17.83046	2026-03-31 13:18:00
-3	1	1	Dsad	\N	mittel	\N	\N	2222	Hinter Schuber	2026-03-30 19:21:32.471357	2026-03-30 19:21:32.471357	f	\N	\N	\N	\N
-4	1	1	ddaD	\N	mittel	\N	\N	1328	Kai Martin	2026-03-30 19:21:48.813256	2026-03-30 19:21:48.813256	f	\N	\N	\N	\N
+4	1	1	ddaD	\N	mittel	\N	\N	1328	Kai Martin	2026-03-30 19:21:48.813256	2026-04-01 14:52:09.010213	t	1328	Kai Martin	2026-04-01 14:52:09.010213	\N
+3	1	1	Dsad	\N	mittel	\N	\N	2222	Hinter Schuber	2026-03-30 19:21:32.471357	2026-04-01 14:52:13.231761	t	1328	Kai Martin	2026-04-01 14:52:13.231761	\N
 \.
 
 
@@ -6183,7 +6202,7 @@ SELECT pg_catalog.setval('public.email_settings_id_seq', 1, true);
 -- Name: feedback_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.feedback_id_seq', 2, true);
+SELECT pg_catalog.setval('public.feedback_id_seq', 3, true);
 
 
 --
@@ -6316,7 +6335,7 @@ SELECT pg_catalog.setval('public.notification_channels_id_seq', 4, true);
 -- Name: notification_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.notification_log_id_seq', 29, true);
+SELECT pg_catalog.setval('public.notification_log_id_seq', 39, true);
 
 
 --
@@ -6358,7 +6377,7 @@ SELECT pg_catalog.setval('public.produktfehlermeldung_id_seq', 4, true);
 -- Name: registered_devices_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.registered_devices_id_seq', 9, true);
+SELECT pg_catalog.setval('public.registered_devices_id_seq', 13, true);
 
 
 --
@@ -6470,7 +6489,7 @@ SELECT pg_catalog.setval('public.tenants_id_seq', 1, true);
 -- Name: till_assignments_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.till_assignments_id_seq', 1, false);
+SELECT pg_catalog.setval('public.till_assignments_id_seq', 5, true);
 
 
 --
@@ -7692,5 +7711,5 @@ ALTER TABLE ONLY public.wareneingang_entries
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Sp96DVh5AgzkwuGVf43Vu9DxOCAKoCulZp9Tf0lUdb6W4NpKdIEiyK7dk5E9Chk
+\unrestrict K4NQ5CqQhYIaYtSlccd6KXTIHVDve9gAvj0eRwUqwdRebjj2AeTZ0KBLXwuzjOf
 

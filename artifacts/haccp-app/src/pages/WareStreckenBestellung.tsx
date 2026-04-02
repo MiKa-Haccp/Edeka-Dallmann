@@ -129,7 +129,7 @@ function BestellDialog({
               onKeyDown={e => e.key === "Enter" && handleSubmit()}
               placeholder="z.B. MK, 1234, …"
               maxLength={20}
-              className="w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+              className="w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30"
             />
             {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
           </div>
@@ -143,7 +143,7 @@ function BestellDialog({
               onChange={e => setNotiz(e.target.value)}
               placeholder={istNichtBestellt ? "z.B. kein Bedarf, Urlaub, Lager voll …" : "z.B. Sonderbestellung, Menge geändert …"}
               rows={2}
-              className="w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none"
+              className="w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30 resize-none"
             />
           </div>
         </div>
@@ -156,7 +156,7 @@ function BestellDialog({
             onClick={handleSubmit}
             disabled={saving}
             className={`flex-1 px-4 py-2.5 rounded-xl text-white text-sm font-semibold disabled:opacity-50 transition-colors flex items-center justify-center gap-2 ${
-              istNichtBestellt ? "bg-orange-500 hover:bg-orange-600" : "bg-[#1a3a6b] hover:bg-[#2d5aa0]"
+              istNichtBestellt ? "bg-orange-500 hover:bg-orange-600" : "bg-[#c2410c] hover:bg-[#ea580c]"
             }`}
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : istNichtBestellt ? <Ban className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
@@ -235,7 +235,7 @@ function LieferantCard({
             <button
               onClick={onMoveUp}
               disabled={!onMoveUp}
-              className="p-0.5 rounded text-muted-foreground enabled:hover:text-[#1a3a6b] enabled:hover:bg-[#1a3a6b]/10 disabled:opacity-25 transition-colors"
+              className="p-0.5 rounded text-muted-foreground enabled:hover:text-[#c2410c] enabled:hover:bg-orange-100 disabled:opacity-25 transition-colors"
               title="Nach oben"
             >
               <ArrowUp className="w-3.5 h-3.5" />
@@ -243,7 +243,7 @@ function LieferantCard({
             <button
               onClick={onMoveDown}
               disabled={!onMoveDown}
-              className="p-0.5 rounded text-muted-foreground enabled:hover:text-[#1a3a6b] enabled:hover:bg-[#1a3a6b]/10 disabled:opacity-25 transition-colors"
+              className="p-0.5 rounded text-muted-foreground enabled:hover:text-[#c2410c] enabled:hover:bg-orange-100 disabled:opacity-25 transition-colors"
               title="Nach unten"
             >
               <ArrowDown className="w-3.5 h-3.5" />
@@ -275,7 +275,7 @@ function LieferantCard({
           </button>
           <button
             onClick={() => onBestellen(lieferant)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-xs font-bold hover:bg-[#2d5aa0] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-[#c2410c] text-white rounded-xl text-xs font-bold hover:bg-[#ea580c] transition-colors"
           >
             <ShoppingBag className="w-3.5 h-3.5" /> Bestellen
           </button>
@@ -291,7 +291,7 @@ function LieferantCard({
           {!editing ? (
             <button
               onClick={startEdit}
-              className="flex items-center gap-1.5 p-1.5 text-xs text-muted-foreground hover:text-[#1a3a6b] hover:bg-[#1a3a6b]/10 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 p-1.5 text-xs text-muted-foreground hover:text-[#c2410c] hover:bg-orange-100 rounded-lg transition-colors"
               title="Lieferantendaten bearbeiten"
             >
               <Pencil className="w-3.5 h-3.5" /> Daten bearbeiten
@@ -303,7 +303,7 @@ function LieferantCard({
                 Abbrechen
               </button>
               <button onClick={saveEdit} disabled={saving}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a3a6b] text-white rounded-xl text-xs font-bold hover:bg-[#2d5aa0] disabled:opacity-50">
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#c2410c] text-white rounded-xl text-xs font-bold hover:bg-[#ea580c] disabled:opacity-50">
                 {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 Speichern
               </button>
@@ -329,7 +329,7 @@ function LieferantCard({
               <Phone className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Telefon</p>
-                <a href={`tel:${lieferant.telefon}`} className="text-[#1a3a6b] font-medium hover:underline text-sm whitespace-pre-line">{formatPhone(lieferant.telefon)}</a>
+                <a href={`tel:${lieferant.telefon}`} className="text-[#c2410c] font-medium hover:underline text-sm whitespace-pre-line">{formatPhone(lieferant.telefon)}</a>
               </div>
             </div>
           )}
@@ -356,14 +356,14 @@ function LieferantCard({
 
       {/* Info-Bereich – Bearbeiten */}
       {editing && (
-        <div className="px-5 py-4 bg-blue-50/40 border-b border-[#1a3a6b]/20 space-y-3">
+        <div className="px-5 py-4 bg-blue-50/40 border-b border-[#c2410c]/20 space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ansprechpartner</label>
               <input
                 value={editData.ansprechpartner}
                 onChange={e => setEditData(p => ({ ...p, ansprechpartner: e.target.value }))}
-                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30"
               />
             </div>
             <div>
@@ -375,7 +375,7 @@ function LieferantCard({
                   value={editData.mindestbestellwert ?? ""}
                   onChange={e => setEditData(p => ({ ...p, mindestbestellwert: e.target.value ? parseFloat(e.target.value) : null }))}
                   placeholder="–"
-                  className="w-full border border-border/60 rounded-xl pl-7 pr-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                  className="w-full border border-border/60 rounded-xl pl-7 pr-3 py-2 text-sm text-right focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30"
                 />
               </div>
             </div>
@@ -386,7 +386,7 @@ function LieferantCard({
                 onChange={e => setEditData(p => ({ ...p, telefon: e.target.value }))}
                 rows={2}
                 placeholder={"z.B. 0151/42259352\n0800/1234567"}
-                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none"
+                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30 resize-none"
               />
             </div>
             <div>
@@ -395,7 +395,7 @@ function LieferantCard({
                 value={editData.info}
                 onChange={e => setEditData(p => ({ ...p, info: e.target.value }))}
                 rows={2}
-                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none"
+                className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30 resize-none"
               />
             </div>
           </div>
@@ -445,7 +445,7 @@ function LieferantCard({
             )}
             <button
               onClick={() => setHistoryOpen(h => !h)}
-              className="flex items-center gap-1 text-xs text-[#1a3a6b] font-medium hover:underline"
+              className="flex items-center gap-1 text-xs text-[#c2410c] font-medium hover:underline"
             >
               {historyOpen
                 ? <><ChevronUp className="w-3 h-3" /> Verlauf ausblenden</>
@@ -586,7 +586,7 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
       <div className="space-y-4">
         {/* Header – nur im Standalone-Modus */}
         {!noLayout && (
-          <PageHeader>
+          <PageHeader className="from-[#c2410c] to-[#ea580c]">
             <div className="flex items-center gap-3">
               <Link href="/ware-streckenbestellung" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
                 <ChevronLeft className="h-5 w-5" />
@@ -615,8 +615,8 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
               onClick={() => setSortMode(key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${
                 sortMode === key
-                  ? "bg-[#1a3a6b] text-white border-[#1a3a6b]"
-                  : "bg-white text-muted-foreground border-border/60 hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b]"
+                  ? "bg-[#c2410c] text-white border-[#c2410c]"
+                  : "bg-white text-muted-foreground border-border/60 hover:border-orange-300 hover:text-[#c2410c]"
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -629,7 +629,7 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
             </span>
           )}
           {showMoveButtons && !reorderSaving && (
-            <span className="text-xs text-[#1a3a6b]/70 ml-2 italic">Reihenfolge mit ↑↓ anpassen</span>
+            <span className="text-xs text-[#c2410c]/70 ml-2 italic">Reihenfolge mit ↑↓ anpassen</span>
           )}
         </div>
 

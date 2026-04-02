@@ -254,14 +254,14 @@ function PinModal({ onConfirm, onCancel }: { onConfirm:(id:{name:string;userId:n
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 space-y-4">
         <div className="text-center">
-          <div className="w-12 h-12 rounded-full bg-[#1a3a6b]/10 flex items-center justify-center mx-auto mb-3">
-            <Lock className="w-6 h-6 text-[#1a3a6b]" />
+          <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-3">
+            <Lock className="w-6 h-6 text-[#c2410c]" />
           </div>
           <p className="font-bold text-base">PIN bestaetigen</p>
           <p className="text-xs text-muted-foreground mt-1">Bitte PIN eingeben um den Eintrag zu speichern</p>
         </div>
         <input type="password" inputMode="numeric"
-          className="w-full border-2 border-border rounded-xl px-3 py-3 text-center text-2xl tracking-[0.8em] focus:outline-none focus:border-[#1a3a6b]/50"
+          className="w-full border-2 border-border rounded-xl px-3 py-3 text-center text-2xl tracking-[0.8em] focus:outline-none focus:border-[#c2410c]/50"
           placeholder="&#9679;&#9679;&#9679;&#9679;" value={pin} maxLength={6} autoFocus
           onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
           onKeyDown={e => e.key==="Enter" && pin.length>=4 && verify()} />
@@ -269,7 +269,7 @@ function PinModal({ onConfirm, onCancel }: { onConfirm:(id:{name:string;userId:n
         <div className="flex gap-2">
           <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl border border-border text-sm hover:bg-muted">Abbrechen</button>
           <button onClick={verify} disabled={loading||pin.length<4}
-            className="flex-1 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-1.5">
+            className="flex-1 py-2.5 rounded-xl bg-[#c2410c] text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-1.5">
             {loading?<Loader2 className="w-4 h-4 animate-spin"/>:<Check className="w-4 h-4"/>} Speichern
           </button>
         </div>
@@ -304,7 +304,7 @@ function DayDetailModal({ day, year, month, type, entry, onClose, onEdit }: {
         </div>
         <div className="p-5 space-y-4">
           <div className="flex items-center gap-2 text-sm">
-            <div className="w-8 h-8 rounded-full bg-[#1a3a6b] flex items-center justify-center text-white text-xs font-bold shrink-0">{entry.kuerzel}</div>
+            <div className="w-8 h-8 rounded-full bg-[#c2410c] flex items-center justify-center text-white text-xs font-bold shrink-0">{entry.kuerzel}</div>
             Abgezeichnet von: <b>{entry.kuerzel}</b>
           </div>
           {checkCrit.length>0&&(
@@ -381,7 +381,7 @@ function DayDetailModal({ day, year, month, type, entry, onClose, onEdit }: {
         </div>
         <div className="sticky bottom-0 bg-white border-t border-border/60 px-5 py-3 flex gap-2">
           <button onClick={onClose} className="flex-1 py-2 rounded-xl border border-border text-sm hover:bg-muted">Schliessen</button>
-          <button onClick={onEdit} className="flex-1 py-2 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold flex items-center justify-center gap-1.5">
+          <button onClick={onEdit} className="flex-1 py-2 rounded-xl bg-[#c2410c] text-white text-sm font-bold flex items-center justify-center gap-1.5">
             <PenLine className="w-3.5 h-3.5"/> Bearbeiten
           </button>
         </div>
@@ -571,7 +571,7 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
           </div>
         )}
         <button onClick={()=>{if(hasMissingTemps&&!ausgefallen){setShowValidation(true);}else{setShowPin(true);}}} disabled={saving}
-          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0]">
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#c2410c] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#ea580c]">
           {saving?<Loader2 className="w-4 h-4 animate-spin"/>:<Check className="w-4 h-4"/>}
           {existingEntry?"Aktualisieren":"Eintrag speichern"}
         </button>
@@ -702,7 +702,7 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
                         tc==="green"?"bg-green-500/15 text-green-700 hover:bg-green-500/25"
                         :tc==="yellow"?"bg-amber-400/15 text-amber-700 hover:bg-amber-400/25"
                         :tc==="red"?"bg-red-500/20 text-red-700 hover:bg-red-500/30 font-extrabold"
-                        :"bg-[#1a3a6b]/10 text-[#1a3a6b] hover:bg-[#1a3a6b]/20"
+                        :"bg-orange-100 text-[#c2410c] hover:bg-orange-200"
                       }`}>
                       {e?"Bearb.":"+ Eintrag"}
                     </button>
@@ -817,7 +817,7 @@ function AdminView({ marketId, types, onRefresh, onDirtyChange }: {
             {saving?<Loader2 className="w-3.5 h-3.5 animate-spin"/>:<Check className="w-3.5 h-3.5"/>}
             Speichern {isDirty&&`(${dirtyIds.size} Aenderung${dirtyIds.size>1?"en":""})`}
           </button>
-          <button onClick={()=>setShowAdd(s=>!s)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1a3a6b] text-white text-xs font-bold">
+          <button onClick={()=>setShowAdd(s=>!s)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#c2410c] text-white text-xs font-bold">
             <Plus className="w-3.5 h-3.5"/> Neuer Lieferant
           </button>
         </div>
@@ -841,7 +841,7 @@ function AdminView({ marketId, types, onRefresh, onDirtyChange }: {
           </div>
           <div className="flex gap-2">
             <button onClick={()=>setShowAdd(false)} className="px-3 py-1.5 rounded-lg border border-border text-xs hover:bg-muted">Abbrechen</button>
-            <button onClick={handleAdd} disabled={!newName.trim()||saving} className="flex items-center gap-1 px-4 py-1.5 rounded-lg bg-[#1a3a6b] text-white text-xs font-bold disabled:opacity-50">
+            <button onClick={handleAdd} disabled={!newName.trim()||saving} className="flex items-center gap-1 px-4 py-1.5 rounded-lg bg-[#c2410c] text-white text-xs font-bold disabled:opacity-50">
               {saving?<Loader2 className="w-3.5 h-3.5 animate-spin"/>:<Plus className="w-3.5 h-3.5"/>} Anlegen
             </button>
           </div>
@@ -878,7 +878,7 @@ function AdminView({ marketId, types, onRefresh, onDirtyChange }: {
                   <div className="flex gap-2 flex-wrap">
                     {[1,2,3,4,5,6].map(wd=>(
                       <button key={wd} onClick={()=>toggleLiefertag(type.id,wd)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border-2 transition-all ${(type.liefertage??[]).includes(wd)?"bg-[#1a3a6b] text-white border-[#1a3a6b]":"bg-white border-border text-muted-foreground hover:border-[#1a3a6b]/40"}`}>
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold border-2 transition-all ${(type.liefertage??[]).includes(wd)?"bg-[#c2410c] text-white border-[#c2410c]":"bg-white border-border text-muted-foreground hover:border-orange-300"}`}>
                         {WD_SHORT[wd]}
                       </button>
                     ))}
@@ -903,7 +903,7 @@ function AdminView({ marketId, types, onRefresh, onDirtyChange }: {
                       <option value="kein_liefertag">Kein Liefertag</option><option value="liefertag">Liefertag (Ausnahme)</option>
                     </select>
                     <button onClick={()=>{addAusnahme(type.id,ausnDate[type.id]??"",ausnVal[type.id]??"kein_liefertag");setAusnDate(p=>({...p,[type.id]:""}));}} disabled={!ausnDate[type.id]}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#1a3a6b] text-white text-xs font-bold disabled:opacity-40">
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#c2410c] text-white text-xs font-bold disabled:opacity-40">
                       <Plus className="w-3 h-3"/> Hinzufuegen
                     </button>
                   </div>
@@ -915,7 +915,7 @@ function AdminView({ marketId, types, onRefresh, onDirtyChange }: {
                       <p className="text-[9px] font-semibold text-muted-foreground/70 uppercase">{g}</p>
                       {allCrit.filter(c=>c.group===g).map(c=>(
                         <label key={c.key} className="flex items-center gap-2.5 cursor-pointer group" onClick={()=>toggleCrit(type,c.key)}>
-                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${type.criteriaConfig[c.key]?"bg-[#1a3a6b] border-[#1a3a6b]":"border-border bg-white"}`}>
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 ${type.criteriaConfig[c.key]?"bg-[#c2410c] border-[#c2410c]":"border-border bg-white"}`}>
                             {type.criteriaConfig[c.key]&&<Check className="w-2.5 h-2.5 text-white"/>}
                           </div>
                           <span className="text-xs text-muted-foreground group-hover:text-foreground">{c.label}</span>
@@ -1110,7 +1110,7 @@ function WareneingaengeContent() {
                 const tc=tabTrafficColor(row,holidays);
                 return(
                   <button key={type.id} onClick={()=>handleTabClick(type)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${activeTypeId===type.id?"bg-[#1a3a6b] text-white shadow-md":"bg-white border border-border text-muted-foreground hover:border-[#1a3a6b]/40 hover:text-foreground"}`}>
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${activeTypeId===type.id?"bg-[#c2410c] text-white shadow-md":"bg-white border border-border text-muted-foreground hover:border-orange-300 hover:text-foreground"}`}>
                     <span className="opacity-70">{wareIcon(type.wareArt)}</span>
                     {type.name}
                     {tc&&<span className={`w-2 h-2 rounded-full shrink-0 ${TC_DOT[tc]} ${activeTypeId===type.id?"opacity-100":"opacity-80"}`}/>}

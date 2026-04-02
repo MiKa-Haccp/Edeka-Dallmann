@@ -92,7 +92,7 @@ export default function WareEinraeumservice() {
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-5">
 
-        <PageHeader>
+        <PageHeader className="from-[#c2410c] to-[#ea580c]">
           <div className="flex items-center gap-3">
             <Link href="/ware" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
               <ChevronLeft className="w-5 h-5" />

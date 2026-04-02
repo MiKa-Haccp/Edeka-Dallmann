@@ -130,7 +130,7 @@ function PinModal({
         <button
           onClick={handleVerify}
           disabled={loading || pin.length < 4}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0] transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#c2410c] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#ea580c] transition-colors"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
           Abzeichnen
@@ -209,7 +209,7 @@ function QuickCheckPanel({
               value={pin}
               onChange={e => { setPin(e.target.value.replace(/\D/g, "").slice(0, 6)); setError(""); }}
               placeholder="PIN"
-              className="w-full text-center text-2xl tracking-[0.5em] border border-border rounded-xl px-4 py-3 font-bold focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+              className="w-full text-center text-2xl tracking-[0.5em] border border-border rounded-xl px-4 py-3 font-bold focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30"
               onKeyDown={e => e.key === "Enter" && handleVerify()}
               autoFocus
             />
@@ -221,7 +221,7 @@ function QuickCheckPanel({
             <button
               onClick={handleVerify}
               disabled={loading || pin.length < 4}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0] transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#c2410c] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#ea580c] transition-colors"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
               Abzeichnen
@@ -502,8 +502,8 @@ export default function WarenzustandOG() {
             >
               <table className="w-full text-sm border-collapse">
                 <thead className="sticky top-0 z-20">
-                  <tr className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white">
-                    <th className="px-3 py-3 text-left font-semibold text-xs w-16 sticky left-0 top-0 bg-[#1a3a6b] z-30">Tag</th>
+                  <tr className="bg-gradient-to-br from-[#c2410c] to-[#ea580c] text-white">
+                    <th className="px-3 py-3 text-left font-semibold text-xs w-16 sticky left-0 top-0 bg-[#c2410c] z-30">Tag</th>
                     <th className="px-2 py-2 text-center font-semibold text-xs w-10 opacity-70">Wt</th>
                     {SLOTS.map(s => (
                       <th key={s.key} className="px-2 py-3 text-center font-semibold text-xs min-w-[110px]">

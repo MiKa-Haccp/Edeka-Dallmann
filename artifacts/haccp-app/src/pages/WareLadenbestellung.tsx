@@ -395,7 +395,7 @@ export default function WareLadenbestellung() {
       <div className="max-w-full space-y-4 pb-8">
 
         {/* Header */}
-        <PageHeader>
+        <PageHeader className="from-[#c2410c] to-[#ea580c]">
           <div className="flex items-center gap-3">
             <Link href="/ware-bestellungen" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
               <ChevronLeft className="h-5 w-5" />
@@ -411,7 +411,7 @@ export default function WareLadenbestellung() {
               <button
                 onClick={() => setEditMode(e => !e)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition-all shrink-0 ${
-                  editMode ? "bg-white text-[#1a3a6b]" : "bg-white/15 hover:bg-white/25 text-white"
+                  editMode ? "bg-white text-[#c2410c]" : "bg-white/15 hover:bg-white/25 text-white"
                 }`}
               >
                 <Pencil className="w-4 h-4" />
@@ -485,7 +485,7 @@ export default function WareLadenbestellung() {
                       setFilterKategorie(d.plan.kategorie);
                       setActiveTab("liste");
                     }}
-                    className={`border rounded-xl px-3 py-2 flex items-start gap-2.5 text-left w-full transition-colors cursor-pointer ${urgentStyle} ${isActive ? "ring-2 ring-[#1a3a6b]" : ""}`}
+                    className={`border rounded-xl px-3 py-2 flex items-start gap-2.5 text-left w-full transition-colors cursor-pointer ${urgentStyle} ${isActive ? "ring-2 ring-[#c2410c]" : ""}`}
                   >
                     {urgent ? (
                       <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
@@ -545,7 +545,7 @@ export default function WareLadenbestellung() {
             </p>
             <button
               onClick={() => setShowAdd(true)}
-              className="flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-semibold hover:bg-[#2d5aa0] transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 bg-[#c2410c] text-white rounded-xl text-sm font-semibold hover:bg-[#ea580c] transition-colors"
             >
               <Plus className="w-4 h-4" /> Gebiet hinzufügen
             </button>
@@ -586,7 +586,7 @@ export default function WareLadenbestellung() {
                 <p className="text-sm">Noch keine Bestellgebiete angelegt.</p>
                 {isAdmin && (
                   <button onClick={() => { setEditMode(true); setShowAdd(true); }}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-semibold hover:bg-[#2d5aa0]">
+                    className="flex items-center gap-1.5 px-3 py-2 bg-[#c2410c] text-white rounded-xl text-sm font-semibold hover:bg-[#ea580c]">
                     <Plus className="w-4 h-4" /> Erstes Gebiet anlegen
                   </button>
                 )}
@@ -649,7 +649,7 @@ export default function WareLadenbestellung() {
                                   if (e.key === "Enter") saveInlineZustaendig(g.id, inlineZustaendigVal);
                                   if (e.key === "Escape") setInlineZustaendigId(null);
                                 }}
-                                className="w-full text-sm border border-[#1a3a6b]/40 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 font-medium"
+                                className="w-full text-sm border border-[#c2410c]/40 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30 font-medium"
                                 style={{ minWidth: 90 }}
                               />
                             ) : (
@@ -661,7 +661,7 @@ export default function WareLadenbestellung() {
                                 }}
                                 className={`text-left font-medium text-sm w-full rounded-lg px-2 py-1 transition-colors ${
                                   isAdmin
-                                    ? "hover:bg-[#1a3a6b]/8 cursor-text text-foreground"
+                                    ? "hover:bg-orange-50/80 cursor-text text-foreground"
                                     : "cursor-default text-foreground"
                                 }`}
                                 title={isAdmin ? "Klicken zum Bearbeiten" : undefined}
@@ -757,7 +757,7 @@ export default function WareLadenbestellung() {
                       <p className="text-sm">Noch keine Bestellgebiete angelegt.</p>
                       {isAdmin && (
                         <button onClick={() => { setEditMode(true); setShowAdd(true); }}
-                          className="flex items-center gap-1.5 px-3 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-semibold hover:bg-[#2d5aa0]">
+                          className="flex items-center gap-1.5 px-3 py-2 bg-[#c2410c] text-white rounded-xl text-sm font-semibold hover:bg-[#ea580c]">
                           <Plus className="w-4 h-4" /> Erstes Gebiet anlegen
                         </button>
                       )}
@@ -913,7 +913,7 @@ export default function WareLadenbestellung() {
                 {/* Nächste Bestellfristen in kompakter Liste */}
                 <div className="bg-white border border-border/60 rounded-2xl overflow-hidden">
                   <div className="px-4 pt-4 pb-2 flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-[#1a3a6b]" />
+                    <Clock className="w-4 h-4 text-[#c2410c]" />
                     <h2 className="font-bold text-sm text-foreground uppercase tracking-wide">Nächste Bestellfristen</h2>
                   </div>
                   <div className="divide-y divide-border/40">
@@ -956,7 +956,7 @@ export default function WareLadenbestellung() {
                 {/* Wochenplan nach Liefertag */}
                 <div className="bg-white border border-border/60 rounded-2xl overflow-hidden">
                   <div className="px-4 pt-4 pb-2 flex items-center gap-2">
-                    <CalendarDays className="w-4 h-4 text-[#1a3a6b]" />
+                    <CalendarDays className="w-4 h-4 text-[#c2410c]" />
                     <h2 className="font-bold text-sm text-foreground uppercase tracking-wide">Wöchentlicher Lieferplan</h2>
                   </div>
                   {[1,2,3,4,5,6,7].map(dow => {
@@ -965,16 +965,16 @@ export default function WareLadenbestellung() {
                     const todayDow = jsTagToOurs(new Date());
                     const isToday = dow === todayDow;
                     return (
-                      <div key={dow} className={`border-t border-border/40 ${isToday ? "bg-[#1a3a6b]/4" : ""}`}>
-                        <div className={`px-4 py-2 flex items-center gap-2 ${isToday ? "bg-[#1a3a6b]/8" : ""}`}>
+                      <div key={dow} className={`border-t border-border/40 ${isToday ? "bg-orange-50/50" : ""}`}>
+                        <div className={`px-4 py-2 flex items-center gap-2 ${isToday ? "bg-orange-50/80" : ""}`}>
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                            isToday ? "bg-[#1a3a6b] text-white" : "bg-secondary text-muted-foreground"
+                            isToday ? "bg-[#c2410c] text-white" : "bg-secondary text-muted-foreground"
                           }`}>
                             {WTAG_KURZ[dow]}
                           </div>
-                          <span className={`text-sm font-bold ${isToday ? "text-[#1a3a6b]" : "text-foreground"}`}>
+                          <span className={`text-sm font-bold ${isToday ? "text-[#c2410c]" : "text-foreground"}`}>
                             {WTAG_LANG[dow]}
-                            {isToday && <span className="ml-2 text-[10px] bg-[#1a3a6b] text-white px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wide">Heute</span>}
+                            {isToday && <span className="ml-2 text-[10px] bg-[#c2410c] text-white px-1.5 py-0.5 rounded-full font-semibold uppercase tracking-wide">Heute</span>}
                           </span>
                         </div>
                         <div className="px-4 pb-3 space-y-2">
@@ -1037,7 +1037,7 @@ export default function WareLadenbestellung() {
                     onChange={e => setAddName(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleAddGebiet()}
                     placeholder="z.B. Trockenwaren, Süßwaren..."
-                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30"
                   />
                 </div>
                 <div>
@@ -1047,7 +1047,7 @@ export default function WareLadenbestellung() {
                     onChange={e => setAddSortiment(e.target.value)}
                     placeholder="z.B. Chips + Salzgebäck + Süßwaren"
                     rows={2}
-                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none"
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30 resize-none"
                   />
                 </div>
                 <div>
@@ -1056,7 +1056,7 @@ export default function WareLadenbestellung() {
                     value={addZustaendig}
                     onChange={e => setAddZustaendig(e.target.value)}
                     placeholder="Name des Mitarbeiters"
-                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30"
                   />
                 </div>
                 <div>
@@ -1064,7 +1064,7 @@ export default function WareLadenbestellung() {
                   <select
                     value={addKategorie}
                     onChange={e => setAddKategorie(e.target.value)}
-                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 bg-white"
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30 bg-white"
                   >
                     <option value="">— keine —</option>
                     <option value="trocken">Trocken</option>
@@ -1094,7 +1094,7 @@ export default function WareLadenbestellung() {
                   Abbrechen
                 </button>
                 <button onClick={handleAddGebiet} disabled={!addName.trim() || adding}
-                  className="flex-1 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-50">
+                  className="flex-1 px-4 py-2.5 bg-[#c2410c] text-white rounded-xl text-sm font-bold hover:bg-[#ea580c] disabled:opacity-50">
                   {adding ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Hinzufügen"}
                 </button>
               </div>
@@ -1119,7 +1119,7 @@ export default function WareLadenbestellung() {
                     autoFocus
                     value={editName}
                     onChange={e => setEditName(e.target.value)}
-                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30"
                   />
                 </div>
                 <div>
@@ -1129,7 +1129,7 @@ export default function WareLadenbestellung() {
                     onChange={e => setEditSortiment(e.target.value)}
                     placeholder="z.B. Chips + Salzgebäck + Süßwaren"
                     rows={3}
-                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 resize-none"
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30 resize-none"
                   />
                 </div>
                 <div>
@@ -1138,7 +1138,7 @@ export default function WareLadenbestellung() {
                     value={editZustaendig}
                     onChange={e => setEditZustaendig(e.target.value)}
                     placeholder="Name des Mitarbeiters"
-                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30"
                   />
                 </div>
                 <div>
@@ -1146,7 +1146,7 @@ export default function WareLadenbestellung() {
                   <select
                     value={editKategorie}
                     onChange={e => setEditKategorie(e.target.value)}
-                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 bg-white"
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30 bg-white"
                   >
                     <option value="">— keine —</option>
                     <option value="trocken">Trocken</option>
@@ -1176,7 +1176,7 @@ export default function WareLadenbestellung() {
                   Abbrechen
                 </button>
                 <button onClick={handleSaveEdit} disabled={!editName.trim() || editSaving}
-                  className="flex-1 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-50">
+                  className="flex-1 px-4 py-2.5 bg-[#c2410c] text-white rounded-xl text-sm font-bold hover:bg-[#ea580c] disabled:opacity-50">
                   {editSaving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Speichern"}
                 </button>
               </div>
@@ -1212,7 +1212,7 @@ export default function WareLadenbestellung() {
                     onChange={e => setOrderKuerzel(e.target.value.toUpperCase().slice(0, 4))}
                     onKeyDown={e => e.key === "Enter" && handleOrder()}
                     placeholder={orderGebiet.zustaendig ? orderGebiet.zustaendig.slice(0,4).toUpperCase() : "z.B. MK"}
-                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30"
                   />
                 </div>
                 <div>
@@ -1221,7 +1221,7 @@ export default function WareLadenbestellung() {
                     value={orderAnmerkung}
                     onChange={e => setOrderAnmerkung(e.target.value)}
                     placeholder="z.B. Fehlmenge, Sonderbestellung..."
-                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30"
+                    className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#c2410c]/30"
                   />
                 </div>
               </div>

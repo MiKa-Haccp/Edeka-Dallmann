@@ -15,8 +15,8 @@ const BEREICHE: BereichCard[] = [
     title: "Bestellungen",
     description: "Marktübersicht nach Rayons. Mitarbeiter haken jeden Bereich nach erfolgter Bestellung ab.",
     href: "/ware-bestellungen",
-    iconColor: "text-[#1a3a6b]",
-    iconBg: "bg-[#1a3a6b]/10",
+    iconColor: "text-[#c2410c]",
+    iconBg: "bg-orange-100",
     badge: "Aktiv",
   },
   {
@@ -25,8 +25,8 @@ const BEREICHE: BereichCard[] = [
     title: "Einräumservice",
     description: "Dokumentation externer Dienstleister. Erfassung von Paletten, Personalstärke, Zeitraum und Anmerkungen.",
     href: "/ware-einraeumservice",
-    iconColor: "text-[#1a3a6b]",
-    iconBg: "bg-[#1a3a6b]/10",
+    iconColor: "text-[#c2410c]",
+    iconBg: "bg-orange-100",
     badge: "Aktiv",
   },
   {
@@ -35,8 +35,8 @@ const BEREICHE: BereichCard[] = [
     title: "MHD Kontrolle",
     description: "Qualitätssicherung nach Regalmetern. Kontrollintervalle, Reduzierungs- und Entnahmekriterien pro Regalbereich.",
     href: "/ware-mhd",
-    iconColor: "text-[#1a3a6b]",
-    iconBg: "bg-[#1a3a6b]/10",
+    iconColor: "text-[#c2410c]",
+    iconBg: "bg-orange-100",
     badge: "Aktiv",
   },
 ];
@@ -47,7 +47,7 @@ export default function Ware() {
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
 
         {/* Header */}
-        <PageHeader>
+        <PageHeader className="from-[#c2410c] to-[#ea580c]">
           <div className="flex items-center gap-3">
             <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
               <ChevronLeft className="h-5 w-5" />
@@ -70,7 +70,7 @@ export default function Ware() {
               <Link
                 key={b.id}
                 href={b.href}
-                className="group bg-white rounded-2xl border border-border/60 shadow-sm hover:shadow-md hover:border-[#1a3a6b]/30 transition-all duration-200 p-6 flex flex-col"
+                className="group bg-white rounded-2xl border border-border/60 shadow-sm hover:shadow-md hover:border-[#c2410c]/30 transition-all duration-200 p-6 flex flex-col"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className={`w-12 h-12 rounded-xl ${b.iconBg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
@@ -82,7 +82,7 @@ export default function Ware() {
                 </div>
                 <h3 className="text-lg font-bold text-foreground mb-1">{b.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed mb-4 flex-1">{b.description}</p>
-                <div className="flex items-center gap-1.5 text-sm font-bold text-[#1a3a6b] group-hover:gap-3 transition-all duration-200">
+                <div className="flex items-center gap-1.5 text-sm font-bold text-[#c2410c] group-hover:gap-3 transition-all duration-200">
                   Öffnen <ArrowRight className="w-4 h-4" />
                 </div>
               </Link>
