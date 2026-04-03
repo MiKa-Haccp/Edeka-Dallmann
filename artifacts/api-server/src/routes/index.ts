@@ -53,6 +53,7 @@ import feedbackRouter from "./feedback";
 import authRouter from "./auth";
 import systemResetRouter from "./system-reset";
 import moduleVisibilityRouter from "./moduleVisibility";
+import projectsRouter from "./projects";
 
 const router: IRouter = Router();
 
@@ -110,5 +111,6 @@ router.use(feedbackRouter);
 router.use(authRouter);
 router.use(systemResetRouter);
 router.use(moduleVisibilityRouter);
+router.use(projectsRouter);
 
 export default router;

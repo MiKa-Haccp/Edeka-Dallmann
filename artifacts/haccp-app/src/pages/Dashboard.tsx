@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ShieldCheck, ArrowRight,
-  Lock, UserCog, Package, Settings, ClipboardList,
+  Lock, UserCog, Package, Settings, ClipboardList, FolderKanban,
 } from "lucide-react";
 import { Link } from "wouter";
 import { FaelligkeitenWidget } from "@/components/FaelligkeitenWidget";
@@ -55,6 +55,18 @@ const MODULES: ModuleCard[] = [
     bgColor: "bg-[#1a3a6b]/10",
     available: true,
     badge: "Aktiv",
+  },
+  {
+    id: "projekt",
+    icon: FolderKanban,
+    title: "Projekt-Hub",
+    description: "Projektübersicht, kombiniertes Logbuch für E-Mails und Notizen sowie Aufgaben-Workflows mit Freigabelogik.",
+    href: "/projekt-hub",
+    color: "text-indigo-600",
+    bgColor: "bg-indigo-50",
+    available: true,
+    badge: "Aktiv",
+    requiredRoles: ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER"],
   },
   {
     id: "verwaltung",

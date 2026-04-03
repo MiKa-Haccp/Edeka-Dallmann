@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { Link, useLocation } from "wouter";
 import {
-  ChevronLeft, ShieldCheck, Package, ClipboardList, UserCog,
+  ChevronLeft, ShieldCheck, Package, ClipboardList, UserCog, FolderKanban,
   LayoutGrid, Eye, EyeOff, Loader2
 } from "lucide-react";
 
@@ -56,6 +56,15 @@ const MODULES: ModuleDef[] = [
     color: "border-teal-300",
     bgColor: "bg-teal-50",
     iconColor: "text-teal-600",
+  },
+  {
+    id: "projekt",
+    title: "Projekt-Hub",
+    description: "Projektübersicht, kombiniertes Logbuch und Aufgaben-Workflows mit Freigabelogik.",
+    icon: FolderKanban,
+    color: "border-indigo-300",
+    bgColor: "bg-indigo-50",
+    iconColor: "text-indigo-600",
   },
 ];
 
