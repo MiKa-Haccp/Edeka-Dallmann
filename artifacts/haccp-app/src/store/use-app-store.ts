@@ -43,7 +43,13 @@ export const useAppStore = create<AppState>()(
       selectedMonth: new Date().getMonth() + 1,
       setDate: (year, month) => set({ selectedYear: year, selectedMonth: month }),
       adminSession: null,
-      setAdminSession: (session) => set({ adminSession: session }),
+      setAdminSession: (session) => {
+        if (session === null) {
+          set({ adminSession: null, selectedMarketId: null, marketSelectionMode: null });
+        } else {
+          set({ adminSession: session });
+        }
+      },
       isAdmin: () => {
         const s = get().adminSession;
         return s?.role === 'ADMIN' || s?.role === 'SUPERADMIN' || s?.role === 'BEREICHSLEITUNG';
