@@ -438,7 +438,7 @@ export function MarktwahlScreen() {
                 className="w-full flex items-center justify-center gap-2 text-blue-300 hover:text-white text-xs font-medium py-2 transition group"
               >
                 <Shield className="w-3.5 h-3.5" />
-                Admin-Anmeldung
+                Persönliche Anmeldung
                 {showAdminLogin
                   ? <ChevronUp className="w-3.5 h-3.5" />
                   : <ChevronDown className="w-3.5 h-3.5" />
