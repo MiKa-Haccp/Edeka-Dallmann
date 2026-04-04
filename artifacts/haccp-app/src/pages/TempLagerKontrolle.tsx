@@ -47,14 +47,14 @@ function PinStep({ onVerified, onBack, loading, setLoading }: {
         </div>
         <p className="text-sm text-muted-foreground">PIN eingeben zur Bestätigung</p>
       </div>
-      <input type="password" inputMode="numeric" maxLength={6} placeholder="PIN" value={pin}
+      <input type="password" inputMode="numeric" maxLength={4} placeholder="PIN" value={pin}
         onChange={e=>setPin(e.target.value.replace(/\D/g,""))}
-        onKeyDown={e=>e.key==="Enter"&&pin.length>=3&&verify()}
+        onKeyDown={e=>e.key==="Enter"&&pin.length===4&&verify()}
         className="w-full border rounded-lg px-3 py-2 text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary" autoFocus/>
       {error&&<p className="text-red-500 text-sm text-center">{error}</p>}
       <div className="flex gap-2">
         <button onClick={onBack} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurück</button>
-        <button onClick={verify} disabled={pin.length<3||loading}
+        <button onClick={verify} disabled={pin.length!==4||loading}
           className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
           {loading?<Loader2 className="w-4 h-4 animate-spin"/>:<Check className="w-4 h-4"/>}Bestätigen
         </button>
@@ -101,8 +101,19 @@ export default function TempLagerKontrolle() {
   useEffect(()=>{
     if(!loading && isCurrentMonth){
       setTimeout(()=>todayRef.current?.scrollIntoView({behavior:"smooth",block:"center"}),200);
+      // Auto-open: heute fehlt → täglich öffnen; sonst Referenz fehlt → Referenz öffnen
+      const todayDay = now.getDate();
+      const todayEntry = entries[todayDay];
+      if(todayEntry?.temp_ok==null && !isSunday(year,month,todayDay)){
+        setModal({mode:"daily",day:todayDay,tempOk:null,referenzTemp:""});
+        setModalStep("form");
+      } else if(!entries[0]?.referenz_temp){
+        setModal({mode:"referenz",day:0,tempOk:null,referenzTemp:""});
+        setModalStep("form");
+      }
     }
-  },[loading,isCurrentMonth]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[loading]);
 
   function prevMonth(){if(month===1){setYear(y=>y-1);setMonth(12);}else setMonth(m=>m-1);}
   function nextMonth(){if(month===12){setYear(y=>y+1);setMonth(1);}else setMonth(m=>m+1);}
@@ -173,7 +184,7 @@ export default function TempLagerKontrolle() {
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-bold leading-tight">1.13 Temperatur-Lagerkontrolle</h1>
-              <p className="text-white/70 text-sm">Formblatt 6.3 · {market?.name ?? ""}</p>
+              <p className="text-white/70 text-sm">{market?.name ?? ""}</p>
             </div>
             {/* Ampel */}
             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 ${
