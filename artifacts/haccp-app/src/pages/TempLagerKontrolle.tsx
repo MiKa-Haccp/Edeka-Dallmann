@@ -6,7 +6,7 @@ import { useListMarkets } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import {
   ChevronLeft, ChevronRight, Loader2, Check, X, Lock,
-  Thermometer, AlertCircle, CircleCheck, CircleMinus, Pencil,
+  Thermometer, Pencil,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -14,10 +14,10 @@ const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","Aug
 const WOCHENTAGE = ["So","Mo","Di","Mi","Do","Fr","Sa"];
 
 function daysInMonth(y: number, m: number) { return new Date(y, m, 0).getDate(); }
-function getWeekday(y: number, m: number, d: number) { return new Date(y, m-1, d).getDay(); }
-function getWeekdayLabel(y: number, m: number, d: number) { return WOCHENTAGE[getWeekday(y,m,d)]; }
-function isSunday(y: number, m: number, d: number) { return getWeekday(y,m,d) === 0; }
-function isSaturday(y: number, m: number, d: number) { return getWeekday(y,m,d) === 6; }
+function getWD(y: number, m: number, d: number) { return new Date(y, m-1, d).getDay(); }
+function getWDLabel(y: number, m: number, d: number) { return WOCHENTAGE[getWD(y,m,d)]; }
+function isSunday(y: number, m: number, d: number) { return getWD(y,m,d) === 0; }
+function isSaturday(y: number, m: number, d: number) { return getWD(y,m,d) === 6; }
 function isFuture(y: number, m: number, d: number) { const n=new Date(); n.setHours(0,0,0,0); return new Date(y,m-1,d)>n; }
 function isToday(y: number, m: number, d: number) { const n=new Date(); return n.getFullYear()===y&&n.getMonth()+1===m&&n.getDate()===d; }
 
@@ -98,9 +98,8 @@ export default function TempLagerKontrolle() {
 
   useEffect(()=>{load();},[load]);
 
-  // Scroll to today
   useEffect(()=>{
-    if(!loading && isCurrentMonth) {
+    if(!loading && isCurrentMonth){
       setTimeout(()=>todayRef.current?.scrollIntoView({behavior:"smooth",block:"center"}),200);
     }
   },[loading,isCurrentMonth]);
@@ -143,7 +142,7 @@ export default function TempLagerKontrolle() {
     finally{setSaving(false);}
   }
 
-  // Traffic-light calculation
+  // Ampel: Rot nur bei temp_ok=false; Gelb bei fehlenden Tagen oder fehlender Referenz; Grün = alles da
   const ampel = (() => {
     let total=0, filled=0, bad=0;
     for(let d=1;d<=days;d++){
@@ -153,10 +152,10 @@ export default function TempLagerKontrolle() {
       if(e?.temp_ok===false) bad++;
       if(e?.temp_ok!=null) filled++;
     }
-    if(bad>0) return {color:"red",label:"Abweichung festgestellt",icon:<AlertCircle className="w-4 h-4"/>};
-    if(filled===total&&total>0) return {color:"green",label:"Alle Einträge vollständig",icon:<CircleCheck className="w-4 h-4"/>};
-    if(filled===0) return {color:"none",label:`0 / ${total} Tage eingetragen`,icon:<CircleMinus className="w-4 h-4"/>};
-    return {color:"yellow",label:`${filled} / ${total} Tage eingetragen`,icon:<CircleMinus className="w-4 h-4"/>};
+    const refDone = !!entries[0]?.referenz_temp;
+    if(bad>0) return "red";
+    if(filled===total && total>0 && refDone) return "green";
+    return "yellow";
   })();
 
   const referenzEntry = entries[0];
@@ -172,37 +171,24 @@ export default function TempLagerKontrolle() {
             <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
               <Thermometer className="w-5 h-5"/>
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <h1 className="text-lg font-bold leading-tight">1.13 Temperatur-Lagerkontrolle</h1>
-              <p className="text-white/70 text-sm">Formblatt 6.3</p>
+              <p className="text-white/70 text-sm">Formblatt 6.3 · {market?.name ?? ""}</p>
+            </div>
+            {/* Ampel */}
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 ${
+              ampel==="green"?"bg-green-500/20 text-green-200":
+              ampel==="red"?"bg-red-500/20 text-red-200":
+              "bg-amber-400/20 text-amber-200"}`}>
+              <span className={`w-2.5 h-2.5 rounded-full ${
+                ampel==="green"?"bg-green-400":
+                ampel==="red"?"bg-red-400":"bg-amber-400"}`}/>
+              {ampel==="green"?"Vollständig":ampel==="red"?"Abweichung":"Ausstehend"}
             </div>
           </div>
         </PageHeader>
 
         <div className="flex-1 overflow-auto p-4 space-y-4">
-
-          {/* Info-Box mit Überschrift aus dem Formblatt */}
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <p className="text-sm font-bold text-blue-900 border-b border-blue-300 pb-2 mb-2">
-              Tägliche Kontrolle der automatisch gemessenen und dokumentierten Temperaturen:
-            </p>
-            <p className="text-xs text-blue-700">
-              Markt: <strong>{market?.name ?? "—"}</strong>
-            </p>
-          </div>
-
-          {/* Ampel-Status */}
-          <div className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${
-            ampel.color==="green"?"bg-green-50 border-green-200 text-green-800":
-            ampel.color==="yellow"?"bg-amber-50 border-amber-200 text-amber-800":
-            ampel.color==="red"?"bg-red-50 border-red-200 text-red-800":
-            "bg-gray-50 border-gray-200 text-gray-600"}`}>
-            <span className={ampel.color==="green"?"text-green-600":ampel.color==="yellow"?"text-amber-600":ampel.color==="red"?"text-red-600":"text-gray-400"}>
-              {ampel.icon}
-            </span>
-            <span className="text-sm font-medium">{ampel.label}</span>
-          </div>
-
           {/* Monatsnavigation */}
           <div className="flex items-center justify-between bg-white rounded-xl border shadow-sm p-3">
             <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-secondary"><ChevronLeft className="w-5 h-5"/></button>
@@ -212,33 +198,24 @@ export default function TempLagerKontrolle() {
             <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-secondary"><ChevronRight className="w-5 h-5"/></button>
           </div>
 
-          {/* Monatliche Referenzmessung */}
-          <div className="bg-white rounded-xl border shadow-sm p-4 flex items-center justify-between gap-3">
-            <div>
-              <div className="text-sm font-semibold text-foreground">Referenzmessung (einmal im Monat)</div>
-              {referenzEntry?.referenz_temp
-                ? <div className="text-sm text-muted-foreground mt-0.5">Gemessen: <span className="font-mono font-semibold text-foreground">{referenzEntry.referenz_temp}°C</span> · Kürzel: {referenzEntry.kuerzel}</div>
-                : <div className="text-sm text-amber-600 mt-0.5">Noch nicht eingetragen</div>}
-            </div>
-            <button onClick={openReferenzModal}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium hover:bg-blue-50 hover:border-blue-300 transition-all whitespace-nowrap">
-              <Pencil className="w-3.5 h-3.5"/>
-              {referenzEntry?.referenz_temp ? "Bearbeiten" : "Eintragen"}
-            </button>
-          </div>
-
-          {/* Tages-Tabelle */}
+          {/* Tabelle */}
           {loading ? (
             <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>
           ) : (
             <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
+                  {/* Überschrift aus Formblatt 6.3 */}
                   <tr className="bg-[#1a3a6b] text-white">
-                    <th className="py-2 px-3 text-left font-medium w-20">Tag</th>
-                    <th className="py-2 px-3 text-center font-medium">Aufgez. Temp. i.O.</th>
-                    <th className="py-2 px-3 text-center font-medium w-20">Kürzel</th>
-                    <th className="py-2 px-2 w-8"></th>
+                    <th colSpan={4} className="py-2.5 px-3 text-left font-semibold text-xs tracking-wide border-b border-white/20">
+                      Tägliche Kontrolle der automatisch gemessenen und dokumentierten Temperaturen:
+                    </th>
+                  </tr>
+                  <tr className="bg-[#2d5aa0] text-white/90">
+                    <th className="py-2 px-3 text-left font-medium text-xs w-20">Tag</th>
+                    <th className="py-2 px-3 text-center font-medium text-xs">Aufgez. Temperaturen i.O.</th>
+                    <th className="py-2 px-3 text-center font-medium text-xs w-16">Kürzel</th>
+                    <th className="py-2 px-2 w-8"/>
                   </tr>
                 </thead>
                 <tbody>
@@ -249,7 +226,6 @@ export default function TempLagerKontrolle() {
                       const future=isFuture(year,month,day);
                       const today=isToday(year,month,day);
                       const saturday=isSaturday(year,month,day);
-                      const wd=getWeekdayLabel(year,month,day);
                       const missing=!future&&e?.temp_ok==null;
 
                       return (
@@ -258,14 +234,15 @@ export default function TempLagerKontrolle() {
                           onClick={()=>!future&&openDayModal(day)}
                           className={[
                             "border-b transition-colors",
-                            future?"opacity-35 cursor-not-allowed":"cursor-pointer hover:bg-blue-50",
+                            future?"opacity-30 cursor-not-allowed":"cursor-pointer hover:bg-blue-50/60",
                             today?"bg-blue-50":"",
-                            saturday&&!today?"bg-gray-50/60":"",
+                            saturday&&!today?"bg-gray-50/50":"",
+                            e?.temp_ok===false?"bg-red-50":"",
                           ].join(" ")}>
-                          <td className="py-2.5 px-3 text-left">
-                            <span className={`font-medium ${today?"text-[#1a3a6b]":""}`}>{day}</span>
-                            <span className="text-muted-foreground ml-1.5 text-xs">{wd}</span>
-                            {today&&<span className="ml-1 text-xs text-blue-600 font-medium">(heute)</span>}
+                          <td className="py-2.5 px-3">
+                            <span className={`font-medium ${today?"text-[#1a3a6b] font-bold":""}`}>{day}</span>
+                            <span className="text-muted-foreground ml-1.5 text-xs">{getWDLabel(year,month,day)}</span>
+                            {today&&<span className="ml-1 text-[10px] font-bold bg-[#1a3a6b] text-white px-1.5 py-0.5 rounded-full">HEUTE</span>}
                           </td>
                           <td className="py-2.5 px-3 text-center">
                             {e?.temp_ok===true&&(
@@ -279,22 +256,41 @@ export default function TempLagerKontrolle() {
                               </span>
                             )}
                             {missing&&(
-                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${today?"bg-amber-100 text-amber-700":"text-gray-300"}`}>
-                                {today?"Ausstehend":"—"}
+                              <span className={`text-xs font-medium ${today?"text-amber-600":"text-gray-300"}`}>
+                                {today?"—":"—"}
                               </span>
                             )}
                           </td>
-                          <td className="py-2.5 px-3 text-center text-xs text-muted-foreground">
-                            {e?.kuerzel||""}
-                          </td>
+                          <td className="py-2.5 px-3 text-center text-xs text-muted-foreground">{e?.kuerzel||""}</td>
                           <td className="py-2 px-2 text-center">
-                            {!future&&(
-                              <Pencil className={`w-3.5 h-3.5 ${missing&&today?"text-amber-400":"text-gray-200 group-hover:text-gray-400"}`}/>
-                            )}
+                            {!future&&<Pencil className="w-3 h-3 text-gray-200"/>}
                           </td>
                         </tr>
                       );
                     })}
+
+                  {/* Referenzmessung-Zeile */}
+                  <tr
+                    onClick={openReferenzModal}
+                    className="cursor-pointer hover:bg-blue-50/60 border-t-2 border-[#1a3a6b]/20 bg-blue-50/30">
+                    <td className="py-2.5 px-3">
+                      <span className="text-xs font-semibold text-[#1a3a6b]">Referenz&shy;messung</span>
+                      <div className="text-[10px] text-muted-foreground">einmal im Monat</div>
+                    </td>
+                    <td className="py-2.5 px-3 text-center">
+                      {referenzEntry?.referenz_temp
+                        ? <span className="inline-flex items-center gap-1 text-sm font-mono font-semibold text-green-700">
+                            <Check className="w-3.5 h-3.5"/>{referenzEntry.referenz_temp}°C
+                          </span>
+                        : <span className="text-xs text-amber-600 font-medium">Ausstehend</span>}
+                    </td>
+                    <td className="py-2.5 px-3 text-center text-xs text-muted-foreground">
+                      {referenzEntry?.kuerzel||""}
+                    </td>
+                    <td className="py-2 px-2 text-center">
+                      <Pencil className="w-3 h-3 text-[#1a3a6b]/40"/>
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -302,15 +298,15 @@ export default function TempLagerKontrolle() {
 
           {/* Legende */}
           <div className="flex gap-4 text-xs text-muted-foreground flex-wrap">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <span className="w-4 h-4 rounded-full bg-green-100 text-green-700 flex items-center justify-center"><Check className="w-3 h-3"/></span>
               Temperaturen i.O.
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <span className="w-4 h-4 rounded-full bg-red-100 text-red-700 flex items-center justify-center"><X className="w-3 h-3"/></span>
-              Abweichung
+              Abweichung festgestellt
             </div>
-            <div className="flex items-center gap-1 ml-auto text-gray-400">Sonntage ausgeblendet</div>
+            <div className="ml-auto text-gray-400">Sonntage ausgeblendet</div>
           </div>
         </div>
 
@@ -324,13 +320,11 @@ export default function TempLagerKontrolle() {
                     ? `${modal.day}. ${MONTH_NAMES[month-1]} ${year}`
                     : `Referenzmessung — ${MONTH_NAMES[month-1]} ${year}`}
                 </div>
-                <div className="text-xs text-muted-foreground">Temperatur-Lagerkontrolle</div>
+                <div className="text-xs text-muted-foreground">Temperatur-Lagerkontrolle 1.13</div>
               </div>
               <div className="p-4">
                 {modalStep==="form"&&(
                   <div className="space-y-4">
-
-                    {/* Tages-Eingabe */}
                     {modal.mode==="daily"&&(
                       <div>
                         <label className="text-sm font-medium block mb-2">Aufgezeichnete Temperaturen i.O.?</label>
@@ -348,36 +342,27 @@ export default function TempLagerKontrolle() {
                         </div>
                       </div>
                     )}
-
-                    {/* Referenzmessung-Eingabe */}
                     {modal.mode==="referenz"&&(
                       <div>
                         <label className="text-sm font-medium block mb-1">Referenzmessung (°C)</label>
-                        <p className="text-xs text-muted-foreground mb-2">Einmal pro Monat mit geeichtem Thermometer messen.</p>
+                        <p className="text-xs text-muted-foreground mb-3">Einmal pro Monat mit geeichtem Thermometer messen.</p>
                         <div className="relative">
                           <input type="text" inputMode="decimal" placeholder="z.B. 2.5"
                             value={modal.referenzTemp}
                             onChange={e=>setModal(m=>m?{...m,referenzTemp:e.target.value}:m)}
-                            className="w-full border rounded-lg px-3 py-3 pr-8 focus:outline-none focus:ring-2 focus:ring-primary text-sm text-center text-lg"
+                            className="w-full border rounded-lg px-3 py-3 pr-10 focus:outline-none focus:ring-2 focus:ring-primary text-center text-xl font-mono"
                             autoFocus/>
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">°C</span>
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">°C</span>
                         </div>
                       </div>
                     )}
-
                     <div className="flex gap-2 pt-1">
-                      <button onClick={()=>setModal(null)}
-                        className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">
-                        Abbrechen
-                      </button>
+                      <button onClick={()=>setModal(null)} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Abbrechen</button>
                       <button
                         disabled={(modal.mode==="daily"&&modal.tempOk===null)||(modal.mode==="referenz"&&!modal.referenzTemp.trim())}
                         onClick={()=>{
-                          if(adminSession){
-                            saveEntry(adminSession.kuerzel||"",adminSession.userId);
-                          } else {
-                            setModalStep("pin");
-                          }
+                          if(adminSession){ saveEntry(adminSession.kuerzel||"",adminSession.userId); }
+                          else { setModalStep("pin"); }
                         }}
                         className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50">
                         Speichern

@@ -883,10 +883,14 @@ export function useTempLagerStatus(): TrafficLight {
 
     fetch(`${BASE}/temp-lager-kontrolle?marketId=${selectedMarketId}&year=${year}&month=${month}`)
       .then(r => r.json())
-      .then((data: { day: number; temp_ok: boolean | null }[]) => {
+      .then((data: { day: number; temp_ok: boolean | null; referenz_temp?: string | null }[]) => {
         if (cancelled) return;
-        const entryMap: Record<number, boolean | null> = {};
-        for (const e of data) if (e.day > 0) entryMap[e.day] = e.temp_ok;
+        const entryMap: Record<number, { tempOk: boolean | null }> = {};
+        let refDone = false;
+        for (const e of data) {
+          if (e.day === 0) { refDone = !!e.referenz_temp; }
+          else { entryMap[e.day] = { tempOk: e.temp_ok }; }
+        }
         let total = 0, filled = 0, bad = 0;
         for (let d = 1; d <= days; d++) {
           const wd = new Date(year, month - 1, d).getDay();
@@ -895,14 +899,13 @@ export function useTempLagerStatus(): TrafficLight {
           const today = new Date(); today.setHours(0,0,0,0);
           if (wd === 0 || dt > today) continue;
           total++;
-          const val = entryMap[d];
-          if (val === false) bad++;
-          if (val != null) filled++;
+          const e = entryMap[d];
+          if (e?.tempOk === false) bad++;
+          if (e?.tempOk != null) filled++;
         }
         if (bad > 0) setStatus("red");
-        else if (filled === total && total > 0) setStatus("green");
-        else if (filled > 0) setStatus("yellow");
-        else setStatus("none");
+        else if (filled === total && total > 0 && refDone) setStatus("green");
+        else setStatus("yellow");
       })
       .catch(() => { if (!cancelled) setStatus("none"); });
 
