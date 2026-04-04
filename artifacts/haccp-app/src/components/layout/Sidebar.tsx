@@ -127,14 +127,17 @@ const SIDEBAR_OPEN_PATHS = [
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { data: categories, isLoading } = useListCategories();
   const [location, navigate] = useLocation();
+  const selectedMarketId = useAppStore(s => s.selectedMarketId);
   const [sectionVisibility, setSectionVisibility] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
-    fetch(`${BASE}/section-visibility?tenantId=1`)
+    if (!selectedMarketId) return;
+    setSectionVisibility({});
+    fetch(`${BASE}/section-visibility?marketId=${selectedMarketId}`)
       .then(r => r.json())
       .then(d => { if (d.settings) setSectionVisibility(d.settings); })
       .catch(() => {});
-  }, []);
+  }, [selectedMarketId]);
 
   const isHaccpPage = useMemo(
     () => location === "/" || SIDEBAR_OPEN_PATHS.some((p) => p !== "/" && location.startsWith(p)),

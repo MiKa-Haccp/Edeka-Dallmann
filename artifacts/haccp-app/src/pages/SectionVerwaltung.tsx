@@ -3,8 +3,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { Link, useLocation } from "wouter";
-import { useListCategories, useListSections } from "@workspace/api-client-react";
-import { ChevronLeft, Eye, EyeOff, Loader2, LayoutList } from "lucide-react";
+import { useListCategories, useListSections, useListMarkets } from "@workspace/api-client-react";
+import { ChevronLeft, Eye, EyeOff, Loader2, LayoutList, Store } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -28,7 +28,7 @@ function SectionRow({ section, categoryPrefix, displayIndex, enabled, onToggle, 
           </div>
           <div className="text-xs text-muted-foreground">
             Original: {section.number}
-            {enabled ? "" : " — ausgeblendet"}
+            {!enabled && " — ausgeblendet"}
           </div>
         </div>
       </div>
@@ -55,9 +55,7 @@ function CategoryBlock({ category, visibility, onToggle, savingIds }: {
   savingIds: Set<number>;
 }) {
   const { data: sections, isLoading } = useListSections(category.id);
-
-  const visibleSections = sections?.filter(s => !s.number.includes("_") && !s.number.startsWith("hidden")) ?? [];
-
+  const visibleSections = sections?.filter((s: any) => !s.number.includes("_") && !s.number.startsWith("hidden")) ?? [];
   let displayIndex = 0;
 
   return (
@@ -67,13 +65,13 @@ function CategoryBlock({ category, visibility, onToggle, savingIds }: {
         <span className="font-semibold text-sm text-[#1a3a6b]">{category.label}</span>
         {sections && (
           <span className="ml-auto text-xs text-muted-foreground">
-            {visibleSections.filter(s => visibility[s.id] !== false).length} von {visibleSections.length} sichtbar
+            {visibleSections.filter((s: any) => visibility[s.id] !== false).length} von {visibleSections.length} sichtbar
           </span>
         )}
       </div>
       <div className="p-3 space-y-2">
         {isLoading && <div className="py-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground"/></div>}
-        {visibleSections.map(section => {
+        {visibleSections.map((section: any) => {
           const enabled = visibility[section.id] !== false;
           if (enabled) displayIndex++;
           return (
@@ -97,28 +95,42 @@ export default function SectionVerwaltung() {
   const { adminSession } = useAppStore();
   const [, navigate] = useLocation();
   const { data: categories } = useListCategories();
+  const { data: markets } = useListMarkets();
+  const [selectedMarketId, setSelectedMarketId] = useState<number | null>(null);
   const [visibility, setVisibility] = useState<Record<number, boolean>>({});
   const [savingIds, setSavingIds] = useState<Set<number>>(new Set());
   const [loaded, setLoaded] = useState(false);
+  const [loadingVisibility, setLoadingVisibility] = useState(false);
 
   useEffect(() => {
     if (!adminSession || adminSession.role !== "SUPERADMIN") navigate("/");
   }, [adminSession, navigate]);
 
   useEffect(() => {
-    fetch(`${BASE}/section-visibility?tenantId=1`)
+    if (markets?.length && !selectedMarketId) {
+      setSelectedMarketId(markets[0].id);
+    }
+  }, [markets]);
+
+  useEffect(() => {
+    if (!selectedMarketId) return;
+    setLoadingVisibility(true);
+    setLoaded(false);
+    fetch(`${BASE}/section-visibility?marketId=${selectedMarketId}`)
       .then(r => r.json())
-      .then(d => { if (d.settings) setVisibility(d.settings); setLoaded(true); })
-      .catch(() => setLoaded(true));
-  }, []);
+      .then(d => { if (d.settings) setVisibility(d.settings); else setVisibility({}); setLoaded(true); })
+      .catch(() => { setVisibility({}); setLoaded(true); })
+      .finally(() => setLoadingVisibility(false));
+  }, [selectedMarketId]);
 
   async function handleToggle(sectionId: number, enabled: boolean) {
+    if (!selectedMarketId) return;
     setSavingIds(prev => new Set(prev).add(sectionId));
     try {
       await fetch(`${BASE}/section-visibility`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenantId: 1, sectionId, enabled }),
+        body: JSON.stringify({ marketId: selectedMarketId, sectionId, enabled }),
       });
       setVisibility(prev => ({ ...prev, [sectionId]: enabled }));
     } catch (e) { console.error(e); }
@@ -129,7 +141,8 @@ export default function SectionVerwaltung() {
 
   if (!adminSession || adminSession.role !== "SUPERADMIN") return null;
 
-  const haccpCategories = categories?.filter(c => [1, 2, 3].includes(c.id)) ?? [];
+  const haccpCategories = (categories as any[])?.filter((c: any) => [1, 2, 3].includes(c.id)) ?? [];
+  const selectedMarket = markets?.find((m: any) => m.id === selectedMarketId);
 
   return (
     <AppLayout>
@@ -144,22 +157,49 @@ export default function SectionVerwaltung() {
             </div>
             <div>
               <h1 className="text-lg font-bold leading-tight">Abschnitt-Sichtbarkeit</h1>
-              <p className="text-white/70 text-sm">Einzelne Punkte aus der Sidebar ausblenden. Nummerierung passt sich automatisch an.</p>
+              <p className="text-white/70 text-sm">Sidebar-Punkte pro Markt ein- oder ausblenden.</p>
             </div>
           </div>
         </PageHeader>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
-          <strong>Hinweis:</strong> Ausgeblendete Abschnitte werden in der Sidebar nicht mehr angezeigt.
-          Die verbleibenden Punkte werden automatisch neu nummeriert (z.B. 1.10 ausgeblendet → 1.11 wird zu 1.10).
-          Die Daten bleiben unverändert.
+        {/* Markt-Auswahl */}
+        <div className="bg-white rounded-2xl border shadow-sm p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Store className="w-4 h-4 text-[#1a3a6b]"/>
+            <span className="font-semibold text-sm text-[#1a3a6b]">Markt auswählen</span>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {markets?.map((m: any) => (
+              <button
+                key={m.id}
+                onClick={() => setSelectedMarketId(m.id)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium border-2 transition-all ${
+                  selectedMarketId === m.id
+                    ? "bg-[#1a3a6b] text-white border-[#1a3a6b]"
+                    : "border-gray-200 text-muted-foreground hover:border-[#1a3a6b]/40"
+                }`}
+              >
+                {m.name}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {!loaded ? (
+        {/* Hinweis */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+          <strong>Einstellungen für: {selectedMarket?.name ?? "…"}</strong>
+          <p className="mt-1 text-blue-700">
+            Ausgeblendete Punkte erscheinen in der Sidebar dieses Markts nicht mehr.
+            Die restlichen Punkte werden automatisch neu nummeriert. Daten bleiben erhalten.
+          </p>
+        </div>
+
+        {/* Abschnitte */}
+        {!loaded || loadingVisibility ? (
           <div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>
         ) : (
           <div className="space-y-4">
-            {haccpCategories.map(cat => (
+            {haccpCategories.map((cat: any) => (
               <CategoryBlock
                 key={cat.id}
                 category={cat}
