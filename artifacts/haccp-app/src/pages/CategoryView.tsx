@@ -30,6 +30,7 @@ const SECTION_HREFS: Record<string, string> = {
   "1.10": "/anti-vektor-zugang",
   "1.11": "/bescheinigungen",
   "1.12": "/kontrollberichte",
+  "1.13": "/temp-lager-kontrolle",
   "2.1": "/wareneingaenge",
   "2.2": "/warencheck-og",
   "2.3": "/reinigung-taeglich",
@@ -43,6 +44,7 @@ const SECTION_HREFS: Record<string, string> = {
   "3.7": "/rezepturen",
   "3.8": "/gq-begehung",
   "3.9": "/abteilungsfremde-personen",
+  "3.10": "/rindfleisch-etikettierung",
 };
 
 const STATUS_ORDER: Record<TrafficLight, number> = { red: 0, yellow: 1, none: 2, green: 3 };
