@@ -5,8 +5,11 @@ import { ChevronDown, Folder, FileText, ClipboardList, GripVertical, X, Home, Sh
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+
 import { useWarenzustandOGStatus, useReinigungTaeglichStatus, useWareneingaengeStatus, useMetzgereiWareneingaengeStatus, useMetzgereiReinigungStatus, useKaesethekeStatus, useOeffnungSalateStatus, useGQBegehungStatus, useSchulungsnachweiseStatus, useResponsibilitiesStatus, useAnnualCleaningPlanStatus, useBetriebsbegehungStatus, type TrafficLight } from "@/hooks/useWarenzustandStatus";
 import { useAppStore } from "@/store/use-app-store";
+
+const BASE = import.meta.env.VITE_API_URL || "/api";
 
 const MARKET_SECTION_TITLE_OVERRIDES: Record<number, Record<string, string>> = {
   3: { "2.4": "Zugangsdaten Hauser-Portal" },
@@ -31,7 +34,7 @@ const DEFAULT_WIDTH = 288;
 const STORAGE_KEY = "haccp-sidebar-width";
 
 
-function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNavigate?: () => void }) {
+function CategorySections({ categoryId, onNavigate, visibility }: { categoryId: number; onNavigate?: () => void; visibility: Record<number, boolean> }) {
   const { data: sections, isLoading } = useListSections(categoryId);
   const [location] = useLocation();
   const selectedMarketId = useAppStore(s => s.selectedMarketId);
@@ -48,18 +51,33 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
   const cleaningPlanStatus       = useAnnualCleaningPlanStatus();
   const betriebsbegehungStatus   = useBetriebsbegehungStatus();
 
+  const SECTION_HREF: Record<string, string> = {
+    "1.1": "/responsibilities", "1.2": "/mitarbeiter-liste", "1.3": "/info-documentation",
+    "1.4": "/training-records", "1.5": "/annual-cleaning-plan", "1.6": "/betriebsbegehung",
+    "1.7": "/hinweisschild-gesperrte-ware", "1.8": "/produktfehlermeldung", "1.9": "/probeentnahme",
+    "1.10": "/anti-vektor-zugang", "1.11": "/bescheinigungen", "1.12": "/kontrollberichte",
+    "1.13": "/temp-lager-kontrolle",
+    "2.1": "/wareneingaenge", "2.2": "/warencheck-og", "2.3": "/reinigung-taeglich", "2.4": "/carrier-portal",
+    "3.1": "/metzgerei-wareneingaenge", "3.2": "/reinigungsplan-metzgerei", "3.3": "/oeffnung-salate",
+    "3.4": "/kaesetheke-kontrolle", "3.5": "/semmelliste", "3.6": "/eingefrorenes-fleisch",
+    "3.7": "/rezepturen", "3.8": "/gq-begehung", "3.9": "/abteilungsfremde-personen",
+    "3.10": "/rindfleisch-etikettierung",
+  };
+
   if (isLoading) return <div className="p-4 text-xs text-muted-foreground">Lade Bereiche...</div>;
   if (!sections?.length) return <div className="p-4 text-xs text-muted-foreground">Keine Bereiche gefunden.</div>;
 
+  const visibleSections = sections.filter((s) => {
+    if (s.number.includes("_") || s.number.startsWith("hidden")) return false;
+    if (!(s.id in visibility ? visibility[s.id] : true)) return false;
+    return true;
+  });
+
   return (
     <div className="flex flex-col gap-0.5 py-1">
-      {sections.filter((s) => {
-        if (s.number.includes("_")) return false;
-        const m = s.number.match(/^3\.(\d+)$/);
-        if (m && parseInt(m[1]) >= 10) return false;
-        return true;
-      }).map((section) => {
-        const href = section.number === "1.1" ? "/responsibilities" : section.number === "1.2" ? "/mitarbeiter-liste" : section.number === "1.3" ? "/info-documentation" : section.number === "1.4" ? "/training-records" : section.number === "1.5" ? "/annual-cleaning-plan" : section.number === "1.6" ? "/betriebsbegehung" : section.number === "1.7" ? "/hinweisschild-gesperrte-ware" : section.number === "1.8" ? "/produktfehlermeldung" : section.number === "1.9" ? "/probeentnahme" : section.number === "1.10" ? "/anti-vektor-zugang" : section.number === "1.11" ? "/bescheinigungen" : section.number === "1.12" ? "/kontrollberichte" : section.number === "2.1" ? "/wareneingaenge" : section.number === "2.2" ? "/warencheck-og" : section.number === "2.3" ? "/reinigung-taeglich" : section.number === "2.4" ? "/carrier-portal" : section.number === "3.1" ? "/metzgerei-wareneingaenge" : section.number === "3.2" ? "/reinigungsplan-metzgerei" : section.number === "3.3" ? "/oeffnung-salate" : section.number === "3.4" ? "/kaesetheke-kontrolle" : section.number === "3.5" ? "/semmelliste" : section.number === "3.6" ? "/eingefrorenes-fleisch" : section.number === "3.7" ? "/rezepturen" : section.number === "3.8" ? "/gq-begehung" : section.number === "3.9" ? "/abteilungsfremde-personen" : `/section/${section.id}`;
+      {visibleSections.map((section, idx) => {
+        const href = SECTION_HREF[section.number] ?? `/section/${section.id}`;
+        const displayNum = `${categoryId}.${idx + 1}`;
         const isActive = location === href;
         const trafficStatus: TrafficLight = section.number === "1.1" ? responsibilitiesStatus : section.number === "1.4" ? schulungsnachweiseStatus : section.number === "1.5" ? cleaningPlanStatus : section.number === "1.6" ? betriebsbegehungStatus : section.number === "2.1" ? wareneingaengeStatus : section.number === "2.2" ? ogStatus : section.number === "2.3" ? reinigungStatus : section.number === "3.1" ? metzgereiStatus : section.number === "3.2" ? metzReinigungStatus : section.number === "3.3" ? oeffnungSalateStatus : section.number === "3.4" ? kaesethekeStatus : section.number === "3.8" ? gqBegehungStatus : "none";
         const iconColor = trafficStatus === "green"
@@ -84,7 +102,7 @@ function CategorySections({ categoryId, onNavigate }: { categoryId: number; onNa
             )}
           >
             <FileText className={cn("h-4 w-4 flex-shrink-0", iconColor)} />
-            <span className="truncate">{section.number} {(selectedMarketId && MARKET_SECTION_TITLE_OVERRIDES[selectedMarketId]?.[section.number]) || section.title}</span>
+            <span className="truncate">{displayNum} {(selectedMarketId && MARKET_SECTION_TITLE_OVERRIDES[selectedMarketId]?.[section.number]) || section.title}</span>
           </Link>
         );
       })}
@@ -103,12 +121,20 @@ const SIDEBAR_OPEN_PATHS = [
   "/haccp", "/wareneingaenge", "/metzgerei-wareneingaenge", "/reinigungsplan-metzgerei", "/oeffnung-salate", "/kaesetheke-kontrolle", "/semmelliste", "/eingefrorenes-fleisch", "/rezepturen", "/gq-begehung", "/abteilungsfremde-personen",
   "/section/", "/category/", "/we-", "/besprechungsprotokoll",
   "/gesundheitszeugnisse", "/mitarbeiterverwaltung", "/admin/",
-  "/projekt-hub",
+  "/projekt-hub", "/temp-lager-kontrolle", "/rindfleisch-etikettierung",
 ];
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { data: categories, isLoading } = useListCategories();
   const [location, navigate] = useLocation();
+  const [sectionVisibility, setSectionVisibility] = useState<Record<number, boolean>>({});
+
+  useEffect(() => {
+    fetch(`${BASE}/section-visibility?tenantId=1`)
+      .then(r => r.json())
+      .then(d => { if (d.settings) setSectionVisibility(d.settings); })
+      .catch(() => {});
+  }, []);
 
   const isHaccpPage = useMemo(
     () => location === "/" || SIDEBAR_OPEN_PATHS.some((p) => p !== "/" && location.startsWith(p)),
@@ -201,7 +227,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 </Accordion.Header>
                 <Accordion.Content className="overflow-hidden text-sm data-[state=closed]:animate-slideUp data-[state=open]:animate-slideDown pl-3">
                   <div className="ml-4 border-l border-border/60 pl-2 my-1">
-                    <CategorySections categoryId={category.id} onNavigate={onNavigate} />
+                    <CategorySections categoryId={category.id} onNavigate={onNavigate} visibility={sectionVisibility} />
                   </div>
                 </Accordion.Content>
               </Accordion.Item>

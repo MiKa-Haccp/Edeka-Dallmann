@@ -1,0 +1,383 @@
+import { useState, useEffect, useCallback, useRef } from "react";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { useAppStore } from "@/store/use-app-store";
+import { useListMarkets } from "@workspace/api-client-react";
+import { useLocation } from "wouter";
+import {
+  ChevronLeft, ChevronRight, Loader2, Check, Lock, Camera, Plus,
+  Trash2, Image as ImageIcon, X, Info,
+} from "lucide-react";
+
+const BASE = import.meta.env.VITE_API_URL || "/api";
+const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+
+function todayStr() {
+  const n=new Date();
+  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`;
+}
+function formatDate(s:string){
+  if(!s) return "—";
+  const [y,m,d]=s.split("-");
+  return `${d}.${m}.${y}`;
+}
+
+type Eintrag = {
+  id:number; market_id:number; datum:string; kategorie:string|null;
+  name_unterschrift:string|null; kuerzel:string|null; created_at:string;
+  has_foto1:boolean; has_foto2:boolean; has_foto3:boolean; has_foto4:boolean;
+};
+
+type FullEintrag = Eintrag & { foto1:string|null; foto2:string|null; foto3:string|null; foto4:string|null; };
+
+function PinStep({ onVerified, onBack, loading, setLoading }: {
+  onVerified:(name:string,userId:number,kuerzel:string)=>void;
+  onBack:()=>void; loading:boolean; setLoading:(v:boolean)=>void;
+}) {
+  const [pin,setPin]=useState(""); const [error,setError]=useState("");
+  const verify=async()=>{
+    setError(""); setLoading(true);
+    try {
+      const res=await fetch(`${BASE}/users/verify-pin`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin,tenantId:1})});
+      const data=await res.json();
+      if(data.valid) onVerified(data.userName,data.userId,data.initials);
+      else setError("PIN ungültig.");
+    } catch { setError("Verbindungsfehler."); }
+    finally { setLoading(false); }
+  };
+  return (
+    <div className="space-y-4">
+      <div className="text-center">
+        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2"><Lock className="w-6 h-6 text-primary"/></div>
+        <p className="text-sm text-muted-foreground">PIN eingeben zur Bestätigung</p>
+      </div>
+      <input type="password" inputMode="numeric" maxLength={6} placeholder="PIN" value={pin}
+        onChange={e=>setPin(e.target.value.replace(/\D/g,""))}
+        onKeyDown={e=>e.key==="Enter"&&pin.length>=3&&verify()}
+        className="w-full border rounded-lg px-3 py-2 text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary" autoFocus/>
+      {error&&<p className="text-red-500 text-sm text-center">{error}</p>}
+      <div className="flex gap-2">
+        <button onClick={onBack} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurück</button>
+        <button onClick={verify} disabled={pin.length<3||loading}
+          className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
+          {loading?<Loader2 className="w-4 h-4 animate-spin"/>:<Check className="w-4 h-4"/>}Bestätigen
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type FotoSlot = { base64: string; file: File } | null;
+
+function FotoSlotButton({ slot, index, onChange }: {
+  slot: FotoSlot; index: number; onChange: (f: FotoSlot) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      if (ev.target?.result) onChange({ base64: ev.target.result as string, file });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  return (
+    <div className="relative">
+      <input ref={fileRef} type="file" accept="image/*" capture="environment"
+        className="hidden" onChange={handleFile}/>
+      {slot ? (
+        <div className="relative rounded-xl overflow-hidden border-2 border-green-300 aspect-video bg-gray-50">
+          <img src={slot.base64} alt={`Etikett ${index+1}`} className="w-full h-full object-contain"/>
+          <button onClick={()=>onChange(null)}
+            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow hover:bg-red-600">
+            <X className="w-3 h-3"/>
+          </button>
+          <div className="absolute bottom-1 left-1 bg-black/60 text-white text-xs px-2 py-0.5 rounded">
+            Etikett {index+1}
+          </div>
+        </div>
+      ) : (
+        <button onClick={()=>fileRef.current?.click()}
+          className="w-full aspect-video rounded-xl border-2 border-dashed border-gray-300 hover:border-primary hover:bg-blue-50 flex flex-col items-center justify-center gap-2 transition-all">
+          <Camera className="w-6 h-6 text-muted-foreground"/>
+          <span className="text-xs text-muted-foreground">Etikett {index+1} fotografieren</span>
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default function RindfleischEtikettierung() {
+  const [,nav] = useLocation();
+  const { selectedMarketId, adminSession } = useAppStore();
+  const { data: markets } = useListMarkets();
+  const now = new Date();
+  const [year,setYear] = useState(now.getFullYear());
+  const [month,setMonth] = useState(now.getMonth()+1);
+  const [eintraege,setEintraege] = useState<Eintrag[]>([]);
+  const [loading,setLoading] = useState(false);
+  const [showCreate,setShowCreate] = useState(false);
+  const [viewEntry,setViewEntry] = useState<FullEintrag|null>(null);
+  const [loadingView,setLoadingView] = useState(false);
+
+  // Form state
+  const [datum,setDatum] = useState(todayStr);
+  const [kategorie,setKategorie] = useState<"gq"|"kalb"|null>(null);
+  const [fotos,setFotos] = useState<[FotoSlot,FotoSlot,FotoSlot,FotoSlot]>([null,null,null,null]);
+  const [formStep,setFormStep] = useState<"form"|"pin">("form");
+  const [saving,setSaving] = useState(false);
+
+  const market = markets?.find(m=>m.id===selectedMarketId);
+
+  const load = useCallback(async()=>{
+    if(!selectedMarketId) return;
+    setLoading(true);
+    try {
+      const r = await fetch(`${BASE}/rindfleisch-etiketten?marketId=${selectedMarketId}&year=${year}&month=${month}`);
+      setEintraege(await r.json());
+    } catch(e){console.error(e);}
+    finally{setLoading(false);}
+  },[selectedMarketId,year,month]);
+
+  useEffect(()=>{load();},[load]);
+
+  function prevMonth(){if(month===1){setYear(y=>y-1);setMonth(12);}else setMonth(m=>m-1);}
+  function nextMonth(){if(month===12){setYear(y=>y+1);setMonth(1);}else setMonth(m=>m+1);}
+
+  async function loadView(id:number){
+    setLoadingView(true);
+    try {
+      const r = await fetch(`${BASE}/rindfleisch-etiketten/${id}`);
+      setViewEntry(await r.json());
+    } catch(e){console.error(e);}
+    finally{setLoadingView(false);}
+  }
+
+  async function saveEintrag(kuerzel:string, userId:number, nameUnterschrift:string){
+    if(!selectedMarketId) return;
+    setSaving(true);
+    try {
+      await fetch(`${BASE}/rindfleisch-etiketten`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          marketId:selectedMarketId, datum, kategorie: kategorie==="gq"?"GQ-Rindfleisch":kategorie==="kalb"?"Kalbfleisch":null,
+          foto1:fotos[0]?.base64||null, foto2:fotos[1]?.base64||null,
+          foto3:fotos[2]?.base64||null, foto4:fotos[3]?.base64||null,
+          nameUnterschrift, kuerzel, userId
+        })
+      });
+      await load();
+      setShowCreate(false);
+      resetForm();
+    } catch(e){console.error(e);}
+    finally{setSaving(false);}
+  }
+
+  function resetForm(){
+    setDatum(todayStr());
+    setKategorie(null);
+    setFotos([null,null,null,null]);
+    setFormStep("form");
+  }
+
+  async function deleteEintrag(id:number){
+    if(!confirm("Eintrag wirklich löschen?")) return;
+    await fetch(`${BASE}/rindfleisch-etiketten/${id}`,{method:"DELETE"});
+    load();
+  }
+
+  const fotoCount = fotos.filter(Boolean).length;
+
+  return (
+    <AppLayout>
+      <div className="flex flex-col h-full">
+        <PageHeader title="3.10 Rindfleischetikettierung" subtitle="Formblatt 9.4 — Archivierung von Etiketten"/>
+        <div className="flex-1 overflow-auto p-4 space-y-4">
+
+          {/* Markt + Info */}
+          {market&&(
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
+              <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5"/>
+              <div>
+                <span className="text-sm text-blue-800 font-medium">Markt: {market.name}</span>
+                <p className="text-xs text-blue-600 mt-0.5">Auf allen Etiketten muss das Auspackdatum vermerkt werden!</p>
+              </div>
+            </div>
+          )}
+
+          {/* Monatsnavigation */}
+          <div className="flex items-center justify-between bg-white rounded-xl border shadow-sm p-3">
+            <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-secondary"><ChevronLeft className="w-5 h-5"/></button>
+            <div className="text-center">
+              <div className="font-semibold">{MONTH_NAMES[month-1]} {year}</div>
+              <div className="text-xs text-muted-foreground">{eintraege.length} Eintrag{eintraege.length!==1?"e":""}</div>
+            </div>
+            <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-secondary"><ChevronRight className="w-5 h-5"/></button>
+          </div>
+
+          {/* Neuer Eintrag Button */}
+          <button onClick={()=>{resetForm();setShowCreate(true);}}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-primary/30 text-primary hover:bg-primary/5 hover:border-primary transition-all font-medium text-sm">
+            <Plus className="w-4 h-4"/>Neuen Etiketten-Eintrag anlegen
+          </button>
+
+          {/* Liste */}
+          {loading ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>
+          ) : eintraege.length===0 ? (
+            <div className="text-center py-12 text-muted-foreground text-sm">
+              Keine Einträge für {MONTH_NAMES[month-1]} {year}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {eintraege.map(e=>(
+                <div key={e.id} className="bg-white rounded-xl border shadow-sm p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm">{formatDate(e.datum)}</div>
+                      {e.kategorie&&<div className="text-xs text-muted-foreground mt-0.5">{e.kategorie}</div>}
+                      <div className="flex items-center gap-3 mt-2">
+                        {[e.has_foto1,e.has_foto2,e.has_foto3,e.has_foto4].map((has,i)=>(
+                          <div key={i} className={`flex items-center gap-1 text-xs ${has?"text-green-600":"text-gray-300"}`}>
+                            <ImageIcon className="w-3.5 h-3.5"/>{i+1}
+                          </div>
+                        ))}
+                      </div>
+                      {e.name_unterschrift&&<div className="text-xs text-muted-foreground mt-1">Unterschrift: {e.name_unterschrift}</div>}
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={()=>loadView(e.id)}
+                        className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 text-xs border border-blue-200">
+                        Ansicht
+                      </button>
+                      <button onClick={()=>deleteEintrag(e.id)}
+                        className="p-2 rounded-lg hover:bg-red-50 text-red-500">
+                        <Trash2 className="w-4 h-4"/>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Detail-Ansicht */}
+        {(viewEntry||loadingView)&&(
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-auto">
+              <div className="p-4 border-b flex items-center justify-between">
+                <div>
+                  <div className="font-semibold">{viewEntry?formatDate(viewEntry.datum):""}</div>
+                  <div className="text-xs text-muted-foreground">{viewEntry?.kategorie||""}</div>
+                </div>
+                <button onClick={()=>setViewEntry(null)} className="p-2 rounded-lg hover:bg-secondary"><X className="w-5 h-5"/></button>
+              </div>
+              <div className="p-4 space-y-3">
+                {loadingView&&<div className="flex justify-center py-8"><Loader2 className="w-8 h-8 animate-spin text-primary"/></div>}
+                {viewEntry&&!loadingView&&(
+                  <>
+                    {[viewEntry.foto1,viewEntry.foto2,viewEntry.foto3,viewEntry.foto4].map((foto,i)=>
+                      foto&&(
+                        <div key={i} className="rounded-xl overflow-hidden border">
+                          <div className="bg-gray-50 px-3 py-1 text-xs font-medium text-muted-foreground">Etikett {i+1}</div>
+                          <img src={foto} alt={`Etikett ${i+1}`} className="w-full object-contain max-h-64"/>
+                        </div>
+                      )
+                    )}
+                    {viewEntry.name_unterschrift&&(
+                      <div className="text-sm text-muted-foreground">Unterschrift: {viewEntry.name_unterschrift}</div>
+                    )}
+                    {viewEntry.kuerzel&&(
+                      <div className="text-sm text-muted-foreground">Kürzel: {viewEntry.kuerzel}</div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Erstell-Modal */}
+        {showCreate&&(
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-auto">
+              <div className="p-4 border-b flex items-center justify-between">
+                <div className="font-semibold">Neuer Etikett-Eintrag</div>
+                <button onClick={()=>setShowCreate(false)} className="p-2 rounded-lg hover:bg-secondary"><X className="w-5 h-5"/></button>
+              </div>
+              <div className="p-4">
+                {formStep==="form"&&(
+                  <div className="space-y-5">
+                    {/* Abverkaufsdatum */}
+                    <div>
+                      <label className="text-sm font-medium block mb-1">Abverkaufsdatum</label>
+                      <input type="date" value={datum} onChange={e=>setDatum(e.target.value)}
+                        className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>
+                    </div>
+
+                    {/* Kategorie */}
+                    <div>
+                      <label className="text-sm font-medium block mb-2">Kategorie</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button onClick={()=>setKategorie("gq")}
+                          className={`py-3 rounded-xl border-2 text-sm font-medium transition-all ${kategorie==="gq"?"border-[#c73d00] bg-orange-50 text-[#c73d00]":"border-gray-200 hover:border-orange-300"}`}>
+                          □ GQ – Rindfleisch
+                        </button>
+                        <button onClick={()=>setKategorie("kalb")}
+                          className={`py-3 rounded-xl border-2 text-sm font-medium transition-all ${kategorie==="kalb"?"border-[#c73d00] bg-orange-50 text-[#c73d00]":"border-gray-200 hover:border-orange-300"}`}>
+                          □ Kalbfleisch
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Foto-Slots */}
+                    <div>
+                      <label className="text-sm font-medium block mb-2">Etikett-Fotos ({fotoCount}/4)</label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {fotos.map((_,i)=>(
+                          <FotoSlotButton key={i} slot={fotos[i]} index={i}
+                            onChange={f=>setFotos(prev=>{const n=[...prev] as typeof fotos;n[i]=f;return n;})}/>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2 flex items-start gap-1">
+                        <Info className="w-3 h-3 mt-0.5 shrink-0"/>
+                        Auspackdatum muss auf allen Etiketten vermerkt sein
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button onClick={()=>setShowCreate(false)} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Abbrechen</button>
+                      <button disabled={!datum}
+                        onClick={()=>{
+                          if(adminSession){
+                            saveEintrag(adminSession.kuerzel||"",adminSession.userId,adminSession.name||"");
+                          } else {
+                            setFormStep("pin");
+                          }
+                        }}
+                        className="flex-1 bg-[#c73d00] text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#c73d00]/90 disabled:opacity-50">
+                        Weiter
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {formStep==="pin"&&(
+                  <PinStep
+                    onVerified={(name,userId,kuerzel)=>saveEintrag(kuerzel,userId,name)}
+                    onBack={()=>setFormStep("form")}
+                    loading={saving} setLoading={setSaving}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </AppLayout>
+  );
+}

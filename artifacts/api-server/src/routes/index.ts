@@ -54,6 +54,9 @@ import authRouter from "./auth";
 import systemResetRouter from "./system-reset";
 import moduleVisibilityRouter from "./moduleVisibility";
 import projectsRouter from "./projects";
+import tempLagerKontrolleRouter from "./tempLagerKontrolle";
+import rindfleischEtikettenRouter from "./rindfleischEtiketten";
+import sectionVisibilityRouter from "./sectionVisibility";
 
 const router: IRouter = Router();
 
@@ -112,5 +115,8 @@ router.use(authRouter);
 router.use(systemResetRouter);
 router.use(moduleVisibilityRouter);
 router.use(projectsRouter);
+router.use(tempLagerKontrolleRouter);
+router.use(rindfleischEtikettenRouter);
+router.use(sectionVisibilityRouter);
 
 export default router;

@@ -2,7 +2,7 @@
 
 ## Overview
 
-HACCP Management App - a food safety management system for a German supermarket chain with three branches (Leeder, Buching, MOD). Built as a pnpm workspace monorepo using TypeScript.
+HACCP Management App - a food safety management system for EDEKA DALLMANN (3 branches: Leeder ID=1, Buching ID=2, MOD ID=3). Built as a pnpm workspace monorepo using TypeScript. German-language modular platform.
 
 ## Stack
 

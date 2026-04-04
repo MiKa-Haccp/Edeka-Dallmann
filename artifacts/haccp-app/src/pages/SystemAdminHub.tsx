@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { Link, useLocation } from "wouter";
-import { ShieldCheck, Smartphone, ArrowRight, ShieldAlert, Mail, ChevronLeft, Settings2, Bell, FileText, Trash2, LayoutGrid } from "lucide-react";
+import { ShieldCheck, Smartphone, ArrowRight, ShieldAlert, Mail, ChevronLeft, Settings2, Bell, FileText, Trash2, LayoutGrid, LayoutList } from "lucide-react";
 import { useEffect } from "react";
 
 interface AdminCardProps {
@@ -104,6 +104,12 @@ export default function SystemAdminHub() {
             icon={<LayoutGrid className="w-6 h-6 text-purple-600" />}
             title="Modul-Sichtbarkeit"
             description="Module auf der Startseite ein- oder ausschalten. Schrittweise Freischaltung für alle Benutzer."
+          />
+          <AdminCard
+            href="/admin/section-sichtbarkeit"
+            icon={<LayoutList className="w-6 h-6 text-purple-600" />}
+            title="Abschnitt-Sichtbarkeit"
+            description="Einzelne Handbuch-Punkte aus der Sidebar ausblenden. Die Nummerierung passt sich automatisch an."
           />
           <AdminCard
             href="/admin/daten-bereinigung"

@@ -98,6 +98,9 @@ import FeedbackAdmin from "./pages/FeedbackAdmin";
 import DatenBereinigung from "./pages/DatenBereinigung";
 import ModuleVerwaltung from "./pages/ModuleVerwaltung";
 import ProjektHub from "./pages/ProjektHub";
+import TempLagerKontrolle from "./pages/TempLagerKontrolle";
+import RindfleischEtikettierung from "./pages/RindfleischEtikettierung";
+import SectionVerwaltung from "./pages/SectionVerwaltung";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
@@ -175,7 +178,10 @@ function Router() {
       <Route path="/admin/monatsbericht" component={MonatsberichtAdmin} />
       <Route path="/admin/daten-bereinigung" component={DatenBereinigung} />
       <Route path="/admin/module-sichtbarkeit" component={ModuleVerwaltung} />
+      <Route path="/admin/section-sichtbarkeit" component={SectionVerwaltung} />
       <Route path="/projekt-hub" component={ProjektHub} />
+      <Route path="/temp-lager-kontrolle" component={TempLagerKontrolle} />
+      <Route path="/rindfleisch-etikettierung" component={RindfleischEtikettierung} />
       <Route path="/verwaltung/schulungsanforderungen" component={SchulungsAnforderungen} />
       <Route path="/todo" component={TodoHub} />
       <Route path="/todo-tagesliste" component={TodoTagesliste} />
