@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict araDlZhUM4qPcgUtWXqaBUStGJGvRaxd0RoGhZg2OLjgw7qdxlOebLOKQ6hg81b
+\restrict E38GI9OWIFsO6rhpxOUqnBg9bbcOshTRC1INyLndS3TqRYOoS2DMXVwjdxTGsCB
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -1702,6 +1702,131 @@ ALTER SEQUENCE public.produktfehlermeldung_id_seq OWNED BY public.produktfehlerm
 
 
 --
+-- Name: project_log_entries; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.project_log_entries (
+    id integer NOT NULL,
+    project_id integer NOT NULL,
+    entry_type character varying(50) DEFAULT 'note'::character varying NOT NULL,
+    content text NOT NULL,
+    beteiligte_partei character varying(200),
+    created_by_name character varying(100),
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.project_log_entries OWNER TO postgres;
+
+--
+-- Name: project_log_entries_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.project_log_entries_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.project_log_entries_id_seq OWNER TO postgres;
+
+--
+-- Name: project_log_entries_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.project_log_entries_id_seq OWNED BY public.project_log_entries.id;
+
+
+--
+-- Name: project_tasks; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.project_tasks (
+    id integer NOT NULL,
+    project_id integer NOT NULL,
+    title character varying(255) NOT NULL,
+    description text,
+    status character varying(50) DEFAULT 'pending'::character varying NOT NULL,
+    depends_on_task_id integer,
+    order_index integer DEFAULT 0 NOT NULL,
+    requires_approval boolean DEFAULT false NOT NULL,
+    approval_note text,
+    assigned_to character varying(100),
+    completed_at timestamp with time zone,
+    completed_by_name character varying(100)
+);
+
+
+ALTER TABLE public.project_tasks OWNER TO postgres;
+
+--
+-- Name: project_tasks_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.project_tasks_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.project_tasks_id_seq OWNER TO postgres;
+
+--
+-- Name: project_tasks_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.project_tasks_id_seq OWNED BY public.project_tasks.id;
+
+
+--
+-- Name: projects; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.projects (
+    id integer NOT NULL,
+    tenant_id integer DEFAULT 1 NOT NULL,
+    market_id integer,
+    name character varying(255) NOT NULL,
+    description text,
+    status character varying(50) DEFAULT 'geplant'::character varying NOT NULL,
+    color character varying(30) DEFAULT 'blue'::character varying NOT NULL,
+    created_by_name character varying(100),
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.projects OWNER TO postgres;
+
+--
+-- Name: projects_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.projects_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.projects_id_seq OWNER TO postgres;
+
+--
+-- Name: projects_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.projects_id_seq OWNED BY public.projects.id;
+
+
+--
 -- Name: registered_devices; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -1911,6 +2036,50 @@ ALTER SEQUENCE public.rezepturen_id_seq OWNED BY public.rezepturen.id;
 
 
 --
+-- Name: rindfleisch_etiketten; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.rindfleisch_etiketten (
+    id integer NOT NULL,
+    market_id integer,
+    datum date NOT NULL,
+    kategorie character varying(30),
+    foto1 text,
+    foto2 text,
+    foto3 text,
+    foto4 text,
+    name_unterschrift character varying(100),
+    kuerzel character varying(20),
+    user_id integer,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.rindfleisch_etiketten OWNER TO postgres;
+
+--
+-- Name: rindfleisch_etiketten_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.rindfleisch_etiketten_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.rindfleisch_etiketten_id_seq OWNER TO postgres;
+
+--
+-- Name: rindfleisch_etiketten_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.rindfleisch_etiketten_id_seq OWNED BY public.rindfleisch_etiketten.id;
+
+
+--
 -- Name: role_permission_defaults; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2113,6 +2282,43 @@ ALTER SEQUENCE public.schulungsnachweise_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.schulungsnachweise_id_seq OWNED BY public.schulungsnachweise.id;
+
+
+--
+-- Name: section_visibility; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.section_visibility (
+    id integer NOT NULL,
+    section_id integer NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    market_id integer
+);
+
+
+ALTER TABLE public.section_visibility OWNER TO postgres;
+
+--
+-- Name: section_visibility_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.section_visibility_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.section_visibility_id_seq OWNER TO postgres;
+
+--
+-- Name: section_visibility_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.section_visibility_id_seq OWNED BY public.section_visibility.id;
 
 
 --
@@ -2389,6 +2595,50 @@ ALTER SEQUENCE public.system_reset_logs_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE public.system_reset_logs_id_seq OWNED BY public.system_reset_logs.id;
+
+
+--
+-- Name: temp_lager_kontrolle; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.temp_lager_kontrolle (
+    id integer NOT NULL,
+    market_id integer,
+    year integer NOT NULL,
+    month integer NOT NULL,
+    day integer NOT NULL,
+    temp_ok boolean,
+    referenz_temp character varying(20),
+    kuerzel character varying(20),
+    user_id integer,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    referenz_ok boolean
+);
+
+
+ALTER TABLE public.temp_lager_kontrolle OWNER TO postgres;
+
+--
+-- Name: temp_lager_kontrolle_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.temp_lager_kontrolle_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.temp_lager_kontrolle_id_seq OWNER TO postgres;
+
+--
+-- Name: temp_lager_kontrolle_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.temp_lager_kontrolle_id_seq OWNED BY public.temp_lager_kontrolle.id;
 
 
 --
@@ -3623,6 +3873,27 @@ ALTER TABLE ONLY public.produktfehlermeldung ALTER COLUMN id SET DEFAULT nextval
 
 
 --
+-- Name: project_log_entries id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_log_entries ALTER COLUMN id SET DEFAULT nextval('public.project_log_entries_id_seq'::regclass);
+
+
+--
+-- Name: project_tasks id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_tasks ALTER COLUMN id SET DEFAULT nextval('public.project_tasks_id_seq'::regclass);
+
+
+--
+-- Name: projects id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects ALTER COLUMN id SET DEFAULT nextval('public.projects_id_seq'::regclass);
+
+
+--
 -- Name: registered_devices id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3658,6 +3929,13 @@ ALTER TABLE ONLY public.rezepturen ALTER COLUMN id SET DEFAULT nextval('public.r
 
 
 --
+-- Name: rindfleisch_etiketten id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.rindfleisch_etiketten ALTER COLUMN id SET DEFAULT nextval('public.rindfleisch_etiketten_id_seq'::regclass);
+
+
+--
 -- Name: role_permission_defaults id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -3690,6 +3968,13 @@ ALTER TABLE ONLY public.schulungs_pflichten ALTER COLUMN id SET DEFAULT nextval(
 --
 
 ALTER TABLE ONLY public.schulungsnachweise ALTER COLUMN id SET DEFAULT nextval('public.schulungsnachweise_id_seq'::regclass);
+
+
+--
+-- Name: section_visibility id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.section_visibility ALTER COLUMN id SET DEFAULT nextval('public.section_visibility_id_seq'::regclass);
 
 
 --
@@ -3732,6 +4017,13 @@ ALTER TABLE ONLY public.strecken_lieferanten ALTER COLUMN id SET DEFAULT nextval
 --
 
 ALTER TABLE ONLY public.system_reset_logs ALTER COLUMN id SET DEFAULT nextval('public.system_reset_logs_id_seq'::regclass);
+
+
+--
+-- Name: temp_lager_kontrolle id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.temp_lager_kontrolle ALTER COLUMN id SET DEFAULT nextval('public.temp_lager_kontrolle_id_seq'::regclass);
 
 
 --
@@ -4065,6 +4357,21 @@ COPY public.feedback (id, text, page_path, market_id, created_at, is_read) FROM 
 1	viel zu wenig farbe hier	/	1	2026-03-30 20:03:55.188375	t
 2	Vieles!	/admin/system	1	2026-03-31 07:35:15.994473	t
 3	Der Kai seine Art Schach zu spielen Kotzt mich an	/	1	2026-04-01 12:01:02.539852	t
+4	Mitarbeiter müssen per Suche zum eingeben sein DM	/responsibilities	1	2026-04-02 14:39:57.237258	t
+5	Der grüne Ballken wegen aktualität mit Kai Besprechen DM	/responsibilities	1	2026-04-02 14:40:49.981125	t
+6	Letzte Zeile 1.1 und Datum Nötig?  DM	/responsibilities	1	2026-04-02 14:41:41.06667	t
+7	Letzte Zeile soll da überhaupt Text hin? DM	/mitarbeiter-liste	1	2026-04-02 14:42:28.253698	t
+8	Infozeilen gefallen mir nicht!  DM	/info-documentation	1	2026-04-02 14:43:17.104675	t
+9	Für Schulungen sollte Marina etc. übersichtlichere Überschriften wegen der Übersichtlichkeit festlegen können wie Gestallten wir eigentlich die Fälligkeit der Pflichtschulungen?  DM	/training-records	1	2026-04-02 14:45:06.685181	t
+10	in Überschrift der Text mit Kürzel überflüssig\nDM	/annual-cleaning-plan	1	2026-04-02 15:54:20.815584	t
+11	Grüner Balken wegen erledigung oben drüber mit Kai besprechen!  DM	/betriebsbegehung	1	2026-04-02 15:56:25.725221	t
+12	Die unterste Zeile mit Kai besprechen ob nötig und welcher Text!  DM	/hinweisschild-gesperrte-ware	1	2026-04-02 15:58:08.335149	t
+13	Ausserdem Text mit Hinweis auf HACCP ordner mit 1.7! DM	/hinweisschild-gesperrte-ware	1	2026-04-02 15:59:27.466699	t
+14	Text in Überschrift wegen altem HACCP überdenken! DM	/produktfehlermeldung	1	2026-04-02 17:19:38.504849	t
+15	Wir müssen den Ausdruck noch optimieren! DM	/probeentnahme	1	2026-04-02 17:21:53.061692	t
+16	Sollten wir die verschiedenen Farben der Karteikarten lassen? DM	/bescheinigungen	1	2026-04-02 17:30:28.646446	t
+17	Brauchen wir eigenlich die eigenen Eingaben für die Berichte? DM	/kontrollberichte	1	2026-04-02 17:38:42.892119	t
+18	Pdf und oder Druckversion sollten wir uns zusammen ansehen!  DM	/wareneingaenge	1	2026-04-02 17:41:22.82818	t
 \.
 
 
@@ -4616,8 +4923,8 @@ COPY public.mhd_kontrolle (id, market_id, datum, bereich, artikel, mhd_datum, me
 --
 
 COPY public.module_visibility (id, tenant_id, module_id, enabled, updated_at) FROM stdin;
-1	1	todo	f	2026-04-02 12:37:16.751003+00
-4	1	ware	f	2026-04-02 12:37:17.910879+00
+4	1	ware	t	2026-04-02 13:17:40.390617+00
+1	1	todo	t	2026-04-02 13:17:41.893159+00
 \.
 
 
@@ -4683,6 +4990,16 @@ COPY public.notification_log (id, rule_id, user_id, market_id, channel_type, mes
 37	5	17	2	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-04-02 05:00:02.639278
 38	5	17	1	telegram	Seit 2 Tagen (31.3.2026) kein neuer Eintrag.	sent	2026-04-02 05:00:02.834112
 39	5	17	3	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-04-02 05:00:03.030741
+40	2	16	1	telegram	Seit 1 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-03 05:00:01.000797
+41	2	16	2	telegram	Seit 30 Tagen (4.3.2026) kein neuer Eintrag.	sent	2026-04-03 05:00:01.387697
+42	2	16	3	telegram	Seit 1 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-03 05:00:01.5814
+43	3	16	1	telegram	Seit 1 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-03 05:00:01.830907
+44	3	16	2	telegram	Seit 14 Tagen (20.3.2026) kein neuer Eintrag.	sent	2026-04-03 05:00:02.02507
+45	4	16	1	telegram	Seit 1 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-03 05:00:02.216217
+46	4	17	1	telegram	Seit 1 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-03 05:00:02.420696
+47	5	17	2	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-04-03 05:00:02.617042
+48	5	17	1	telegram	Seit 3 Tagen (31.3.2026) kein neuer Eintrag.	sent	2026-04-03 05:00:02.80567
+49	5	17	3	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-04-03 05:00:02.996915
 \.
 
 
@@ -4750,6 +5067,42 @@ COPY public.produktfehlermeldung (id, tenant_id, markt, ansprechpartner, email, 
 
 
 --
+-- Data for Name: project_log_entries; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.project_log_entries (id, project_id, entry_type, content, beteiligte_partei, created_by_name, created_at) FROM stdin;
+1	2	meeting	Auftaktsitzung Umbau: Bauplanung wird durch Edeka Bau koordiniert. Starttermin voraussichtlich Anfang Q3.	Edeka Bau	Admin	2026-03-24 19:36:56.959771+00
+2	2	phone	Telefonat mit Schreiner Müller: Angebot für Ladeneinrichtung liegt vor (€ 48.000). Lieferzeit 8 Wochen nach Auftragserteilung.	Schreiner Müller GmbH	Admin	2026-03-29 19:36:56.959771+00
+3	2	email	E-Mail von Edeka Bau: Genehmigungsunterlagen für Bauamt eingereicht. Wartezeit ca. 3 Wochen.	Edeka Bau	Admin	2026-04-01 19:36:56.959771+00
+\.
+
+
+--
+-- Data for Name: project_tasks; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.project_tasks (id, project_id, title, description, status, depends_on_task_id, order_index, requires_approval, approval_note, assigned_to, completed_at, completed_by_name) FROM stdin;
+1	1	Preise ermittelt (Metzger)	Aktuelle Einkaufspreise und gewünschte Verkaufspreise durch Metzger zusammenstellen.	active	\N	1	f	\N	Metzger	\N	\N
+2	1	Preise gemeldet (Bereichsleitung)	Bereichsleitung prüft und bestätigt die neuen Preise.	pending	1	2	f	\N	Bereichsleitung	\N	\N
+3	1	Chef-Freigabe	Endgültige Freigabe der Preisanpassung durch Geschäftsführung.	pending	2	3	t	Bitte Freigabe für neue Dry-Age-Preise erteilen.	Chef	\N	\N
+4	1	Preisänderung im System & Grafikauftrag	Sekretariat pflegt neue Preise ein und beauftragt Grafikfirma für neue Preisschilder.	pending	3	4	f	\N	Sekretariat/Grafik	\N	\N
+5	2	Bauantrag eingereicht	Alle Genehmigungsunterlagen beim Bauamt einreichen.	done	\N	1	f	\N	Edeka Bau	\N	\N
+6	2	Angebote einholen	Angebote von Schreiner, Elektriker und Maler einholen und vergleichen.	active	\N	2	f	\N	Bereichsleitung	\N	\N
+7	2	Auftragserteilung Schreiner	Nach Freigabe Auftrag an Schreiner erteilen.	pending	\N	3	t	\N	Geschäftsführung	\N	\N
+\.
+
+
+--
+-- Data for Name: projects; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.projects (id, tenant_id, market_id, name, description, status, color, created_by_name, created_at, updated_at) FROM stdin;
+1	1	\N	Preisanpassung Dry Age	Koordination der Preisanpassung für das Dry-Age-Sortiment inklusive Freigabe durch Bereichsleitung und Umsetzung durch Sekretariat/Grafik.	in_arbeit	blue	Admin	2026-04-03 19:36:56.942731+00	2026-04-03 19:36:56.942731+00
+2	1	\N	Umbau Marktoberdorf	Dokumentation und Koordination des Umbaus des Marktes in Marktoberdorf. Alle Absprachen mit externen Partnern (Schreiner, Elektriker, Edeka Bau) werden hier geloggt.	geplant	orange	Admin	2026-04-03 19:36:56.955022+00	2026-04-03 19:36:56.955022+00
+\.
+
+
+--
 -- Data for Name: registered_devices; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -4767,6 +5120,7 @@ COPY public.registered_devices (id, tenant_id, name, token, is_active, created_a
 11	1	Test-Geraet-2	439257dd79a655f2d478fea61c0e649853b5392c8e7ca3c079b2d8c560b72476	t	2026-04-01 11:24:38.655535	\N
 12	1	Proxy-Test-Geraet	aeccfe9a054d0766c297b8a43cb06db6e1372e2398e4b632066d82bb048245ea	t	2026-04-01 11:24:47.628154	\N
 13	1	Live-Test	233d6994ce4d562f0607adde41df777dd96bb7c97e053d4cb44af7beeec32363	t	2026-04-01 11:40:53.991839	\N
+14	1	Ipad Michi	3c1cb3a3bb6edabda6bdd5f3368f1892da33b26871e7083343943b3a22b1250f	t	2026-04-03 19:27:11.205273	\N
 \.
 
 
@@ -5045,6 +5399,14 @@ COPY public.rezepturen (id, tenant_id, kategorie_id, name, plu, naehrwerte, zuta
 
 
 --
+-- Data for Name: rindfleisch_etiketten; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.rindfleisch_etiketten (id, market_id, datum, kategorie, foto1, foto2, foto3, foto4, name_unterschrift, kuerzel, user_id, created_at) FROM stdin;
+\.
+
+
+--
 -- Data for Name: role_permission_defaults; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -5120,6 +5482,61 @@ COPY public.schulungsnachweise (id, tenant_id, kategorie, mitarbeiter_name, beze
 
 
 --
+-- Data for Name: section_visibility; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.section_visibility (id, section_id, enabled, updated_at, market_id) FROM stdin;
+1	55	f	2026-04-04 07:42:01.88618+00	\N
+2	52	f	2026-04-04 07:42:17.900898+00	\N
+3	51	f	2026-04-04 07:42:18.106593+00	\N
+4	50	f	2026-04-04 07:42:18.760825+00	\N
+5	49	f	2026-04-04 07:42:19.654293+00	\N
+6	48	f	2026-04-04 07:42:20.359954+00	\N
+7	47	f	2026-04-04 07:42:21.475728+00	\N
+8	46	f	2026-04-04 07:42:24.987632+00	\N
+9	45	f	2026-04-04 07:42:25.74616+00	\N
+10	44	f	2026-04-04 07:42:27.865455+00	\N
+11	43	f	2026-04-04 07:42:30.829869+00	\N
+12	42	f	2026-04-04 07:42:34.192547+00	\N
+13	6	f	2026-04-04 07:44:10.782411+00	\N
+15	52	f	2026-04-04 07:50:37.49411+00	1
+16	51	f	2026-04-04 07:50:37.727731+00	1
+17	50	f	2026-04-04 07:50:37.956384+00	1
+18	49	f	2026-04-04 07:50:38.583629+00	1
+19	48	f	2026-04-04 07:50:39.497361+00	1
+20	47	f	2026-04-04 07:50:40.542574+00	1
+21	46	f	2026-04-04 07:50:41.600369+00	1
+22	45	f	2026-04-04 07:50:43.18561+00	1
+23	44	f	2026-04-04 07:50:43.406887+00	1
+24	43	f	2026-04-04 07:50:44.417891+00	1
+25	42	f	2026-04-04 07:50:49.006142+00	1
+26	44	f	2026-04-04 07:51:02.285812+00	2
+27	45	f	2026-04-04 07:51:02.503554+00	2
+28	46	f	2026-04-04 07:51:03.170648+00	2
+29	47	f	2026-04-04 07:51:04.094938+00	2
+30	48	f	2026-04-04 07:51:04.864667+00	2
+31	49	f	2026-04-04 07:51:05.568626+00	2
+32	50	f	2026-04-04 07:51:06.833569+00	2
+33	51	f	2026-04-04 07:51:08.202026+00	2
+34	52	f	2026-04-04 07:51:08.503895+00	2
+35	43	f	2026-04-04 07:51:10.326868+00	2
+36	42	f	2026-04-04 07:51:11.418439+00	2
+37	42	f	2026-04-04 07:51:26.598007+00	3
+38	43	f	2026-04-04 07:51:28.0243+00	3
+39	44	f	2026-04-04 07:51:28.226511+00	3
+40	45	f	2026-04-04 07:51:28.940545+00	3
+41	46	f	2026-04-04 07:51:29.604897+00	3
+42	47	f	2026-04-04 07:51:31.127552+00	3
+43	48	f	2026-04-04 07:51:31.775545+00	3
+44	49	f	2026-04-04 07:51:33.020651+00	3
+45	50	f	2026-04-04 07:51:33.339452+00	3
+46	51	f	2026-04-04 07:51:34.746688+00	3
+47	52	f	2026-04-04 07:51:35.499017+00	3
+48	55	f	2026-04-04 07:51:39.826034+00	3
+\.
+
+
+--
 -- Data for Name: sections; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -5175,6 +5592,7 @@ COPY public.sections (id, category_id, number, title, description, sort_order, c
 19	2	2.2	Warenzustand Obst & Gemüse	\N	2	2026-03-17 12:22:22.132287
 20	2	2.3	Reinigungsdokumentation täglich	\N	3	2026-03-17 12:22:22.132287
 21	2	2.4	Zugangsdaten Carrier-Portal	\N	4	2026-03-17 12:22:22.132287
+55	1	1.13	Temperatur-Lagerkontrolle	\N	13	2026-04-04 07:31:15.13947
 \.
 
 
@@ -5388,6 +5806,17 @@ COPY public.system_reset_logs (id, admin_pin, admin_name, market_id, market_name
 3	9	admin@haccp.de	3	MOD	2026-04-01	{hygiene,mhd,todo,kassen}	{"mhd": 1, "todo": 0, "kassen": 0, "hygiene": 1}	2026-04-02 09:08:51.41167
 4	9	admin@haccp.de	3	MOD	2026-04-02	{hygiene,mhd,todo,kassen}	{"mhd": 0, "todo": 0, "kassen": 0, "hygiene": 0}	2026-04-02 09:11:57.96353
 6	9	admin@haccp.de	3	MOD	2026-04-02	{hygiene,mhd,todo,kassen}	{"mhd": 3, "todo": 0, "kassen": 0, "hygiene": 12}	2026-04-02 09:58:46.332789
+\.
+
+
+--
+-- Data for Name: temp_lager_kontrolle; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.temp_lager_kontrolle (id, market_id, year, month, day, temp_ok, referenz_temp, kuerzel, user_id, created_at, updated_at, referenz_ok) FROM stdin;
+2	1	2026	4	3	t	\N	\N	9	2026-04-04 08:09:53.43585+00	2026-04-04 08:09:53.43585+00	\N
+3	1	2026	4	0	\N	2,5	\N	9	2026-04-04 08:14:35.888532+00	2026-04-04 08:14:35.888532+00	\N
+1	1	2026	4	4	t	\N	KM	8	2026-04-04 08:09:46.45538+00	2026-04-04 08:35:50.142985+00	t
 \.
 
 
@@ -6149,6 +6578,8 @@ COPY public.wareneingang_entries (id, tenant_id, market_id, type_id, year, month
 30	1	1	9	2026	3	30	{"_ausgefallen": "ja"}	HSC	13		2026-03-30 08:09:08.577351
 31	1	1	10	2026	3	30	{"mhd": "io", "hygiene": "io", "bio_kennz": "io", "qualitaet": "io", "bio_geliefert": "io", "etikettierung": "io", "bio_zertifikat": "io", "bio_vermischung": "io", "bio_kennz_stimmt": "io", "bio_warenbegleit": "io", "temp_kuehl_molkerei": "5"}	KM	8		2026-03-30 12:21:28.343474
 33	1	1	9	2026	4	2	{"mhd": "io", "qs_by": "io", "qs_qs": "io", "hygiene": "io", "qualitaet": "io", "qs_biosiegel": "io", "etikettierung": "io", "kistenetikett": "io", "temp_kuehl_og": "3.5"}	KM	8		2026-04-02 12:20:51.734625
+34	1	2	17	2026	4	3	{"mhd": "io", "qs_by": "io", "qs_qs": "io", "hygiene": "io", "qualitaet": "io", "qs_biosiegel": "io", "etikettierung": "io", "kistenetikett": "io", "temp_kuehl_og": "6"}	DM	17		2026-04-03 14:33:30.234679
+35	1	2	17	2026	4	1	{"mhd": "io", "qs_by": "io", "qs_qs": "io", "hygiene": "io", "qualitaet": "io", "qs_biosiegel": "io", "etikettierung": "io", "kistenetikett": "io", "temp_kuehl_og": "6"}	DM	17		2026-04-03 14:33:48.34975
 \.
 
 
@@ -6329,7 +6760,7 @@ SELECT pg_catalog.setval('public.email_settings_id_seq', 1, true);
 -- Name: feedback_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.feedback_id_seq', 3, true);
+SELECT pg_catalog.setval('public.feedback_id_seq', 18, true);
 
 
 --
@@ -6448,7 +6879,7 @@ SELECT pg_catalog.setval('public.mhd_kontrolle_id_seq', 1, false);
 -- Name: module_visibility_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.module_visibility_id_seq', 4, true);
+SELECT pg_catalog.setval('public.module_visibility_id_seq', 6, true);
 
 
 --
@@ -6469,7 +6900,7 @@ SELECT pg_catalog.setval('public.notification_channels_id_seq', 4, true);
 -- Name: notification_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.notification_log_id_seq', 39, true);
+SELECT pg_catalog.setval('public.notification_log_id_seq', 49, true);
 
 
 --
@@ -6508,10 +6939,31 @@ SELECT pg_catalog.setval('public.produktfehlermeldung_id_seq', 4, true);
 
 
 --
+-- Name: project_log_entries_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.project_log_entries_id_seq', 3, true);
+
+
+--
+-- Name: project_tasks_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.project_tasks_id_seq', 7, true);
+
+
+--
+-- Name: projects_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.projects_id_seq', 2, true);
+
+
+--
 -- Name: registered_devices_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.registered_devices_id_seq', 13, true);
+SELECT pg_catalog.setval('public.registered_devices_id_seq', 14, true);
 
 
 --
@@ -6540,6 +6992,13 @@ SELECT pg_catalog.setval('public.rezeptur_kategorien_id_seq', 2, true);
 --
 
 SELECT pg_catalog.setval('public.rezepturen_id_seq', 62, true);
+
+
+--
+-- Name: rindfleisch_etiketten_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.rindfleisch_etiketten_id_seq', 1, false);
 
 
 --
@@ -6578,10 +7037,17 @@ SELECT pg_catalog.setval('public.schulungsnachweise_id_seq', 1, false);
 
 
 --
+-- Name: section_visibility_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.section_visibility_id_seq', 48, true);
+
+
+--
 -- Name: sections_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.sections_id_seq', 54, true);
+SELECT pg_catalog.setval('public.sections_id_seq', 55, true);
 
 
 --
@@ -6617,6 +7083,13 @@ SELECT pg_catalog.setval('public.strecken_lieferanten_id_seq', 43, true);
 --
 
 SELECT pg_catalog.setval('public.system_reset_logs_id_seq', 6, true);
+
+
+--
+-- Name: temp_lager_kontrolle_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.temp_lager_kontrolle_id_seq', 5, true);
 
 
 --
@@ -6756,7 +7229,7 @@ SELECT pg_catalog.setval('public.warencheck_og_id_seq', 79, true);
 -- Name: wareneingang_entries_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.wareneingang_entries_id_seq', 33, true);
+SELECT pg_catalog.setval('public.wareneingang_entries_id_seq', 35, true);
 
 
 --
@@ -7157,6 +7630,30 @@ ALTER TABLE ONLY public.produktfehlermeldung
 
 
 --
+-- Name: project_log_entries project_log_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_log_entries
+    ADD CONSTRAINT project_log_entries_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: project_tasks project_tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_tasks
+    ADD CONSTRAINT project_tasks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: projects projects_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: registered_devices registered_devices_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -7202,6 +7699,14 @@ ALTER TABLE ONLY public.rezeptur_kategorien
 
 ALTER TABLE ONLY public.rezepturen
     ADD CONSTRAINT rezepturen_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: rindfleisch_etiketten rindfleisch_etiketten_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.rindfleisch_etiketten
+    ADD CONSTRAINT rindfleisch_etiketten_pkey PRIMARY KEY (id);
 
 
 --
@@ -7269,6 +7774,22 @@ ALTER TABLE ONLY public.schulungsnachweise
 
 
 --
+-- Name: section_visibility section_visibility_market_id_section_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.section_visibility
+    ADD CONSTRAINT section_visibility_market_id_section_id_key UNIQUE (market_id, section_id);
+
+
+--
+-- Name: section_visibility section_visibility_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.section_visibility
+    ADD CONSTRAINT section_visibility_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: sections sections_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -7322,6 +7843,22 @@ ALTER TABLE ONLY public.strecken_lieferanten
 
 ALTER TABLE ONLY public.system_reset_logs
     ADD CONSTRAINT system_reset_logs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: temp_lager_kontrolle temp_lager_kontrolle_market_id_year_month_day_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.temp_lager_kontrolle
+    ADD CONSTRAINT temp_lager_kontrolle_market_id_year_month_day_key UNIQUE (market_id, year, month, day);
+
+
+--
+-- Name: temp_lager_kontrolle temp_lager_kontrolle_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.temp_lager_kontrolle
+    ADD CONSTRAINT temp_lager_kontrolle_pkey PRIMARY KEY (id);
 
 
 --
@@ -7673,6 +8210,38 @@ ALTER TABLE ONLY public.password_tokens
 
 
 --
+-- Name: project_log_entries project_log_entries_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_log_entries
+    ADD CONSTRAINT project_log_entries_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- Name: project_tasks project_tasks_depends_on_task_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_tasks
+    ADD CONSTRAINT project_tasks_depends_on_task_id_fkey FOREIGN KEY (depends_on_task_id) REFERENCES public.project_tasks(id) ON DELETE SET NULL;
+
+
+--
+-- Name: project_tasks project_tasks_project_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.project_tasks
+    ADD CONSTRAINT project_tasks_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id) ON DELETE CASCADE;
+
+
+--
+-- Name: projects projects_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.projects
+    ADD CONSTRAINT projects_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE SET NULL;
+
+
+--
 -- Name: registered_devices registered_devices_tenant_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -7694,6 +8263,14 @@ ALTER TABLE ONLY public.responsibilities
 
 ALTER TABLE ONLY public.rezepturen
     ADD CONSTRAINT rezepturen_kategorie_id_fkey FOREIGN KEY (kategorie_id) REFERENCES public.rezeptur_kategorien(id);
+
+
+--
+-- Name: rindfleisch_etiketten rindfleisch_etiketten_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.rindfleisch_etiketten
+    ADD CONSTRAINT rindfleisch_etiketten_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE CASCADE;
 
 
 --
@@ -7737,6 +8314,22 @@ ALTER TABLE ONLY public.schulungs_pflichten
 
 
 --
+-- Name: section_visibility section_visibility_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.section_visibility
+    ADD CONSTRAINT section_visibility_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE CASCADE;
+
+
+--
+-- Name: section_visibility section_visibility_section_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.section_visibility
+    ADD CONSTRAINT section_visibility_section_id_fkey FOREIGN KEY (section_id) REFERENCES public.sections(id) ON DELETE CASCADE;
+
+
+--
 -- Name: sections sections_category_id_categories_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -7750,6 +8343,14 @@ ALTER TABLE ONLY public.sections
 
 ALTER TABLE ONLY public.strecken_bestellungen
     ADD CONSTRAINT strecken_bestellungen_lieferant_id_fkey FOREIGN KEY (lieferant_id) REFERENCES public.strecken_lieferanten(id) ON DELETE CASCADE;
+
+
+--
+-- Name: temp_lager_kontrolle temp_lager_kontrolle_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.temp_lager_kontrolle
+    ADD CONSTRAINT temp_lager_kontrolle_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE CASCADE;
 
 
 --
@@ -7876,5 +8477,5 @@ ALTER TABLE ONLY public.wareneingang_entries
 -- PostgreSQL database dump complete
 --
 
-\unrestrict araDlZhUM4qPcgUtWXqaBUStGJGvRaxd0RoGhZg2OLjgw7qdxlOebLOKQ6hg81b
+\unrestrict E38GI9OWIFsO6rhpxOUqnBg9bbcOshTRC1INyLndS3TqRYOoS2DMXVwjdxTGsCB
 
