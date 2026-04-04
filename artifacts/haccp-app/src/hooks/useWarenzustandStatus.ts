@@ -881,23 +881,28 @@ export function useTempLagerStatus(): TrafficLight {
     const month = now.getMonth() + 1;
     const days = new Date(year, month, 0).getDate();
 
+    const hols = getBavarianHolidays(year);
+    const ds = (d: number) => `${year}-${String(month).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const isClosed = (d: number) => new Date(year, month - 1, d).getDay() === 0 || hols.has(ds(d));
+
     fetch(`${BASE}/temp-lager-kontrolle?marketId=${selectedMarketId}&year=${year}&month=${month}`)
       .then(r => r.json())
-      .then((data: { day: number; temp_ok: boolean | null; referenz_temp?: string | null }[]) => {
+      .then((data: { day: number; temp_ok: boolean | null; referenz_ok?: boolean | null }[]) => {
         if (cancelled) return;
         const entryMap: Record<number, { tempOk: boolean | null }> = {};
         let refDone = false;
         for (const e of data) {
-          if (e.day === 0) { refDone = !!e.referenz_temp; }
-          else { entryMap[e.day] = { tempOk: e.temp_ok }; }
+          if (e.day > 0) {
+            entryMap[e.day] = { tempOk: e.temp_ok };
+            if (e.referenz_ok === true) refDone = true;
+          }
         }
         let total = 0, filled = 0, bad = 0;
         for (let d = 1; d <= days; d++) {
-          const wd = new Date(year, month - 1, d).getDay();
           const dt = new Date(year, month - 1, d);
           dt.setHours(0,0,0,0);
           const today = new Date(); today.setHours(0,0,0,0);
-          if (wd === 0 || dt > today) continue;
+          if (isClosed(d) || dt > today) continue;
           total++;
           const e = entryMap[d];
           if (e?.tempOk === false) bad++;

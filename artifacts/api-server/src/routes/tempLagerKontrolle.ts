@@ -17,14 +17,16 @@ router.get("/temp-lager-kontrolle", async (req, res) => {
 
 router.post("/temp-lager-kontrolle", async (req, res) => {
   try {
-    const { marketId, year, month, day, tempOk, referenzTemp, kuerzel, userId } = req.body;
+    const { marketId, year, month, day, tempOk, referenzOk, kuerzel, userId } = req.body;
     const r = await pool.query(
-      `INSERT INTO temp_lager_kontrolle (market_id, year, month, day, temp_ok, referenz_temp, kuerzel, user_id, updated_at)
+      `INSERT INTO temp_lager_kontrolle (market_id, year, month, day, temp_ok, referenz_ok, kuerzel, user_id, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())
        ON CONFLICT (market_id, year, month, day)
-       DO UPDATE SET temp_ok=$5, referenz_temp=$6, kuerzel=$7, user_id=$8, updated_at=NOW()
+       DO UPDATE SET temp_ok=COALESCE($5, temp_lager_kontrolle.temp_ok),
+                     referenz_ok=COALESCE($6, temp_lager_kontrolle.referenz_ok),
+                     kuerzel=$7, user_id=$8, updated_at=NOW()
        RETURNING *`,
-      [marketId, year, month, day, tempOk ?? null, referenzTemp || null, kuerzel || null, userId || null]
+      [marketId, year, month, day, tempOk ?? null, referenzOk ?? null, kuerzel || null, userId || null]
     );
     res.json(r.rows[0]);
   } catch (e) { res.status(500).json({ error: String(e) }); }

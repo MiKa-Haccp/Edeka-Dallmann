@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
+import { getBavarianHolidays } from "@/utils/holidays";
 import {
   Thermometer, ChevronLeft, ChevronRight, Loader2, Check,
   X, Printer, Lock, Plus, Trash2, Wind, Flame, Snowflake,
@@ -54,16 +55,18 @@ function todayBerlin() {
 // ─── Ampellogik ──────────────────────────────────────────────────────────────
 function isSundayDate(year: number, month: number, day: number) { return new Date(year, month-1, day).getDay() === 0; }
 
-function getTabStatus(entries: KontrolleEntry[], art: KontrolleArt, year: number, month: number): TrafficLight {
+function getTabStatus(entries: KontrolleEntry[], art: KontrolleArt, year: number, month: number, holidays: Set<string>): TrafficLight {
   const { y, m, d } = todayBerlin();
   if (year !== y || month !== m) return "none";
   const tabEntries = entries.filter(e => e.kontrolle_art === art);
   const daysWithEntries = new Set(tabEntries.map(e => e.day));
-  const todayIsSunday = isSundayDate(y, m, d);
+  const ds = (day: number) => `${y}-${String(m).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+  const isClosed = (day: number) => isSundayDate(y, m, day) || holidays.has(ds(day));
+  const todayIsClosed = isClosed(d);
   const todayHasEntry = daysWithEntries.has(d);
   let hasMissingPast = false;
   for (let i = 1; i < d; i++) {
-    if (!isSundayDate(y, m, i) && !daysWithEntries.has(i)) { hasMissingPast = true; break; }
+    if (!isClosed(i) && !daysWithEntries.has(i)) { hasMissingPast = true; break; }
   }
   // Abweichungen (warn) → immer rot, außer bei Defekt
   const hasDeviation = tabEntries.some(e => {
@@ -79,7 +82,7 @@ function getTabStatus(entries: KontrolleEntry[], art: KontrolleArt, year: number
     return false;
   });
   if (hasDeviation) return "red";
-  if (todayIsSunday) return hasMissingPast ? "red" : "green";
+  if (todayIsClosed) return hasMissingPast ? "red" : "green";
   if (todayHasEntry && !hasMissingPast) return "green";
   if (!todayHasEntry && hasMissingPast) return "red";
   if (!todayHasEntry) return "yellow";
@@ -469,6 +472,11 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
 }){
   const {d:todayD,y:ty,m:tm}=todayBerlin();
   const isCurrentMonth=year===ty&&month===tm;
+  const holidays=useMemo(()=>getBavarianHolidays(year),[year]);
+  const isClosedD=useCallback((d:number)=>{
+    const ds=`${year}-${String(month).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    return isSundayDate(year,month,d)||holidays.has(ds);
+  },[year,month,holidays]);
   const [modal,setModal]=useState<number|null>(null);
   const [editEntry,setEditEntry]=useState<KontrolleEntry|null>(null);
   const todayRowRef=useRef<HTMLTableRowElement>(null);
@@ -535,7 +543,7 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
               const future=isFuture(year,month,day);
               const today=isToday(year,month,day);
               const weekend=isWeekend(year,month,day);
-              if(wt==="So")return null;
+              if(isClosedD(day))return null;
               const tSt=tempStatus(latestEntry?.temperatur??null,art);
               const hSt=art==="reifeschrank"?humidityStatus(latestEntry?.luftfeuchtigkeit??null):"none";
               const hasWarn=(tSt==="warn"||hSt==="warn")&&!latestEntry?.defekt;
@@ -725,6 +733,11 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
 }){
   const {d:todayD,y:ty,m:tm}=todayBerlin();
   const isCurrentMonth=year===ty&&month===tm;
+  const holidays=useMemo(()=>getBavarianHolidays(year),[year]);
+  const isClosedD=useCallback((d:number)=>{
+    const ds=`${year}-${String(month).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    return isSundayDate(year,month,d)||holidays.has(ds);
+  },[year,month,holidays]);
   const [modal,setModal]=useState<number|null>(null);
   const [editEntry,setEditEntry]=useState<KontrolleEntry|null>(null);
   const todayCardRef=useRef<HTMLDivElement>(null);
@@ -776,7 +789,7 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
           const future=isFuture(year,month,day);
           const today=isToday(year,month,day);
           const weekend=isWeekend(year,month,day);
-          if(wt==="So")return null;
+          if(isClosedD(day))return null;
           return(
             <div key={day} ref={today?todayCardRef:null} className={["border rounded-xl overflow-hidden",today?"border-blue-200 shadow-sm":"",weekend&&!today?"bg-muted/10":""].filter(Boolean).join(" ")}>
               <div className={`flex items-center justify-between px-4 py-2.5 border-b ${today?"bg-blue-50":"bg-muted/30"}`}>
@@ -861,6 +874,11 @@ export default function KaesethekeKontrolle() {
   const [openTodayFor,setOpenTodayFor]=useState<Tab|null>(null);
 
   const marketId=selectedMarketId??0;
+  const holidays=useMemo(()=>getBavarianHolidays(year),[year]);
+  const isClosedDay=useCallback((d:number)=>{
+    const ds=`${year}-${String(month).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    return isSundayDate(year,month,d)||holidays.has(ds);
+  },[year,month,holidays]);
 
   const fetchEntries=useCallback(async()=>{
     if(!marketId)return;
@@ -932,7 +950,7 @@ export default function KaesethekeKontrolle() {
         {/* Tabs mit Ampel */}
         <div className="flex gap-1 bg-muted/40 rounded-xl p-1">
           {tabs.map(t=>{
-            const status=getTabStatus(entries,t.key,year,month);
+            const status=getTabStatus(entries,t.key,year,month,holidays);
             return(
               <button key={t.key} onClick={()=>handleTabClick(t.key)}
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${tab===t.key?"bg-white shadow text-primary":"text-muted-foreground hover:text-foreground"}`}>
