@@ -868,3 +868,46 @@ export function useSchulungsnachweiseStatus(): TrafficLight {
 
   return status;
 }
+
+export function useTempLagerStatus(): TrafficLight {
+  const { selectedMarketId } = useAppStore();
+  const [status, setStatus] = useState<TrafficLight>("none");
+
+  useEffect(() => {
+    if (!selectedMarketId) { setStatus("none"); return; }
+    let cancelled = false;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
+    const days = new Date(year, month, 0).getDate();
+
+    fetch(`${BASE}/temp-lager-kontrolle?marketId=${selectedMarketId}&year=${year}&month=${month}`)
+      .then(r => r.json())
+      .then((data: { day: number; temp_ok: boolean | null }[]) => {
+        if (cancelled) return;
+        const entryMap: Record<number, boolean | null> = {};
+        for (const e of data) if (e.day > 0) entryMap[e.day] = e.temp_ok;
+        let total = 0, filled = 0, bad = 0;
+        for (let d = 1; d <= days; d++) {
+          const wd = new Date(year, month - 1, d).getDay();
+          const dt = new Date(year, month - 1, d);
+          dt.setHours(0,0,0,0);
+          const today = new Date(); today.setHours(0,0,0,0);
+          if (wd === 0 || dt > today) continue;
+          total++;
+          const val = entryMap[d];
+          if (val === false) bad++;
+          if (val != null) filled++;
+        }
+        if (bad > 0) setStatus("red");
+        else if (filled === total && total > 0) setStatus("green");
+        else if (filled > 0) setStatus("yellow");
+        else setStatus("none");
+      })
+      .catch(() => { if (!cancelled) setStatus("none"); });
+
+    return () => { cancelled = true; };
+  }, [selectedMarketId]);
+
+  return status;
+}
