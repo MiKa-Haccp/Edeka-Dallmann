@@ -15,7 +15,7 @@ import { useLocation } from "wouter";
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 const HACCP_SIDEBAR_PATHS = [
-  "/responsibilities",
+  "/responsibilities", "/mitarbeiter-liste",
   "/info-documentation", "/training-records", "/annual-cleaning-plan",
   "/betriebsbegehung", "/hinweisschild-gesperrte-ware", "/produktfehlermeldung",
   "/probeentnahme", "/anti-vektor-zugang", "/bescheinigungen", "/kontrollberichte",

@@ -5,7 +5,6 @@ import { useListMarkets, useListResponsibilities, useGetMarketInfo, useUpsertRes
 import { useState, useEffect } from "react";
 import { Save, Pencil, X, Plus, Trash2, Building2, ChevronLeft, ChevronRight, Calendar, Users } from "lucide-react";
 import { Link } from "wouter";
-import { JaehrlicheErinnerung } from "@/components/JaehrlicheErinnerung";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -242,13 +241,6 @@ export default function Responsibilities() {
             </div>
           </div>
         </PageHeader>
-
-        <JaehrlicheErinnerung
-          lastUpdatedYear={reminderYear}
-          lastUpdatedDate={reminderDate}
-          sectionLabel="1.1 Verantwortlichkeiten"
-          renewalMonth={11}
-        />
 
         {/* Document Header */}
         <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">

@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ClipboardCheck, ChevronLeft, ChevronRight, Save, Plus, Trash2,
-  CheckCircle2, AlertTriangle, MinusCircle, Loader2, FileText, Check, X, KeyRound
+  CheckCircle2, AlertTriangle, MinusCircle, Loader2, FileText, X, KeyRound
 } from "lucide-react";
 import { JaehrlicheErinnerung } from "@/components/JaehrlicheErinnerung";
 
@@ -488,16 +488,16 @@ export default function Betriebsbegehung() {
 
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white rounded-xl border border-border/60 p-4 text-center">
-            <div className="text-2xl font-bold text-foreground">{doneItems}<span className="text-muted-foreground text-base font-normal">/{totalItems}</span></div>
-            <div className="text-xs text-muted-foreground mt-1">Geprüfte Punkte</div>
+            <div className="text-2xl font-bold text-foreground">{totalItems - mangelItems - countByStatus("na")}<span className="text-muted-foreground text-base font-normal">/{totalItems}</span></div>
+            <div className="text-xs text-muted-foreground mt-1">In Ordnung</div>
           </div>
           <div className={`bg-white rounded-xl border p-4 text-center ${mangelItems > 0 ? "border-red-200" : "border-border/60"}`}>
             <div className={`text-2xl font-bold ${mangelItems > 0 ? "text-red-600" : "text-foreground"}`}>{mangelItems}</div>
             <div className="text-xs text-muted-foreground mt-1">Mängel</div>
           </div>
           <div className="bg-white rounded-xl border border-border/60 p-4 text-center">
-            <div className="text-2xl font-bold text-foreground">{countByStatus("ok")}</div>
-            <div className="text-xs text-muted-foreground mt-1">In Ordnung</div>
+            <div className="text-2xl font-bold text-foreground">{countByStatus("na")}</div>
+            <div className="text-xs text-muted-foreground mt-1">Nicht anwendbar</div>
           </div>
         </div>
 
@@ -593,14 +593,6 @@ export default function Betriebsbegehung() {
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <StatusButton
-                          value="ok"
-                          current={entry.status}
-                          onChange={(v) => handleStatusChange(item.nr, v)}
-                          label="In Ordnung"
-                          icon={<Check className="w-4 h-4" />}
-                          color="bg-green-500 text-white"
-                        />
-                        <StatusButton
                           value="mangel"
                           current={entry.status}
                           onChange={(v) => handleStatusChange(item.nr, v)}
@@ -652,7 +644,7 @@ export default function Betriebsbegehung() {
                 <CheckCircle2 className="w-4 h-4" /> Bericht erfolgreich gespeichert
               </span>
             ) : (
-              <span>Q{quartal} · {year} · {doneItems} von {totalItems} Punkten geprüft</span>
+              <span>Q{quartal} · {year} · {totalItems - mangelItems - countByStatus("na")} von {totalItems} Punkten in Ordnung</span>
             )}
           </div>
           <div className="flex items-center gap-3">
