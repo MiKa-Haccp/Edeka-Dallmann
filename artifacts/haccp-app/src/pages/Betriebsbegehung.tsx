@@ -7,7 +7,6 @@ import {
   ClipboardCheck, ChevronLeft, ChevronRight, Save, Plus, Trash2,
   CheckCircle2, AlertTriangle, MinusCircle, Loader2, FileText, X, KeyRound
 } from "lucide-react";
-import { JaehrlicheErinnerung } from "@/components/JaehrlicheErinnerung";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 const CURRENT_YEAR = new Date().getFullYear();
@@ -404,21 +403,11 @@ export default function Betriebsbegehung() {
   const doneItems = countByStatus("ok") + countByStatus("mangel") + countByStatus("na");
   const mangelItems = countByStatus("mangel");
 
-  const completedQuartals = reports
-    .filter((r) => r.year === CURRENT_YEAR)
-    .map((r) => r.quartal);
-
   const isFuture = isFutureQuartal(year, quartal);
 
   return (
     <AppLayout>
       <div className="max-w-full space-y-4 pb-8">
-        <JaehrlicheErinnerung
-          turnus="vierteljährlich"
-          sectionLabel="1.6 Betriebsbegehung"
-          completedQuartals={completedQuartals}
-        />
-
         <PageHeader>
           <div className="flex items-center gap-3 mb-3">
             <Link href="/category/1" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
