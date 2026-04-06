@@ -3,10 +3,20 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets, useListResponsibilities, useGetMarketInfo, useUpsertResponsibilities, useUpsertMarketInfo } from "@workspace/api-client-react";
 import { useState, useEffect } from "react";
-import { Save, Pencil, X, Plus, Trash2, Building2, ChevronLeft, ChevronRight, Calendar, Users } from "lucide-react";
+import { Save, Pencil, X, Plus, Trash2, Building2, ChevronLeft, ChevronRight, Calendar, Users, ChevronDown } from "lucide-react";
+
 import { Link } from "wouter";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
+
+interface EmployeeOption {
+  id: number;
+  name: string;
+  phone: string | null;
+  status: string;
+}
 
 function cn(...inputs: (string | boolean | undefined | null)[]) {
   return twMerge(clsx(inputs));
@@ -84,6 +94,7 @@ export default function Responsibilities() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [rows, setRows] = useState<ResponsibilityRow[]>([]);
+  const [employees, setEmployees] = useState<EmployeeOption[]>([]);
   const [marketNumber, setMarketNumber] = useState("");
   const [street, setStreet] = useState("");
   const [plzOrt, setPlzOrt] = useState("");
@@ -144,6 +155,15 @@ export default function Responsibilities() {
       setPlzOrt("");
     }
   }, [marketInfo, prevYearMarketInfo]);
+
+  useEffect(() => {
+    if (isEditing && employees.length === 0) {
+      fetch(`${API_BASE}/users?tenantId=1`)
+        .then((r) => r.json())
+        .then((data: EmployeeOption[]) => setEmployees(data))
+        .catch(() => {});
+    }
+  }, [isEditing]);
 
   const handleSave = async () => {
     if (!selectedMarketId) return;
@@ -410,6 +430,7 @@ export default function Responsibilities() {
                     isEditing={isEditing}
                     updateRow={updateRow}
                     removeRow={removeRow}
+                    employees={employees}
                   />
                 ))}
               </tbody>
@@ -439,18 +460,112 @@ export default function Responsibilities() {
   );
 }
 
+function EmployeeNameCell({
+  name,
+  phone,
+  employees,
+  onChangeName,
+  onChangePhone,
+}: {
+  name: string;
+  phone: string;
+  employees: EmployeeOption[];
+  onChangeName: (v: string) => void;
+  onChangePhone: (v: string) => void;
+}) {
+  const [mode, setMode] = useState<"select" | "manual">(() => {
+    if (!name) return "select";
+    const found = employees.find((e) => e.name === name);
+    return found ? "select" : "manual";
+  });
+
+  const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === "__manual__") {
+      setMode("manual");
+      return;
+    }
+    if (val === "") {
+      onChangeName("");
+      onChangePhone("");
+      return;
+    }
+    const emp = employees.find((x) => String(x.id) === val);
+    if (emp) {
+      onChangeName(emp.name);
+      onChangePhone(emp.phone || "");
+    }
+  };
+
+  const selectedEmpId = employees.find((e) => e.name === name)?.id;
+
+  const aktive = employees.filter((e) => e.status === "aktiv" || e.status === "onboarding");
+  const inaktive = employees.filter((e) => e.status === "inaktiv");
+
+  if (mode === "select") {
+    return (
+      <div className="flex flex-col gap-1">
+        <div className="relative">
+          <select
+            value={selectedEmpId !== undefined ? String(selectedEmpId) : ""}
+            onChange={handleSelect}
+            className="w-full appearance-none border border-border rounded-lg px-2 py-1 pr-7 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
+          >
+            <option value="">— Person auswählen —</option>
+            {aktive.map((e) => (
+              <option key={e.id} value={String(e.id)}>{e.name}</option>
+            ))}
+            {inaktive.length > 0 && (
+              <optgroup label="Inaktiv">
+                {inaktive.map((e) => (
+                  <option key={e.id} value={String(e.id)}>{e.name} (inaktiv)</option>
+                ))}
+              </optgroup>
+            )}
+            <option value="__manual__">✏ Manuell eingeben...</option>
+          </select>
+          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+        </div>
+        {name && !selectedEmpId && (
+          <p className="text-xs text-amber-600 italic">Gespeichert: {name}</p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      <input
+        value={name}
+        onChange={(e) => onChangeName(e.target.value)}
+        className="w-full border border-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+        placeholder="Name eingeben..."
+      />
+      <button
+        type="button"
+        onClick={() => setMode("select")}
+        className="text-xs text-[#1a3a6b] hover:underline text-left"
+      >
+        ← Aus Liste auswählen
+      </button>
+    </div>
+  );
+}
+
 function RowGroup({
   row,
   index,
   isEditing,
   updateRow,
   removeRow,
+  employees,
 }: {
   row: ResponsibilityRow;
   index: number;
   isEditing: boolean;
   updateRow: (index: number, field: keyof ResponsibilityRow, value: string) => void;
   removeRow: (index: number) => void;
+  employees: EmployeeOption[];
 }) {
   const isEven = index % 2 === 0;
   const bgClass = isEven ? "bg-blue-50/40" : "bg-white";
@@ -473,11 +588,12 @@ function RowGroup({
         <td className="px-2 py-2 text-center text-xs font-bold text-muted-foreground border-r border-border/40">(V)</td>
         <td className="px-4 py-2 border-r border-border/40">
           {isEditing ? (
-            <input
-              value={row.responsibleName}
-              onChange={(e) => updateRow(index, "responsibleName", e.target.value)}
-              className="w-full border border-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              placeholder="Name eingeben..."
+            <EmployeeNameCell
+              name={row.responsibleName}
+              phone={row.responsiblePhone}
+              employees={employees}
+              onChangeName={(v) => updateRow(index, "responsibleName", v)}
+              onChangePhone={(v) => updateRow(index, "responsiblePhone", v)}
             />
           ) : (
             <span className="text-sm">{row.responsibleName || "—"}</span>
@@ -489,7 +605,7 @@ function RowGroup({
               value={row.responsiblePhone}
               onChange={(e) => updateRow(index, "responsiblePhone", e.target.value)}
               className="w-full border border-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              placeholder="Telefon eingeben..."
+              placeholder="Telefon / Handy..."
             />
           ) : (
             <span className="text-sm">{row.responsiblePhone || "—"}</span>
@@ -511,11 +627,12 @@ function RowGroup({
         <td className="px-2 py-2 text-center text-xs font-bold text-muted-foreground border-r border-border/40">(S)</td>
         <td className="px-4 py-2 border-r border-border/40">
           {isEditing ? (
-            <input
-              value={row.deputyName}
-              onChange={(e) => updateRow(index, "deputyName", e.target.value)}
-              className="w-full border border-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              placeholder="Name eingeben..."
+            <EmployeeNameCell
+              name={row.deputyName}
+              phone={row.deputyPhone}
+              employees={employees}
+              onChangeName={(v) => updateRow(index, "deputyName", v)}
+              onChangePhone={(v) => updateRow(index, "deputyPhone", v)}
             />
           ) : (
             <span className="text-sm">{row.deputyName || "—"}</span>
@@ -527,7 +644,7 @@ function RowGroup({
               value={row.deputyPhone}
               onChange={(e) => updateRow(index, "deputyPhone", e.target.value)}
               className="w-full border border-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-              placeholder="Telefon eingeben..."
+              placeholder="Telefon / Handy..."
             />
           ) : (
             <span className="text-sm">{row.deputyPhone || "—"}</span>

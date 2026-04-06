@@ -23,6 +23,8 @@ import {
   Loader2,
   KeyRound,
   UserCog,
+  Search,
+  ArrowUpDown,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -124,12 +126,46 @@ export default function AdminUserManagement() {
   );
 }
 
+const ROLES_ALL = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER", "USER"] as const;
+const SORT_OPTIONS = [
+  { value: "name_asc", label: "Name A–Z" },
+  { value: "name_desc", label: "Name Z–A" },
+  { value: "role_asc", label: "Rolle (aufst.)" },
+  { value: "status_asc", label: "Status" },
+] as const;
+
 function UserRoleList() {
   const { data: users, refetch } = useListUsers({ tenantId: 1 });
   const { data: markets } = useListMarkets();
   const [expandedUser, setExpandedUser] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("alle");
+  const [statusFilter, setStatusFilter] = useState<string>("alle");
+  const [sortBy, setSortBy] = useState<string>("name_asc");
 
   const allUsers = users || [];
+
+  const ROLE_ORDER: Record<string, number> = { SUPERADMIN: 0, ADMIN: 1, BEREICHSLEITUNG: 2, MARKTLEITER: 3, USER: 4 };
+
+  const filtered = allUsers
+    .filter((u) => {
+      if (roleFilter !== "alle" && u.role !== roleFilter) return false;
+      if (statusFilter !== "alle" && (u.status || "aktiv") !== statusFilter) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        const nameMatch = (u.name || "").toLowerCase().includes(q);
+        const emailMatch = (u.email || "").toLowerCase().includes(q);
+        if (!nameMatch && !emailMatch) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === "name_asc") return (a.name || "").localeCompare(b.name || "");
+      if (sortBy === "name_desc") return (b.name || "").localeCompare(a.name || "");
+      if (sortBy === "role_asc") return (ROLE_ORDER[a.role] ?? 9) - (ROLE_ORDER[b.role] ?? 9);
+      if (sortBy === "status_asc") return (a.status || "aktiv").localeCompare(b.status || "aktiv");
+      return 0;
+    });
 
   return (
     <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
@@ -139,8 +175,67 @@ function UserRoleList() {
           <h2 className="text-lg font-bold">Alle Benutzer</h2>
         </div>
         <span className="bg-white/20 px-3 py-1 rounded-full text-sm font-medium">
-          {allUsers.length} Benutzer
+          {filtered.length} / {allUsers.length}
         </span>
+      </div>
+
+      {/* Filter-Toolbar */}
+      <div className="px-4 py-3 border-b border-border/40 bg-gray-50 space-y-2">
+        {/* Suche */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Name oder E-Mail suchen..."
+            className="w-full pl-9 pr-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20"
+          />
+        </div>
+        {/* Rolle + Status + Sort */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex gap-1 flex-wrap">
+            {["alle", ...ROLES_ALL].map((r) => (
+              <button
+                key={r}
+                onClick={() => setRoleFilter(r)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${
+                  roleFilter === r
+                    ? "bg-[#1a3a6b] text-white border-[#1a3a6b]"
+                    : "bg-white text-muted-foreground border-border/60 hover:border-[#1a3a6b]/40"
+                }`}
+              >
+                {r === "alle" ? "Alle Rollen" : ROLE_LABELS[r] || r}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-1 flex-wrap">
+            {["alle", "aktiv", "onboarding", "inaktiv"].map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ${
+                  statusFilter === s
+                    ? "bg-[#1a3a6b] text-white border-[#1a3a6b]"
+                    : "bg-white text-muted-foreground border-border/60 hover:border-[#1a3a6b]/40"
+                }`}
+              >
+                {s === "alle" ? "Alle Status" : STATUS_LABELS[s] || s}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5 ml-auto">
+            <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="text-xs border border-border/60 rounded-lg px-2 py-1 bg-white focus:outline-none"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {allUsers.length === 0 ? (
@@ -148,9 +243,20 @@ function UserRoleList() {
           <Users className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
           <p className="text-muted-foreground text-sm">Noch keine Benutzer angelegt.</p>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="p-8 text-center">
+          <Search className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-muted-foreground text-sm">Keine Benutzer gefunden</p>
+          <button
+            onClick={() => { setSearch(""); setRoleFilter("alle"); setStatusFilter("alle"); }}
+            className="mt-2 text-xs text-[#1a3a6b] hover:underline"
+          >
+            Filter zurücksetzen
+          </button>
+        </div>
       ) : (
         <div className="divide-y divide-border/40">
-          {allUsers.map((user) => (
+          {filtered.map((user) => (
             <UserRoleRow
               key={user.id}
               user={user}

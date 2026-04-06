@@ -26,6 +26,7 @@ export const usersTable = pgTable("users", {
   gruppe: text("gruppe"),
   initials: text("initials"),
   pin: text("pin"),
+  phone: text("phone"),
   isRegistered: boolean("is_registered").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [

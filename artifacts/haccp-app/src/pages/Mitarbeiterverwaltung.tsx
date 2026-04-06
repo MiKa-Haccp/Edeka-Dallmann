@@ -31,6 +31,7 @@ interface Employee {
   initials: string | null;
   pin: string | null;
   email: string | null;
+  phone: string | null;
   status: Status;
   gruppe: Gruppe;
   role: string;
@@ -65,6 +66,13 @@ const STATUS_CONFIG: Record<Status, { label: string; icon: React.ReactNode; colo
   onboarding: { label: "Onboarding", icon: <Clock className="w-3.5 h-3.5" />, color: "text-amber-700", bg: "bg-amber-100", border: "border-amber-200" },
   inaktiv: { label: "Inaktiv", icon: <UserX className="w-3.5 h-3.5" />, color: "text-slate-500", bg: "bg-slate-100", border: "border-slate-200" },
 };
+
+const SORT_BY_OPTIONS = [
+  { value: "name_asc", label: "Name A–Z" },
+  { value: "name_desc", label: "Name Z–A" },
+  { value: "gruppe_asc", label: "Abteilung" },
+  { value: "status_asc", label: "Status" },
+] as const;
 
 function StatusBadge({ status }: { status: Status }) {
   const c = STATUS_CONFIG[status] || STATUS_CONFIG.aktiv;
@@ -105,6 +113,7 @@ function NeuerMitarbeiterForm({ onSave, onCancel, existingInitials }: {
   const [lastName, setLastName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [status, setStatus] = useState<Status>("aktiv");
   const [gruppe, setGruppe] = useState<string>("");
   const [initials, setInitials] = useState("");
@@ -137,7 +146,7 @@ function NeuerMitarbeiterForm({ onSave, onCancel, existingInitials }: {
     if (pin && !/^\d{4}$/.test(pin)) { setError("PIN muss genau 4 Ziffern enthalten."); return; }
     setSaving(true);
     setError("");
-    const res = await onSave({ firstName, lastName, birthDate, email: email || undefined, status, gruppe: gruppe || null, initials: initials || undefined, pin: pin || undefined });
+    const res = await onSave({ firstName, lastName, birthDate, email: email || undefined, phone: phone || undefined, status, gruppe: gruppe || null, initials: initials || undefined, pin: pin || undefined });
     if (res.error) setError(res.error);
     setSaving(false);
   };
@@ -167,11 +176,15 @@ function NeuerMitarbeiterForm({ onSave, onCancel, existingInitials }: {
             className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
         </div>
         <div className="flex flex-col gap-1">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Handynummer</label>
+          <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="z.B. 0151 12345678"
+            className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+        </div>
+        <div className="flex flex-col gap-1">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</label>
           <select value={status} onChange={(e) => setStatus(e.target.value as Status)}
             className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20">
             <option value="aktiv">Aktiv</option>
-            <option value="onboarding">Onboarding</option>
             <option value="inaktiv">Inaktiv</option>
           </select>
         </div>
@@ -397,6 +410,7 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
   const [lastName, setLastName] = useState(emp.lastName);
   const [birthDate, setBirthDate] = useState(emp.birthDate || "");
   const [email, setEmail] = useState(emp.email || "");
+  const [phone, setPhone] = useState(emp.phone || "");
   const [status, setStatus] = useState<Status>(emp.status);
   const [gruppe, setGruppe] = useState<string>(emp.gruppe || "");
   const [initials, setInitials] = useState(emp.initials || "");
@@ -406,7 +420,7 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
   const [error, setError] = useState("");
   const handleSaveEdit = async () => {
     setSaving(true); setError("");
-    const res = await onUpdate(emp.id, { firstName, lastName, birthDate, email: email || null, status, gruppe: gruppe || null, initials });
+    const res = await onUpdate(emp.id, { firstName, lastName, birthDate, email: email || null, phone: phone || null, status, gruppe: gruppe || null, initials });
     if (res.error) { setError(res.error); } else { setEditing(false); }
     setSaving(false);
   };
@@ -499,11 +513,15 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
                     className="px-3 py-2 rounded-lg border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
                 </div>
                 <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Handynummer</label>
+                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="z.B. 0151 12345678"
+                    className="px-3 py-2 rounded-lg border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+                </div>
+                <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</label>
                   <select value={status} onChange={(e) => setStatus(e.target.value as Status)}
                     className="px-3 py-2 rounded-lg border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20">
                     <option value="aktiv">Aktiv</option>
-                    <option value="onboarding">Onboarding</option>
                     <option value="inaktiv">Inaktiv</option>
                   </select>
                 </div>
@@ -544,7 +562,7 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
                   className="flex items-center gap-1.5 px-4 py-2 bg-[#1a3a6b] text-white rounded-lg text-xs font-bold hover:bg-[#2d5aa0] disabled:opacity-40">
                   {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Speichern
                 </button>
-                <button onClick={() => { setEditing(false); setError(""); setFirstName(emp.firstName); setLastName(emp.lastName); setBirthDate(emp.birthDate || ""); setEmail(emp.email || ""); setStatus(emp.status); setGruppe(emp.gruppe || ""); setInitials(emp.initials || ""); }}
+                <button onClick={() => { setEditing(false); setError(""); setFirstName(emp.firstName); setLastName(emp.lastName); setBirthDate(emp.birthDate || ""); setEmail(emp.email || ""); setPhone(emp.phone || ""); setStatus(emp.status); setGruppe(emp.gruppe || ""); setInitials(emp.initials || ""); }}
                   className="px-4 py-2 bg-white border border-border/60 rounded-lg text-xs font-semibold text-muted-foreground">Abbrechen</button>
               </div>
             </div>
@@ -691,6 +709,7 @@ export default function Mitarbeiterverwaltung() {
   const [tab, setTab] = useState<"mitarbeiter" | "kuerzel">("mitarbeiter");
   const [filter, setFilter] = useState<"alle" | Status>("alle");
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<string>("name_asc");
   const [showForm, setShowForm] = useState(false);
 
   const loadEmployees = useCallback(async () => {
@@ -781,11 +800,21 @@ export default function Mitarbeiterverwaltung() {
   const inaktiv = employees.filter((e) => e.status === "inaktiv").length;
   const keinPin = employees.filter((e) => e.status !== "inaktiv" && !e.hasPin).length;
 
-  const filtered = employees.filter((e) => {
-    if (filter !== "alle" && e.status !== filter) return false;
-    if (search && !e.name.toLowerCase().includes(search.toLowerCase()) && !(e.initials || "").toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  const GRUPPE_ORDER: Record<string, number> = { gesamter_markt: 0, markt: 1, metzgerei: 2 };
+
+  const filtered = employees
+    .filter((e) => {
+      if (filter !== "alle" && e.status !== filter) return false;
+      if (search && !e.name.toLowerCase().includes(search.toLowerCase()) && !(e.initials || "").toLowerCase().includes(search.toLowerCase())) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (sortBy === "name_asc") return a.name.localeCompare(b.name);
+      if (sortBy === "name_desc") return b.name.localeCompare(a.name);
+      if (sortBy === "gruppe_asc") return (GRUPPE_ORDER[a.gruppe || ""] ?? 9) - (GRUPPE_ORDER[b.gruppe || ""] ?? 9);
+      if (sortBy === "status_asc") return a.status.localeCompare(b.status);
+      return 0;
+    });
 
   const existingInitials = employees.map((e) => (e.initials || "").toUpperCase());
 
@@ -845,26 +874,41 @@ export default function Mitarbeiterverwaltung() {
         {tab === "mitarbeiter" && (
           <div className="space-y-4">
             {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name oder Kürzel suchen..."
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
-              </div>
-              <div className="flex gap-2">
-                {(["alle", "aktiv", "onboarding", "inaktiv"] as const).map((f) => (
-                  <button key={f} onClick={() => setFilter(f)}
-                    className={`px-3 py-2 rounded-xl text-xs font-bold capitalize transition-colors ${filter === f ? "bg-[#1a3a6b] text-white" : "bg-white border border-border/60 text-muted-foreground hover:text-foreground"}`}>
-                    {f === "alle" ? "Alle" : STATUS_CONFIG[f]?.label || f}
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name oder Kürzel suchen..."
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+                </div>
+                {!showForm && (
+                  <button onClick={() => setShowForm(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors shadow-sm whitespace-nowrap">
+                    <UserPlus className="w-4 h-4" /> Neu
                   </button>
-                ))}
+                )}
               </div>
-              {!showForm && (
-                <button onClick={() => setShowForm(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors shadow-sm whitespace-nowrap">
-                  <UserPlus className="w-4 h-4" /> Neu
-                </button>
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex gap-1 flex-wrap">
+                  {(["alle", "aktiv", "inaktiv"] as const).map((f) => (
+                    <button key={f} onClick={() => setFilter(f)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold capitalize transition-colors ${filter === f ? "bg-[#1a3a6b] text-white" : "bg-white border border-border/60 text-muted-foreground hover:text-foreground"}`}>
+                      {f === "alle" ? "Alle" : STATUS_CONFIG[f]?.label || f}
+                    </button>
+                  ))}
+                </div>
+                <div className="ml-auto">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="text-xs border border-border/60 rounded-xl px-3 py-1.5 bg-white focus:outline-none text-muted-foreground"
+                  >
+                    {SORT_BY_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
 
             {showForm && (
