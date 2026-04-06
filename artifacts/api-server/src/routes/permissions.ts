@@ -8,26 +8,82 @@ const router: IRouter = Router();
 const VALID_ROLES = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER", "USER"] as const;
 
 export const PERMISSION_AREAS = [
-  { key: "users.view",         label: "Mitarbeiterliste einsehen",          group: "Benutzerverwaltung" },
-  { key: "users.manage",       label: "Mitarbeiter verwalten (Kürzel/PIN)", group: "Benutzerverwaltung" },
-  { key: "users.invite_admin", label: "Admins einladen",                    group: "Benutzerverwaltung" },
-  { key: "verwaltung.access",  label: "Verwaltungsbereich aufrufen",        group: "Benutzerverwaltung" },
-  { key: "entries.create",     label: "HACCP-Einträge erstellen",           group: "HACCP Einträge" },
-  { key: "entries.view_all",   label: "Alle Einträge einsehen",             group: "HACCP Einträge" },
-  { key: "entries.edit",       label: "Einträge bearbeiten",                group: "HACCP Einträge" },
-  { key: "entries.delete",     label: "Einträge löschen",                   group: "HACCP Einträge" },
-  { key: "reports.view",       label: "Berichte einsehen",                  group: "Berichte" },
-  { key: "reports.export",     label: "Berichte exportieren",               group: "Berichte" },
-  { key: "devices.manage",     label: "Geräteverwaltung aufrufen",          group: "System" },
-  { key: "settings.manage",    label: "Systemeinstellungen verwalten",      group: "System" },
+  // Benutzerverwaltung
+  { key: "users.view",              label: "Mitarbeiterliste einsehen",            group: "Benutzerverwaltung" },
+  { key: "users.manage",            label: "Mitarbeiter verwalten (Kürzel/PIN)",   group: "Benutzerverwaltung" },
+  { key: "users.invite_admin",      label: "Admins einladen",                      group: "Benutzerverwaltung" },
+  { key: "verwaltung.access",       label: "Verwaltungsbereich aufrufen",          group: "Benutzerverwaltung" },
+  // HACCP Einträge
+  { key: "entries.create",          label: "HACCP-Einträge erstellen",             group: "HACCP Einträge" },
+  { key: "entries.view_all",        label: "Alle Einträge einsehen",               group: "HACCP Einträge" },
+  { key: "entries.edit",            label: "Einträge bearbeiten",                  group: "HACCP Einträge" },
+  { key: "entries.delete",          label: "Einträge löschen",                     group: "HACCP Einträge" },
+  // Berichte & Dokumente
+  { key: "reports.view",            label: "Berichte einsehen",                    group: "Berichte & Dokumente" },
+  { key: "reports.export",          label: "Berichte exportieren",                 group: "Berichte & Dokumente" },
+  { key: "reports.monatsbericht",   label: "Monatsbericht einsehen",               group: "Berichte & Dokumente" },
+  // Schulungen & Verwaltung
+  { key: "schulungen.manage",       label: "Schulungsanforderungen verwalten",     group: "Schulungen & Verwaltung" },
+  { key: "notifications.manage",    label: "Benachrichtigungsregeln verwalten",    group: "Schulungen & Verwaltung" },
+  // Todo & Aufgaben
+  { key: "todo.access",             label: "Todo-Listen aufrufen",                 group: "Todo & Aufgaben" },
+  { key: "todo.manage",             label: "Todos und Rundgänge verwalten",        group: "Todo & Aufgaben" },
+  { key: "todo.kassen",             label: "Kassenkontrolle aufrufen",             group: "Todo & Aufgaben" },
+  // Warenwirtschaft
+  { key: "ware.access",             label: "Waren-Bereich aufrufen",               group: "Warenwirtschaft" },
+  { key: "ware.bestellungen",       label: "Bestellungen verwalten",               group: "Warenwirtschaft" },
+  { key: "ware.mhd",                label: "MHD-Kontrolle durchführen",            group: "Warenwirtschaft" },
+  // Metzgerei
+  { key: "metzgerei.access",        label: "Metzgerei-Bereiche aufrufen",          group: "Metzgerei" },
+  { key: "metzgerei.gq_begehung",   label: "GQ-Begehung durchführen",             group: "Metzgerei" },
+  // Projekt
+  { key: "projekt.access",          label: "Projekt-Hub aufrufen",                 group: "Projekt" },
+  // System
+  { key: "devices.manage",          label: "Geräteverwaltung aufrufen",            group: "System" },
+  { key: "settings.manage",         label: "Systemeinstellungen verwalten",        group: "System" },
+  { key: "modules.manage",          label: "Modul-Sichtbarkeit verwalten",         group: "System" },
+  { key: "sections.manage",         label: "Bereichs-Sichtbarkeit verwalten",      group: "System" },
+  { key: "feedback.manage",         label: "Feedback & Bereinigung verwalten",     group: "System" },
 ] as const;
 
 const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
-  SUPERADMIN:     PERMISSION_AREAS.map(p => p.key),
-  ADMIN:          ["users.view","users.manage","users.invite_admin","verwaltung.access","entries.create","entries.view_all","entries.edit","entries.delete","reports.view","reports.export"],
-  BEREICHSLEITUNG:["users.view","users.manage","verwaltung.access","entries.create","entries.view_all","entries.edit","reports.view","reports.export"],
-  MARKTLEITER:    ["users.view","verwaltung.access","entries.create","entries.view_all","entries.edit","reports.view"],
-  USER:           ["entries.create"],
+  SUPERADMIN: PERMISSION_AREAS.map(p => p.key),
+  ADMIN: [
+    "users.view","users.manage","users.invite_admin","verwaltung.access",
+    "entries.create","entries.view_all","entries.edit","entries.delete",
+    "reports.view","reports.export","reports.monatsbericht",
+    "schulungen.manage","notifications.manage",
+    "todo.access","todo.manage","todo.kassen",
+    "ware.access","ware.bestellungen","ware.mhd",
+    "metzgerei.access","metzgerei.gq_begehung",
+    "projekt.access",
+    "devices.manage","settings.manage","modules.manage","sections.manage","feedback.manage",
+  ],
+  BEREICHSLEITUNG: [
+    "users.view","users.manage","verwaltung.access",
+    "entries.create","entries.view_all","entries.edit",
+    "reports.view","reports.export","reports.monatsbericht",
+    "schulungen.manage","notifications.manage",
+    "todo.access","todo.manage",
+    "ware.access","ware.bestellungen","ware.mhd",
+    "metzgerei.access","metzgerei.gq_begehung",
+    "projekt.access",
+  ],
+  MARKTLEITER: [
+    "users.view","verwaltung.access",
+    "entries.create","entries.view_all","entries.edit",
+    "reports.view","reports.monatsbericht",
+    "todo.access","todo.manage","todo.kassen",
+    "ware.access","ware.bestellungen","ware.mhd",
+    "metzgerei.access","metzgerei.gq_begehung",
+    "projekt.access",
+  ],
+  USER: [
+    "entries.create",
+    "todo.access",
+    "ware.access",
+    "metzgerei.access",
+  ],
 };
 
 router.get("/permissions/areas", (_req, res) => {
