@@ -146,8 +146,9 @@ router.get("/wareneingang-today-summary", async (req, res) => {
   const marketId = Number(req.query.marketId);
   const section = (req.query.section as string) || "wareneingaenge";
   if (!marketId) { res.status(400).json({ error: "marketId required" }); return; }
-  const now = new Date();
-  const year = now.getFullYear(), month = now.getMonth() + 1, day = now.getDate();
+  const dateParam = req.query.date as string | undefined;
+  const refDate = dateParam ? new Date(dateParam) : new Date();
+  const year = refDate.getFullYear(), month = refDate.getMonth() + 1, day = refDate.getDate();
   const rows = await db.execute(sql`
     SELECT t.id as type_id, t.liefertage, t.liefertage_ausnahmen,
            e.criteria_values, e.kuerzel

@@ -84,11 +84,11 @@ export function useWarenzustandOGStatus(): TrafficLight {
 
     const holidays = getBavarianHolidays(year);
 
-    // Heute Feiertag oder Sonntag → kein Indikator
-    if (isClosed(now, holidays)) { setStatus("none"); return; }
+    // Heute geschlossen? Kein früher Abbruch — vergangene Tage müssen trotzdem geprüft werden!
+    const todayClosed = isClosed(now, holidays);
 
-    // Vor Ladenöffnung → alles in Ordnung
-    if (hour < 6) { setStatus("green"); return; }
+    // Vor Ladenöffnung an einem Werktag → alles in Ordnung
+    if (!todayClosed && hour < 6) { setStatus("green"); return; }
 
     let cancelled = false;
 
@@ -117,6 +117,12 @@ export function useWarenzustandOGStatus(): TrafficLight {
             setStatus("red");
             return;
           }
+        }
+
+        // --- Heute geschlossen: vergangene Tage waren alle OK → grün ---
+        if (todayClosed) {
+          setStatus("green");
+          return;
         }
 
         // --- Heutige Slots prüfen ---
@@ -176,14 +182,26 @@ export function useWareneingaengeStatus(): TrafficLight {
     if (!selectedMarketId) { setStatus("none"); return; }
     const now = new Date();
     const holidays = getBavarianHolidays(now.getFullYear());
-    if (isClosed(now, holidays)) { setStatus("none"); return; }
+
+    // Letzten Arbeitstag bestimmen (heute wenn Werktag, sonst zurückgehen)
+    const ref = new Date(now);
+    for (let i = 0; i < 7; i++) {
+      if (!isClosed(ref, holidays)) break;
+      ref.setDate(ref.getDate() - 1);
+    }
+    // Wenn Referenztag vor dem Montag dieser Woche liegt → noch keine Liefertage diese Woche
+    const monday = getMondayOfWeek(now);
+    monday.setHours(0, 0, 0, 0);
+    if (ref < monday) { setStatus("none"); return; }
+
+    const ds = dateStrHook(ref.getFullYear(), ref.getMonth() + 1, ref.getDate());
+    const wd = ref.getDay();
+
     let cancelled = false;
-    fetch(`${BASE}/wareneingang-today-summary?marketId=${selectedMarketId}&section=wareneingaenge`)
+    fetch(`${BASE}/wareneingang-today-summary?marketId=${selectedMarketId}&section=wareneingaenge&date=${ds}`)
       .then(r => r.json())
       .then((rows: { type_id: number; liefertage: number[] | null; liefertage_ausnahmen: Record<string, string> | null; criteria_values: Record<string, string> | null }[]) => {
         if (cancelled) return;
-        const wd = now.getDay();
-        const ds = dateStrHook(now.getFullYear(), now.getMonth() + 1, now.getDate());
         let anyRed = false, anyYellow = false, anyGreen = false, anyExpected = false;
         for (const row of rows) {
           const lt = row.liefertage ?? [];
@@ -227,14 +245,26 @@ export function useMetzgereiWareneingaengeStatus(): TrafficLight {
     if (!selectedMarketId) { setStatus("none"); return; }
     const now = new Date();
     const holidays = getBavarianHolidays(now.getFullYear());
-    if (isClosed(now, holidays)) { setStatus("none"); return; }
+
+    // Letzten Arbeitstag bestimmen (heute wenn Werktag, sonst zurückgehen)
+    const ref = new Date(now);
+    for (let i = 0; i < 7; i++) {
+      if (!isClosed(ref, holidays)) break;
+      ref.setDate(ref.getDate() - 1);
+    }
+    // Wenn Referenztag vor dem Montag dieser Woche liegt → noch keine Liefertage diese Woche
+    const monday = getMondayOfWeek(now);
+    monday.setHours(0, 0, 0, 0);
+    if (ref < monday) { setStatus("none"); return; }
+
+    const ds = dateStrHook(ref.getFullYear(), ref.getMonth() + 1, ref.getDate());
+    const wd = ref.getDay();
+
     let cancelled = false;
-    fetch(`${BASE}/wareneingang-today-summary?marketId=${selectedMarketId}&section=metzgerei`)
+    fetch(`${BASE}/wareneingang-today-summary?marketId=${selectedMarketId}&section=metzgerei&date=${ds}`)
       .then(r => r.json())
       .then((rows: { type_id: number; liefertage: number[] | null; liefertage_ausnahmen: Record<string, string> | null; criteria_values: Record<string, string> | null }[]) => {
         if (cancelled) return;
-        const wd = now.getDay();
-        const ds = dateStrHook(now.getFullYear(), now.getMonth() + 1, now.getDate());
         let anyRed = false, anyYellow = false, anyGreen = false, anyExpected = false;
         for (const row of rows) {
           const lt = row.liefertage ?? [];
@@ -445,7 +475,8 @@ export function useReinigungTaeglichStatus(): TrafficLight {
 
     const holidays = getBavarianHolidays(year);
 
-    if (isClosed(now, holidays)) { setStatus("none"); return; }
+    // Heute geschlossen? Kein früher Abbruch — vergangene Tage müssen trotzdem geprüft werden!
+    const todayClosed = isClosed(now, holidays);
 
     let cancelled = false;
 
@@ -467,6 +498,9 @@ export function useReinigungTaeglichStatus(): TrafficLight {
             return;
           }
         }
+
+        // Heute geschlossen: vergangene Tage waren alle OK → grün
+        if (todayClosed) { setStatus("green"); return; }
 
         const todayCount = entries.filter(e => e.day === today).length;
         if (todayCount >= REINIGUNG_AREA_COUNT) { setStatus("green"); return; }
