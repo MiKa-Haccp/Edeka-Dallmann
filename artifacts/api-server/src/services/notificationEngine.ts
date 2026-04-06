@@ -463,6 +463,50 @@ export async function runNotificationCheck(): Promise<{ checked: number; sent: n
   return { checked: rules.length, sent, errors };
 }
 
+export interface PendingRuleItem {
+  sectionKey: string;
+  sectionLabel: string;
+  marketId: number;
+  triggered: boolean;
+  reason: string;
+  triggerType: string;
+  triggerValue: number;
+}
+
+export async function getPendingRulesForUser(userId: number, marketId: number | null): Promise<PendingRuleItem[]> {
+  const rulesRes = await pool.query(
+    `SELECT * FROM notification_rules WHERE is_active = true AND $1 = ANY(notify_user_ids)`,
+    [userId]
+  );
+  const rules = rulesRes.rows;
+  const results: PendingRuleItem[] = [];
+
+  for (const rule of rules) {
+    const section = MONITORABLE_SECTIONS.find(s => s.key === rule.section_key);
+    const label = section?.label ?? rule.section_key;
+    const marketsToCheck: number[] = rule.market_ids?.length
+      ? rule.market_ids
+      : marketId
+        ? [marketId]
+        : [1, 2, 3];
+
+    for (const mid of marketsToCheck) {
+      const { triggered, reason } = await shouldTrigger(rule, mid);
+      results.push({
+        sectionKey: rule.section_key,
+        sectionLabel: label,
+        marketId: mid,
+        triggered,
+        reason,
+        triggerType: rule.trigger_type,
+        triggerValue: rule.trigger_value,
+      });
+    }
+  }
+
+  return results;
+}
+
 export function startNotificationCron() {
   console.log("[Notifications] Starte täglichen Check (07:00 Uhr)...");
   cron.schedule("0 7 * * *", async () => {

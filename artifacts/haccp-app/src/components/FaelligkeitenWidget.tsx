@@ -1,10 +1,19 @@
 import { useEffect, useState } from "react";
 import { useListResponsibilities } from "@workspace/api-client-react";
 import { useAppStore } from "@/store/use-app-store";
-import { CheckCircle2, AlertCircle, Clock, Bell, ChevronRight } from "lucide-react";
+import { CheckCircle2, AlertCircle, Clock, Bell, ChevronRight, AlertTriangle } from "lucide-react";
 import { Link } from "wouter";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
+
+const MARKET_NAMES: Record<number, string> = { 1: "Leeder", 2: "Buching", 3: "Marktoberdorf" };
+
+const SECTION_HREFS: Record<string, string> = {
+  "1.1": "/responsibilities", "1.4": "/training-records", "1.5": "/annual-cleaning-plan",
+  "1.6": "/betriebsbegehung", "2.1": "/wareneingaenge", "2.2": "/warencheck-og",
+  "2.3": "/reinigung-taeglich", "3.1": "/metzgerei-wareneingaenge", "3.2": "/reinigungsplan-metzgerei",
+  "3.3": "/oeffnung-salate", "3.4": "/kaesetheke-kontrolle", "3.8": "/gq-begehung",
+};
 
 type ItemStatus = "aktuell" | "ausstehend" | "ueberfaellig";
 
@@ -13,6 +22,15 @@ interface FaelligkeitItem {
   status: ItemStatus;
   detail: string;
   href: string;
+  marketName?: string;
+}
+
+interface PendingRuleItem {
+  sectionKey: string;
+  sectionLabel: string;
+  marketId: number;
+  triggered: boolean;
+  reason: string;
 }
 
 function getCurrentQuartal() {
@@ -48,6 +66,7 @@ export function FaelligkeitenWidget() {
 
   const [bbQuartals, setBbQuartals] = useState<number[]>([]);
   const [bbLoaded, setBbLoaded] = useState(false);
+  const [ruleItems, setRuleItems] = useState<FaelligkeitItem[]>([]);
 
   const { data: currentYearResp } = useListResponsibilities(
     selectedMarketId ?? 0,
@@ -60,22 +79,38 @@ export function FaelligkeitenWidget() {
     fetch(`${BASE}/betriebsbegehung?tenantId=1&marketId=${selectedMarketId}`)
       .then((r) => r.json())
       .then((data: Array<{ quartal: number; year: number }>) => {
-        const done = data
-          .filter((r) => r.year === currentYear)
-          .map((r) => r.quartal);
+        const done = data.filter((r) => r.year === currentYear).map((r) => r.quartal);
         setBbQuartals(done);
         setBbLoaded(true);
       })
       .catch(() => setBbLoaded(true));
   }, [currentYear, selectedMarketId]);
 
+  useEffect(() => {
+    if (!adminSession?.userId) { setRuleItems([]); return; }
+    const url = `${BASE}/notifications/my-pending?userId=${adminSession.userId}${selectedMarketId ? `&marketId=${selectedMarketId}` : ""}`;
+    fetch(url)
+      .then((r) => r.json())
+      .then((data: PendingRuleItem[]) => {
+        if (!Array.isArray(data)) return;
+        const triggered = data.filter((d) => d.triggered);
+        const items: FaelligkeitItem[] = triggered.map((d) => ({
+          label: d.sectionLabel,
+          status: "ueberfaellig" as ItemStatus,
+          detail: d.reason,
+          href: SECTION_HREFS[d.sectionKey] ?? "/haccp",
+          marketName: MARKET_NAMES[d.marketId],
+        }));
+        setRuleItems(items);
+      })
+      .catch(() => setRuleItems([]));
+  }, [adminSession?.userId, selectedMarketId]);
+
   if (!adminSession) return null;
 
   const respStatus: ItemStatus = (() => {
     if (!currentYearResp) return "ausstehend";
     if (currentYearResp.length === 0) {
-      // Erst nach 120 Tagen (Ende April) als überfällig markieren —
-      // Neustart/Reset zu Jahresbeginn oder nach Q1 zeigt zunächst Gelb.
       return getDayOfYear(new Date()) > 120 ? "ueberfaellig" : "ausstehend";
     }
     return "aktuell";
@@ -88,7 +123,7 @@ export function FaelligkeitenWidget() {
     return "ausstehend";
   })();
 
-  const items: FaelligkeitItem[] = [
+  const standardItems: FaelligkeitItem[] = [
     {
       label: "Verantwortlichkeiten",
       status: respStatus,
@@ -115,18 +150,18 @@ export function FaelligkeitenWidget() {
     },
   ];
 
-  const pendingCount = items.filter((i) => i.status !== "aktuell").length;
+  const ruleItemKeys = new Set(ruleItems.map((r) => r.href));
+  const filteredStandard = standardItems.filter((s) => !ruleItemKeys.has(s.href));
+  const allItems = [...filteredStandard, ...ruleItems];
+
+  const pendingCount = allItems.filter((i) => i.status !== "aktuell").length;
   const hasIssues = pendingCount > 0;
 
   return (
     <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
         <div className="flex items-center gap-2">
-          <div
-            className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-              hasIssues ? "bg-amber-100" : "bg-green-100"
-            }`}
-          >
+          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${hasIssues ? "bg-amber-100" : "bg-green-100"}`}>
             <Bell className={`w-4 h-4 ${hasIssues ? "text-amber-600" : "text-green-600"}`} />
           </div>
           <h2 className="text-sm font-bold text-foreground">Fälligkeiten &amp; Erinnerungen</h2>
@@ -143,11 +178,11 @@ export function FaelligkeitenWidget() {
       </div>
 
       <div className="divide-y divide-border/30">
-        {items.map((item) => {
+        {allItems.map((item, idx) => {
           const badge = statusBadge(item.status);
           return (
             <Link
-              key={item.label}
+              key={`${item.href}-${idx}`}
               href={item.href}
               className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/30 transition-colors group"
             >
@@ -155,6 +190,9 @@ export function FaelligkeitenWidget() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-semibold text-foreground">{item.label}</span>
+                  {item.marketName && (
+                    <span className="text-xs text-muted-foreground font-medium">· {item.marketName}</span>
+                  )}
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>
                     {badge.text}
                   </span>
@@ -165,6 +203,15 @@ export function FaelligkeitenWidget() {
             </Link>
           );
         })}
+
+        {ruleItems.length > 0 && (
+          <div className="flex items-center gap-2 px-5 py-2.5 bg-amber-50/60">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <p className="text-xs text-amber-700">
+              {ruleItems.length} Hinweis{ruleItems.length !== 1 ? "e" : ""} basierend auf deinen Benachrichtigungsregeln
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="px-5 py-3 bg-muted/20 border-t border-border/30">

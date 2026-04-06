@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { pool } from "@workspace/db";
-import { MONITORABLE_SECTIONS, TRIGGER_TYPES, CHECK_RHYTHMS, runNotificationCheck } from "../services/notificationEngine";
+import { MONITORABLE_SECTIONS, TRIGGER_TYPES, CHECK_RHYTHMS, runNotificationCheck, getPendingRulesForUser } from "../services/notificationEngine";
 
 const router: IRouter = Router();
 
@@ -62,10 +62,23 @@ router.get("/notifications/channels", async (req, res) => {
             nc.channel_type, nc.telegram_chat_id, nc.email_override
      FROM users u
      LEFT JOIN notification_channels nc ON nc.user_id = u.id
-     WHERE u.is_registered = TRUE
+     WHERE u.email IS NOT NULL AND u.email != ''
+       AND u.password IS NOT NULL AND u.password != ''
      ORDER BY u.name ASC`
   );
   res.json(r.rows);
+});
+
+router.get("/notifications/my-pending", async (req, res) => {
+  try {
+    const userId = Number(req.query.userId);
+    const marketId = req.query.marketId ? Number(req.query.marketId) : null;
+    if (!userId) { res.status(400).json({ error: "userId required" }); return; }
+    const items = await getPendingRulesForUser(userId, marketId);
+    res.json(items);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 router.put("/notifications/channels/:userId", async (req, res) => {
