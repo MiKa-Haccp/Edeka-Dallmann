@@ -36,7 +36,7 @@ function useActiveSidebar() {
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { selectedMarketId, adminSession, deviceAuthorized, deviceToken, setDeviceToken, setDeviceAuthorized } = useAppStore();
+  const { selectedMarketId, deviceAuthorized, deviceToken, setDeviceToken, setDeviceAuthorized } = useAppStore();
   const { data: rawMarkets, isLoading: marketsLoading, isError: marketsError } = useListMarkets();
   const { isWare, isHaccp, isTodo, hasSidebar } = useActiveSidebar();
 
@@ -89,8 +89,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
     );
   }
 
-  // Gerät nicht autorisiert → nur Registrierungsscreen, außer bei persönlichem Login
-  if (!deviceAuthorized && !adminSession) {
+  // Gerät nicht autorisiert → nur Registrierungsscreen, kein Header/Layout
+  if (!deviceAuthorized) {
     return <GeraetSperrScreen />;
   }
 
