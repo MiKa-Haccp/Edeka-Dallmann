@@ -71,8 +71,7 @@ export const useAppStore = create<AppState>()(
       isGpsLocked: () => {
         const s = get().adminSession;
         if (!s) return true;
-        if (s.role === 'SUPERADMIN' || s.role === 'ADMIN' || s.role === 'BEREICHSLEITUNG') return false;
-        return true;
+        return false;
       },
       deviceAuthorized: false,
       setDeviceAuthorized: (v) => set({ deviceAuthorized: v }),

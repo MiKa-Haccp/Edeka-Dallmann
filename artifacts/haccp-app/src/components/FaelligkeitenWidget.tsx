@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { useListResponsibilities } from "@workspace/api-client-react";
 import { useAppStore } from "@/store/use-app-store";
-import { CheckCircle2, AlertCircle, Clock, Bell, ChevronRight, AlertTriangle } from "lucide-react";
+import { AlertCircle, Bell, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -15,16 +14,6 @@ const SECTION_HREFS: Record<string, string> = {
   "3.3": "/oeffnung-salate", "3.4": "/kaesetheke-kontrolle", "3.8": "/gq-begehung",
 };
 
-type ItemStatus = "aktuell" | "ausstehend" | "ueberfaellig";
-
-interface FaelligkeitItem {
-  label: string;
-  status: ItemStatus;
-  detail: string;
-  href: string;
-  marketName?: string;
-}
-
 interface PendingRuleItem {
   sectionKey: string;
   sectionLabel: string;
@@ -33,191 +22,80 @@ interface PendingRuleItem {
   reason: string;
 }
 
-function getCurrentQuartal() {
-  return Math.ceil((new Date().getMonth() + 1) / 3);
-}
-
-function getQuartalDayProgress() {
-  const now = new Date();
-  return now.getDate() + (now.getMonth() % 3) * 30;
-}
-
-function getDayOfYear(date: Date): number {
-  const start = new Date(date.getFullYear(), 0, 1);
-  return Math.ceil((date.getTime() - start.getTime()) / 86400000) + 1;
-}
-
-function StatusIcon({ status }: { status: ItemStatus }) {
-  if (status === "aktuell") return <CheckCircle2 className="w-4 h-4 text-green-500" />;
-  if (status === "ueberfaellig") return <AlertCircle className="w-4 h-4 text-red-500" />;
-  return <Clock className="w-4 h-4 text-amber-500" />;
-}
-
-function statusBadge(status: ItemStatus) {
-  if (status === "aktuell") return { text: "Aktuell", cls: "bg-green-100 text-green-700" };
-  if (status === "ueberfaellig") return { text: "Überfällig", cls: "bg-red-100 text-red-700" };
-  return { text: "Ausstehend", cls: "bg-amber-100 text-amber-700" };
+interface FaelligkeitItem {
+  label: string;
+  detail: string;
+  href: string;
+  marketName?: string;
 }
 
 export function FaelligkeitenWidget() {
   const { adminSession, selectedMarketId } = useAppStore();
-  const currentYear = new Date().getFullYear();
-  const currentQ = getCurrentQuartal();
-
-  const [bbQuartals, setBbQuartals] = useState<number[]>([]);
-  const [bbLoaded, setBbLoaded] = useState(false);
-  const [ruleItems, setRuleItems] = useState<FaelligkeitItem[]>([]);
-
-  const { data: currentYearResp } = useListResponsibilities(
-    selectedMarketId ?? 0,
-    { year: currentYear },
-    { query: { enabled: !!selectedMarketId } }
-  );
+  const [items, setItems] = useState<FaelligkeitItem[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    if (!selectedMarketId) { setBbLoaded(true); return; }
-    fetch(`${BASE}/betriebsbegehung?tenantId=1&marketId=${selectedMarketId}`)
-      .then((r) => r.json())
-      .then((data: Array<{ quartal: number; year: number }>) => {
-        const done = data.filter((r) => r.year === currentYear).map((r) => r.quartal);
-        setBbQuartals(done);
-        setBbLoaded(true);
-      })
-      .catch(() => setBbLoaded(true));
-  }, [currentYear, selectedMarketId]);
-
-  useEffect(() => {
-    if (!adminSession?.userId) { setRuleItems([]); return; }
+    if (!adminSession?.userId) { setItems([]); setLoaded(true); return; }
     const url = `${BASE}/notifications/my-pending?userId=${adminSession.userId}${selectedMarketId ? `&marketId=${selectedMarketId}` : ""}`;
     fetch(url)
       .then((r) => r.json())
       .then((data: PendingRuleItem[]) => {
         if (!Array.isArray(data)) return;
-        const triggered = data.filter((d) => d.triggered);
-        const items: FaelligkeitItem[] = triggered.map((d) => ({
-          label: d.sectionLabel,
-          status: "ueberfaellig" as ItemStatus,
-          detail: d.reason,
-          href: SECTION_HREFS[d.sectionKey] ?? "/haccp",
-          marketName: MARKET_NAMES[d.marketId],
-        }));
-        setRuleItems(items);
+        const triggered = data
+          .filter((d) => d.triggered)
+          .map((d) => ({
+            label: d.sectionLabel,
+            detail: d.reason,
+            href: SECTION_HREFS[d.sectionKey] ?? "/haccp",
+            marketName: MARKET_NAMES[d.marketId],
+          }));
+        setItems(triggered);
       })
-      .catch(() => setRuleItems([]));
+      .catch(() => setItems([]))
+      .finally(() => setLoaded(true));
   }, [adminSession?.userId, selectedMarketId]);
 
-  if (!adminSession) return null;
-
-  const respStatus: ItemStatus = (() => {
-    if (!currentYearResp) return "ausstehend";
-    if (currentYearResp.length === 0) {
-      return getDayOfYear(new Date()) > 120 ? "ueberfaellig" : "ausstehend";
-    }
-    return "aktuell";
-  })();
-
-  const bbStatus: ItemStatus = (() => {
-    if (!bbLoaded) return "ausstehend";
-    if (bbQuartals.includes(currentQ)) return "aktuell";
-    if (getQuartalDayProgress() > 60) return "ueberfaellig";
-    return "ausstehend";
-  })();
-
-  const standardItems: FaelligkeitItem[] = [
-    {
-      label: "Verantwortlichkeiten",
-      status: respStatus,
-      detail:
-        respStatus === "aktuell"
-          ? `Einträge für ${currentYear} vorhanden`
-          : respStatus === "ueberfaellig"
-          ? `Für ${currentYear} noch kein Eintrag — bitte baldmöglich ausfüllen`
-          : currentYearResp !== undefined
-          ? `Für ${currentYear} noch nicht ausgefüllt — bitte bei Gelegenheit eintragen`
-          : "Wird geprüft …",
-      href: "/responsibilities",
-    },
-    {
-      label: "Betriebsbegehung",
-      status: bbStatus,
-      detail:
-        bbStatus === "aktuell"
-          ? `Q${currentQ}/${currentYear} abgeschlossen`
-          : bbStatus === "ueberfaellig"
-          ? `Q${currentQ}/${currentYear} überfällig — bitte nachholen`
-          : `Q${currentQ}/${currentYear} noch offen`,
-      href: "/betriebsbegehung",
-    },
-  ];
-
-  const ruleItemKeys = new Set(ruleItems.map((r) => r.href));
-  const filteredStandard = standardItems.filter((s) => !ruleItemKeys.has(s.href));
-  const allItems = [...filteredStandard, ...ruleItems];
-
-  const pendingCount = allItems.filter((i) => i.status !== "aktuell").length;
-  const hasIssues = pendingCount > 0;
+  if (!adminSession || !loaded || items.length === 0) return null;
 
   return (
     <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
         <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${hasIssues ? "bg-amber-100" : "bg-green-100"}`}>
-            <Bell className={`w-4 h-4 ${hasIssues ? "text-amber-600" : "text-green-600"}`} />
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-amber-100">
+            <Bell className="w-4 h-4 text-amber-600" />
           </div>
           <h2 className="text-sm font-bold text-foreground">Fälligkeiten &amp; Erinnerungen</h2>
         </div>
-        {hasIssues ? (
-          <span className="text-xs font-semibold bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full">
-            {pendingCount} ausstehend
-          </span>
-        ) : (
-          <span className="text-xs font-semibold bg-green-100 text-green-700 px-2.5 py-1 rounded-full">
-            Alles aktuell
-          </span>
-        )}
+        <span className="text-xs font-semibold bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full">
+          {items.length} ausstehend
+        </span>
       </div>
 
       <div className="divide-y divide-border/30">
-        {allItems.map((item, idx) => {
-          const badge = statusBadge(item.status);
-          return (
-            <Link
-              key={`${item.href}-${idx}`}
-              href={item.href}
-              className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/30 transition-colors group"
-            >
-              <StatusIcon status={item.status} />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-semibold text-foreground">{item.label}</span>
-                  {item.marketName && (
-                    <span className="text-xs text-muted-foreground font-medium">· {item.marketName}</span>
-                  )}
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>
-                    {badge.text}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5">{item.detail}</p>
+        {items.map((item, idx) => (
+          <Link
+            key={`${item.href}-${idx}`}
+            href={item.href}
+            className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/30 transition-colors group"
+          >
+            <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-semibold text-foreground">{item.label}</span>
+                {item.marketName && (
+                  <span className="text-xs text-muted-foreground font-medium">· {item.marketName}</span>
+                )}
               </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </Link>
-          );
-        })}
-
-        {ruleItems.length > 0 && (
-          <div className="flex items-center gap-2 px-5 py-2.5 bg-amber-50/60">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-            <p className="text-xs text-amber-700">
-              {ruleItems.length} Hinweis{ruleItems.length !== 1 ? "e" : ""} basierend auf deinen Benachrichtigungsregeln
-            </p>
-          </div>
-        )}
+              <p className="text-xs text-muted-foreground mt-0.5">{item.detail}</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+          </Link>
+        ))}
       </div>
 
       <div className="px-5 py-3 bg-muted/20 border-t border-border/30">
         <p className="text-xs text-muted-foreground">
-          Automatisch geprüft für die aktuelle Filiale ·{" "}
-          <span className="font-medium">Stand {new Date().toLocaleDateString("de-DE")}</span>
+          Stand {new Date().toLocaleDateString("de-DE")} · basierend auf deinen Benachrichtigungsregeln
         </p>
       </div>
     </div>
