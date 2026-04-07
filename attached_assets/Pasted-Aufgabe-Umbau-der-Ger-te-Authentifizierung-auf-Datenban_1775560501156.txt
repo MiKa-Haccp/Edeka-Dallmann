@@ -1,0 +1,23 @@
+Aufgabe: Umbau der Geräte-Authentifizierung auf Datenbank-basierte Registrierung mit statischen Secrets.
+
+Aktuelles Problem: Bei jedem Update/Push auf meinen Server gehen die Geräte-Token verloren, da sie nur im flüchtigen Speicher oder mit dynamischen Schlüsseln validiert werden. Ich muss jedes Mal das Gerätepasswort manuell auf 100 iPads eingeben.
+
+Ziel: Ich möchte ein System, bei dem ich pro Gerät einen Registrierungs-Link per E-Mail verschicken kann. Einmal auf dem iPad geklickt, soll das Gerät dauerhaft (auch nach Server-Updates und iOS-Updates) autorisiert bleiben.
+
+Bitte setze folgende technische Änderungen um:
+
+Persistente Datenbank: Nutze eine Datenbank (z. B. SQLite oder die Replit DB), um registrierte Geräte zu speichern. Gespeichert werden soll eine eindeutige device_id, der standort und ein status (aktiv/inaktiv).
+
+Environment Variables: Implementiere die Nutzung einer statischen APP_SECRET Variable aus den Umgebungsvariablen (Secrets), damit Token auch nach einem Server-Neustart valide bleiben.
+
+Registrierungs-Logik: >     * Erstelle eine Funktion, die einen einmaligen, zeitlich begrenzten Registrierungs-Link generiert (z. B. /register?key=XYZ123).
+
+Wenn dieser Link auf einem iPad geöffnet wird, generiert die App eine eindeutige device_id, speichert diese im LocalStorage des iPads (oder als persistenten Cookie) und registriert das Gerät gleichzeitig in der Datenbank.
+
+E-Mail-Versand: Nutze die vorhandene E-Mail-Integration, um diese Registrierungs-Links direkt aus der App an die Markt-E-Mails zu senden.
+
+Middleware-Check: Die App soll bei jedem Aufruf prüfen: "Hat dieses Gerät eine registrierte ID in der Datenbank?". Wenn ja -> Zugriff erlauben ohne Passwortabfrage. Wenn nein -> Umleitung auf Login/Registrierung.
+
+Sicherheit: Die Bestätigungs-PIN für Mitarbeiter (als Unterschriftersatz) soll davon unberührt bleiben und weiterhin bei jeder Aktion abgefragt werden.
+
+Wichtig: Da ich den Code von Replit auf meinen eigenen Server ziehe, achte darauf, dass die Datenbank-Pfade und Umgebungsvariablen so konfiguriert sind, dass sie auch auf einer externen Linux-Umgebung funktionieren.
