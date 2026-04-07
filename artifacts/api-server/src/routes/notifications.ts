@@ -64,6 +64,7 @@ router.get("/notifications/channels", async (req, res) => {
      LEFT JOIN notification_channels nc ON nc.user_id = u.id
      WHERE u.role IN ('SUPERADMIN', 'ADMIN', 'BEREICHSLEITUNG', 'MARKTLEITER')
        AND u.name IS NOT NULL AND u.name != ''
+       AND u.status != 'inaktiv'
      ORDER BY u.role ASC, u.name ASC`
   );
   res.json(r.rows);

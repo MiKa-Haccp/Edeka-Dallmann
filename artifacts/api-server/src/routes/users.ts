@@ -15,9 +15,16 @@ function stripSensitive(user: any) {
 
 router.get("/users", async (req, res) => {
   const tenantId = req.query.tenantId ? Number(req.query.tenantId) : undefined;
+  const statusFilter = req.query.status as string | undefined;
+  const hasTenant = tenantId && !isNaN(tenantId);
+  const onlyAktiv = statusFilter === "aktiv";
   let result;
-  if (tenantId && !isNaN(tenantId)) {
-    result = await db.select().from(usersTable).where(eq(usersTable.tenantId, tenantId));
+  if (hasTenant && onlyAktiv) {
+    result = await db.select().from(usersTable).where(and(eq(usersTable.tenantId, tenantId!), eq(usersTable.status, "aktiv")));
+  } else if (hasTenant) {
+    result = await db.select().from(usersTable).where(eq(usersTable.tenantId, tenantId!));
+  } else if (onlyAktiv) {
+    result = await db.select().from(usersTable).where(eq(usersTable.status, "aktiv"));
   } else {
     result = await db.select().from(usersTable);
   }

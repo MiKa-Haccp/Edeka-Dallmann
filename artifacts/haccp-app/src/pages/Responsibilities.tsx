@@ -158,7 +158,7 @@ export default function Responsibilities() {
 
   useEffect(() => {
     if (isEditing && employees.length === 0) {
-      fetch(`${API_BASE}/users?tenantId=1`)
+      fetch(`${API_BASE}/users?tenantId=1&status=aktiv`)
         .then((r) => r.json())
         .then((data: EmployeeOption[]) => setEmployees(data))
         .catch(() => {});

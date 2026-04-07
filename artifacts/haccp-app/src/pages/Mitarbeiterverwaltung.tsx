@@ -707,7 +707,7 @@ export default function Mitarbeiterverwaltung() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"mitarbeiter" | "kuerzel">("mitarbeiter");
-  const [filter, setFilter] = useState<"alle" | Status>("alle");
+  const [filter, setFilter] = useState<"alle" | Status>("aktiv");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<string>("name_asc");
   const [showForm, setShowForm] = useState(false);
@@ -927,17 +927,34 @@ export default function Mitarbeiterverwaltung() {
                 <p className="text-sm font-medium text-muted-foreground">Keine Mitarbeiter gefunden</p>
                 <p className="text-xs text-muted-foreground mt-1">Filter anpassen oder neuen Mitarbeiter anlegen</p>
               </div>
+            ) : filter === "alle" ? (
+              <>
+                <div className="space-y-3">
+                  {filtered.filter(e => e.status !== "inaktiv").map((emp) => (
+                    <MitarbeiterKarte key={emp.id} emp={emp} onUpdate={handleUpdate} onDelete={handleDelete} onPinChange={handlePinChange} tenantId={1} />
+                  ))}
+                </div>
+                {filtered.some(e => e.status === "inaktiv") && (
+                  <div className="mt-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="h-px flex-1 bg-slate-200" />
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider px-2">
+                        Inaktive Mitarbeiter ({filtered.filter(e => e.status === "inaktiv").length})
+                      </span>
+                      <div className="h-px flex-1 bg-slate-200" />
+                    </div>
+                    <div className="space-y-3 opacity-60">
+                      {filtered.filter(e => e.status === "inaktiv").map((emp) => (
+                        <MitarbeiterKarte key={emp.id} emp={emp} onUpdate={handleUpdate} onDelete={handleDelete} onPinChange={handlePinChange} tenantId={1} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="space-y-3">
                 {filtered.map((emp) => (
-                  <MitarbeiterKarte
-                    key={emp.id}
-                    emp={emp}
-                    onUpdate={handleUpdate}
-                    onDelete={handleDelete}
-                    onPinChange={handlePinChange}
-                    tenantId={1}
-                  />
+                  <MitarbeiterKarte key={emp.id} emp={emp} onUpdate={handleUpdate} onDelete={handleDelete} onPinChange={handlePinChange} tenantId={1} />
                 ))}
               </div>
             )}
