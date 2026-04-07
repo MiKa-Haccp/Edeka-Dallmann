@@ -30,9 +30,6 @@ interface AppState {
   setDeviceAuthorized: (v: boolean) => void;
   deviceToken: string | null;
   setDeviceToken: (token: string | null) => void;
-  // Zeitstempel der letzten erfolgreichen Server-Verifikation (ms seit Epoch)
-  deviceVerifiedAt: number | null;
-  setDeviceVerifiedAt: (ts: number | null) => void;
   // Hydration guard: true sobald Zustand aus localStorage geladen hat
   _hasHydrated: boolean;
   _setHasHydrated: (v: boolean) => void;
@@ -83,9 +80,7 @@ export const useAppStore = create<AppState>()(
       deviceAuthorized: false,
       setDeviceAuthorized: (v) => set({ deviceAuthorized: v }),
       deviceToken: null,
-      setDeviceToken: (token) => set({ deviceToken: token, deviceAuthorized: !!token, deviceVerifiedAt: null }),
-      deviceVerifiedAt: null,
-      setDeviceVerifiedAt: (ts) => set({ deviceVerifiedAt: ts }),
+      setDeviceToken: (token) => set({ deviceToken: token, deviceAuthorized: !!token }),
       _hasHydrated: false,
       _setHasHydrated: (v) => set({ _hasHydrated: v }),
     }),
@@ -99,7 +94,6 @@ export const useAppStore = create<AppState>()(
         selectedMonth: state.selectedMonth,
         deviceAuthorized: state.deviceAuthorized,
         deviceToken: state.deviceToken,
-        deviceVerifiedAt: state.deviceVerifiedAt,
       }),
       onRehydrateStorage: () => (state) => {
         state?._setHasHydrated(true);

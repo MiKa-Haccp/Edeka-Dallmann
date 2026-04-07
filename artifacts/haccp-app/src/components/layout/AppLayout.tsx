@@ -38,7 +38,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const {
     selectedMarketId, deviceAuthorized, deviceToken,
-    setDeviceToken, setDeviceAuthorized, deviceVerifiedAt, setDeviceVerifiedAt, _hasHydrated,
+    setDeviceToken, setDeviceAuthorized, _hasHydrated,
   } = useAppStore();
   const { data: rawMarkets, isLoading: marketsLoading, isError: marketsError } = useListMarkets();
   const { isWare, isHaccp, isTodo, hasSidebar } = useActiveSidebar();
@@ -46,9 +46,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
   // Verifikations-State: "waiting" (auf Hydration warten), "verifying", "done"
   const [verifyState, setVerifyState] = useState<"waiting" | "verifying" | "done">("waiting");
   const verifiedTokenRef = useRef<string | null>(null);
-
-  // 24 Stunden in Millisekunden
-  const VERIFY_CACHE_MS = 24 * 60 * 60 * 1000;
 
   useAutoLogout();
   useBookingAutoReturn();
@@ -64,21 +61,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Token wurde bereits in dieser Session geprüft → nicht neu prüfen
+    // Token wurde bereits in dieser Session geprüft → nicht erneut prüfen
     if (verifiedTokenRef.current === deviceToken) {
       setVerifyState("done");
       return;
     }
 
-    // Token wurde innerhalb der letzten 24h erfolgreich vom Server bestätigt → Cache nutzen
-    if (deviceVerifiedAt && Date.now() - deviceVerifiedAt < VERIFY_CACHE_MS) {
-      setDeviceAuthorized(true);
-      verifiedTokenRef.current = deviceToken;
-      setVerifyState("done");
-      return;
-    }
-
-    // Token beim Server prüfen
+    // Token bei jedem App-Start gegen die Datenbank prüfen (Server ist Single Source of Truth)
     setVerifyState("verifying");
     verifiedTokenRef.current = deviceToken;
 
@@ -88,31 +77,28 @@ export function AppLayout({ children }: { children: ReactNode }) {
       body: JSON.stringify({ token: deviceToken }),
     })
       .then((r) => {
-        // Server-Fehler (5xx, Neustart, etc.) → Gerät autorisiert lassen
+        // Server nicht erreichbar (5xx, Neustart) → Gerät autorisiert lassen
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
       .then((data) => {
         if (data?.valid) {
           setDeviceAuthorized(true);
-          // Erfolgreiche Verifikation → Zeitstempel speichern
-          setDeviceVerifiedAt(Date.now());
         } else {
-          // Nur bei explizitem valid:false → Token löschen
+          // Server kennt dieses Gerät nicht → Token löschen, Registrierung anfordern
           setDeviceToken(null);
           verifiedTokenRef.current = null;
           setDeviceAuthorized(false);
-          setDeviceVerifiedAt(null);
         }
       })
       .catch(() => {
-        // Netzwerkfehler oder Server-Fehler → Gerät autorisiert lassen (Offline-Toleranz)
+        // Netzwerkfehler oder Server temporär nicht erreichbar → Gerät autorisiert lassen
         setDeviceAuthorized(true);
       })
       .finally(() => {
         setVerifyState("done");
       });
-  }, [_hasHydrated, deviceToken, deviceVerifiedAt, setDeviceToken, setDeviceAuthorized, setDeviceVerifiedAt]);
+  }, [_hasHydrated, deviceToken, setDeviceToken, setDeviceAuthorized]);
 
   // Auf Hydration oder Verifikation warten → Ladeanimation
   if (!_hasHydrated || verifyState === "waiting" || verifyState === "verifying") {
