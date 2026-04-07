@@ -363,7 +363,7 @@ export default function Probeentnahme() {
         {view === "list" && (
           <>
             <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-xs text-blue-800">
-              <p className="font-bold mb-1 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Gesamtprotokoll (Formblatt 3.22-3)</p>
+              <p className="font-bold mb-1 flex items-center gap-1.5"><FileText className="w-3.5 h-3.5" /> Gesamtprotokoll</p>
               <p>Jede Probeentnahme durch die Lebensmittelüberwachung wird hier dokumentiert. Ausgefüllten Probenahmebogen und amtlichen Durchschlag umgehend per Fax <strong>08458/62-510</strong> oder E-Mail <strong>qm.suedbayern@edeka.de</strong> weiterleiten.</p>
             </div>
 
