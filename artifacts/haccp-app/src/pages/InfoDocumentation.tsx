@@ -57,7 +57,6 @@ export default function InfoDocumentation() {
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-blue-200 font-medium tracking-wide uppercase">Sektion 1.3</p>
               <h1 className="text-lg font-bold leading-tight">Info Dokumentation und Ablagefristen</h1>
             </div>
           </div>
