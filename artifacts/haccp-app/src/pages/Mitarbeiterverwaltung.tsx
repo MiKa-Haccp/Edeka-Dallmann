@@ -540,7 +540,6 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
                   <select value={status} onChange={(e) => setStatus(e.target.value as Status)}
                     className="px-3 py-2 rounded-lg border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20">
                     <option value="aktiv">Aktiv</option>
-                    <option value="onboarding">Onboarding</option>
                     <option value="inaktiv">Inaktiv</option>
                   </select>
                 </div>
