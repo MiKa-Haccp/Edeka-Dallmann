@@ -30,6 +30,9 @@ interface AppState {
   setDeviceAuthorized: (v: boolean) => void;
   deviceToken: string | null;
   setDeviceToken: (token: string | null) => void;
+  // Hydration guard: true sobald Zustand aus localStorage geladen hat
+  _hasHydrated: boolean;
+  _setHasHydrated: (v: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -78,6 +81,8 @@ export const useAppStore = create<AppState>()(
       setDeviceAuthorized: (v) => set({ deviceAuthorized: v }),
       deviceToken: null,
       setDeviceToken: (token) => set({ deviceToken: token, deviceAuthorized: !!token }),
+      _hasHydrated: false,
+      _setHasHydrated: (v) => set({ _hasHydrated: v }),
     }),
     {
       name: 'haccp-app-storage',
@@ -90,6 +95,9 @@ export const useAppStore = create<AppState>()(
         deviceAuthorized: state.deviceAuthorized,
         deviceToken: state.deviceToken,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?._setHasHydrated(true);
+      },
     }
   )
 );

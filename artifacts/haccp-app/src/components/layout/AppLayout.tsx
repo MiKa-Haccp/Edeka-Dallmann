@@ -36,52 +36,72 @@ function useActiveSidebar() {
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { selectedMarketId, deviceAuthorized, deviceToken, setDeviceToken, setDeviceAuthorized } = useAppStore();
+  const {
+    selectedMarketId, deviceAuthorized, deviceToken,
+    setDeviceToken, setDeviceAuthorized, _hasHydrated,
+  } = useAppStore();
   const { data: rawMarkets, isLoading: marketsLoading, isError: marketsError } = useListMarkets();
   const { isWare, isHaccp, isTodo, hasSidebar } = useActiveSidebar();
 
-  // Gerät-Verifizierung läuft noch (null = unbekannt, true/false = abgeschlossen)
-  const [deviceVerifying, setDeviceVerifying] = useState(true);
-  const verifiedRef = useRef(false);
+  // Verifikations-State: "waiting" (auf Hydration warten), "verifying", "done"
+  const [verifyState, setVerifyState] = useState<"waiting" | "verifying" | "done">("waiting");
+  const verifiedTokenRef = useRef<string | null>(null);
 
   useAutoLogout();
   useBookingAutoReturn();
 
   useEffect(() => {
-    if (verifiedRef.current) return;
-    verifiedRef.current = true;
+    // Warten bis Zustand aus localStorage vollständig geladen ist
+    if (!_hasHydrated) return;
 
+    // Kein Token → sofort fertig
     if (!deviceToken) {
       setDeviceAuthorized(false);
-      setDeviceVerifying(false);
+      setVerifyState("done");
       return;
     }
+
+    // Token wurde bereits geprüft (gleicher Token wie zuletzt) → nicht neu prüfen
+    if (verifiedTokenRef.current === deviceToken) {
+      setVerifyState("done");
+      return;
+    }
+
+    // Token prüfen
+    setVerifyState("verifying");
+    verifiedTokenRef.current = deviceToken;
 
     fetch(`${BASE}/device/verify-token`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token: deviceToken }),
     })
-      .then((r) => r.json())
+      .then((r) => {
+        // Server-Fehler (5xx, Neustart, etc.) → Gerät autorisiert lassen
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((data) => {
-        if (!data?.valid) {
-          setDeviceToken(null);
-          setDeviceAuthorized(false);
-        } else {
+        if (data?.valid) {
           setDeviceAuthorized(true);
+        } else {
+          // Nur bei explizitem valid:false → Token löschen
+          setDeviceToken(null);
+          verifiedTokenRef.current = null;
+          setDeviceAuthorized(false);
         }
       })
       .catch(() => {
-        // Bei Netzwerkfehler: autorisiert lassen damit Offline-Nutzung möglich bleibt
+        // Netzwerkfehler oder Server-Fehler → Gerät autorisiert lassen
         setDeviceAuthorized(true);
       })
       .finally(() => {
-        setDeviceVerifying(false);
+        setVerifyState("done");
       });
-  }, [deviceToken, setDeviceToken, setDeviceAuthorized]);
+  }, [_hasHydrated, deviceToken, setDeviceToken, setDeviceAuthorized]);
 
-  // Gerät noch nicht verifiziert → nichts anzeigen (verhindert kurzes Flackern)
-  if (deviceVerifying) {
+  // Auf Hydration oder Verifikation warten → Ladeanimation
+  if (!_hasHydrated || verifyState === "waiting" || verifyState === "verifying") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
