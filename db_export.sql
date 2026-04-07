@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict aKKz3DiCPts4PfFPXE9oYY20fx3ucIiF199bCDELYzxq23wMSsQboflJ7kr8oUG
+\restrict 3wITAuzUizELjQBc5bSJwXEJXiedAJ4pVRHG1goUlup4ozvtCnqZUtPf4semiOC
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -486,7 +486,8 @@ CREATE TABLE public.device_reg_links (
     expires_at timestamp without time zone DEFAULT (now() + '30 days'::interval) NOT NULL,
     used_at timestamp without time zone,
     device_id integer,
-    cancelled_at timestamp without time zone
+    cancelled_at timestamp without time zone,
+    short_code text
 );
 
 
@@ -4388,8 +4389,9 @@ COPY public.cleaning_plan_confirmations (id, tenant_id, item_key, year, month, i
 -- Data for Name: device_reg_links; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.device_reg_links (id, key, tenant_id, device_name_hint, email, created_at, expires_at, used_at, device_id, cancelled_at) FROM stdin;
-2	7abc04f3420958d5d25edac7557bd16852b1b8218aacab5b	1	Handy Kai	kai.martin585@googlemail.com	2026-04-07 11:36:54.817584	2026-05-07 11:36:54.809	\N	\N	\N
+COPY public.device_reg_links (id, key, tenant_id, device_name_hint, email, created_at, expires_at, used_at, device_id, cancelled_at, short_code) FROM stdin;
+2	7abc04f3420958d5d25edac7557bd16852b1b8218aacab5b	1	Handy Kai	kai.martin585@googlemail.com	2026-04-07 11:36:54.817584	2026-05-07 11:36:54.809	\N	\N	\N	7ABC04
+3	86eda801656d139b3cb1d22827e14be20e921459a25f3623	1	Kai Rechner Arbeit	kai.martin@edeka-dallmann.de	2026-04-07 12:04:07.282224	2026-05-07 12:04:07.272	\N	\N	\N	2SJVK2
 \.
 
 
@@ -6889,7 +6891,7 @@ SELECT pg_catalog.setval('public.cleaning_plan_confirmations_id_seq', 47, true);
 -- Name: device_reg_links_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.device_reg_links_id_seq', 2, true);
+SELECT pg_catalog.setval('public.device_reg_links_id_seq', 3, true);
 
 
 --
@@ -8267,6 +8269,13 @@ CREATE INDEX idx_device_reg_links_key ON public.device_reg_links USING btree (ke
 
 
 --
+-- Name: idx_device_reg_links_short_code; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX idx_device_reg_links_short_code ON public.device_reg_links USING btree (short_code) WHERE ((cancelled_at IS NULL) AND (used_at IS NULL));
+
+
+--
 -- Name: idx_metz_rein_market_datum; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -8674,5 +8683,5 @@ ALTER TABLE ONLY public.wareneingang_entries
 -- PostgreSQL database dump complete
 --
 
-\unrestrict aKKz3DiCPts4PfFPXE9oYY20fx3ucIiF199bCDELYzxq23wMSsQboflJ7kr8oUG
+\unrestrict 3wITAuzUizELjQBc5bSJwXEJXiedAJ4pVRHG1goUlup4ozvtCnqZUtPf4semiOC
 
