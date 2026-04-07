@@ -461,15 +461,9 @@ export default function ReinigungTaeglich() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">2.3 Reinigungsdokumentation</h1>
-                <p className="text-sm text-white/75">{selectedMarketName || "Kein Markt"} &mdash; tägliche Kontrolle</p>
+                <p className="text-sm text-white/75">tägliche Kontrolle</p>
               </div>
             </div>
-            <button
-              onClick={() => window.print()}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/15 text-white/75 hover:text-white text-sm transition-colors"
-            >
-              <Printer className="w-4 h-4" /> Drucken
-            </button>
           </div>
         </PageHeader>
 

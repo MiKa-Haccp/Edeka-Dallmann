@@ -417,7 +417,6 @@ export default function Betriebsbegehung() {
               <ClipboardCheck className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-blue-200 font-medium tracking-wide uppercase">Sektion 1.6</p>
               <h1 className="text-xl md:text-2xl font-bold">Betriebsbegehung</h1>
             </div>
           </div>

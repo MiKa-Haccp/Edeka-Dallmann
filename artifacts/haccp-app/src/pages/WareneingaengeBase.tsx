@@ -1091,10 +1091,6 @@ function WareneingaengeContent() {
                 <button onClick={prevMonth} className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors"><ChevronLeft className="w-4 h-4"/></button>
                 <span className="text-sm font-semibold min-w-[100px] text-center text-white">{new Date(year,month-1).toLocaleDateString("de-DE",{month:"long"})} {year}</span>
                 <button onClick={nextMonth} className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors"><ChevronRight className="w-4 h-4"/></button>
-                <button onClick={()=>generatePrintWindow(activeType,entries,year,month,selectedMarketId!,holidays,allCrit)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-white/15 text-white/75 hover:text-white text-xs font-medium transition-colors">
-                  <Printer className="w-3.5 h-3.5"/> PDF / Drucken
-                </button>
               </div>
             )}
           </div>

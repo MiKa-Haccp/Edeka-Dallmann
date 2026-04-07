@@ -426,7 +426,6 @@ export default function GQBegehung() {
               <ClipboardCheck className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-blue-200 font-medium tracking-wide uppercase">Sektion 3.8</p>
               <h1 className="text-xl md:text-2xl font-bold">GQ-Betriebsbegehung</h1>
             </div>
           </div>

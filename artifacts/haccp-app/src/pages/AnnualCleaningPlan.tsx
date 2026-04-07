@@ -353,7 +353,6 @@ export default function AnnualCleaningPlan() {
               <Brush className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-blue-200 font-medium tracking-wide uppercase">Sektion 1.5</p>
               <h1 className="text-xl md:text-2xl font-bold">Reinigungsplan Jahr</h1>
             </div>
           </div>
@@ -374,7 +373,6 @@ export default function AnnualCleaningPlan() {
               <span>Markt:</span>
               <span className="font-semibold text-white">{selectedMarket?.name || "–"}</span>
             </div>
-            <div className="ml-auto text-xs text-blue-200 italic">(Bestätigung durch Namenskürzel)</div>
           </div>
         </PageHeader>
 

@@ -391,11 +391,7 @@ export default function MetzgereiReinigung() {
             </div>
             <div className="flex-1">
               <h1 className="text-xl font-bold text-white">Reinigungsplan Metzgerei</h1>
-              <p className="text-sm text-white/75">Formblatt 3.6-1 · EDEKA DALLMANN</p>
             </div>
-            <button onClick={()=>window.print()} className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors">
-              <Printer className="w-5 h-5"/>
-            </button>
           </div>
         </PageHeader>
 

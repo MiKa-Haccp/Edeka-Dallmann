@@ -448,13 +448,9 @@ export default function WarenzustandOG() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">2.2 Warenzustand Obst & Gemüse</h1>
-                <p className="text-sm text-white/75">EDEKA Formblatt 3.7 &mdash; Kontrolle je Zeitfenster</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white text-sm font-medium transition-colors">
-                <Printer className="w-4 h-4" /> Drucken
-              </button>
             </div>
           </div>
         </PageHeader>

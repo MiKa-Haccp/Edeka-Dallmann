@@ -373,7 +373,6 @@ export default function Produktfehlermeldung() {
               <PackageX className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-blue-200 font-medium tracking-wide uppercase">Sektion 1.8 · Formblatt 3.14</p>
               <h1 className="text-xl md:text-2xl font-bold">Produktfehlermeldung</h1>
             </div>
           </div>

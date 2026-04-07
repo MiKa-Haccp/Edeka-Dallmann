@@ -23,7 +23,7 @@ const HACCP_SIDEBAR_PATHS = [
   "/haccp", "/wareneingaenge", "/metzgerei-wareneingaenge", "/reinigungsplan-metzgerei", "/oeffnung-salate", "/kaesetheke-kontrolle", "/semmelliste", "/eingefrorenes-fleisch", "/rezepturen", "/gq-begehung", "/abteilungsfremde-personen",
   "/marktplan",
   "/section/", "/category/", "/we-", "/besprechungsprotokoll",
-  "/gesundheitszeugnisse",
+  "/gesundheitszeugnisse", "/temp-lager-kontrolle", "/rindfleisch-etikettierung",
 ];
 
 function useActiveSidebar() {

@@ -449,11 +449,6 @@ export default function Responsibilities() {
             </div>
           )}
 
-          {/* Footer */}
-          <div className="px-6 py-3 bg-gray-50 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
-            <span>1.1</span>
-            <span>{String(selectedMonth).padStart(2, "0")}/{selectedYear}</span>
-          </div>
         </div>
       </div>
     </AppLayout>

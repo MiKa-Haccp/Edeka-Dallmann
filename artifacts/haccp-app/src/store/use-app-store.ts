@@ -57,6 +57,7 @@ export const useAppStore = create<AppState>()(
       hasPermission: (key: string) => {
         const s = get().adminSession;
         if (!s) return false;
+        if (s.role === 'SUPERADMIN') return true;
         return s.permissions?.includes(key) ?? false;
       },
       canAccessMarket: (marketId: number) => {

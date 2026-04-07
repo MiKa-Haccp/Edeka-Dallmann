@@ -81,7 +81,6 @@ export default function HinweisschildGesperrteWare() {
               <Printer className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs text-blue-200 font-medium tracking-wide uppercase">Sektion 1.7</p>
               <h1 className="text-lg font-bold leading-tight">Hinweisschild gesperrte Ware</h1>
             </div>
           </div>
@@ -165,12 +164,7 @@ export default function HinweisschildGesperrteWare() {
         <div id="hinweisschild-print" className="bg-white rounded-2xl border-2 border-border shadow-sm overflow-hidden" style={{ aspectRatio: "1.414 / 1" }}>
           <div className="flex flex-col h-full p-6 sm:p-10">
             <div className="flex items-start justify-between mb-4">
-              <div>
-                <span className="inline-flex items-center gap-2 text-[#4a90c4] text-xs font-bold uppercase tracking-wider">
-                  <span className="bg-[#4a90c4] text-white text-xs font-bold px-1.5 py-0.5 rounded">1.7</span>
-                  Hinweisschild gesperrte Ware
-                </span>
-              </div>
+              <div></div>
               <img
                 src={import.meta.env.BASE_URL + "dallmann-logo.png"}
                 alt="DALLMANN EDEKA"
@@ -208,11 +202,6 @@ export default function HinweisschildGesperrteWare() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-gray-400 mt-4 pt-3 border-t border-gray-100">
-              <span>DALLMANN EDEKA · HACCP Management</span>
-              <span>Qualitätssicherungs-Handbuch Einzelhandel</span>
-              <span>Seite 1 von 1</span>
-            </div>
           </div>
         </div>
       </div>

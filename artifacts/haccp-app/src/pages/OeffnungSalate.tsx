@@ -419,14 +419,10 @@ export default function OeffnungSalate() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">3.3 Öffnung Salate &amp; Eigenherstellung</h1>
-                <p className="text-sm text-white/75">EDEKA Formblatt 3.18</p>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <SalateAmpel entries={entries}/>
-              <button onClick={()=>window.print()} className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white text-sm font-medium transition-colors">
-                <Printer className="w-4 h-4"/> Drucken
-              </button>
             </div>
           </div>
         </PageHeader>

@@ -410,11 +410,7 @@ export default function EingefrorenesFleisch() {
             </div>
             <div className="flex-1">
               <h1 className="text-xl font-bold text-white">3.6 Eingefrorenes Fleisch</h1>
-              <p className="text-sm text-white/75">Bestandsliste eingefrorenes Fleisch – Formblatt 9.3</p>
             </div>
-            <button onClick={()=>window.print()} className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
-              <Printer className="w-4 h-4"/><span className="hidden sm:inline">Drucken</span>
-            </button>
           </div>
         </PageHeader>
 

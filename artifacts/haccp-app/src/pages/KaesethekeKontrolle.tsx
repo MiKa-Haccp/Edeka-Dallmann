@@ -931,9 +931,6 @@ export default function KaesethekeKontrolle() {
                 <p className="text-white/70 text-sm">Temperaturkontrolle Reifeschrank · Käsekühlschrank · Heiße Theke</p>
               </div>
             </div>
-            <button onClick={()=>window.print()} className="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors text-sm shrink-0">
-              <Printer className="w-4 h-4"/><span className="hidden sm:inline">Drucken</span>
-            </button>
           </div>
         </PageHeader>
 

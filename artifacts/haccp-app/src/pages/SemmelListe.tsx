@@ -383,9 +383,6 @@ export default function SemmelListe() {
                   <Settings2 className="w-4 h-4" /><span className="hidden sm:inline">Kontingent</span>
                 </button>
               )}
-              <button onClick={() => window.print()} className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors">
-                <Printer className="w-4 h-4" /><span className="hidden sm:inline">Drucken</span>
-              </button>
             </div>
           </div>
         </PageHeader>
