@@ -92,7 +92,7 @@ export default function GeraeteVerwaltung() {
   const [confirmCancelLink, setConfirmCancelLink] = useState<number | null>(null);
 
   // Tab
-  const [tab, setTab] = useState<"devices" | "links">("devices");
+  const [tab, setTab] = useState<"devices" | "links">("links");
 
   const loadDevices = useCallback(async () => {
     setLoading(true);
@@ -278,18 +278,18 @@ export default function GeraeteVerwaltung() {
         {/* Tabs */}
         <div className="flex gap-1 p-1 bg-muted/30 rounded-2xl border border-border/20">
           <button
-            onClick={() => setTab("devices")}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${tab === "devices" ? "bg-white shadow-sm text-[#1a3a6b]" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            <Smartphone className="w-4 h-4" />
-            Geräte ({activeDevices.length})
-          </button>
-          <button
             onClick={() => setTab("links")}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${tab === "links" ? "bg-white shadow-sm text-[#1a3a6b]" : "text-muted-foreground hover:text-foreground"}`}
           >
             <Link2 className="w-4 h-4" />
             Reg.-Links {activeLinks.length > 0 && <span className="bg-[#1a3a6b] text-white text-xs px-1.5 py-0.5 rounded-full">{activeLinks.length}</span>}
+          </button>
+          <button
+            onClick={() => setTab("devices")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${tab === "devices" ? "bg-white shadow-sm text-[#1a3a6b]" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Smartphone className="w-4 h-4" />
+            Geräte ({activeDevices.length})
           </button>
         </div>
 
