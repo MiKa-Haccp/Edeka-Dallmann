@@ -57,6 +57,21 @@ router.patch("/feedback/mark-all-read", async (_req, res) => {
   }
 });
 
+router.patch("/feedback/:id/status", async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!["offen", "erledigt"].includes(status)) return res.status(400).json({ error: "Ungültiger Status" });
+    const { rows } = await pool.query(
+      "UPDATE feedback SET status=$1 WHERE id=$2 RETURNING *",
+      [status, req.params.id]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("feedback status PATCH error:", err);
+    res.status(500).json({ error: "Serverfehler" });
+  }
+});
+
 router.delete("/feedback/:id", async (req, res) => {
   try {
     await pool.query("DELETE FROM feedback WHERE id=$1", [req.params.id]);
