@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable } from "@workspace/db";
+import { db, pool, usersTable } from "@workspace/db";
 import {
   ResetUserCredentialsParams,
   ResetUserCredentialsBody,
@@ -353,11 +353,26 @@ router.put("/users/:userId/pin", async (req, res) => {
   res.json(stripSensitive(updated));
 });
 
-// Admin deletes employee (hard delete - use only for test data; for real employees use status=inaktiv)
+// Admin deletes employee - cleans up all FK-dependent records first
 router.delete("/users/:userId", async (req, res) => {
   const userId = Number(req.params.userId);
-  await db.delete(usersTable).where(eq(usersTable.id, userId));
-  res.json({ success: true });
+  try {
+    await pool.query(`DELETE FROM notification_channels WHERE user_id = $1`, [userId]);
+    await pool.query(`DELETE FROM notification_log WHERE user_id = $1`, [userId]);
+    await pool.query(`DELETE FROM user_permissions WHERE user_id = $1`, [userId]);
+    await pool.query(`DELETE FROM user_market_assignments WHERE user_id = $1`, [userId]);
+    await pool.query(`DELETE FROM password_tokens WHERE user_id = $1`, [userId]);
+    await pool.query(`DELETE FROM training_attendances WHERE user_id = $1`, [userId]);
+    await pool.query(`DELETE FROM cleaning_plan_confirmations WHERE user_id = $1`, [userId]);
+    await pool.query(`DELETE FROM schulungs_person_zuordnungen WHERE user_id = $1`, [userId]);
+    await pool.query(`DELETE FROM till_assignments WHERE user_id = $1`, [userId]);
+    await pool.query(`UPDATE training_sessions SET trainer_id = NULL WHERE trainer_id = $1`, [userId]);
+    await db.delete(usersTable).where(eq(usersTable.id, userId));
+    res.json({ success: true });
+  } catch (e: any) {
+    console.error("Delete user error:", e.message);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 router.put("/users/:userId/reset", async (req, res) => {

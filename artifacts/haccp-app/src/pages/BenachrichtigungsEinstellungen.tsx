@@ -52,14 +52,20 @@ export default function BenachrichtigungsEinstellungen() {
   const [loading, setLoading] = useState(true);
   const [checkRunning, setCheckRunning] = useState(false);
   const [checkResult, setCheckResult] = useState<{ checked: number; sent: number; errors: number } | null>(null);
+  const [usersRefreshing, setUsersRefreshing] = useState(false);
 
   useEffect(() => {
     if (!adminSession || adminSession.role !== "SUPERADMIN") navigate("/");
   }, [adminSession, navigate]);
 
   const loadUsers = async () => {
-    const usersData = await fetch(`${API_BASE}/notifications/channels`).then(r => r.json());
-    setUsers(usersData || []);
+    setUsersRefreshing(true);
+    try {
+      const usersData = await fetch(`${API_BASE}/notifications/channels`).then(r => r.json());
+      setUsers(usersData || []);
+    } finally {
+      setUsersRefreshing(false);
+    }
   };
 
   const loadAll = async () => {
@@ -177,10 +183,11 @@ export default function BenachrichtigungsEinstellungen() {
           </div>
           <button
             onClick={loadUsers}
+            disabled={usersRefreshing}
             title="Benutzerliste aktualisieren"
-            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-gray-100 transition-colors disabled:opacity-50"
           >
-            <RefreshCw className="h-4 w-4" />
+            <RefreshCw className={`h-4 w-4 ${usersRefreshing ? "animate-spin" : ""}`} />
           </button>
         </div>
 
