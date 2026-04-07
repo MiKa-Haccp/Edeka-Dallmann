@@ -179,7 +179,7 @@ export default function TempLagerKontrolle() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col h-full">
+      <div className="space-y-4">
         <PageHeader>
           <div className="flex items-center gap-3">
             <Link href="/category/1" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
@@ -204,7 +204,7 @@ export default function TempLagerKontrolle() {
           </div>
         </PageHeader>
 
-        <div className="flex-1 overflow-auto p-4 space-y-4">
+        <div className="space-y-4">
           {/* Monatsnavigation */}
           <div className="flex items-center justify-between bg-white rounded-xl border shadow-sm p-3">
             <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-secondary"><ChevronLeft className="w-5 h-5"/></button>
