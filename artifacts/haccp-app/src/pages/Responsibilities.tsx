@@ -506,7 +506,9 @@ function EmployeeNameCell({
   const handleSelect = (emp: EmployeeOption) => {
     setQuery(emp.name);
     onChangeName(emp.name);
-    onChangePhone(emp.phone || "");
+    if (emp.phone) {
+      onChangePhone(emp.phone);
+    }
     setOpen(false);
   };
 
