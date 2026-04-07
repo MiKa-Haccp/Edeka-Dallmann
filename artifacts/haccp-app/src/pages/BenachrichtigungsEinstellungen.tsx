@@ -57,6 +57,11 @@ export default function BenachrichtigungsEinstellungen() {
     if (!adminSession || adminSession.role !== "SUPERADMIN") navigate("/");
   }, [adminSession, navigate]);
 
+  const loadUsers = async () => {
+    const usersData = await fetch(`${API_BASE}/notifications/channels`).then(r => r.json());
+    setUsers(usersData || []);
+  };
+
   const loadAll = async () => {
     setLoading(true);
     try {
@@ -76,6 +81,13 @@ export default function BenachrichtigungsEinstellungen() {
       setEmailSettings(settingsData || {});
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTabChange = (newTab: TabId) => {
+    setTab(newTab);
+    if (newTab === "empfaenger" || newTab === "regeln") {
+      loadUsers();
     }
   };
 
@@ -139,28 +151,37 @@ export default function BenachrichtigungsEinstellungen() {
           </div>
         </PageHeader>
 
-        <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
-          {tabs.map(t => {
-            const Icon = t.icon;
-            return (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all",
-                  tab === t.id ? "bg-white text-orange-700 shadow-sm" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {t.label}
-                {t.count !== undefined && t.count > 0 && (
-                  <span className={cn("px-1.5 py-0.5 rounded-full text-xs font-bold", tab === t.id ? "bg-orange-100 text-orange-700" : "bg-gray-200 text-gray-600")}>
-                    {t.count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+            {tabs.map(t => {
+              const Icon = t.icon;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => handleTabChange(t.id)}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all",
+                    tab === t.id ? "bg-white text-orange-700 shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {t.label}
+                  {t.count !== undefined && t.count > 0 && (
+                    <span className={cn("px-1.5 py-0.5 rounded-full text-xs font-bold", tab === t.id ? "bg-orange-100 text-orange-700" : "bg-gray-200 text-gray-600")}>
+                      {t.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={loadUsers}
+            title="Benutzerliste aktualisieren"
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-gray-100 transition-colors"
+          >
+            <RefreshCw className="h-4 w-4" />
+          </button>
         </div>
 
         {loading ? (
