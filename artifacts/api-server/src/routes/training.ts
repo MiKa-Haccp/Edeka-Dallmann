@@ -31,8 +31,11 @@ router.get("/markets/:marketId/training-sessions", async (req, res) => {
       tenantId: trainingSessionsTable.tenantId,
       marketId: trainingSessionsTable.marketId,
       sessionDate: trainingSessionsTable.sessionDate,
+      sessionName: trainingSessionsTable.sessionName,
       trainerId: trainingSessionsTable.trainerId,
       trainerName: trainingSessionsTable.trainerName,
+      trainerId2: trainingSessionsTable.trainerId2,
+      trainerName2: trainingSessionsTable.trainerName2,
       notes: trainingSessionsTable.notes,
       sessionType: trainingSessionsTable.sessionType,
       createdAt: trainingSessionsTable.createdAt,
@@ -79,7 +82,7 @@ router.get("/markets/:marketId/training-sessions", async (req, res) => {
 
 router.post("/markets/:marketId/training-sessions", async (req, res) => {
   const marketId = parseInt(req.params.marketId);
-  const { tenantId, sessionDate, trainerId, trainerName, notes, topicIds, customTopicTitle } = req.body;
+  const { tenantId, sessionDate, sessionName, trainerId, trainerName, trainerId2, trainerName2, notes, topicIds, customTopicTitle } = req.body;
 
   const sessionType = req.body.sessionType || 'schulungsprotokoll';
   const [session] = await db
@@ -87,9 +90,12 @@ router.post("/markets/:marketId/training-sessions", async (req, res) => {
     .values({
       tenantId,
       marketId,
-      sessionDate,
+      sessionDate: sessionDate || new Date().toISOString().split("T")[0],
+      sessionName: sessionName || null,
       trainerId: trainerId || null,
       trainerName: trainerName || null,
+      trainerId2: trainerId2 || null,
+      trainerName2: trainerName2 || null,
       notes: notes || null,
       sessionType,
     })
@@ -185,14 +191,17 @@ router.get("/training-sessions/:sessionId", async (req, res) => {
 
 router.put("/training-sessions/:sessionId", async (req, res) => {
   const sessionId = parseInt(req.params.sessionId);
-  const { sessionDate, trainerId, trainerName, notes, topics } = req.body;
+  const { sessionDate, sessionName, trainerId, trainerName, trainerId2, trainerName2, notes, topics } = req.body;
 
   await db
     .update(trainingSessionsTable)
     .set({
       ...(sessionDate && { sessionDate }),
+      ...(sessionName !== undefined && { sessionName: sessionName || null }),
       ...(trainerId !== undefined && { trainerId: trainerId || null }),
       ...(trainerName !== undefined && { trainerName: trainerName || null }),
+      ...(trainerId2 !== undefined && { trainerId2: trainerId2 || null }),
+      ...(trainerName2 !== undefined && { trainerName2: trainerName2 || null }),
       ...(notes !== undefined && { notes: notes || null }),
       updatedAt: new Date(),
     })

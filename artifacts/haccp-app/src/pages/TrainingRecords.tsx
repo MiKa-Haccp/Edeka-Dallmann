@@ -39,6 +39,8 @@ import {
   RefreshCw,
   Calendar,
   FileText,
+  Pencil,
+  Save,
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { clsx, type ClassValue } from "clsx";
@@ -119,14 +121,17 @@ function NewSchulungsprotokollDialog({
   const createSession = useCreateTrainingSession();
   const queryClient = useQueryClient();
 
-  const [sessionDate, setSessionDate] = useState(new Date().toISOString().split("T")[0]);
+  const today = new Date().toISOString().split("T")[0];
+  const [sessionName, setSessionName] = useState("");
   const [trainerId, setTrainerId] = useState<number | null>(null);
   const [trainerName, setTrainerName] = useState("");
+  const [trainerId2, setTrainerId2] = useState<number | null>(null);
+  const [trainerName2, setTrainerName2] = useState("");
   const [selectedTopics, setSelectedTopics] = useState<number[]>(initialTopicIds ?? []);
   const [notes, setNotes] = useState("");
 
-  const adminUsers = users?.filter(
-    (u: any) => u.role === "SUPERADMIN" || u.role === "ADMIN" || u.role === "MARKTLEITER"
+  const trainerUsers = users?.filter(
+    (u: any) => u.role === "SUPERADMIN" || u.role === "ADMIN" || u.role === "MARKTLEITER" || u.role === "BEREICHSLEITUNG"
   );
 
   const toggleTopic = (id: number) => {
@@ -139,14 +144,13 @@ function NewSchulungsprotokollDialog({
   };
 
   const handleSubmit = async () => {
-    if (!sessionDate || selectedTopics.length === 0) return;
+    if (!sessionName.trim() || selectedTopics.length === 0) return;
     await createSession.mutateAsync({
       marketId,
-      data: { tenantId, sessionDate, trainerId, trainerName: trainerName || null, topicIds: selectedTopics, notes: notes || null, sessionType: "schulungsprotokoll" } as any,
+      data: { tenantId, sessionDate: today, sessionName: sessionName.trim(), trainerId, trainerName: trainerName || null, trainerId2: trainerId2 || null, trainerName2: trainerName2 || null, topicIds: selectedTopics, notes: notes || null, sessionType: "schulungsprotokoll" } as any,
     });
     queryClient.invalidateQueries({ queryKey: [`/api/markets/${marketId}/training-sessions`] });
-    setSessionDate(new Date().toISOString().split("T")[0]);
-    setTrainerId(null); setTrainerName(""); setSelectedTopics([]); setNotes("");
+    setSessionName(""); setTrainerId(null); setTrainerName(""); setTrainerId2(null); setTrainerName2(""); setSelectedTopics([]); setNotes("");
     onClose();
   };
 
@@ -156,68 +160,92 @@ function NewSchulungsprotokollDialog({
         <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
         <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl p-6 w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto z-50 shadow-xl">
           <Dialog.Title className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">
-            <GraduationCap className="w-5 h-5 text-primary" />
+            <GraduationCap className="w-5 h-5 text-[#1a3a6b]" />
             Neue Schulung erstellen
           </Dialog.Title>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
+            {/* Schulungsname */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Datum *</label>
-              <input type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm" />
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Schulungsname *</label>
+              <input type="text" value={sessionName} onChange={(e) => setSessionName(e.target.value)}
+                placeholder="z.B. Jahresschulung Leeder 2026"
+                className="w-full border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 focus:border-[#1a3a6b]/40" />
             </div>
 
+            {/* Schulungsleiter */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Schulungsleiter *</label>
-              <select value={trainerId || ""} onChange={(e) => {
-                const id = e.target.value ? parseInt(e.target.value) : null;
-                setTrainerId(id);
-                if (id) { const user = adminUsers?.find((u: any) => u.id === id); if (user) setTrainerName(user.name); }
-              }} className="w-full border border-border rounded-lg px-3 py-2 text-sm">
-                <option value="">Schulungsleiter wählen...</option>
-                {adminUsers?.map((u: any) => (
-                  <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
-                ))}
-              </select>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Schulungsleiter</label>
+              <div className="space-y-2">
+                <select value={trainerId || ""} onChange={(e) => {
+                  const id = e.target.value ? parseInt(e.target.value) : null;
+                  setTrainerId(id);
+                  if (id) { const user = trainerUsers?.find((u: any) => u.id === id); if (user) setTrainerName(user.name); }
+                  else setTrainerName("");
+                }} className="w-full border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20">
+                  <option value="">Schulungsleiter wählen...</option>
+                  {trainerUsers?.map((u: any) => (
+                    <option key={u.id} value={u.id} disabled={u.id === trainerId2}>{u.name}</option>
+                  ))}
+                </select>
+                <select value={trainerId2 || ""} onChange={(e) => {
+                  const id = e.target.value ? parseInt(e.target.value) : null;
+                  setTrainerId2(id);
+                  if (id) { const user = trainerUsers?.find((u: any) => u.id === id); if (user) setTrainerName2(user.name); }
+                  else setTrainerName2("");
+                }} className="w-full border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 text-muted-foreground">
+                  <option value="">2. Schulungsleiter (optional)</option>
+                  {trainerUsers?.map((u: any) => (
+                    <option key={u.id} value={u.id} disabled={u.id === trainerId}>{u.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
+            {/* Schulungsthemen */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-foreground">Schulungsthemen *</label>
-                <button type="button" onClick={handleSelectAll} className="text-xs text-primary hover:underline">
+                <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Schulungsthemen *</label>
+                <button type="button" onClick={handleSelectAll} className="text-xs text-[#1a3a6b] font-medium hover:underline">
                   {topics && selectedTopics.length === topics.length ? "Alle abwählen" : "Alle auswählen"}
                 </button>
               </div>
-              <div className="border border-border rounded-lg divide-y divide-border max-h-60 overflow-y-auto">
+              <div className="border border-border rounded-xl divide-y divide-border/60 max-h-64 overflow-y-auto">
                 {topics?.map((topic: any) => (
-                  <label key={topic.id} className="flex items-start gap-3 px-3 py-2.5 hover:bg-secondary/50 cursor-pointer">
-                    <input type="checkbox" checked={selectedTopics.includes(topic.id)} onChange={() => toggleTopic(topic.id)}
-                      className="mt-0.5 rounded border-border" />
+                  <label key={topic.id} className={cn("flex items-start gap-3 px-3 py-2.5 cursor-pointer transition-colors", selectedTopics.includes(topic.id) ? "bg-[#1a3a6b]/5" : "hover:bg-muted/40")}>
+                    <div className={cn("mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
+                      selectedTopics.includes(topic.id) ? "bg-[#1a3a6b] border-[#1a3a6b]" : "border-border")}>
+                      {selectedTopics.includes(topic.id) && <Check className="w-2.5 h-2.5 text-white" />}
+                    </div>
                     <div className="min-w-0">
                       <p className="text-sm text-foreground leading-snug">{topic.title}</p>
                       {topic.responsible && (
-                        <p className="text-xs text-muted-foreground mt-0.5">Zuständig: {topic.responsible}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{topic.responsible}</p>
                       )}
                     </div>
                   </label>
                 ))}
               </div>
+              {selectedTopics.length > 0 && (
+                <p className="text-xs text-[#1a3a6b] font-medium mt-1.5">{selectedTopics.length} Thema{selectedTopics.length !== 1 ? "en" : ""} ausgewählt</p>
+              )}
             </div>
 
+            {/* Anmerkungen */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Anmerkungen</label>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Anmerkungen</label>
               <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm resize-none" />
+                className="w-full border border-border rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
             </div>
           </div>
 
           <div className="flex gap-3 mt-6">
-            <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-secondary">
+            <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary">
               Abbrechen
             </button>
             <button onClick={handleSubmit}
-              disabled={createSession.isPending || !sessionDate || selectedTopics.length === 0}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
+              disabled={createSession.isPending || !sessionName.trim() || selectedTopics.length === 0}
+              className="flex-1 px-4 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-50 flex items-center justify-center gap-2">
               {createSession.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               Schulung erstellen
             </button>
@@ -246,18 +274,19 @@ function NewSimpleSessionDialog({
   const createSession = useCreateTrainingSession();
   const queryClient = useQueryClient();
 
-  const [sessionDate, setSessionDate] = useState(new Date().toISOString().split("T")[0]);
+  const today = new Date().toISOString().split("T")[0];
+  const [sessionName, setSessionName] = useState("");
   const [trainerName, setTrainerName] = useState("");
+  const [trainerName2, setTrainerName2] = useState("");
 
   const handleSubmit = async () => {
-    if (!sessionDate) return;
+    if (!sessionName.trim()) return;
     await createSession.mutateAsync({
       marketId,
-      data: { tenantId, sessionDate, trainerName: trainerName || null, topicIds: [], sessionType } as any,
+      data: { tenantId, sessionDate: today, sessionName: sessionName.trim(), trainerName: trainerName || null, trainerName2: trainerName2 || null, topicIds: [], sessionType } as any,
     });
     queryClient.invalidateQueries({ queryKey: [`/api/markets/${marketId}/training-sessions`] });
-    setSessionDate(new Date().toISOString().split("T")[0]);
-    setTrainerName("");
+    setSessionName(""); setTrainerName(""); setTrainerName2("");
     onClose();
   };
 
@@ -267,28 +296,32 @@ function NewSimpleSessionDialog({
         <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
         <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl p-6 w-[95vw] max-w-md z-50 shadow-xl">
           <Dialog.Title className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">
-            <Plus className="w-5 h-5 text-primary" />
+            <Plus className="w-5 h-5 text-[#1a3a6b]" />
             {typeLabel} – Neue Schulung
           </Dialog.Title>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Datum *</label>
-              <input type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm" />
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Schulungsname *</label>
+              <input type="text" value={sessionName} onChange={(e) => setSessionName(e.target.value)}
+                placeholder={`z.B. ${typeLabel} Leeder 2026`}
+                className="w-full border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Schulungsleiter / Durchgeführt von</label>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Schulungsleiter</label>
               <input type="text" value={trainerName} onChange={(e) => setTrainerName(e.target.value)}
                 placeholder="Name des Schulungsleiters"
-                className="w-full border border-border rounded-lg px-3 py-2 text-sm" />
+                className="w-full border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 mb-2" />
+              <input type="text" value={trainerName2} onChange={(e) => setTrainerName2(e.target.value)}
+                placeholder="2. Schulungsleiter (optional)"
+                className="w-full border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 text-muted-foreground" />
             </div>
           </div>
           <div className="flex gap-3 mt-6">
-            <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-secondary">
+            <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-secondary">
               Abbrechen
             </button>
-            <button onClick={handleSubmit} disabled={createSession.isPending || !sessionDate}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
+            <button onClick={handleSubmit} disabled={createSession.isPending || !sessionName.trim()}
+              className="flex-1 px-4 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-50 flex items-center justify-center gap-2">
               {createSession.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
               Schulung anlegen
             </button>
@@ -377,6 +410,11 @@ function SessionDetailView({ sessionId, onBack }: { sessionId: number; onBack: (
   const removeAttendance = useRemoveTrainingAttendance();
   const queryClient = useQueryClient();
   const [showAttendanceDialog, setShowAttendanceDialog] = useState(false);
+  const [editingMeta, setEditingMeta] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editTrainerName, setEditTrainerName] = useState("");
+  const [editTrainerName2, setEditTrainerName2] = useState("");
+  const [metaSaving, setMetaSaving] = useState(false);
   const adminSession = useAppStore((s) => s.adminSession);
   const hasPermission = useAppStore((s) => s.hasPermission);
   const isAdmin = hasPermission("entries.delete");
@@ -408,45 +446,89 @@ function SessionDetailView({ sessionId, onBack }: { sessionId: number; onBack: (
     queryClient.invalidateQueries({ queryKey: ["/api/markets"] });
   };
 
+  const handleSaveMeta = async () => {
+    setMetaSaving(true);
+    await updateSession.mutateAsync({
+      sessionId,
+      data: { sessionName: editName.trim() || null, trainerName: editTrainerName || null, trainerName2: editTrainerName2 || null } as any,
+    });
+    queryClient.invalidateQueries({ queryKey: [`/api/training-sessions/${sessionId}`] });
+    setEditingMeta(false);
+    setMetaSaving(false);
+  };
+
   if (isLoading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   if (!session) return <div className="text-center py-20 text-muted-foreground">Schulung nicht gefunden.</div>;
 
   const isSimpleType = session.sessionType !== "schulungsprotokoll" && session.sessionType !== null;
+  const displayName = session.sessionName || new Date(session.sessionDate + "T00:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+  const createdAtFormatted = session.createdAt ? new Date(session.createdAt).toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" }) : "–";
+  const trainerDisplay = [session.trainerName, session.trainerName2].filter(Boolean).join(" · ");
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <button onClick={onBack} className="p-2 rounded-lg hover:bg-secondary text-muted-foreground">
+        <button onClick={onBack} className="p-2 rounded-xl hover:bg-secondary text-muted-foreground">
           <ChevronLeft className="w-5 h-5" />
         </button>
-        <div className="flex-1">
-          <h2 className="text-xl font-bold text-foreground">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             {TAB_LABELS[(session.sessionType as SessionType) || "schulungsprotokoll"]}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {new Date(session.sessionDate + "T00:00:00").toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}
           </p>
+          <h2 className="text-lg font-bold text-foreground truncate">{displayName}</h2>
         </div>
         {isAdmin && (
-          <button onClick={handleDeleteSession} className="p-2 rounded-lg hover:bg-destructive/10 text-destructive" title="Schulung löschen">
-            <Trash2 className="w-5 h-5" />
-          </button>
+          <>
+            <button onClick={() => { setEditName(session.sessionName || ""); setEditTrainerName(session.trainerName || ""); setEditTrainerName2(session.trainerName2 || ""); setEditingMeta(true); }}
+              className="p-2 rounded-xl hover:bg-[#1a3a6b]/10 text-[#1a3a6b]" title="Schulung bearbeiten">
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button onClick={handleDeleteSession} className="p-2 rounded-xl hover:bg-destructive/10 text-destructive" title="Schulung löschen">
+              <Trash2 className="w-5 h-5" />
+            </button>
+          </>
         )}
       </div>
 
-      <div className="bg-white rounded-xl border border-border p-4 sm:p-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Datum</p>
-            <p className="text-sm font-semibold text-foreground">
-              {new Date(session.sessionDate + "T00:00:00").toLocaleDateString("de-DE")}
-            </p>
+      <div className="bg-white rounded-2xl border-2 border-border/40 p-4 sm:p-5">
+        {/* Edit-Formular */}
+        {editingMeta ? (
+          <div className="space-y-3 mb-4 pb-4 border-b border-border/40">
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Schulungsname</label>
+              <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)}
+                placeholder="z.B. Jahresschulung Leeder 2026"
+                className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Schulungsleiter</label>
+              <input type="text" value={editTrainerName} onChange={(e) => setEditTrainerName(e.target.value)}
+                placeholder="Name des Schulungsleiters"
+                className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 mb-2" />
+              <input type="text" value={editTrainerName2} onChange={(e) => setEditTrainerName2(e.target.value)}
+                placeholder="2. Schulungsleiter (optional)"
+                className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={handleSaveMeta} disabled={metaSaving}
+                className="flex items-center gap-1.5 px-4 py-2 bg-[#1a3a6b] text-white rounded-xl text-xs font-bold hover:bg-[#2d5aa0] disabled:opacity-50">
+                {metaSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />} Speichern
+              </button>
+              <button onClick={() => setEditingMeta(false)} className="px-4 py-2 border border-border rounded-xl text-xs font-medium text-muted-foreground hover:bg-secondary">Abbrechen</button>
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Schulungsleiter</p>
-            <p className="text-sm font-semibold text-foreground">{session.trainerName || "–"}</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+            <div>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Erstellungsdatum</p>
+              <p className="text-sm font-semibold text-foreground">{createdAtFormatted}</p>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1">Schulungsleiter</p>
+              <p className="text-sm font-semibold text-foreground">{trainerDisplay || "–"}</p>
+            </div>
           </div>
-        </div>
+        )}
 
         {isSimpleType && TAB_META[session.sessionType as SessionType]?.sections?.length > 0 && (
           <div className="mb-6">
@@ -742,21 +824,29 @@ function SessionCard({
     day: "2-digit", month: "long", year: "numeric",
   });
 
+  const displayName = session.sessionName || formattedDate;
+  const trainerDisplay = [session.trainerName, session.trainerName2].filter(Boolean).join(", ");
+
   return (
-    <div className="bg-white rounded-xl border border-border hover:border-primary/40 hover:shadow-md transition-all group">
+    <div className="bg-white rounded-2xl border-2 border-border/40 hover:border-[#1a3a6b]/30 hover:shadow-md transition-all group">
       {/* Card Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border/50 cursor-pointer" onClick={onSelect}>
+      <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border/30 cursor-pointer" onClick={onSelect}>
         <div className="flex items-center gap-3 min-w-0">
-          <div className="p-2 bg-primary/5 rounded-lg group-hover:bg-primary/10 transition-colors shrink-0">
+          <div className="p-2 bg-[#1a3a6b]/8 rounded-xl group-hover:bg-[#1a3a6b]/14 transition-colors shrink-0">
             <Icon className={cn("w-4 h-4", meta.color)} />
           </div>
           <div className="min-w-0">
-            <h3 className="text-sm font-bold text-foreground">{formattedDate}</h3>
-            {session.trainerName && (
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                Schulungsleiter: <span className="font-medium text-foreground/70">{session.trainerName}</span>
-              </p>
-            )}
+            <h3 className="text-sm font-bold text-foreground truncate">{displayName}</h3>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              {session.sessionName && (
+                <span className="text-xs text-muted-foreground">{formattedDate}</span>
+              )}
+              {trainerDisplay && (
+                <span className="text-xs text-muted-foreground truncate">
+                  {session.sessionName && "· "}<span className="font-medium text-foreground/70">{trainerDisplay}</span>
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0 ml-2">
@@ -917,18 +1007,15 @@ function SessionListTab({
         )}
       </div>
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-muted-foreground">
-          {sessions?.length || 0} Schulung{(sessions?.length ?? 0) !== 1 ? "en" : ""} in {selectedYear}
-        </p>
-        {isAdmin && (
+      {isAdmin && (
+        <div className="flex justify-end">
           <button onClick={() => setShowNewDialog(true)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90">
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold hover:bg-[#2d5aa0]">
             <Plus className="w-4 h-4" />
             Neue Schulung
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-7 h-7 animate-spin text-primary" /></div>
