@@ -1,7 +1,7 @@
 import { useListCategories, useListSections } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import * as Accordion from "@radix-ui/react-accordion";
-import { ChevronDown, Folder, FileText, ClipboardList, GripVertical, X, Home, ShieldCheck, ShoppingCart, Beef, FolderKanban } from "lucide-react";
+import { ChevronDown, Folder, FileText, ClipboardList, GripVertical, X, Home, ShieldCheck, ShoppingCart, Beef } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
@@ -241,24 +241,6 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </div>
 
-      <div className="mt-4 px-4 pb-2">
-        <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 px-2">
-          Weitere Module
-        </div>
-        <Link
-          href="/projekt-hub"
-          onClick={onNavigate}
-          className={cn(
-            "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-            location.startsWith("/projekt-hub")
-              ? "bg-indigo-50 text-indigo-700"
-              : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-          )}
-        >
-          <FolderKanban className="h-4 w-4 flex-shrink-0" />
-          Projekt-Hub
-        </Link>
-      </div>
 
       <div className="mt-auto p-4 border-t border-border/60 space-y-1">
         <Link
