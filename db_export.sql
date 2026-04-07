@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Lc0hqLEbPav3iXNqYKthasyFq2AHCvMaKRU8IsDQGpO9KS7BJbbaThh5z2NoB0j
+\restrict Z6G9fAtxof5QVsUQuYyx1eKYpd86uRGbeWTwO61r9K66LyV5tlP3V4XxA6TPul8
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -2941,7 +2941,10 @@ CREATE TABLE public.training_sessions (
     notes text,
     created_at timestamp without time zone DEFAULT now() NOT NULL,
     updated_at timestamp without time zone DEFAULT now() NOT NULL,
-    session_type character varying DEFAULT 'schulungsprotokoll'::character varying
+    session_type character varying DEFAULT 'schulungsprotokoll'::character varying,
+    session_name text,
+    trainer_id_2 integer,
+    trainer_name_2 text
 );
 
 
@@ -5457,6 +5460,7 @@ COPY public.schulungs_person_zuordnungen (id, schulungs_pflicht_id, user_id, ten
 
 COPY public.schulungs_pflichten (id, tenant_id, schulung_kategorie, bezeichnung, gueltige_gruppen, intervall_monate, is_active, created_at, person_spezifisch, subbereich, parent_pflicht_id, typ, zuordnung_modus, training_topic_id, pruef_modus) FROM stdin;
 13	3	Metzgerei Spezial	Fleischhygieneunterweisung	{metzgerei}	6	t	2026-03-26 14:42:23.78837	f	\N	\N	schulung	gruppe	\N	zeitbasiert
+3	1	HACCP Grundschulung	Jährliche Hygieneschulung	{markt,gesamter_markt}	12	t	2026-03-26 14:42:23.78837	f	\N	\N	schulung	gruppe	2	zeitbasiert
 16	2	Strohschwein	Strohschwein-Schulung (allgemein)	{}	12	t	2026-03-26 14:58:56.871633	t	\N	\N	schulung	auto	\N	zeitbasiert
 17	2	Strohschwein	Strohschwein — Feuerwerk	{}	12	t	2026-03-26 14:58:56.871633	t	Feuerwerk	\N	schulung	auto	\N	zeitbasiert
 18	3	Strohschwein	Strohschwein-Schulung (allgemein)	{}	12	t	2026-03-26 14:58:56.871633	t	\N	\N	schulung	auto	\N	zeitbasiert
@@ -5478,7 +5482,6 @@ COPY public.schulungs_pflichten (id, tenant_id, schulung_kategorie, bezeichnung,
 29	1	Gesundheitszeugnis	Gesundheitszeugnis	{}	12	t	2026-03-27 06:51:19.706582	f	\N	\N	bescheinigung	auto	\N	vorhanden
 30	2	Gesundheitszeugnis	Gesundheitszeugnis	{}	12	t	2026-03-27 06:51:19.706582	f	\N	\N	bescheinigung	auto	\N	vorhanden
 31	3	Gesundheitszeugnis	Gesundheitszeugnis	{}	12	t	2026-03-27 06:51:19.706582	f	\N	\N	bescheinigung	auto	\N	vorhanden
-3	1	HACCP Grundschulung	Jährliche Hygieneschulung	{gesamter_markt,markt}	12	t	2026-03-26 14:42:23.78837	f	\N	\N	schulung	gruppe	2	zeitbasiert
 26	1	HACCP Grundschulung	Lebensmittelleitkultur-Schulung	{gesamter_markt,markt,metzgerei}	12	t	2026-03-27 06:51:19.706582	f	\N	\N	schulung	gruppe	\N	zeitbasiert
 7	2	HACCP Grundschulung	Jährliche Hygieneschulung	{gesamter_markt,markt}	12	t	2026-03-26 14:42:23.78837	f	\N	\N	schulung	gruppe	2	zeitbasiert
 11	3	HACCP Grundschulung	Jährliche Hygieneschulung	{gesamter_markt,markt}	12	t	2026-03-26 14:42:23.78837	f	\N	\N	schulung	gruppe	2	zeitbasiert
@@ -5894,21 +5897,8 @@ COPY public.todo_standard_tasks (id, tenant_id, market_id, title, description, w
 --
 
 COPY public.training_attendances (id, session_id, user_id, initials, confirmed_at) FROM stdin;
-2	3	11	MMU	2026-03-17 14:53:36.71655
-3	3	5	AS	2026-03-17 14:54:00.047913
-5	4	8	KM	2026-03-20 18:19:02.048617
-6	4	7	MM	2026-03-20 18:19:47.127368
-7	6	8	KM	2026-03-23 18:27:37.087578
-8	6	7	MM	2026-03-23 18:27:53.704898
-9	7	8	KM	2026-03-24 07:53:37.517031
-10	8	8	KM	2026-03-24 10:47:39.085457
-11	12	13	HSC	2026-03-25 10:45:13.683064
-12	12	8	KM	2026-03-25 10:45:29.961972
-13	13	8	KM	2026-03-25 10:46:21.074546
-14	13	13	HSC	2026-03-25 10:46:29.61179
-15	12	7	MM	2026-03-25 13:11:15.911252
-16	13	7	MM	2026-03-25 14:00:28.182862
 17	14	17	DM	2026-04-02 09:02:34.059318
+18	15	8	KM	2026-04-07 10:17:52.776892
 \.
 
 
@@ -5917,60 +5907,34 @@ COPY public.training_attendances (id, session_id, user_id, initials, confirmed_a
 --
 
 COPY public.training_session_topics (id, session_id, topic_id, custom_title, checked) FROM stdin;
-54	12	8	\N	f
-55	12	9	\N	t
-56	12	10	\N	f
-57	12	16	\N	t
-58	12	17	\N	t
-59	12	18	\N	f
-60	12	19	\N	f
-61	12	13	\N	f
-25	3	1	\N	f
-62	12	11	\N	f
-63	12	12	\N	f
 64	14	1	\N	f
 65	14	2	\N	f
-40	7	1	\N	t
-1	1	1	\N	t
-2	1	2	\N	f
-3	1	3	\N	f
-4	1	4	\N	f
-5	1	5	\N	f
-6	1	6	\N	f
-7	1	7	\N	f
-8	1	8	\N	f
-9	1	9	\N	f
-10	1	10	\N	f
-11	1	11	\N	f
-12	1	12	\N	f
-13	1	13	\N	f
-41	7	2	\N	t
-42	7	4	\N	t
-43	7	8	\N	t
-44	7	12	\N	t
-27	4	1	\N	t
-26	4	2	\N	t
-28	4	3	\N	t
-29	4	4	\N	f
-45	8	3	\N	t
-46	8	15	test	t
-30	5	1	\N	t
-31	5	2	\N	t
-32	5	3	\N	t
-33	5	9	\N	t
-34	5	10	\N	t
-35	6	1	\N	t
-36	6	2	\N	t
-37	6	3	\N	t
-38	6	7	\N	t
-39	6	14	GT3 Drift Test	t
-47	12	1	\N	t
-48	12	2	\N	t
-49	12	3	\N	t
-50	12	4	\N	t
-51	12	5	\N	t
-52	12	6	\N	t
-53	12	7	\N	t
+83	17	1	\N	t
+84	17	2	\N	t
+85	17	3	\N	t
+86	17	7	\N	t
+87	17	8	\N	t
+90	17	18	\N	t
+89	17	19	\N	t
+88	17	13	\N	t
+91	17	20	Hampelmann	t
+66	15	1	\N	f
+67	15	2	\N	t
+68	15	3	\N	t
+69	15	4	\N	t
+70	15	5	\N	t
+71	15	6	\N	f
+72	15	7	\N	f
+73	15	8	\N	f
+74	15	9	\N	t
+75	15	10	\N	t
+76	15	16	\N	t
+77	15	17	\N	t
+78	15	18	\N	t
+79	15	19	\N	t
+80	15	13	\N	t
+81	15	11	\N	f
+82	15	12	\N	f
 \.
 
 
@@ -5978,17 +5942,11 @@ COPY public.training_session_topics (id, session_id, topic_id, custom_title, che
 -- Data for Name: training_sessions; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.training_sessions (id, tenant_id, market_id, session_date, trainer_id, trainer_name, notes, created_at, updated_at, session_type) FROM stdin;
-3	1	1	2026-03-17	9	System Admin	\N	2026-03-17 14:53:05.90139	2026-03-17 14:53:05.90139	schulungsprotokoll
-1	1	1	2026-03-17	9	System Admin	\N	2026-03-17 14:16:28.706651	2026-03-20 17:34:02.821	schulungsprotokoll
-4	1	1	2026-03-20	\N	\N	\N	2026-03-20 17:34:46.619321	2026-03-23 15:57:13.846	schulungsprotokoll
-5	1	1	2026-03-20	10	Kai Martin	\N	2026-03-20 18:18:28.378064	2026-03-23 17:09:44.677	schulungsprotokoll
-6	1	1	2026-03-23	\N	\N	\N	2026-03-23 18:27:22.085536	2026-03-23 18:27:49.057	schulungsprotokoll
-7	1	1	2026-03-24	7	Max Mustermann	test	2026-03-24 07:53:04.053917	2026-03-24 07:53:21.67	schulungsprotokoll
-8	1	1	2026-03-24	10	Kai Martin	\N	2026-03-24 10:47:06.473016	2026-03-24 10:47:27.962	schulungsprotokoll
-12	1	1	2026-03-25	7	Max Mustermann	\N	2026-03-25 10:44:15.809016	2026-03-25 10:45:20.476	schulungsprotokoll
-13	1	1	2026-03-25	\N	huber	\N	2026-03-25 10:46:08.74687	2026-03-25 10:46:08.74687	taraschulung
-14	1	3	2026-04-02	10	Kai Martin	\N	2026-04-02 09:02:25.087613	2026-04-02 09:02:25.087613	schulungsprotokoll
+COPY public.training_sessions (id, tenant_id, market_id, session_date, trainer_id, trainer_name, notes, created_at, updated_at, session_type, session_name, trainer_id_2, trainer_name_2) FROM stdin;
+17	1	1	2026-04-07	66	Marina Kienle	\N	2026-04-07 10:25:51.074193	2026-04-07 10:26:16.013	schulungsprotokoll	Testschulung 2025	\N	\N
+14	1	3	2026-04-02	10	Kai Martin	\N	2026-04-02 09:02:25.087613	2026-04-02 09:02:25.087613	schulungsprotokoll	\N	\N	\N
+15	1	1	2026-04-07	10	Kai Martin	\N	2026-04-07 10:17:26.234565	2026-04-07 10:17:45.389	schulungsprotokoll	Jahresschulung 2026	66	Marina Kienle
+16	1	1	2026-04-07	\N	Marina Kienle	\N	2026-04-07 10:20:38.91115	2026-04-07 10:20:38.91115	taraschulung	Schulung Tara 2026	\N	\N
 \.
 
 
@@ -6016,6 +5974,7 @@ COPY public.training_topics (id, title, responsible, training_material, sort_ord
 13	Sonstiges			15	t	2026-03-17 14:11:58.506281
 14	GT3 Drift Test	\N	\N	99	f	2026-03-23 18:27:22.100936
 15	test	\N	\N	99	f	2026-03-24 10:47:06.509141
+20	Hampelmann	\N	\N	99	f	2026-04-07 10:25:51.112106
 \.
 
 
@@ -6075,6 +6034,20 @@ COPY public.user_permissions (id, user_id, permission_type, resource_type, resou
 67	16	reports.view	global	\N	t	2026-04-06 06:56:01.797493
 68	16	reports.export	global	\N	t	2026-04-06 06:56:01.797493
 69	16	verwaltung.access	global	\N	t	2026-04-06 06:56:01.797493
+70	66	users.view	global	\N	t	2026-04-07 08:23:47.279205
+71	66	users.manage	global	\N	t	2026-04-07 08:23:47.279205
+72	66	entries.create	global	\N	t	2026-04-07 08:23:47.279205
+73	66	entries.view_all	global	\N	t	2026-04-07 08:23:47.279205
+74	66	entries.edit	global	\N	t	2026-04-07 08:23:47.279205
+75	66	reports.view	global	\N	t	2026-04-07 08:23:47.279205
+76	66	reports.export	global	\N	t	2026-04-07 08:23:47.279205
+77	66	verwaltung.access	global	\N	t	2026-04-07 08:23:47.279205
+86	71	users.view	global	\N	t	2026-04-07 08:24:13.171423
+87	71	entries.create	global	\N	t	2026-04-07 08:24:13.171423
+88	71	entries.view_all	global	\N	t	2026-04-07 08:24:13.171423
+89	71	entries.edit	global	\N	t	2026-04-07 08:24:13.171423
+90	71	reports.view	global	\N	t	2026-04-07 08:24:13.171423
+91	71	verwaltung.access	global	\N	t	2026-04-07 08:24:13.171423
 \.
 
 
@@ -6091,7 +6064,7 @@ COPY public.users (id, tenant_id, name, email, role, initials, pin, created_at, 
 12	1	System Admin	\N	USER	SA	\N	2026-03-19 14:20:49.416955	System	Admin	1983-06-25	t	\N	aktiv	\N	\N	\N
 13	1	Hinter Schuber	\N	USER	HSC	2222	2026-03-25 10:41:45.546557	Hinter	Schuber	1979-03-14	t	\N	aktiv	\N	\N	\N
 16	1	Kai Martin	kai.martin@edeka-dallmann.de	BEREICHSLEITUNG	KMA	4429	2026-03-31 07:26:05.333152	Kai	Martin	1982-09-13	t	a4be3b89ad9afbea9b7065676f7452ed:c2cda7be2899caef3d832457e68ff5deb4c829689eb1c5e3f1cc60df40dcbd33a11028d64b39fc3923bc1e420ae2e1a09d8fa5ed6f7e0f40beac35171f26a6fe	aktiv	gesamter_markt	\N	\N
-5	1	Anna Schmidt	\N	ADMIN	AS	5678	2026-03-17 12:56:53.828016	Anna	Schmidt	1995-06-15	t	\N	aktiv	\N	\N	\N
+5	1	Anna Schmidt	\N	ADMIN	AS	5678	2026-03-17 12:56:53.828016	Anna	Schmidt	1995-06-15	t	\N	inaktiv	\N	\N	\N
 15	1	Onur	\N	USER	ON	\N	2026-03-26 10:09:58.100091	Onur		\N	t	\N	aktiv	\N	\N	\N
 17	1	Michael Dallmann	Michael.Dallmann@edeka-dallmann.de	ADMIN	DM	4747	2026-03-31 09:04:04.63336	Michael	Dallmann	1983-02-16	t	252ff03816a35adbb4d9bfc7662f1b73:de6d9fdb9c4bbd2095f21d31442c3677274c6375d6f63fc915431a1875c1dec71c5ce458ed3331eba36b728cb09949a147a54ec7a145c1a4bebb5893ef8e5027	aktiv	\N	\N	\N
 18	1	Melis Akkoyun	melis.akkoyun@outlook.de	USER	AKM	\N	2026-04-06 05:44:33.082482	Melis	Akkoyun	2010-10-23	f	\N	aktiv	\N	\N	\N
@@ -6142,12 +6115,10 @@ COPY public.users (id, tenant_id, name, email, role, initials, pin, created_at, 
 63	1	Sibylle Jahl	sibylle-jahl@gmx.de	USER	JAS	\N	2026-04-06 05:44:33.082482	Sibylle	Jahl	1973-06-29	f	\N	aktiv	\N	\N	\N
 64	1	Fitore Kamberi	fitore.kamberi1983@icloud.com	USER	KAF	\N	2026-04-06 05:44:33.082482	Fitore	Kamberi	1983-07-06	f	\N	aktiv	\N	\N	\N
 65	1	Martin Katholing	m-katholing@t-online.de	USER	KAM	\N	2026-04-06 05:44:33.082482	Martin	Katholing	1993-04-26	f	\N	aktiv	\N	\N	\N
-66	1	Marina Kienle	marinafalkner@t-online.de	ADMIN	KIM	\N	2026-04-06 05:44:33.082482	Marina	Kienle	1989-05-10	f	\N	aktiv	\N	\N	\N
 67	1	Sandra Kink	kink-sandra85@web.de	USER	KIS	\N	2026-04-06 05:44:33.082482	Sandra	Kink	1985-08-12	f	\N	aktiv	\N	\N	\N
 68	1	Michaela Kocks	michaela-kocks@web.de	USER	KOM	\N	2026-04-06 05:44:33.082482	Michaela	Kocks	1975-09-17	f	\N	aktiv	\N	\N	\N
 69	1	Silvio Kurth	silvio.kurth@gmx.de	USER	KUS	\N	2026-04-06 05:44:33.082482	Silvio	Kurth	1980-06-30	f	\N	aktiv	\N	\N	\N
 70	1	Christine Landherr	landherr20.02@icloud.com	MARKTLEITER	LAC	\N	2026-04-06 05:44:33.082482	Christine	Landherr	2002-05-19	f	\N	aktiv	\N	\N	\N
-71	1	Tanja Leyer	hexe_81@gmx.de	ADMIN	LET	\N	2026-04-06 05:44:33.082482	Tanja	Leyer	1981-11-20	f	\N	aktiv	\N	\N	\N
 72	1	Carina Malsy	carina.malsy@hotmail.de	USER	MAC	\N	2026-04-06 05:44:33.082482	Carina	Malsy	\N	f	\N	aktiv	\N	\N	\N
 73	1	Fayaz Mansoori	fayazmansoori.2021@gmail.com	USER	MAF	\N	2026-04-06 05:44:33.082482	Fayaz	Mansoori	2001-09-27	f	\N	aktiv	\N	\N	\N
 74	1	Kai Martin	kai.martin@edeka-dallmann.de	ADMIN	MAK	\N	2026-04-06 05:44:33.082482	Kai	Martin	1982-09-13	f	\N	aktiv	\N	\N	\N
@@ -6176,6 +6147,7 @@ COPY public.users (id, tenant_id, name, email, role, initials, pin, created_at, 
 97	1	Cornelia Stecker	corneliastecker@gmail.com	USER	SCO	\N	2026-04-06 05:44:33.082482	Cornelia	Stecker	1969-02-17	f	\N	aktiv	\N	\N	\N
 98	1	Christian Steponaitis	steponaitis@web.de	MARKTLEITER	CS	\N	2026-04-06 05:44:33.082482	Christian	Steponaitis	1985-05-02	f	\N	aktiv	\N	\N	\N
 99	1	Tamara Stirner	tamiii18ts@gmail.com	USER	STT	\N	2026-04-06 05:44:33.082482	Tamara	Stirner	2005-05-14	f	\N	aktiv	\N	\N	\N
+71	1	Tanja Leyer	hexe_81@gmx.de	MARKTLEITER	LET	\N	2026-04-06 05:44:33.082482	Tanja	Leyer	1981-11-20	f	\N	aktiv	\N	\N	\N
 100	1	Astrid Stötter	stoetterastrid@online.de	USER	STA	\N	2026-04-06 05:44:33.082482	Astrid	Stötter	1966-04-03	f	\N	aktiv	\N	\N	\N
 101	1	Jessica Tedesco	jessica_tedesco_@web.de	MARKTLEITER	TEJ	\N	2026-04-06 05:44:33.082482	Jessica	Tedesco	1991-10-01	f	\N	aktiv	\N	\N	\N
 102	1	Nadja Tremondi	nadjatremondi@gmail.com	USER	TRN	\N	2026-04-06 05:44:33.082482	Nadja	Tremondi	2006-10-17	f	\N	aktiv	\N	\N	\N
@@ -6186,6 +6158,7 @@ COPY public.users (id, tenant_id, name, email, role, initials, pin, created_at, 
 107	1	Melva Wienecke	melvabasti@gmail.com	USER	WIM	\N	2026-04-06 05:44:33.082482	Melva	Wienecke	\N	f	\N	aktiv	\N	\N	\N
 108	1	Frank Wittekind	frank.wittekind@online.de	USER	WIF	\N	2026-04-06 05:44:33.082482	Frank	Wittekind	1964-07-02	f	\N	aktiv	\N	\N	\N
 109	1	Sonja Wörishofer	sonja.woerishofer@gmx.net	ADMIN	WOS	\N	2026-04-06 05:44:33.082482	Sonja	Wörishofer	1988-12-29	f	\N	aktiv	\N	\N	\N
+66	1	Marina Kienle	marinafalkner@t-online.de	BEREICHSLEITUNG	KIM	\N	2026-04-06 05:44:33.082482	Marina	Kienle	1989-05-10	f	\N	aktiv	\N	\N	\N
 \.
 
 
@@ -7243,28 +7216,28 @@ SELECT pg_catalog.setval('public.todo_standard_tasks_id_seq', 3, true);
 -- Name: training_attendances_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.training_attendances_id_seq', 17, true);
+SELECT pg_catalog.setval('public.training_attendances_id_seq', 18, true);
 
 
 --
 -- Name: training_session_topics_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.training_session_topics_id_seq', 65, true);
+SELECT pg_catalog.setval('public.training_session_topics_id_seq', 91, true);
 
 
 --
 -- Name: training_sessions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.training_sessions_id_seq', 14, true);
+SELECT pg_catalog.setval('public.training_sessions_id_seq', 17, true);
 
 
 --
 -- Name: training_topics_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.training_topics_id_seq', 19, true);
+SELECT pg_catalog.setval('public.training_topics_id_seq', 20, true);
 
 
 --
@@ -7285,7 +7258,7 @@ SELECT pg_catalog.setval('public.user_market_assignments_id_seq', 1, true);
 -- Name: user_permissions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.user_permissions_id_seq', 69, true);
+SELECT pg_catalog.setval('public.user_permissions_id_seq', 91, true);
 
 
 --
@@ -8522,6 +8495,14 @@ ALTER TABLE ONLY public.training_sessions
 
 
 --
+-- Name: training_sessions training_sessions_trainer_id_2_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.training_sessions
+    ADD CONSTRAINT training_sessions_trainer_id_2_fkey FOREIGN KEY (trainer_id_2) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
 -- Name: training_sessions training_sessions_trainer_id_users_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -8589,5 +8570,5 @@ ALTER TABLE ONLY public.wareneingang_entries
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Lc0hqLEbPav3iXNqYKthasyFq2AHCvMaKRU8IsDQGpO9KS7BJbbaThh5z2NoB0j
+\unrestrict Z6G9fAtxof5QVsUQuYyx1eKYpd86uRGbeWTwO61r9K66LyV5tlP3V4XxA6TPul8
 
