@@ -129,10 +129,27 @@ router.post("/device/create-reg-link", async (req, res) => {
   const key = randomBytes(24).toString("hex");
   const expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
 
+  // Kurzen 6-Zeichen-Code generieren (Großbuchstaben + Ziffern, ohne mehrdeutige Zeichen)
+  const CHARSET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let shortCode = "";
+  const bytes = randomBytes(6);
+  for (let i = 0; i < 6; i++) shortCode += CHARSET[bytes[i] % CHARSET.length];
+
+  // Kollision vermeiden (sehr unwahrscheinlich, aber sicher)
+  const existing = await pool.query(
+    `SELECT id FROM device_reg_links WHERE short_code = $1 AND cancelled_at IS NULL AND used_at IS NULL`,
+    [shortCode]
+  );
+  if (existing.rows.length > 0) {
+    const extraBytes = randomBytes(6);
+    shortCode = "";
+    for (let i = 0; i < 6; i++) shortCode += CHARSET[extraBytes[i] % CHARSET.length];
+  }
+
   await pool.query(
-    `INSERT INTO device_reg_links (key, tenant_id, device_name_hint, email, expires_at)
-     VALUES ($1, $2, $3, $4, $5)`,
-    [key, tenantId, deviceNameHint?.trim() || null, email?.trim() || null, expiresAt]
+    `INSERT INTO device_reg_links (key, tenant_id, device_name_hint, email, expires_at, short_code)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [key, tenantId, deviceNameHint?.trim() || null, email?.trim() || null, expiresAt, shortCode]
   );
 
   const baseUrl = appBaseUrl || "";
@@ -161,6 +178,11 @@ router.post("/device/create-reg-link", async (req, res) => {
             <p style="color: #6b7280; font-size: 13px;">Oder diesen Link direkt im Browser öffnen:<br>
               <a href="${regUrl}" style="color: #1a3a6b; word-break: break-all;">${regUrl}</a>
             </p>
+            <div style="background: #f0f4ff; border: 1px solid #c7d7fc; border-radius: 8px; padding: 12px 16px; margin: 16px 0;">
+              <p style="margin: 0 0 4px; font-size: 13px; color: #374151; font-weight: bold;">Alternativ: Registrierungscode manuell eingeben</p>
+              <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280;">Falls der Link nicht funktioniert, können Sie diesen Code direkt in der App eingeben:</p>
+              <p style="margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #1a3a6b; text-align: center;">${shortCode}</p>
+            </div>
             <p style="color: #9ca3af; font-size: 12px;">Dieser Link ist ${expiryDays} Tage gültig. Einmalige Nutzung – nach der Registrierung ist das Gerät dauerhaft freigeschaltet.</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
             <p style="color: #9ca3af; font-size: 12px; margin-bottom: 0;">EDEKA Dallmann HACCP Management System</p>
@@ -176,7 +198,7 @@ router.post("/device/create-reg-link", async (req, res) => {
     }
   }
 
-  res.json({ success: true, key, regUrl, emailSent });
+  res.json({ success: true, key, shortCode, regUrl, emailSent });
 });
 
 // ===== NEU: Registrierungslink validieren (GET – vor dem Aktivieren prüfen) =====
@@ -250,6 +272,82 @@ router.post("/device/use-reg-link", async (req, res) => {
   await pool.query(
     `UPDATE device_reg_links SET used_at = NOW(), device_id = $1 WHERE key = $2`,
     [device.id, key]
+  );
+
+  res.json({ authorized: true, token, deviceId: device.id, deviceName: device.name });
+});
+
+// ===== NEU: Registrierungscode validieren (vor dem Aktivieren prüfen) =====
+router.get("/device/reg-link-by-code/:code", async (req, res) => {
+  const code = req.params.code.toUpperCase().trim();
+  const r = await pool.query(
+    `SELECT * FROM device_reg_links WHERE upper(short_code) = $1`,
+    [code]
+  );
+  const link = r.rows[0];
+
+  if (!link) {
+    res.status(404).json({ valid: false, error: "Ungültiger Registrierungscode." });
+    return;
+  }
+  if (link.cancelled_at) {
+    res.status(400).json({ valid: false, error: "Dieser Code wurde vom Administrator gesperrt." });
+    return;
+  }
+  if (link.used_at) {
+    res.status(400).json({ valid: false, error: "Dieser Code wurde bereits verwendet." });
+    return;
+  }
+  if (new Date() > new Date(link.expires_at)) {
+    res.status(400).json({ valid: false, error: "Dieser Code ist abgelaufen." });
+    return;
+  }
+
+  res.json({ valid: true, key: link.key, deviceNameHint: link.device_name_hint || "", tenantId: link.tenant_id });
+});
+
+// ===== NEU: Registrierungscode aktivieren =====
+router.post("/device/use-reg-code", async (req, res) => {
+  const { code, deviceName } = req.body as { code?: string; deviceName?: string };
+
+  if (!code || !deviceName?.trim()) {
+    res.status(400).json({ authorized: false, error: "Code und Gerätename sind erforderlich." });
+    return;
+  }
+
+  const r = await pool.query(
+    `SELECT * FROM device_reg_links WHERE upper(short_code) = $1`,
+    [code.toUpperCase().trim()]
+  );
+  const link = r.rows[0];
+
+  if (!link) {
+    res.status(404).json({ authorized: false, error: "Ungültiger Registrierungscode." });
+    return;
+  }
+  if (link.cancelled_at) {
+    res.status(400).json({ authorized: false, error: "Dieser Code wurde vom Administrator gesperrt." });
+    return;
+  }
+  if (link.used_at) {
+    res.status(400).json({ authorized: false, error: "Dieser Code wurde bereits verwendet." });
+    return;
+  }
+  if (new Date() > new Date(link.expires_at)) {
+    res.status(400).json({ authorized: false, error: "Dieser Code ist abgelaufen. Bitte einen neuen Code anfordern." });
+    return;
+  }
+
+  const token = randomBytes(32).toString("hex");
+
+  const [device] = await db
+    .insert(registeredDevicesTable)
+    .values({ tenantId: link.tenant_id, name: deviceName.trim(), token, isActive: true })
+    .returning();
+
+  await pool.query(
+    `UPDATE device_reg_links SET used_at = NOW(), device_id = $1 WHERE id = $2`,
+    [device.id, link.id]
   );
 
   res.json({ authorized: true, token, deviceId: device.id, deviceName: device.name });

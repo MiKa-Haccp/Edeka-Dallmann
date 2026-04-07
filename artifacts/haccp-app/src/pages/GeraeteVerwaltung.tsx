@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   Smartphone, Trash2, ShieldOff, ShieldCheck, Loader2, RefreshCw, Calendar,
-  AlertTriangle, ChevronLeft, Link2, Plus, Copy, Mail, CheckCircle2, Clock, X,
+  AlertTriangle, ChevronLeft, Link2, Plus, Copy, Mail, CheckCircle2, Clock, X, Hash,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -23,6 +23,7 @@ interface Device {
 interface RegLink {
   id: number;
   key: string;
+  short_code: string | null;
   tenant_id: number;
   device_name_hint: string | null;
   email: string | null;
@@ -84,7 +85,7 @@ export default function GeraeteVerwaltung() {
   const [linkEmail, setLinkEmail] = useState("");
   const [linkExpiryDays, setLinkExpiryDays] = useState(30);
   const [creatingLink, setCreatingLink] = useState(false);
-  const [createdLink, setCreatedLink] = useState<{ regUrl: string; emailSent: boolean } | null>(null);
+  const [createdLink, setCreatedLink] = useState<{ regUrl: string; shortCode: string; emailSent: boolean } | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [deletingLink, setDeletingLink] = useState<number | null>(null);
   const [cancellingLink, setCancellingLink] = useState<number | null>(null);
@@ -165,7 +166,7 @@ export default function GeraeteVerwaltung() {
       });
       const data = await res.json();
       if (data.success) {
-        setCreatedLink({ regUrl: data.regUrl, emailSent: data.emailSent });
+        setCreatedLink({ regUrl: data.regUrl, shortCode: data.shortCode || "", emailSent: data.emailSent });
         setLinkDeviceName("");
         setLinkEmail("");
         await loadRegLinks();
@@ -539,14 +540,25 @@ export default function GeraeteVerwaltung() {
                   <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
                   <div>
                     <p className="font-bold text-sm text-green-800">Link erstellt!</p>
-                    {createdLink.emailSent && (
-                      <p className="text-xs text-green-700">E-Mail wurde erfolgreich versendet.</p>
-                    )}
+                    {createdLink.emailSent
+                      ? <p className="text-xs text-green-700">E-Mail mit Link und Code wurde versendet.</p>
+                      : <p className="text-xs text-green-700">Teilen Sie den Link oder den Code mit dem Gerät.</p>
+                    }
                   </div>
                 </div>
 
+                {/* Registrierungscode – prominent */}
+                {createdLink.shortCode && (
+                  <div className="bg-white rounded-xl border-2 border-green-300 p-4 text-center">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Registrierungscode (manuell eingeben)</p>
+                    <p className="text-4xl font-black tracking-[0.4em] text-[#1a3a6b] mb-1">{createdLink.shortCode}</p>
+                    <p className="text-xs text-muted-foreground">Kann direkt in der App unter „Code eingeben" eingegeben werden</p>
+                  </div>
+                )}
+
+                {/* Link zum Kopieren */}
                 <div className="bg-white rounded-xl border border-green-200 p-3">
-                  <p className="text-xs font-semibold text-muted-foreground mb-1.5">Registrierungslink (einmalig, auf Gerät öffnen):</p>
+                  <p className="text-xs font-semibold text-muted-foreground mb-1.5">Oder Link direkt auf Gerät öffnen:</p>
                   <p className="text-xs font-mono text-foreground break-all leading-relaxed">{createdLink.regUrl}</p>
                 </div>
 
@@ -607,6 +619,15 @@ export default function GeraeteVerwaltung() {
                                 {cfg.label}
                               </span>
                             </div>
+
+                            {/* Short-Code Badge (nur bei aktiven Links) */}
+                            {isActive && link.short_code && (
+                              <div className="mt-1.5 inline-flex items-center gap-1.5 bg-[#1a3a6b]/8 border border-[#1a3a6b]/20 rounded-lg px-2.5 py-1">
+                                <Hash className="w-3 h-3 text-[#1a3a6b]" />
+                                <span className="text-sm font-black tracking-[0.25em] text-[#1a3a6b]">{link.short_code}</span>
+                                <span className="text-xs text-muted-foreground ml-1">· Code eingeben</span>
+                              </div>
+                            )}
 
                             {/* Meta-Infos */}
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
