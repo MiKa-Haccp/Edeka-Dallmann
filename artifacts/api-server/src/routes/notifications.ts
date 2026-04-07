@@ -62,9 +62,9 @@ router.get("/notifications/channels", async (req, res) => {
             nc.channel_type, nc.telegram_chat_id, nc.email_override
      FROM users u
      LEFT JOIN notification_channels nc ON nc.user_id = u.id
-     WHERE u.email IS NOT NULL AND u.email != ''
-       AND u.password IS NOT NULL AND u.password != ''
-     ORDER BY u.name ASC`
+     WHERE u.role IN ('SUPERADMIN', 'ADMIN', 'BEREICHSLEITUNG', 'MARKTLEITER')
+       AND u.name IS NOT NULL AND u.name != ''
+     ORDER BY u.role ASC, u.name ASC`
   );
   res.json(r.rows);
 });
