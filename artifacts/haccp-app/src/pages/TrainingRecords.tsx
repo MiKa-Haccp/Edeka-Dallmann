@@ -128,6 +128,7 @@ function NewSchulungsprotokollDialog({
   const [trainerId2, setTrainerId2] = useState<number | null>(null);
   const [trainerName2, setTrainerName2] = useState("");
   const [selectedTopics, setSelectedTopics] = useState<number[]>(initialTopicIds ?? []);
+  const [customTopicTitle, setCustomTopicTitle] = useState("");
   const [notes, setNotes] = useState("");
 
   const trainerUsers = users?.filter(
@@ -144,13 +145,13 @@ function NewSchulungsprotokollDialog({
   };
 
   const handleSubmit = async () => {
-    if (!sessionName.trim() || selectedTopics.length === 0) return;
+    if (!sessionName.trim() || (selectedTopics.length === 0 && !customTopicTitle.trim())) return;
     await createSession.mutateAsync({
       marketId,
-      data: { tenantId, sessionDate: today, sessionName: sessionName.trim(), trainerId, trainerName: trainerName || null, trainerId2: trainerId2 || null, trainerName2: trainerName2 || null, topicIds: selectedTopics, notes: notes || null, sessionType: "schulungsprotokoll" } as any,
+      data: { tenantId, sessionDate: today, sessionName: sessionName.trim(), trainerId, trainerName: trainerName || null, trainerId2: trainerId2 || null, trainerName2: trainerName2 || null, topicIds: selectedTopics, customTopicTitle: customTopicTitle.trim() || null, notes: notes || null, sessionType: "schulungsprotokoll" } as any,
     });
     queryClient.invalidateQueries({ queryKey: [`/api/markets/${marketId}/training-sessions`] });
-    setSessionName(""); setTrainerId(null); setTrainerName(""); setTrainerId2(null); setTrainerName2(""); setSelectedTopics([]); setNotes("");
+    setSessionName(""); setTrainerId(null); setTrainerName(""); setTrainerId2(null); setTrainerName2(""); setSelectedTopics([]); setCustomTopicTitle(""); setNotes("");
     onClose();
   };
 
@@ -212,7 +213,7 @@ function NewSchulungsprotokollDialog({
               </div>
               <div className="border border-border rounded-xl divide-y divide-border/60 max-h-64 overflow-y-auto">
                 {topics?.map((topic: any) => (
-                  <label key={topic.id} className={cn("flex items-start gap-3 px-3 py-2.5 cursor-pointer transition-colors", selectedTopics.includes(topic.id) ? "bg-[#1a3a6b]/5" : "hover:bg-muted/40")}>
+                  <label key={topic.id} onClick={() => toggleTopic(topic.id)} className={cn("flex items-start gap-3 px-3 py-2.5 cursor-pointer transition-colors select-none", selectedTopics.includes(topic.id) ? "bg-[#1a3a6b]/5" : "hover:bg-muted/40")}>
                     <div className={cn("mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors",
                       selectedTopics.includes(topic.id) ? "bg-[#1a3a6b] border-[#1a3a6b]" : "border-border")}>
                       {selectedTopics.includes(topic.id) && <Check className="w-2.5 h-2.5 text-white" />}
@@ -226,8 +227,16 @@ function NewSchulungsprotokollDialog({
                   </label>
                 ))}
               </div>
-              {selectedTopics.length > 0 && (
-                <p className="text-xs text-[#1a3a6b] font-medium mt-1.5">{selectedTopics.length} Thema{selectedTopics.length !== 1 ? "en" : ""} ausgewählt</p>
+              {/* Sonstiges Thema */}
+              <div className="mt-2">
+                <input type="text" value={customTopicTitle} onChange={(e) => setCustomTopicTitle(e.target.value)}
+                  placeholder="Sonstiges Thema eintragen (optional)..."
+                  className="w-full border border-dashed border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 focus:border-[#1a3a6b]/40 placeholder:text-muted-foreground/60" />
+              </div>
+              {(selectedTopics.length > 0 || customTopicTitle.trim()) && (
+                <p className="text-xs text-[#1a3a6b] font-medium mt-1.5">
+                  {selectedTopics.length + (customTopicTitle.trim() ? 1 : 0)} Thema{(selectedTopics.length + (customTopicTitle.trim() ? 1 : 0)) !== 1 ? "en" : ""} ausgewählt
+                </p>
               )}
             </div>
 
@@ -332,20 +341,25 @@ function NewSimpleSessionDialog({
   );
 }
 
-function AttendanceDialog({ isOpen, onClose, sessionId }: { isOpen: boolean; onClose: () => void; sessionId: number }) {
+function AttendanceDialog({ isOpen, onClose, sessionId, marketId }: { isOpen: boolean; onClose: () => void; sessionId: number; marketId?: number }) {
   const addAttendance = useAddTrainingAttendance();
   const queryClient = useQueryClient();
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [showPin, setShowPin] = useState(false);
 
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: [`/api/training-sessions/${sessionId}`] });
+    if (marketId) queryClient.invalidateQueries({ queryKey: [`/api/markets/${marketId}/training-sessions`] });
+    queryClient.invalidateQueries({ predicate: (q) => typeof q.queryKey[0] === "string" && (q.queryKey[0] as string).includes("training-sessions") });
+  };
+
   const handleSubmit = async () => {
     if (!pin || pin.length < 4) return;
     setError("");
     try {
       await addAttendance.mutateAsync({ sessionId, data: { pin } });
-      queryClient.invalidateQueries({ queryKey: [`/api/training-sessions/${sessionId}`] });
-      queryClient.invalidateQueries({ queryKey: ["/api/markets"] });
+      invalidateAll();
       setPin("");
       onClose();
     } catch (err: any) {
@@ -436,6 +450,7 @@ function SessionDetailView({ sessionId, onBack }: { sessionId: number; onBack: (
   const handleDeleteSession = async () => {
     if (!confirm("Schulung wirklich löschen?")) return;
     await deleteSession.mutateAsync({ sessionId });
+    queryClient.invalidateQueries({ predicate: (q) => typeof q.queryKey[0] === "string" && (q.queryKey[0] as string).includes("training-sessions") });
     onBack();
   };
 
@@ -443,7 +458,8 @@ function SessionDetailView({ sessionId, onBack }: { sessionId: number; onBack: (
     if (!confirm("Teilnahme wirklich entfernen?")) return;
     await removeAttendance.mutateAsync({ sessionId, attendanceId });
     queryClient.invalidateQueries({ queryKey: [`/api/training-sessions/${sessionId}`] });
-    queryClient.invalidateQueries({ queryKey: ["/api/markets"] });
+    if (session?.marketId) queryClient.invalidateQueries({ queryKey: [`/api/markets/${session.marketId}/training-sessions`] });
+    queryClient.invalidateQueries({ predicate: (q) => typeof q.queryKey[0] === "string" && (q.queryKey[0] as string).includes("training-sessions") });
   };
 
   const handleSaveMeta = async () => {
@@ -647,7 +663,7 @@ function SessionDetailView({ sessionId, onBack }: { sessionId: number; onBack: (
         </div>
       </div>
 
-      <AttendanceDialog isOpen={showAttendanceDialog} onClose={() => setShowAttendanceDialog(false)} sessionId={sessionId} />
+      <AttendanceDialog isOpen={showAttendanceDialog} onClose={() => setShowAttendanceDialog(false)} sessionId={sessionId} marketId={session?.marketId} />
     </div>
   );
 }
