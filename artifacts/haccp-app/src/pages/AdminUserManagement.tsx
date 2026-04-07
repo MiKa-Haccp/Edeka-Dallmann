@@ -61,13 +61,11 @@ const ROLE_ICONS: Record<string, typeof Shield> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  onboarding: "Onboarding",
   aktiv: "Aktiv",
   inaktiv: "Inaktiv",
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  onboarding: "bg-amber-50 text-amber-700 border-amber-200",
   aktiv: "bg-green-50 text-green-700 border-green-200",
   inaktiv: "bg-red-50 text-red-600 border-red-200",
 };
@@ -209,7 +207,7 @@ function UserRoleList() {
             ))}
           </div>
           <div className="flex gap-1 flex-wrap">
-            {["alle", "aktiv", "onboarding", "inaktiv"].map((s) => (
+            {["alle", "aktiv", "inaktiv"].map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
@@ -507,7 +505,7 @@ function UserRoleRow({
                   <span className="flex items-center gap-1.5"><Activity className="h-3.5 w-3.5" />Kontostatus</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {(["onboarding", "aktiv", "inaktiv"] as const).map((s) => (
+                  {(["aktiv", "inaktiv"] as const).map((s) => (
                     <button key={s} onClick={() => handleStatusChange(s)} disabled={statusSaving}
                       className={cn(
                         "inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all",
