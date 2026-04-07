@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets, useListResponsibilities, useGetMarketInfo, useUpsertResponsibilities, useUpsertMarketInfo } from "@workspace/api-client-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Save, Pencil, X, Plus, Trash2, Building2, ChevronLeft, ChevronRight, Calendar, Users, ChevronDown } from "lucide-react";
 
 import { Link } from "wouter";
@@ -462,7 +462,6 @@ export default function Responsibilities() {
 
 function EmployeeNameCell({
   name,
-  phone,
   employees,
   onChangeName,
   onChangePhone,
@@ -473,81 +472,132 @@ function EmployeeNameCell({
   onChangeName: (v: string) => void;
   onChangePhone: (v: string) => void;
 }) {
-  const [mode, setMode] = useState<"select" | "manual">(() => {
-    if (!name) return "select";
-    const found = employees.find((e) => e.name === name);
-    return found ? "select" : "manual";
-  });
+  const [query, setQuery] = useState(name);
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    if (val === "__manual__") {
-      setMode("manual");
-      return;
-    }
-    if (val === "") {
-      onChangeName("");
-      onChangePhone("");
-      return;
-    }
-    const emp = employees.find((x) => String(x.id) === val);
-    if (emp) {
-      onChangeName(emp.name);
-      onChangePhone(emp.phone || "");
-    }
+  // Sync external name changes (e.g. cancel/reset)
+  useEffect(() => { setQuery(name); }, [name]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        // If the typed text doesn't match any employee, treat it as a manual name
+        onChangeName(query);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [query]);
+
+  const sorted = [...employees].sort((a, b) => a.name.localeCompare(b.name, "de"));
+
+  const matches = query.trim().length === 0
+    ? sorted
+    : sorted.filter((e) =>
+        e.name.toLowerCase().includes(query.toLowerCase())
+      );
+
+  const aktiveMatches = matches.filter((e) => e.status !== "inaktiv");
+  const inaktiveMatches = matches.filter((e) => e.status === "inaktiv");
+
+  const handleSelect = (emp: EmployeeOption) => {
+    setQuery(emp.name);
+    onChangeName(emp.name);
+    onChangePhone(emp.phone || "");
+    setOpen(false);
   };
 
-  const selectedEmpId = employees.find((e) => e.name === name)?.id;
+  const handleClear = () => {
+    setQuery("");
+    onChangeName("");
+    onChangePhone("");
+  };
 
-  const aktive = employees.filter((e) => e.status === "aktiv" || e.status === "onboarding");
-  const inaktive = employees.filter((e) => e.status === "inaktiv");
-
-  if (mode === "select") {
-    return (
-      <div className="flex flex-col gap-1">
-        <div className="relative">
-          <select
-            value={selectedEmpId !== undefined ? String(selectedEmpId) : ""}
-            onChange={handleSelect}
-            className="w-full appearance-none border border-border rounded-lg px-2 py-1 pr-7 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"
-          >
-            <option value="">— Person auswählen —</option>
-            {aktive.map((e) => (
-              <option key={e.id} value={String(e.id)}>{e.name}</option>
-            ))}
-            {inaktive.length > 0 && (
-              <optgroup label="Inaktiv">
-                {inaktive.map((e) => (
-                  <option key={e.id} value={String(e.id)}>{e.name} (inaktiv)</option>
-                ))}
-              </optgroup>
-            )}
-            <option value="__manual__">✏ Manuell eingeben...</option>
-          </select>
-          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-        </div>
-        {name && !selectedEmpId && (
-          <p className="text-xs text-amber-600 italic">Gespeichert: {name}</p>
-        )}
-      </div>
-    );
-  }
+  const isFromList = employees.some((e) => e.name === name);
 
   return (
-    <div className="flex flex-col gap-1">
-      <input
-        value={name}
-        onChange={(e) => onChangeName(e.target.value)}
-        className="w-full border border-border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-        placeholder="Name eingeben..."
-      />
-      <button
-        type="button"
-        onClick={() => setMode("select")}
-        className="text-xs text-[#1a3a6b] hover:underline text-left"
-      >
-        ← Aus Liste auswählen
-      </button>
+    <div ref={containerRef} className="relative">
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            onChangeName(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          placeholder="Name suchen oder eingeben..."
+          className={cn(
+            "w-full border rounded-lg px-2 py-1.5 pr-7 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 focus:border-[#1a3a6b]/40 bg-white",
+            isFromList ? "border-green-400" : "border-border"
+          )}
+        />
+        {query ? (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-red-500 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        ) : (
+          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+        )}
+      </div>
+
+      {open && matches.length > 0 && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-border/60 rounded-xl shadow-lg max-h-52 overflow-y-auto">
+          {aktiveMatches.length > 0 && (
+            <>
+              {aktiveMatches.map((emp) => (
+                <button
+                  key={emp.id}
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); handleSelect(emp); }}
+                  className={cn(
+                    "w-full text-left px-3 py-2 text-sm hover:bg-[#1a3a6b]/5 transition-colors flex items-center justify-between gap-2",
+                    emp.name === name ? "bg-[#1a3a6b]/10 font-semibold" : ""
+                  )}
+                >
+                  <span>{emp.name}</span>
+                  {emp.phone && (
+                    <span className="text-xs text-muted-foreground shrink-0">{emp.phone}</span>
+                  )}
+                </button>
+              ))}
+            </>
+          )}
+          {inaktiveMatches.length > 0 && (
+            <>
+              <div className="px-3 py-1 text-xs font-semibold text-muted-foreground bg-gray-50 border-t border-border/40">
+                Inaktiv
+              </div>
+              {inaktiveMatches.map((emp) => (
+                <button
+                  key={emp.id}
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); handleSelect(emp); }}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 transition-colors text-muted-foreground flex items-center justify-between gap-2"
+                >
+                  <span>{emp.name}</span>
+                  {emp.phone && (
+                    <span className="text-xs shrink-0">{emp.phone}</span>
+                  )}
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+      {open && query.trim().length > 0 && matches.length === 0 && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-border/60 rounded-xl shadow-lg px-3 py-2 text-sm text-muted-foreground">
+          Kein Mitarbeiter gefunden – freier Text wird gespeichert.
+        </div>
+      )}
     </div>
   );
 }
