@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict E38GI9OWIFsO6rhpxOUqnBg9bbcOshTRC1INyLndS3TqRYOoS2DMXVwjdxTGsCB
+\restrict Lc0hqLEbPav3iXNqYKthasyFq2AHCvMaKRU8IsDQGpO9KS7BJbbaThh5z2NoB0j
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -573,7 +573,8 @@ CREATE TABLE public.feedback (
     page_path character varying(255),
     market_id integer,
     created_at timestamp without time zone DEFAULT now(),
-    is_read boolean DEFAULT false
+    is_read boolean DEFAULT false,
+    status text DEFAULT 'offen'::text NOT NULL
 );
 
 
@@ -3146,7 +3147,8 @@ CREATE TABLE public.users (
     password text,
     status text DEFAULT 'aktiv'::text NOT NULL,
     gruppe text,
-    assigned_market_ids integer[]
+    assigned_market_ids integer[],
+    phone text
 );
 
 
@@ -4353,25 +4355,7 @@ COPY public.email_settings (id, smtp_host, smtp_port, smtp_user, smtp_pass, from
 -- Data for Name: feedback; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.feedback (id, text, page_path, market_id, created_at, is_read) FROM stdin;
-1	viel zu wenig farbe hier	/	1	2026-03-30 20:03:55.188375	t
-2	Vieles!	/admin/system	1	2026-03-31 07:35:15.994473	t
-3	Der Kai seine Art Schach zu spielen Kotzt mich an	/	1	2026-04-01 12:01:02.539852	t
-4	Mitarbeiter müssen per Suche zum eingeben sein DM	/responsibilities	1	2026-04-02 14:39:57.237258	t
-5	Der grüne Ballken wegen aktualität mit Kai Besprechen DM	/responsibilities	1	2026-04-02 14:40:49.981125	t
-6	Letzte Zeile 1.1 und Datum Nötig?  DM	/responsibilities	1	2026-04-02 14:41:41.06667	t
-7	Letzte Zeile soll da überhaupt Text hin? DM	/mitarbeiter-liste	1	2026-04-02 14:42:28.253698	t
-8	Infozeilen gefallen mir nicht!  DM	/info-documentation	1	2026-04-02 14:43:17.104675	t
-9	Für Schulungen sollte Marina etc. übersichtlichere Überschriften wegen der Übersichtlichkeit festlegen können wie Gestallten wir eigentlich die Fälligkeit der Pflichtschulungen?  DM	/training-records	1	2026-04-02 14:45:06.685181	t
-10	in Überschrift der Text mit Kürzel überflüssig\nDM	/annual-cleaning-plan	1	2026-04-02 15:54:20.815584	t
-11	Grüner Balken wegen erledigung oben drüber mit Kai besprechen!  DM	/betriebsbegehung	1	2026-04-02 15:56:25.725221	t
-12	Die unterste Zeile mit Kai besprechen ob nötig und welcher Text!  DM	/hinweisschild-gesperrte-ware	1	2026-04-02 15:58:08.335149	t
-13	Ausserdem Text mit Hinweis auf HACCP ordner mit 1.7! DM	/hinweisschild-gesperrte-ware	1	2026-04-02 15:59:27.466699	t
-14	Text in Überschrift wegen altem HACCP überdenken! DM	/produktfehlermeldung	1	2026-04-02 17:19:38.504849	t
-15	Wir müssen den Ausdruck noch optimieren! DM	/probeentnahme	1	2026-04-02 17:21:53.061692	t
-16	Sollten wir die verschiedenen Farben der Karteikarten lassen? DM	/bescheinigungen	1	2026-04-02 17:30:28.646446	t
-17	Brauchen wir eigenlich die eigenen Eingaben für die Berichte? DM	/kontrollberichte	1	2026-04-02 17:38:42.892119	t
-18	Pdf und oder Druckversion sollten wir uns zusammen ansehen!  DM	/wareneingaenge	1	2026-04-02 17:41:22.82818	t
+COPY public.feedback (id, text, page_path, market_id, created_at, is_read, status) FROM stdin;
 \.
 
 
@@ -4597,7 +4581,6 @@ COPY public.market_email_configs (id, market_id, smtp_user, smtp_pass, from_name
 --
 
 COPY public.market_info (id, market_id, market_number, street, plz_ort, year, created_at, updated_at) FROM stdin;
-1	1	38107	Bahnhofstraße 28	86825 Leeder	2026	2026-03-17 12:33:46.207143	2026-03-24 07:50:58.75
 11	2	38189	Mühlfeld 10	87642 Halblech	2025	2026-03-27 09:52:59.69343	2026-03-27 09:52:59.69343
 12	2	38189	Mühlfeld 10	87642 Halblech	2026	2026-03-27 09:52:59.706466	2026-03-27 09:52:59.706466
 9	3	34805	Ruderatshofenerstraße 81a	87616 Marktoberdorf	2025	2026-03-27 09:39:33.84468	2026-03-27 09:39:33.84468
@@ -4606,6 +4589,7 @@ COPY public.market_info (id, market_id, market_number, street, plz_ort, year, cr
 5	1	38107	Bahnhofstraße 28	86825 Leeder	2025	2026-03-25 17:06:36.70911	2026-03-25 17:06:36.70911
 6	1	38107	Bahnhofstraße 28	86825 Leeder	2028	2026-03-26 10:27:04.838513	2026-03-26 10:27:04.838513
 7	1	38107	Bahnhofstraße 28	86825 Leeder	2024	2026-03-26 10:27:09.70216	2026-03-26 10:27:09.70216
+1	1	38107	Bahnhofstraße 28	86825 Leeder	2026	2026-03-17 12:33:46.207143	2026-04-06 07:39:10.041
 \.
 
 
@@ -5000,6 +4984,36 @@ COPY public.notification_log (id, rule_id, user_id, market_id, channel_type, mes
 47	5	17	2	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-04-03 05:00:02.617042
 48	5	17	1	telegram	Seit 3 Tagen (31.3.2026) kein neuer Eintrag.	sent	2026-04-03 05:00:02.80567
 49	5	17	3	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-04-03 05:00:02.996915
+50	2	16	1	telegram	Seit 3 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-05 05:00:01.071212
+51	2	16	2	telegram	Seit 32 Tagen (4.3.2026) kein neuer Eintrag.	sent	2026-04-05 05:00:01.379202
+52	2	16	3	telegram	Seit 3 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-05 05:00:01.585085
+53	3	16	1	telegram	Seit 3 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-05 05:00:01.79623
+54	3	16	2	telegram	Seit 2 Tagen (3.4.2026) kein neuer Eintrag.	sent	2026-04-05 05:00:01.999602
+55	4	16	1	telegram	Seit 3 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-05 05:00:02.201286
+56	4	17	1	telegram	Seit 3 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-05 05:00:02.398275
+57	5	17	2	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-04-05 05:00:02.602842
+58	5	17	1	telegram	Seit 5 Tagen (31.3.2026) kein neuer Eintrag.	sent	2026-04-05 05:00:02.813257
+59	5	17	3	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-04-05 05:00:03.010019
+60	2	16	1	telegram	Seit 4 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-06 05:00:00.853497
+61	2	16	2	telegram	Seit 33 Tagen (4.3.2026) kein neuer Eintrag.	sent	2026-04-06 05:00:01.257996
+62	2	16	3	telegram	Seit 4 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-06 05:00:01.477463
+63	3	16	1	telegram	Seit 4 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-06 05:00:01.687751
+64	3	16	2	telegram	Seit 3 Tagen (3.4.2026) kein neuer Eintrag.	sent	2026-04-06 05:00:01.989352
+65	4	16	1	telegram	Seit 4 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-06 05:00:02.253566
+66	4	17	1	telegram	Seit 4 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-06 05:00:02.463227
+67	5	17	2	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-04-06 05:00:02.668981
+68	5	17	1	telegram	Seit 6 Tagen (31.3.2026) kein neuer Eintrag.	sent	2026-04-06 05:00:02.905939
+69	5	17	3	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-04-06 05:00:03.11213
+70	2	16	1	telegram	Seit 5 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-07 05:00:00.926881
+71	2	16	2	telegram	Seit 34 Tagen (4.3.2026) kein neuer Eintrag.	sent	2026-04-07 05:00:01.309317
+72	2	16	3	telegram	Seit 5 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-07 05:00:01.505358
+73	3	16	1	telegram	Seit 5 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-07 05:00:01.795239
+74	3	16	2	telegram	Seit 4 Tagen (3.4.2026) kein neuer Eintrag.	sent	2026-04-07 05:00:02.03029
+75	4	16	1	telegram	Seit 5 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-07 05:00:02.231108
+76	4	17	1	telegram	Seit 5 Tagen (2.4.2026) kein neuer Eintrag.	sent	2026-04-07 05:00:02.482741
+77	5	17	2	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-04-07 05:00:02.676654
+78	5	17	1	telegram	Seit 7 Tagen (31.3.2026) kein neuer Eintrag.	sent	2026-04-07 05:00:02.873225
+79	5	17	3	telegram	Noch nie ein Eintrag für diesen Bereich erfasst.	sent	2026-04-07 05:00:03.068409
 \.
 
 
@@ -5051,6 +5065,7 @@ COPY public.password_tokens (id, user_id, token, type, expires_at, used_at, crea
 --
 
 COPY public.probeentnahme (id, tenant_id, markt, ansprechpartner, behoerde_bezeichnung, grund_probenahme, untersuchungsziel, datum_entnahme, gegenprobe_art, gegenprobe_status, probentyp, ean, artikel_nr, verkehrsbezeichnung, mhd, losnummer, fuellmenge, hersteller, durchschrift_gefaxt_durch, durchschrift_gefaxt_am, abholer_name, abholer_firma_name, abholer_firma_strasse, abholer_firma_postfach, abholer_firma_plz_ort, amtliche_probennummer, siegeldatum, uebergabe_artikel, uebergabe_ort_datum, gegenprobe_abgeholt_am, gegenprobe_abgeholt_durch, unterschrift_abholer_digital, unterschrift_mitarbeiter_digital, amtliches_dokument_foto, created_at, updated_at, market_id) FROM stdin;
+1	1	EDEKA Leeder, Bahnhofstraße 28, 86825 Leeder, Tel. 08243/9609041					26.3.2026																											2026-04-07 07:30:24.322704	2026-04-07 07:30:34.268	1
 \.
 
 
@@ -5305,16 +5320,16 @@ COPY public.reinigung_taeglich (id, tenant_id, market_id, year, month, day, area
 --
 
 COPY public.responsibilities (id, market_id, department, responsible_name, responsible_phone, deputy_name, deputy_phone, sort_order, year, created_at, updated_at) FROM stdin;
-91	1	Marktleitung / Betreiber	Frau Leyer	0176/61703866	Frau Landherr	0160/6392521	1	2026	2026-03-24 07:50:58.553869	2026-03-24 07:50:58.553869
-92	1	HACCP- bzw. Hygiene-Beauftragter	Herr Huber	s.o.	Frau Landherr	s.o.	2	2026	2026-03-24 07:50:58.553869	2026-03-24 07:50:58.553869
-93	1	Fleisch und Wurst	Herr Wurth	0176/83800179	Fr. Glossner	0173/6420766	3	2026	2026-03-24 07:50:58.553869	2026-03-24 07:50:58.553869
-94	1	Molkereiprodukte und Feinkost	Fr. Schuster	0162/5445376	Fr. Sarilenya	0160/87030 33	4	2026	2026-03-24 07:50:58.553869	2026-03-24 07:50:58.553869
-95	1	(MSC) Fisch	\N	\N	\N	\N	5	2026	2026-03-24 07:50:58.553869	2026-03-24 07:50:58.553869
-96	1	Obst und Gemüse	Fr. Leyer	s.o.	Fr. Landherr	s.o.	6	2026	2026-03-24 07:50:58.553869	2026-03-24 07:50:58.553869
-97	1	Backshop	\N	\N	\N	\N	7	2026	2026-03-24 07:50:58.553869	2026-03-24 07:50:58.553869
-98	1	Kühl- und Tiefkühlware	Fr. Leyer	s.o.	Fr. Landherr	s.o.	8	2026	2026-03-24 07:50:58.553869	2026-03-24 07:50:58.553869
-99	1	Trockensortiment	Fr. Leyer	s.o.	Fr. Landherr	s.o.	9	2026	2026-03-24 07:50:58.553869	2026-03-24 07:50:58.553869
-100	1	Freiverkäufliche Arzneimittel	Fr. Leyer	s.o.	Fr. Landherr	s.o.	10	2026	2026-03-24 07:50:58.553869	2026-03-24 07:50:58.553869
+101	1	Marktleitung / Betreiber	Frau Leyer	0176/61703866	Frau Landherr	0160/6392521	1	2026	2026-04-06 07:39:09.707046	2026-04-06 07:39:09.707046
+102	1	HACCP- bzw. Hygiene-Beauftragter	Herr Huber	s.o.	Frau Landherr	s.o.	2	2026	2026-04-06 07:39:09.707046	2026-04-06 07:39:09.707046
+103	1	Fleisch und Wurst	Herr Wurth	0176/83800179	Fr. Glossner	0173/6420766	3	2026	2026-04-06 07:39:09.707046	2026-04-06 07:39:09.707046
+104	1	Molkereiprodukte und Feinkost	Fr. Schuster	0162/5445376	Fr. Sarilenya	0160/87030 33	4	2026	2026-04-06 07:39:09.707046	2026-04-06 07:39:09.707046
+105	1	(MSC) Fisch	\N	\N	\N	\N	5	2026	2026-04-06 07:39:09.707046	2026-04-06 07:39:09.707046
+106	1	Obst und Gemüse	Fr. Leyer	s.o.	Fr. Landherr	s.o.	6	2026	2026-04-06 07:39:09.707046	2026-04-06 07:39:09.707046
+107	1	Backshop	\N	\N	\N	\N	7	2026	2026-04-06 07:39:09.707046	2026-04-06 07:39:09.707046
+108	1	Kühl- und Tiefkühlware	Fr. Leyer	s.o.	Fr. Landherr	s.o.	8	2026	2026-04-06 07:39:09.707046	2026-04-06 07:39:09.707046
+109	1	Trockensortiment	Fr. Leyer	s.o.	Fr. Landherr	s.o.	9	2026	2026-04-06 07:39:09.707046	2026-04-06 07:39:09.707046
+110	1	Freiverkäufliche Arzneimittel	Fr. Leyer	s.o.	Fr. Landherr	s.o.	10	2026	2026-04-06 07:39:09.707046	2026-04-06 07:39:09.707046
 \.
 
 
@@ -5817,6 +5832,8 @@ COPY public.temp_lager_kontrolle (id, market_id, year, month, day, temp_ok, refe
 2	1	2026	4	3	t	\N	\N	9	2026-04-04 08:09:53.43585+00	2026-04-04 08:09:53.43585+00	\N
 3	1	2026	4	0	\N	2,5	\N	9	2026-04-04 08:14:35.888532+00	2026-04-04 08:14:35.888532+00	\N
 1	1	2026	4	4	t	\N	KM	8	2026-04-04 08:09:46.45538+00	2026-04-04 08:35:50.142985+00	t
+6	1	2026	4	2	t	\N	KM	8	2026-04-06 04:42:46.619751+00	2026-04-06 04:42:46.619751+00	\N
+7	1	2026	4	1	t	\N	KM	8	2026-04-06 04:42:56.297216+00	2026-04-06 04:42:56.297216+00	\N
 \.
 
 
@@ -6050,12 +6067,14 @@ COPY public.user_permissions (id, user_id, permission_type, resource_type, resou
 53	17	verwaltung.access	global	\N	t	2026-03-31 09:04:51.116844
 54	17	settings.manage	global	\N	t	2026-03-31 10:29:26.275995
 55	17	devices.manage	global	\N	t	2026-03-31 10:29:26.275995
-56	16	users.view	global	\N	t	2026-04-02 12:39:05.843292
-57	16	entries.create	global	\N	t	2026-04-02 12:39:05.843292
-58	16	entries.view_all	global	\N	t	2026-04-02 12:39:05.843292
-59	16	entries.edit	global	\N	t	2026-04-02 12:39:05.843292
-60	16	reports.view	global	\N	t	2026-04-02 12:39:05.843292
-61	16	verwaltung.access	global	\N	t	2026-04-02 12:39:05.843292
+62	16	users.view	global	\N	t	2026-04-06 06:56:01.797493
+63	16	users.manage	global	\N	t	2026-04-06 06:56:01.797493
+64	16	entries.create	global	\N	t	2026-04-06 06:56:01.797493
+65	16	entries.view_all	global	\N	t	2026-04-06 06:56:01.797493
+66	16	entries.edit	global	\N	t	2026-04-06 06:56:01.797493
+67	16	reports.view	global	\N	t	2026-04-06 06:56:01.797493
+68	16	reports.export	global	\N	t	2026-04-06 06:56:01.797493
+69	16	verwaltung.access	global	\N	t	2026-04-06 06:56:01.797493
 \.
 
 
@@ -6063,18 +6082,110 @@ COPY public.user_permissions (id, user_id, permission_type, resource_type, resou
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.users (id, tenant_id, name, email, role, initials, pin, created_at, first_name, last_name, birth_date, is_registered, password, status, gruppe, assigned_market_ids) FROM stdin;
-8	1	Kai Martin	\N	USER	KM	1328	2026-03-17 13:09:54.619504	Kai	Martin	1980-09-13	t	\N	aktiv	\N	\N
-9	1	System Admin	admin@haccp.de	SUPERADMIN	\N	\N	2026-03-17 13:14:46.951647	System	Admin	\N	t	b4d47712d984a4a545421fe9d039e8e9:9df1494dfc2d8daa2087348cd960939d4ce7b9fe3d7aa820f3fb117aa372a8718164f2841b097d13878723212f0fbb8c4713b54640401bb95438589429fd8677	aktiv	\N	\N
-10	1	Kai Martin	kai.martin@test.de	ADMIN	\N	\N	2026-03-17 13:30:03.97856	Kai	Martin	\N	t	ba03259695dea3e2dffc5c63be79e9e3:ea3986f1829a681e5ae70472ffcb3363889e71ebe8f918626e652758dd693d6f6dde362ec15912d5726dd1dba4a8cfb2b9be53c503dfc2ceca56407f0d1313c7	aktiv	\N	\N
-7	1	Max Mustermann	\N	MARKTLEITER	MM	1111	2026-03-17 13:09:04.263058	Max	Mustermann	2020-01-01	t	\N	aktiv	\N	\N
-11	1	Max Mustermann	\N	USER	MMU	1234	2026-03-17 14:50:08.642888	Max	Mustermann	1990-01-15	t	\N	aktiv	\N	\N
-12	1	System Admin	\N	USER	SA	\N	2026-03-19 14:20:49.416955	System	Admin	1983-06-25	t	\N	aktiv	\N	\N
-13	1	Hinter Schuber	\N	USER	HSC	2222	2026-03-25 10:41:45.546557	Hinter	Schuber	1979-03-14	t	\N	aktiv	\N	\N
-5	1	Anna Schmidt	\N	ADMIN	AS	5678	2026-03-17 12:56:53.828016	Anna	Schmidt	1995-06-15	t	\N	aktiv	\N	\N
-15	1	Onur	\N	USER	ON	\N	2026-03-26 10:09:58.100091	Onur		\N	t	\N	aktiv	\N	\N
-17	1	Michael Dallmann	Michael.Dallmann@edeka-dallmann.de	ADMIN	DM	4747	2026-03-31 09:04:04.63336	Michael	Dallmann	1983-02-16	t	252ff03816a35adbb4d9bfc7662f1b73:de6d9fdb9c4bbd2095f21d31442c3677274c6375d6f63fc915431a1875c1dec71c5ce458ed3331eba36b728cb09949a147a54ec7a145c1a4bebb5893ef8e5027	aktiv	\N	\N
-16	1	Kai Martin	kai.martin@edeka-dallmann.de	MARKTLEITER	KMA	4429	2026-03-31 07:26:05.333152	Kai	Martin	1982-09-13	t	a4be3b89ad9afbea9b7065676f7452ed:c2cda7be2899caef3d832457e68ff5deb4c829689eb1c5e3f1cc60df40dcbd33a11028d64b39fc3923bc1e420ae2e1a09d8fa5ed6f7e0f40beac35171f26a6fe	aktiv	gesamter_markt	\N
+COPY public.users (id, tenant_id, name, email, role, initials, pin, created_at, first_name, last_name, birth_date, is_registered, password, status, gruppe, assigned_market_ids, phone) FROM stdin;
+8	1	Kai Martin	\N	USER	KM	1328	2026-03-17 13:09:54.619504	Kai	Martin	1980-09-13	t	\N	aktiv	\N	\N	\N
+9	1	System Admin	admin@haccp.de	SUPERADMIN	\N	\N	2026-03-17 13:14:46.951647	System	Admin	\N	t	b4d47712d984a4a545421fe9d039e8e9:9df1494dfc2d8daa2087348cd960939d4ce7b9fe3d7aa820f3fb117aa372a8718164f2841b097d13878723212f0fbb8c4713b54640401bb95438589429fd8677	aktiv	\N	\N	\N
+10	1	Kai Martin	kai.martin@test.de	ADMIN	\N	\N	2026-03-17 13:30:03.97856	Kai	Martin	\N	t	ba03259695dea3e2dffc5c63be79e9e3:ea3986f1829a681e5ae70472ffcb3363889e71ebe8f918626e652758dd693d6f6dde362ec15912d5726dd1dba4a8cfb2b9be53c503dfc2ceca56407f0d1313c7	aktiv	\N	\N	\N
+7	1	Max Mustermann	\N	MARKTLEITER	MM	1111	2026-03-17 13:09:04.263058	Max	Mustermann	2020-01-01	t	\N	aktiv	\N	\N	\N
+11	1	Max Mustermann	\N	USER	MMU	1234	2026-03-17 14:50:08.642888	Max	Mustermann	1990-01-15	t	\N	aktiv	\N	\N	\N
+12	1	System Admin	\N	USER	SA	\N	2026-03-19 14:20:49.416955	System	Admin	1983-06-25	t	\N	aktiv	\N	\N	\N
+13	1	Hinter Schuber	\N	USER	HSC	2222	2026-03-25 10:41:45.546557	Hinter	Schuber	1979-03-14	t	\N	aktiv	\N	\N	\N
+16	1	Kai Martin	kai.martin@edeka-dallmann.de	BEREICHSLEITUNG	KMA	4429	2026-03-31 07:26:05.333152	Kai	Martin	1982-09-13	t	a4be3b89ad9afbea9b7065676f7452ed:c2cda7be2899caef3d832457e68ff5deb4c829689eb1c5e3f1cc60df40dcbd33a11028d64b39fc3923bc1e420ae2e1a09d8fa5ed6f7e0f40beac35171f26a6fe	aktiv	gesamter_markt	\N	\N
+5	1	Anna Schmidt	\N	ADMIN	AS	5678	2026-03-17 12:56:53.828016	Anna	Schmidt	1995-06-15	t	\N	aktiv	\N	\N	\N
+15	1	Onur	\N	USER	ON	\N	2026-03-26 10:09:58.100091	Onur		\N	t	\N	aktiv	\N	\N	\N
+17	1	Michael Dallmann	Michael.Dallmann@edeka-dallmann.de	ADMIN	DM	4747	2026-03-31 09:04:04.63336	Michael	Dallmann	1983-02-16	t	252ff03816a35adbb4d9bfc7662f1b73:de6d9fdb9c4bbd2095f21d31442c3677274c6375d6f63fc915431a1875c1dec71c5ce458ed3331eba36b728cb09949a147a54ec7a145c1a4bebb5893ef8e5027	aktiv	\N	\N	\N
+18	1	Melis Akkoyun	melis.akkoyun@outlook.de	USER	AKM	\N	2026-04-06 05:44:33.082482	Melis	Akkoyun	2010-10-23	f	\N	aktiv	\N	\N	\N
+19	1	Luzia Breu	l.breu06@gmail.com	USER	BRL	\N	2026-04-06 05:44:33.082482	Luzia	Breu	2006-07-26	f	\N	aktiv	\N	\N	\N
+20	1	Rosemarie Brunner	erwin_rosi.brunner@web.de	USER	BRR	\N	2026-04-06 05:44:33.082482	Rosemarie	Brunner	1960-11-07	f	\N	aktiv	\N	\N	\N
+21	1	Merith Fromm	merith.fromm@posteo.de	USER	FRM	\N	2026-04-06 05:44:33.082482	Merith	Fromm	2005-03-18	f	\N	aktiv	\N	\N	\N
+22	1	Sophia Goßlau	gosslausophia7@gmail.com	USER	GOS	\N	2026-04-06 05:44:33.082482	Sophia	Goßlau	2003-10-22	f	\N	aktiv	\N	\N	\N
+23	1	Viktoria Hochwald	viktoriahochwald@gmail.com	USER	HOV	\N	2026-04-06 05:44:33.082482	Viktoria	Hochwald	\N	f	\N	aktiv	\N	\N	\N
+24	1	Sophia Kruszinski	sophia.kruszinski@gmail.com	USER	KRS	\N	2026-04-06 05:44:33.082482	Sophia	Kruszinski	2007-10-26	f	\N	aktiv	\N	\N	\N
+25	1	Sandra Lepnik	sandrag.1305@web.de	USER	LES	\N	2026-04-06 05:44:33.082482	Sandra	Lepnik	1985-05-13	f	\N	aktiv	\N	\N	\N
+26	1	Vitali Mai	vitalimai10@gmail.com	USER	MAV	\N	2026-04-06 05:44:33.082482	Vitali	Mai	2004-04-27	f	\N	aktiv	\N	\N	\N
+27	1	Caroline Niggl	sarcartam@gmail.com	USER	NIC	\N	2026-04-06 05:44:33.082482	Caroline	Niggl	1972-07-08	f	\N	aktiv	\N	\N	\N
+28	1	Amy Nöcker	amsylunder@gmail.com	USER	NOA	\N	2026-04-06 05:44:33.082482	Amy	Nöcker	2008-02-21	f	\N	aktiv	\N	\N	\N
+29	1	Franziskus Pollok	franziskus.pollok@t-online.de	USER	POF	\N	2026-04-06 05:44:33.082482	Franziskus	Pollok	2008-08-14	f	\N	aktiv	\N	\N	\N
+30	1	Stephanie Rauchmann	steffilexa786@web.de	USER	RAS	\N	2026-04-06 05:44:33.082482	Stephanie	Rauchmann	1986-07-17	f	\N	aktiv	\N	\N	\N
+31	1	Romy Schubert	romyschubert88@gmx.de	USER	SCR	\N	2026-04-06 05:44:33.082482	Romy	Schubert	1988-04-08	f	\N	aktiv	\N	\N	\N
+32	1	Luca Schweitzer	luca.schweitzer@mnet-online.de	USER	SCL	\N	2026-04-06 05:44:33.082482	Luca	Schweitzer	2008-04-01	f	\N	aktiv	\N	\N	\N
+33	1	Reinhold Sedlmeier	reinholdsedlmeier999@gmail.com	USER	SER	\N	2026-04-06 05:44:33.082482	Reinhold	Sedlmeier	1957-02-10	f	\N	aktiv	\N	\N	\N
+34	1	Nadja Straub	nadjastraub05@gmail.com	USER	STN	\N	2026-04-06 05:44:33.082482	Nadja	Straub	2005-01-11	f	\N	aktiv	\N	\N	\N
+35	1	Amin Wahidullah	wahidullah.amin@icloud.com	USER	WAM	\N	2026-04-06 05:44:33.082482	Amin	Wahidullah	1998-05-30	f	\N	aktiv	\N	\N	\N
+36	1	Karin Wörishofer	karinworishofer@gmail.com	USER	WOK	\N	2026-04-06 05:44:33.082482	Karin	Wörishofer	1966-10-06	f	\N	aktiv	\N	\N	\N
+37	1	Manuela Ahle	ahlemanuela1@gmail.com	USER	AHM	\N	2026-04-06 05:44:33.082482	Manuela	Ahle	1967-09-23	f	\N	aktiv	\N	\N	\N
+38	1	Saleem Ahmed	saleemahmed400@yahoo.de	MARKTLEITER	AHS	\N	2026-04-06 05:44:33.082482	Saleem	Ahmed	1998-04-07	f	\N	aktiv	\N	\N	\N
+39	1	Anosh Aidin	anoshaidin@gmail.com	USER	AIA	\N	2026-04-06 05:44:33.082482	Anosh	Aidin	2000-08-31	f	\N	aktiv	\N	\N	\N
+40	1	Leyla Al Hussein	leyla.apaydin524@gmail.com	USER	ALH	\N	2026-04-06 05:44:33.082482	Leyla	Al Hussein	1986-11-10	f	\N	aktiv	\N	\N	\N
+41	1	Claudia Apfel	claudia-apfel@protonmail.com	USER	APC	\N	2026-04-06 05:44:33.082482	Claudia	Apfel	1997-11-29	f	\N	aktiv	\N	\N	\N
+42	1	Fatma Baydar	fatmahasanca@msn.com	USER	BAF	\N	2026-04-06 05:44:33.082482	Fatma	Baydar	1992-02-21	f	\N	aktiv	\N	\N	\N
+43	1	Diana Böhm	di-boeh@gmx.de	USER	BOD	\N	2026-04-06 05:44:33.082482	Diana	Böhm	1970-10-09	f	\N	aktiv	\N	\N	\N
+44	1	Marcel Bremer	marcelbremer9509@gmail.com	USER	BRM	\N	2026-04-06 05:44:33.082482	Marcel	Bremer	1995-10-09	f	\N	aktiv	\N	\N	\N
+45	1	Julia Dallmann	julia-dallmann@gmx.de	USER	DAJ	\N	2026-04-06 05:44:33.082482	Julia	Dallmann	\N	f	\N	aktiv	\N	\N	\N
+46	1	Michael Dallmann	edeka.dallmann@outlook.de	ADMIN	DAM	\N	2026-04-06 05:44:33.082482	Michael	Dallmann	\N	f	\N	aktiv	\N	\N	\N
+47	1	Thomas Darnhofer	thomas.darnhofer@gmx.de	USER	DAT	\N	2026-04-06 05:44:33.082482	Thomas	Darnhofer	1997-07-02	f	\N	aktiv	\N	\N	\N
+48	1	Martina Eberle	martina.eberle1412@gmail.com	USER	EBM	\N	2026-04-06 05:44:33.082482	Martina	Eberle	1966-12-14	f	\N	aktiv	\N	\N	\N
+49	1	Erin-Nicol Echtler	echtlererin@gmail.com	USER	ECE	\N	2026-04-06 05:44:33.082482	Erin-Nicol	Echtler	2004-08-13	f	\N	aktiv	\N	\N	\N
+50	1	Manuela Faßmann	manuelafassmann9@gmail.com	USER	FAM	\N	2026-04-06 05:44:33.082482	Manuela	Faßmann	1965-02-09	f	\N	aktiv	\N	\N	\N
+51	1	Florian Fröhling	zockovic@live.de	USER	FRF	\N	2026-04-06 05:44:33.082482	Florian	Fröhling	1981-01-23	f	\N	aktiv	\N	\N	\N
+52	1	Jacqueline Frunzke	jacquelinekutsche47@gmail.com	USER	FRJ	\N	2026-04-06 05:44:33.082482	Jacqueline	Frunzke	1979-05-27	f	\N	aktiv	\N	\N	\N
+53	1	Arta Gashi	artaramushi@icloud.com	USER	GAA	\N	2026-04-06 05:44:33.082482	Arta	Gashi	2000-08-10	f	\N	aktiv	\N	\N	\N
+54	1	Sabrina Gicklhorn	sabrina-gicklhorn@gmx.de	MARKTLEITER	GIS	\N	2026-04-06 05:44:33.082482	Sabrina	Gicklhorn	1995-10-30	f	\N	aktiv	\N	\N	\N
+55	1	Marissa Gloßner	marissaschoenmann@gmx.ch	USER	GLM	\N	2026-04-06 05:44:33.082482	Marissa	Gloßner	1998-11-04	f	\N	aktiv	\N	\N	\N
+56	1	Verena Gräfer	verena.gr30@gmail.com	USER	GRV	\N	2026-04-06 05:44:33.082482	Verena	Gräfer	1987-06-19	f	\N	aktiv	\N	\N	\N
+57	1	Marion Hampe	marion_hampe@web.de	MARKTLEITER	HAM	\N	2026-04-06 05:44:33.082482	Marion	Hampe	1969-05-29	f	\N	aktiv	\N	\N	\N
+58	1	Livia-Maria Hoffmann	livia@hoffmann-allgaeu.de	USER	HOL	\N	2026-04-06 05:44:33.082482	Livia-Maria	Hoffmann	1988-09-01	f	\N	aktiv	\N	\N	\N
+59	1	Gudrun Hofmann	gu-mod@web.de	USER	HOG	\N	2026-04-06 05:44:33.082482	Gudrun	Hofmann	1965-03-18	f	\N	aktiv	\N	\N	\N
+60	1	Emilia Hörberg	emilia2004@web.de	USER	HOE	\N	2026-04-06 05:44:33.082482	Emilia	Hörberg	2004-07-26	f	\N	aktiv	\N	\N	\N
+61	1	Heiko Hübner	huebner-heiko@gmx.de	USER	HUH	\N	2026-04-06 05:44:33.082482	Heiko	Hübner	2001-08-08	f	\N	aktiv	\N	\N	\N
+62	1	Abbas Jafari	abbasjafari562000@gmail.com	USER	JAA	\N	2026-04-06 05:44:33.082482	Abbas	Jafari	2000-06-05	f	\N	aktiv	\N	\N	\N
+63	1	Sibylle Jahl	sibylle-jahl@gmx.de	USER	JAS	\N	2026-04-06 05:44:33.082482	Sibylle	Jahl	1973-06-29	f	\N	aktiv	\N	\N	\N
+64	1	Fitore Kamberi	fitore.kamberi1983@icloud.com	USER	KAF	\N	2026-04-06 05:44:33.082482	Fitore	Kamberi	1983-07-06	f	\N	aktiv	\N	\N	\N
+65	1	Martin Katholing	m-katholing@t-online.de	USER	KAM	\N	2026-04-06 05:44:33.082482	Martin	Katholing	1993-04-26	f	\N	aktiv	\N	\N	\N
+66	1	Marina Kienle	marinafalkner@t-online.de	ADMIN	KIM	\N	2026-04-06 05:44:33.082482	Marina	Kienle	1989-05-10	f	\N	aktiv	\N	\N	\N
+67	1	Sandra Kink	kink-sandra85@web.de	USER	KIS	\N	2026-04-06 05:44:33.082482	Sandra	Kink	1985-08-12	f	\N	aktiv	\N	\N	\N
+68	1	Michaela Kocks	michaela-kocks@web.de	USER	KOM	\N	2026-04-06 05:44:33.082482	Michaela	Kocks	1975-09-17	f	\N	aktiv	\N	\N	\N
+69	1	Silvio Kurth	silvio.kurth@gmx.de	USER	KUS	\N	2026-04-06 05:44:33.082482	Silvio	Kurth	1980-06-30	f	\N	aktiv	\N	\N	\N
+70	1	Christine Landherr	landherr20.02@icloud.com	MARKTLEITER	LAC	\N	2026-04-06 05:44:33.082482	Christine	Landherr	2002-05-19	f	\N	aktiv	\N	\N	\N
+71	1	Tanja Leyer	hexe_81@gmx.de	ADMIN	LET	\N	2026-04-06 05:44:33.082482	Tanja	Leyer	1981-11-20	f	\N	aktiv	\N	\N	\N
+72	1	Carina Malsy	carina.malsy@hotmail.de	USER	MAC	\N	2026-04-06 05:44:33.082482	Carina	Malsy	\N	f	\N	aktiv	\N	\N	\N
+73	1	Fayaz Mansoori	fayazmansoori.2021@gmail.com	USER	MAF	\N	2026-04-06 05:44:33.082482	Fayaz	Mansoori	2001-09-27	f	\N	aktiv	\N	\N	\N
+74	1	Kai Martin	kai.martin@edeka-dallmann.de	ADMIN	MAK	\N	2026-04-06 05:44:33.082482	Kai	Martin	1982-09-13	f	\N	aktiv	\N	\N	\N
+75	1	Marcel Meißner	marcelmeissner@yahoo.de	USER	MEM	\N	2026-04-06 05:44:33.082482	Marcel	Meißner	1978-03-11	f	\N	aktiv	\N	\N	\N
+76	1	Anja Metzner	anjametzi@gmail.com	USER	MEA	\N	2026-04-06 05:44:33.082482	Anja	Metzner	1969-08-21	f	\N	aktiv	\N	\N	\N
+77	1	Igor Mrost	mrostigor@gmail.com	USER	MRI	\N	2026-04-06 05:44:33.082482	Igor	Mrost	1998-12-15	f	\N	aktiv	\N	\N	\N
+78	1	Sarah Niggl	sarahxmagdalena@gmail.com	USER	NIS	\N	2026-04-06 05:44:33.082482	Sarah	Niggl	2005-10-31	f	\N	aktiv	\N	\N	\N
+79	1	Vladimira Patesan	vladi.patesan2020@gmail.com	USER	PAV	\N	2026-04-06 05:44:33.082482	Vladimira	Patesan	1973-09-23	f	\N	aktiv	\N	\N	\N
+80	1	Sandra Pflügler	cookie321@outlook.de	USER	PFS	\N	2026-04-06 05:44:33.082482	Sandra	Pflügler	1998-03-31	f	\N	aktiv	\N	\N	\N
+81	1	Heike Pohl	pohl.67@web.de	USER	POH	\N	2026-04-06 05:44:33.082482	Heike	Pohl	1967-07-21	f	\N	aktiv	\N	\N	\N
+82	1	Valentin Pollok	valentin@pollok-online.eu	MARKTLEITER	POV	\N	2026-04-06 05:44:33.082482	Valentin	Pollok	2004-12-27	f	\N	aktiv	\N	\N	\N
+83	1	Goran Popovic	gpopovic188@gmail.com	USER	POG	\N	2026-04-06 05:44:33.082482	Goran	Popovic	1996-08-18	f	\N	aktiv	\N	\N	\N
+84	1	Igor Popovic	maksi.trn.lol@gmail.com	USER	POI	\N	2026-04-06 05:44:33.082482	Igor	Popovic	\N	f	\N	aktiv	\N	\N	\N
+85	1	Nadja Reiber	reibernadja@gmail.com	USER	REN	\N	2026-04-06 05:44:33.082482	Nadja	Reiber	1994-07-05	f	\N	aktiv	\N	\N	\N
+86	1	Jessica Rösch	jessica.roesch777@gmail.com	USER	ROJ	\N	2026-04-06 05:44:33.082482	Jessica	Rösch	1967-02-25	f	\N	aktiv	\N	\N	\N
+87	1	Dilara Sariay	dilarasariay199668@gmail.com	USER	SAD	\N	2026-04-06 05:44:33.082482	Dilara	Sariay	1996-06-09	f	\N	aktiv	\N	\N	\N
+88	1	Peter Schneider	peter-schneider.98@gmx.de	USER	SCP	\N	2026-04-06 05:44:33.082482	Peter	Schneider	1998-09-18	f	\N	aktiv	\N	\N	\N
+89	1	Martina Scholz	flo412@web.de	USER	SCM	\N	2026-04-06 05:44:33.082482	Martina	Scholz	1998-01-14	f	\N	aktiv	\N	\N	\N
+90	1	Matthias Schubert	mtthsschubett@gmail.com	USER	SMA	\N	2026-04-06 05:44:33.082482	Matthias	Schubert	1976-10-21	f	\N	aktiv	\N	\N	\N
+91	1	Stephanie Schubert	daryami1990@gmail.com	USER	SCS	\N	2026-04-06 05:44:33.082482	Stephanie	Schubert	1990-07-10	f	\N	aktiv	\N	\N	\N
+92	1	Christine Schuster	midl.schuster@gmail.com	USER	SCC	\N	2026-04-06 05:44:33.082482	Christine	Schuster	1964-04-08	f	\N	aktiv	\N	\N	\N
+93	1	Tarittriya Seurer	tarittriya1@web.de	USER	SET	\N	2026-04-06 05:44:33.082482	Tarittriya	Seurer	2005-08-16	f	\N	aktiv	\N	\N	\N
+94	1	Norman Siebert	siebertnorman@gmail.com	USER	SIN	\N	2026-04-06 05:44:33.082482	Norman	Siebert	1977-11-04	f	\N	aktiv	\N	\N	\N
+95	1	Doreen Simon	andre.simon@gmx.de	USER	SID	\N	2026-04-06 05:44:33.082482	Doreen	Simon	1983-04-19	f	\N	aktiv	\N	\N	\N
+96	1	Monika Spindler	spindler-family@gmx.de	USER	SPM	\N	2026-04-06 05:44:33.082482	Monika	Spindler	1977-10-13	f	\N	aktiv	\N	\N	\N
+97	1	Cornelia Stecker	corneliastecker@gmail.com	USER	SCO	\N	2026-04-06 05:44:33.082482	Cornelia	Stecker	1969-02-17	f	\N	aktiv	\N	\N	\N
+98	1	Christian Steponaitis	steponaitis@web.de	MARKTLEITER	CS	\N	2026-04-06 05:44:33.082482	Christian	Steponaitis	1985-05-02	f	\N	aktiv	\N	\N	\N
+99	1	Tamara Stirner	tamiii18ts@gmail.com	USER	STT	\N	2026-04-06 05:44:33.082482	Tamara	Stirner	2005-05-14	f	\N	aktiv	\N	\N	\N
+100	1	Astrid Stötter	stoetterastrid@online.de	USER	STA	\N	2026-04-06 05:44:33.082482	Astrid	Stötter	1966-04-03	f	\N	aktiv	\N	\N	\N
+101	1	Jessica Tedesco	jessica_tedesco_@web.de	MARKTLEITER	TEJ	\N	2026-04-06 05:44:33.082482	Jessica	Tedesco	1991-10-01	f	\N	aktiv	\N	\N	\N
+102	1	Nadja Tremondi	nadjatremondi@gmail.com	USER	TRN	\N	2026-04-06 05:44:33.082482	Nadja	Tremondi	2006-10-17	f	\N	aktiv	\N	\N	\N
+103	1	Corinna Ullrich	corinnaullrich66@gmail.com	USER	ULC	\N	2026-04-06 05:44:33.082482	Corinna	Ullrich	1966-05-15	f	\N	aktiv	\N	\N	\N
+104	1	Andreas Vater	andreas1592@gmx.de	USER	VAA	\N	2026-04-06 05:44:33.082482	Andreas	Vater	1992-03-23	f	\N	aktiv	\N	\N	\N
+105	1	Christoph Volarevic	christophvolarevic@web.de	USER	VOC	\N	2026-04-06 05:44:33.082482	Christoph	Volarevic	2006-10-22	f	\N	aktiv	\N	\N	\N
+106	1	Anja Wagner	fam.anjawagner@web.de	USER	WAN	\N	2026-04-06 05:44:33.082482	Anja	Wagner	1987-08-16	f	\N	aktiv	\N	\N	\N
+107	1	Melva Wienecke	melvabasti@gmail.com	USER	WIM	\N	2026-04-06 05:44:33.082482	Melva	Wienecke	\N	f	\N	aktiv	\N	\N	\N
+108	1	Frank Wittekind	frank.wittekind@online.de	USER	WIF	\N	2026-04-06 05:44:33.082482	Frank	Wittekind	1964-07-02	f	\N	aktiv	\N	\N	\N
+109	1	Sonja Wörishofer	sonja.woerishofer@gmx.net	ADMIN	WOS	\N	2026-04-06 05:44:33.082482	Sonja	Wörishofer	1988-12-29	f	\N	aktiv	\N	\N	\N
 \.
 
 
@@ -6580,6 +6691,7 @@ COPY public.wareneingang_entries (id, tenant_id, market_id, type_id, year, month
 33	1	1	9	2026	4	2	{"mhd": "io", "qs_by": "io", "qs_qs": "io", "hygiene": "io", "qualitaet": "io", "qs_biosiegel": "io", "etikettierung": "io", "kistenetikett": "io", "temp_kuehl_og": "3.5"}	KM	8		2026-04-02 12:20:51.734625
 34	1	2	17	2026	4	3	{"mhd": "io", "qs_by": "io", "qs_qs": "io", "hygiene": "io", "qualitaet": "io", "qs_biosiegel": "io", "etikettierung": "io", "kistenetikett": "io", "temp_kuehl_og": "6"}	DM	17		2026-04-03 14:33:30.234679
 35	1	2	17	2026	4	1	{"mhd": "io", "qs_by": "io", "qs_qs": "io", "hygiene": "io", "qualitaet": "io", "qs_biosiegel": "io", "etikettierung": "io", "kistenetikett": "io", "temp_kuehl_og": "6"}	DM	17		2026-04-03 14:33:48.34975
+36	1	1	9	2026	4	7	{"mhd": "io", "qs_by": "io", "qs_qs": "io", "hygiene": "io", "qualitaet": "io", "qs_biosiegel": "io", "etikettierung": "io", "kistenetikett": "io", "temp_kuehl_og": "5"}	DM	17		2026-04-07 07:18:08.00135
 \.
 
 
@@ -6900,7 +7012,7 @@ SELECT pg_catalog.setval('public.notification_channels_id_seq', 4, true);
 -- Name: notification_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.notification_log_id_seq', 49, true);
+SELECT pg_catalog.setval('public.notification_log_id_seq', 79, true);
 
 
 --
@@ -6928,7 +7040,7 @@ SELECT pg_catalog.setval('public.password_tokens_id_seq', 6, true);
 -- Name: probeentnahme_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.probeentnahme_id_seq', 1, false);
+SELECT pg_catalog.setval('public.probeentnahme_id_seq', 1, true);
 
 
 --
@@ -6977,7 +7089,7 @@ SELECT pg_catalog.setval('public.reinigung_taeglich_id_seq', 195, true);
 -- Name: responsibilities_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.responsibilities_id_seq', 100, true);
+SELECT pg_catalog.setval('public.responsibilities_id_seq', 110, true);
 
 
 --
@@ -7089,7 +7201,7 @@ SELECT pg_catalog.setval('public.system_reset_logs_id_seq', 6, true);
 -- Name: temp_lager_kontrolle_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.temp_lager_kontrolle_id_seq', 5, true);
+SELECT pg_catalog.setval('public.temp_lager_kontrolle_id_seq', 7, true);
 
 
 --
@@ -7173,14 +7285,14 @@ SELECT pg_catalog.setval('public.user_market_assignments_id_seq', 1, true);
 -- Name: user_permissions_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.user_permissions_id_seq', 61, true);
+SELECT pg_catalog.setval('public.user_permissions_id_seq', 69, true);
 
 
 --
 -- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.users_id_seq', 17, true);
+SELECT pg_catalog.setval('public.users_id_seq', 109, true);
 
 
 --
@@ -7229,7 +7341,7 @@ SELECT pg_catalog.setval('public.warencheck_og_id_seq', 79, true);
 -- Name: wareneingang_entries_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.wareneingang_entries_id_seq', 35, true);
+SELECT pg_catalog.setval('public.wareneingang_entries_id_seq', 36, true);
 
 
 --
@@ -8477,5 +8589,5 @@ ALTER TABLE ONLY public.wareneingang_entries
 -- PostgreSQL database dump complete
 --
 
-\unrestrict E38GI9OWIFsO6rhpxOUqnBg9bbcOshTRC1INyLndS3TqRYOoS2DMXVwjdxTGsCB
+\unrestrict Lc0hqLEbPav3iXNqYKthasyFq2AHCvMaKRU8IsDQGpO9KS7BJbbaThh5z2NoB0j
 
