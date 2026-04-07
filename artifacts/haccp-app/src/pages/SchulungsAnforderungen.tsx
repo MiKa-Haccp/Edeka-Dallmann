@@ -6,8 +6,9 @@ import {
   GraduationCap, Plus, Pencil, Trash2, Save, X, AlertTriangle,
   CheckCircle2, ChevronLeft, Loader2, ToggleRight, ToggleLeft,
   Users, ShieldAlert, AlarmClock, UserCheck, ChevronDown,
-  GitBranch, Award, BookOpen, Search, Link2, CalendarCheck, EyeOff,
+  GitBranch, Award, BookOpen, Search, Link2, CalendarCheck, EyeOff, ChevronRight,
 } from "lucide-react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { Link } from "wouter";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -702,31 +703,73 @@ export default function SchulungsAnforderungen() {
 
         {/* ===== ANFORDERUNGEN ===== */}
         {tab === "anforderungen" && (
-          <div className="space-y-6">
+          <div className="space-y-5">
+            {/* Quick-Add Buttons */}
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => setShowFormTyp("schulung")}
+                className="flex items-center gap-3 px-4 py-3.5 bg-[#1a3a6b] text-white rounded-2xl font-bold hover:bg-[#2d5aa0] shadow-sm transition-all group">
+                <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-white/30 transition-colors">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-sm font-bold leading-tight">Schulungspflicht</p>
+                  <p className="text-xs text-white/70 leading-tight mt-0.5">Neue Schulungsanforderung</p>
+                </div>
+                <Plus className="w-4 h-4 ml-auto shrink-0 opacity-70" />
+              </button>
+              <button onClick={() => setShowFormTyp("bescheinigung")}
+                className="flex items-center gap-3 px-4 py-3.5 bg-amber-600 text-white rounded-2xl font-bold hover:bg-amber-700 shadow-sm transition-all group">
+                <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-white/30 transition-colors">
+                  <Award className="w-4 h-4" />
+                </div>
+                <div className="text-left min-w-0">
+                  <p className="text-sm font-bold leading-tight">Bescheinigung</p>
+                  <p className="text-xs text-white/70 leading-tight mt-0.5">Zertifikat / Nachweis</p>
+                </div>
+                <Plus className="w-4 h-4 ml-auto shrink-0 opacity-70" />
+              </button>
+            </div>
+
+            {/* Modal Dialog for creating new rule */}
+            <Dialog.Root open={showFormTyp !== null} onOpenChange={(o) => !o && setShowFormTyp(null)}>
+              <Dialog.Portal>
+                <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
+                <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto z-50 shadow-2xl">
+                  <div className="flex items-center gap-3 px-5 pt-5 pb-4 border-b border-border/30 sticky top-0 bg-white z-10">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${showFormTyp === "bescheinigung" ? "bg-amber-100" : "bg-[#1a3a6b]/10"}`}>
+                      {showFormTyp === "bescheinigung" ? <Award className="w-4 h-4 text-amber-600" /> : <BookOpen className="w-4 h-4 text-[#1a3a6b]" />}
+                    </div>
+                    <Dialog.Title className="text-base font-bold text-foreground flex-1">
+                      {showFormTyp === "bescheinigung" ? "Neue Bescheinigungspflicht" : "Neue Schulungspflicht"}
+                    </Dialog.Title>
+                    <button onClick={() => setShowFormTyp(null)} className="p-2 rounded-xl hover:bg-muted/40 text-muted-foreground">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="p-5">
+                    {showFormTyp && (
+                      <PflichtForm typ={showFormTyp} schulungsKategorien={schulungsKategorien} bescheinigungenKategorien={bescheinigungenKategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
+                        onSave={async (d) => { await handleCreate(d); }}
+                        onCancel={() => setShowFormTyp(null)} />
+                    )}
+                  </div>
+                </Dialog.Content>
+              </Dialog.Portal>
+            </Dialog.Root>
+
             {loadingP ? (
               <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
             ) : (
               <>
                 {/* Schulungen */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-[#1a3a6b]" />
-                      <h2 className="text-sm font-bold text-foreground">Schulungsthemen</h2>
-                      <span className="text-xs text-muted-foreground">{schulungen.length} Themen</span>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 px-1">
+                    <div className="w-6 h-6 bg-[#1a3a6b]/10 rounded-lg flex items-center justify-center shrink-0">
+                      <BookOpen className="w-3.5 h-3.5 text-[#1a3a6b]" />
                     </div>
-                    {showFormTyp !== "schulung" && (
-                      <button onClick={() => setShowFormTyp("schulung")}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a3a6b] text-white rounded-xl text-xs font-bold hover:bg-[#2d5aa0]">
-                        <Plus className="w-3.5 h-3.5" /> Schulung
-                      </button>
-                    )}
+                    <h2 className="text-sm font-bold text-foreground">Schulungspflichten</h2>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#1a3a6b]/8 text-[#1a3a6b]">{schulungen.length}</span>
                   </div>
-
-                  {showFormTyp === "schulung" && (
-                    <PflichtForm typ="schulung" schulungsKategorien={schulungsKategorien} bescheinigungenKategorien={bescheinigungenKategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
-                      onSave={handleCreate} onCancel={() => setShowFormTyp(null)} />
-                  )}
 
                   {schulungen.map((p) => (
                     <PflichtCard key={p.id} p={p} children={childrenOf(p.id)}
@@ -734,39 +777,27 @@ export default function SchulungsAnforderungen() {
                       onUpdate={handleUpdate} onDelete={handleDelete} onToggle={handleToggle} onAddChild={handleAddChild} />
                   ))}
 
-                  {schulungen.length === 0 && !showFormTyp && (
-                    <div className="text-center py-8 border-2 border-dashed border-border/40 rounded-2xl">
-                      <p className="text-sm text-muted-foreground">Noch keine Schulungsthemen angelegt</p>
-                    </div>
+                  {schulungen.length === 0 && (
+                    <button onClick={() => setShowFormTyp("schulung")} className="w-full text-center py-8 border-2 border-dashed border-[#1a3a6b]/20 rounded-2xl hover:border-[#1a3a6b]/40 hover:bg-[#1a3a6b]/3 transition-colors group">
+                      <BookOpen className="w-7 h-7 text-[#1a3a6b]/30 mx-auto mb-2 group-hover:text-[#1a3a6b]/50 transition-colors" />
+                      <p className="text-sm font-semibold text-[#1a3a6b]/50 group-hover:text-[#1a3a6b]/70">Erste Schulungspflicht anlegen</p>
+                    </button>
                   )}
                 </div>
 
                 {/* Bescheinigungen */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Award className="w-4 h-4 text-amber-600" />
-                      <h2 className="text-sm font-bold text-foreground">Bescheinigungen & Zertifikate</h2>
-                      <span className="text-xs text-muted-foreground">{bescheinigungen.length} Typen</span>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 px-1">
+                    <div className="w-6 h-6 bg-amber-100 rounded-lg flex items-center justify-center shrink-0">
+                      <Award className="w-3.5 h-3.5 text-amber-600" />
                     </div>
-                    {showFormTyp !== "bescheinigung" && (
-                      <button onClick={() => setShowFormTyp("bescheinigung")}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-bold hover:bg-amber-700">
-                        <Plus className="w-3.5 h-3.5" /> Bescheinigung
-                      </button>
-                    )}
+                    <h2 className="text-sm font-bold text-foreground">Bescheinigungen & Zertifikate</h2>
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">{bescheinigungen.length}</span>
                   </div>
 
-                  <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-xs text-amber-800">
-                    <strong>Aus Ordner:</strong> Automatisch für jeden mit Bescheinigung im Archiv.&nbsp;
-                    <strong>Personen:</strong> Nur explizit ausgewählte Personen.&nbsp;
-                    <strong>Nur Vorhandensein:</strong> Kein Ablaufdatum — nur prüfen ob vorhanden.
+                  <div className="bg-amber-50/70 border border-amber-200/60 rounded-xl px-4 py-2.5 text-xs text-amber-800/80 leading-relaxed">
+                    <strong>Aus Ordner</strong> = automatisch für alle mit Nachweis · <strong>Personen</strong> = nur Ausgewählte · <strong>Nur Vorhandensein</strong> = kein Ablaufdatum
                   </div>
-
-                  {showFormTyp === "bescheinigung" && (
-                    <PflichtForm typ="bescheinigung" schulungsKategorien={schulungsKategorien} bescheinigungenKategorien={bescheinigungenKategorien} subbereiche={subbereiche} mitarbeiter={mitarbeiter} topics={topics}
-                      onSave={handleCreate} onCancel={() => setShowFormTyp(null)} />
-                  )}
 
                   {bescheinigungen.map((p) => (
                     <PflichtCard key={p.id} p={p} children={childrenOf(p.id)}
@@ -774,10 +805,11 @@ export default function SchulungsAnforderungen() {
                       onUpdate={handleUpdate} onDelete={handleDelete} onToggle={handleToggle} onAddChild={handleAddChild} />
                   ))}
 
-                  {bescheinigungen.length === 0 && !showFormTyp && (
-                    <div className="text-center py-8 border-2 border-dashed border-amber-200 rounded-2xl">
-                      <p className="text-sm text-muted-foreground">Noch keine Bescheinigungstypen angelegt</p>
-                    </div>
+                  {bescheinigungen.length === 0 && (
+                    <button onClick={() => setShowFormTyp("bescheinigung")} className="w-full text-center py-8 border-2 border-dashed border-amber-200 rounded-2xl hover:border-amber-300 hover:bg-amber-50/40 transition-colors group">
+                      <Award className="w-7 h-7 text-amber-400/60 mx-auto mb-2 group-hover:text-amber-500 transition-colors" />
+                      <p className="text-sm font-semibold text-amber-600/60 group-hover:text-amber-700">Erste Bescheinigungspflicht anlegen</p>
+                    </button>
                   )}
                 </div>
               </>

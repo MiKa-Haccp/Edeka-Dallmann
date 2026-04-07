@@ -719,8 +719,8 @@ function KuerzelVerzeichnis({ employees }: { employees: Employee[] }) {
 
 // ===== HAUPTSEITE =====
 export default function Mitarbeiterverwaltung() {
-  const { adminSession } = useAppStore();
-  const isAdmin = adminSession?.role === "ADMIN" || adminSession?.role === "SUPERADMIN";
+  const { adminSession, hasPermission } = useAppStore();
+  const isAdmin = adminSession?.role === "ADMIN" || adminSession?.role === "SUPERADMIN" || adminSession?.role === "MARKTLEITER" || adminSession?.role === "BEREICHSLEITUNG" || hasPermission("users.manage");
 
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
@@ -730,15 +730,14 @@ export default function Mitarbeiterverwaltung() {
   const [sortBy, setSortBy] = useState<string>("name_asc");
   const [showForm, setShowForm] = useState(false);
 
+  const tenantId = adminSession?.tenantId || 1;
+
   const loadEmployees = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${BASE}/users?tenantId=1`);
+      const res = await fetch(`${BASE}/users?tenantId=${tenantId}`);
       const data = await res.json();
-      // We cannot get PIN from the API (stripped), but we can check hasPin via another approach.
-      // The API returns users without PIN, so we check a special endpoint per user or use a bulk check.
-      // For now, we do a bulk check via admin endpoint
-      const pinRes = await fetch(`${BASE}/users/pin-status?tenantId=1`);
+      const pinRes = await fetch(`${BASE}/users/pin-status?tenantId=${tenantId}`);
       let pinStatus: Record<number, boolean> = {};
       if (pinRes.ok) {
         pinStatus = await pinRes.json();
@@ -770,7 +769,7 @@ export default function Mitarbeiterverwaltung() {
       const res = await fetch(`${BASE}/users/admin-create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenantId: 1, ...data }),
+        body: JSON.stringify({ tenantId, ...data }),
       });
       const json = await res.json();
       if (!res.ok) return { error: json.error || "Fehler beim Anlegen." };
@@ -949,7 +948,7 @@ export default function Mitarbeiterverwaltung() {
               <>
                 <div className="space-y-3">
                   {filtered.filter(e => e.status !== "inaktiv").map((emp) => (
-                    <MitarbeiterKarte key={emp.id} emp={emp} onUpdate={handleUpdate} onDelete={handleDelete} onPinChange={handlePinChange} tenantId={1} />
+                    <MitarbeiterKarte key={emp.id} emp={emp} onUpdate={handleUpdate} onDelete={handleDelete} onPinChange={handlePinChange} tenantId={tenantId} />
                   ))}
                 </div>
                 {filtered.some(e => e.status === "inaktiv") && (
@@ -963,7 +962,7 @@ export default function Mitarbeiterverwaltung() {
                     </div>
                     <div className="space-y-3 opacity-60">
                       {filtered.filter(e => e.status === "inaktiv").map((emp) => (
-                        <MitarbeiterKarte key={emp.id} emp={emp} onUpdate={handleUpdate} onDelete={handleDelete} onPinChange={handlePinChange} tenantId={1} />
+                        <MitarbeiterKarte key={emp.id} emp={emp} onUpdate={handleUpdate} onDelete={handleDelete} onPinChange={handlePinChange} tenantId={tenantId} />
                       ))}
                     </div>
                   </div>
@@ -972,7 +971,7 @@ export default function Mitarbeiterverwaltung() {
             ) : (
               <div className="space-y-3">
                 {filtered.map((emp) => (
-                  <MitarbeiterKarte key={emp.id} emp={emp} onUpdate={handleUpdate} onDelete={handleDelete} onPinChange={handlePinChange} tenantId={1} />
+                  <MitarbeiterKarte key={emp.id} emp={emp} onUpdate={handleUpdate} onDelete={handleDelete} onPinChange={handlePinChange} tenantId={tenantId} />
                 ))}
               </div>
             )}

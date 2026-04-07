@@ -129,6 +129,8 @@ function NewSchulungsprotokollDialog({
   const [trainerName2, setTrainerName2] = useState("");
   const [selectedTopics, setSelectedTopics] = useState<number[]>(initialTopicIds ?? []);
   const [customTopicTitle, setCustomTopicTitle] = useState("");
+  const [customTopicResponsible, setCustomTopicResponsible] = useState("");
+  const [customTopicMaterial, setCustomTopicMaterial] = useState("");
   const [notes, setNotes] = useState("");
 
   const trainerUsers = users?.filter(
@@ -148,10 +150,10 @@ function NewSchulungsprotokollDialog({
     if (!sessionName.trim() || (selectedTopics.length === 0 && !customTopicTitle.trim())) return;
     await createSession.mutateAsync({
       marketId,
-      data: { tenantId, sessionDate: today, sessionName: sessionName.trim(), trainerId, trainerName: trainerName || null, trainerId2: trainerId2 || null, trainerName2: trainerName2 || null, topicIds: selectedTopics, customTopicTitle: customTopicTitle.trim() || null, notes: notes || null, sessionType: "schulungsprotokoll" } as any,
+      data: { tenantId, sessionDate: today, sessionName: sessionName.trim(), trainerId, trainerName: trainerName || null, trainerId2: trainerId2 || null, trainerName2: trainerName2 || null, topicIds: selectedTopics, customTopicTitle: customTopicTitle.trim() || null, customTopicResponsible: customTopicResponsible.trim() || null, customTopicMaterial: customTopicMaterial.trim() || null, notes: notes || null, sessionType: "schulungsprotokoll" } as any,
     });
     queryClient.invalidateQueries({ queryKey: [`/api/markets/${marketId}/training-sessions`] });
-    setSessionName(""); setTrainerId(null); setTrainerName(""); setTrainerId2(null); setTrainerName2(""); setSelectedTopics([]); setCustomTopicTitle(""); setNotes("");
+    setSessionName(""); setTrainerId(null); setTrainerName(""); setTrainerId2(null); setTrainerName2(""); setSelectedTopics([]); setCustomTopicTitle(""); setCustomTopicResponsible(""); setCustomTopicMaterial(""); setNotes("");
     onClose();
   };
 
@@ -228,10 +230,21 @@ function NewSchulungsprotokollDialog({
                 ))}
               </div>
               {/* Sonstiges Thema */}
-              <div className="mt-2">
+              <div className="mt-2 border border-dashed border-[#1a3a6b]/25 rounded-xl p-3 space-y-2 bg-[#1a3a6b]/2">
+                <p className="text-[11px] font-bold text-[#1a3a6b]/70 uppercase tracking-wider">Sonstiges Thema (optional)</p>
                 <input type="text" value={customTopicTitle} onChange={(e) => setCustomTopicTitle(e.target.value)}
-                  placeholder="Sonstiges Thema eintragen (optional)..."
-                  className="w-full border border-dashed border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 focus:border-[#1a3a6b]/40 placeholder:text-muted-foreground/60" />
+                  placeholder="Themenbezeichnung, z.B. Produktschulung Käsetheke"
+                  className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 focus:border-[#1a3a6b]/40" />
+                {customTopicTitle.trim() && (
+                  <>
+                    <input type="text" value={customTopicResponsible} onChange={(e) => setCustomTopicResponsible(e.target.value)}
+                      placeholder="Zuständigkeit, z.B. Frischetheke-Leitung"
+                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+                    <input type="text" value={customTopicMaterial} onChange={(e) => setCustomTopicMaterial(e.target.value)}
+                      placeholder="Schulungsunterlagen, z.B. Hygieneleitfaden Käse"
+                      className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+                  </>
+                )}
               </div>
               {(selectedTopics.length > 0 || customTopicTitle.trim()) && (
                 <p className="text-xs text-[#1a3a6b] font-medium mt-1.5">

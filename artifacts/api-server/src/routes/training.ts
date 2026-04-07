@@ -82,7 +82,7 @@ router.get("/markets/:marketId/training-sessions", async (req, res) => {
 
 router.post("/markets/:marketId/training-sessions", async (req, res) => {
   const marketId = parseInt(req.params.marketId);
-  const { tenantId, sessionDate, sessionName, trainerId, trainerName, trainerId2, trainerName2, notes, topicIds, customTopicTitle } = req.body;
+  const { tenantId, sessionDate, sessionName, trainerId, trainerName, trainerId2, trainerName2, notes, topicIds, customTopicTitle, customTopicResponsible, customTopicMaterial } = req.body;
 
   const sessionType = req.body.sessionType || 'schulungsprotokoll';
   const [session] = await db
@@ -116,6 +116,8 @@ router.post("/markets/:marketId/training-sessions", async (req, res) => {
       .insert(trainingTopicsTable)
       .values({
         title: customTopicTitle,
+        responsible: customTopicResponsible || null,
+        trainingMaterial: customTopicMaterial || null,
         isDefault: false,
         sortOrder: 99,
       })
