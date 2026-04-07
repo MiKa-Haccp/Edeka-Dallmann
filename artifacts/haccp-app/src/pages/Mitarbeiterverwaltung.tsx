@@ -5,7 +5,7 @@ import { useAppStore } from "@/store/use-app-store";
 import { Link } from "wouter";
 import {
   Users, UserPlus, Pencil, Trash2, Save, X, KeyRound,
-  CheckCircle2, Clock, UserX, Loader2, Search, Printer,
+  CheckCircle2, Clock, UserX, UserCheck, Loader2, Search, Printer,
   ShieldCheck, AlertTriangle, Lock, RefreshCcw, Eye, EyeOff,
   Building2, ChevronDown, ChevronUp, ChevronLeft, GraduationCap, AlarmClock, ShieldAlert,
 } from "lucide-react";
@@ -405,6 +405,7 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
   const [editing, setEditing] = useState(false);
   const [pinMode, setPinMode] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
 
   const [firstName, setFirstName] = useState(emp.firstName);
   const [lastName, setLastName] = useState(emp.lastName);
@@ -435,6 +436,12 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
 
   const handleDelete = async () => {
     await onDelete(emp.id);
+  };
+
+  const handleQuickStatusChange = async (newStatus: Status) => {
+    setStatusSaving(true);
+    await onUpdate(emp.id, { status: newStatus });
+    setStatusSaving(false);
   };
 
   const st = STATUS_CONFIG[emp.status] || STATUS_CONFIG.aktiv;
@@ -471,6 +478,17 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
               <button onClick={() => { setPinMode(true); setError(""); }}
                 className="flex items-center gap-1.5 px-3 py-2 bg-purple-50 text-purple-700 border border-purple-200 rounded-xl text-xs font-bold hover:bg-purple-100 transition-colors">
                 <KeyRound className="w-3.5 h-3.5" /> PIN {emp.hasPin ? "ändern" : "setzen"}
+              </button>
+              <button
+                onClick={() => handleQuickStatusChange(emp.status === "inaktiv" ? "aktiv" : "inaktiv")}
+                disabled={statusSaving}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-colors disabled:opacity-50 ${
+                  emp.status === "inaktiv"
+                    ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                    : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                }`}>
+                {statusSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : emp.status === "inaktiv" ? <UserCheck className="w-3.5 h-3.5" /> : <UserX className="w-3.5 h-3.5" />}
+                {emp.status === "inaktiv" ? "Aktivieren" : "Deaktivieren"}
               </button>
               {!confirmDelete ? (
                 <button onClick={() => setConfirmDelete(true)}
@@ -522,6 +540,7 @@ function MitarbeiterKarte({ emp, onUpdate, onDelete, onPinChange, tenantId }: {
                   <select value={status} onChange={(e) => setStatus(e.target.value as Status)}
                     className="px-3 py-2 rounded-lg border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20">
                     <option value="aktiv">Aktiv</option>
+                    <option value="onboarding">Onboarding</option>
                     <option value="inaktiv">Inaktiv</option>
                   </select>
                 </div>
