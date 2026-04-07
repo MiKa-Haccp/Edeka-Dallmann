@@ -38,7 +38,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const {
     selectedMarketId, deviceAuthorized, deviceToken,
-    setDeviceToken, setDeviceAuthorized, _hasHydrated,
+    setDeviceToken, setDeviceAuthorized, deviceVerifiedAt, setDeviceVerifiedAt, _hasHydrated,
   } = useAppStore();
   const { data: rawMarkets, isLoading: marketsLoading, isError: marketsError } = useListMarkets();
   const { isWare, isHaccp, isTodo, hasSidebar } = useActiveSidebar();
@@ -46,6 +46,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   // Verifikations-State: "waiting" (auf Hydration warten), "verifying", "done"
   const [verifyState, setVerifyState] = useState<"waiting" | "verifying" | "done">("waiting");
   const verifiedTokenRef = useRef<string | null>(null);
+
+  // 24 Stunden in Millisekunden
+  const VERIFY_CACHE_MS = 24 * 60 * 60 * 1000;
 
   useAutoLogout();
   useBookingAutoReturn();
@@ -61,13 +64,21 @@ export function AppLayout({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Token wurde bereits geprüft (gleicher Token wie zuletzt) → nicht neu prüfen
+    // Token wurde bereits in dieser Session geprüft → nicht neu prüfen
     if (verifiedTokenRef.current === deviceToken) {
       setVerifyState("done");
       return;
     }
 
-    // Token prüfen
+    // Token wurde innerhalb der letzten 24h erfolgreich vom Server bestätigt → Cache nutzen
+    if (deviceVerifiedAt && Date.now() - deviceVerifiedAt < VERIFY_CACHE_MS) {
+      setDeviceAuthorized(true);
+      verifiedTokenRef.current = deviceToken;
+      setVerifyState("done");
+      return;
+    }
+
+    // Token beim Server prüfen
     setVerifyState("verifying");
     verifiedTokenRef.current = deviceToken;
 
@@ -84,21 +95,24 @@ export function AppLayout({ children }: { children: ReactNode }) {
       .then((data) => {
         if (data?.valid) {
           setDeviceAuthorized(true);
+          // Erfolgreiche Verifikation → Zeitstempel speichern
+          setDeviceVerifiedAt(Date.now());
         } else {
           // Nur bei explizitem valid:false → Token löschen
           setDeviceToken(null);
           verifiedTokenRef.current = null;
           setDeviceAuthorized(false);
+          setDeviceVerifiedAt(null);
         }
       })
       .catch(() => {
-        // Netzwerkfehler oder Server-Fehler → Gerät autorisiert lassen
+        // Netzwerkfehler oder Server-Fehler → Gerät autorisiert lassen (Offline-Toleranz)
         setDeviceAuthorized(true);
       })
       .finally(() => {
         setVerifyState("done");
       });
-  }, [_hasHydrated, deviceToken, setDeviceToken, setDeviceAuthorized]);
+  }, [_hasHydrated, deviceToken, deviceVerifiedAt, setDeviceToken, setDeviceAuthorized, setDeviceVerifiedAt]);
 
   // Auf Hydration oder Verifikation warten → Ladeanimation
   if (!_hasHydrated || verifyState === "waiting" || verifyState === "verifying") {
