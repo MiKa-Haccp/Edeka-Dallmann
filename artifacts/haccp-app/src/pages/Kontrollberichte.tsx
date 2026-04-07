@@ -152,18 +152,18 @@ function getStatus(gueltigBis: string | null) {
 // ===== JAHRWAHL =====
 function JahrWahl({ year, onChange }: { year: number; onChange: (y: number) => void }) {
   return (
-    <div className="flex items-center gap-1 bg-[#1a3a6b]/8 rounded-xl px-1 py-1">
+    <div className="flex items-center gap-1 bg-white/15 rounded-xl px-1 py-1 border border-white/20">
       <button
         onClick={() => onChange(year - 1)}
-        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/80 text-[#1a3a6b] transition-colors"
+        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/20 text-white transition-colors"
       >
         <ChevronLeft className="w-4 h-4" />
       </button>
-      <span className="font-bold text-sm text-[#1a3a6b] px-2 min-w-[3rem] text-center">{year}</span>
+      <span className="font-bold text-sm text-white px-2 min-w-[3rem] text-center">{year}</span>
       <button
         onClick={() => onChange(year + 1)}
         disabled={year >= new Date().getFullYear()}
-        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/80 text-[#1a3a6b] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/20 text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
         <ChevronRight className="w-4 h-4" />
       </button>
