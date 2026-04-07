@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict Z6G9fAtxof5QVsUQuYyx1eKYpd86uRGbeWTwO61r9K66LyV5tlP3V4XxA6TPul8
+\restrict pjagTegBfsTa4Ocg0TWdoUowwMz8GM3W1TAbfDWyCr9sSSFweZrB9KUIhphUsQU
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
@@ -8570,5 +8570,5 @@ ALTER TABLE ONLY public.wareneingang_entries
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Z6G9fAtxof5QVsUQuYyx1eKYpd86uRGbeWTwO61r9K66LyV5tlP3V4XxA6TPul8
+\unrestrict pjagTegBfsTa4Ocg0TWdoUowwMz8GM3W1TAbfDWyCr9sSSFweZrB9KUIhphUsQU
 
