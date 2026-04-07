@@ -192,6 +192,10 @@ router.get("/device/reg-link/:key", async (req, res) => {
     res.status(404).json({ valid: false, error: "Link nicht gefunden." });
     return;
   }
+  if (link.cancelled_at) {
+    res.status(400).json({ valid: false, error: "Dieser Link wurde vom Administrator gesperrt." });
+    return;
+  }
   if (link.used_at) {
     res.status(400).json({ valid: false, error: "Dieser Link wurde bereits verwendet." });
     return;
@@ -221,6 +225,10 @@ router.post("/device/use-reg-link", async (req, res) => {
 
   if (!link) {
     res.status(404).json({ authorized: false, error: "Registrierungslink nicht gefunden." });
+    return;
+  }
+  if (link.cancelled_at) {
+    res.status(400).json({ authorized: false, error: "Dieser Link wurde vom Administrator gesperrt." });
     return;
   }
   if (link.used_at) {
@@ -257,6 +265,13 @@ router.get("/device/reg-links", async (req, res) => {
      LIMIT 100`
   );
   res.json(r.rows);
+});
+
+// ===== NEU: Registrierungslink sperren (nicht löschen, nur deaktivieren) =====
+router.post("/device/reg-links/:id/cancel", async (req, res) => {
+  const id = Number(req.params.id);
+  await pool.query(`UPDATE device_reg_links SET cancelled_at = NOW() WHERE id = $1`, [id]);
+  res.json({ success: true });
 });
 
 // ===== NEU: Registrierungslink löschen =====

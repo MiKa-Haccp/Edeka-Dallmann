@@ -29,9 +29,26 @@ interface RegLink {
   created_at: string;
   expires_at: string;
   used_at: string | null;
+  cancelled_at: string | null;
   device_id: number | null;
   device_name: string | null;
 }
+
+type LinkStatus = "aktiv" | "gesperrt" | "verwendet" | "abgelaufen";
+
+function getLinkStatus(link: RegLink): LinkStatus {
+  if (link.cancelled_at) return "gesperrt";
+  if (link.used_at) return "verwendet";
+  if (new Date() > new Date(link.expires_at)) return "abgelaufen";
+  return "aktiv";
+}
+
+const STATUS_CONFIG: Record<LinkStatus, { label: string; bg: string; text: string; dot: string }> = {
+  aktiv:      { label: "Aktiv",      bg: "bg-green-100",  text: "text-green-700",  dot: "bg-green-500" },
+  gesperrt:   { label: "Gesperrt",   bg: "bg-red-100",    text: "text-red-700",    dot: "bg-red-500" },
+  verwendet:  { label: "Verwendet",  bg: "bg-blue-100",   text: "text-blue-700",   dot: "bg-blue-500" },
+  abgelaufen: { label: "Abgelaufen", bg: "bg-amber-100",  text: "text-amber-700",  dot: "bg-amber-500" },
+};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("de-DE", {
@@ -70,6 +87,8 @@ export default function GeraeteVerwaltung() {
   const [createdLink, setCreatedLink] = useState<{ regUrl: string; emailSent: boolean } | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [deletingLink, setDeletingLink] = useState<number | null>(null);
+  const [cancellingLink, setCancellingLink] = useState<number | null>(null);
+  const [confirmCancelLink, setConfirmCancelLink] = useState<number | null>(null);
 
   // Tab
   const [tab, setTab] = useState<"devices" | "links">("devices");
@@ -156,6 +175,17 @@ export default function GeraeteVerwaltung() {
     }
   };
 
+  const handleCancelLink = async (id: number) => {
+    setCancellingLink(id);
+    try {
+      await fetch(`${BASE}/device/reg-links/${id}/cancel`, { method: "POST" });
+      await loadRegLinks();
+    } finally {
+      setCancellingLink(null);
+      setConfirmCancelLink(null);
+    }
+  };
+
   const handleDeleteLink = async (id: number) => {
     setDeletingLink(id);
     try {
@@ -189,8 +219,8 @@ export default function GeraeteVerwaltung() {
 
   const activeDevices = devices.filter((d) => d.isActive);
   const revokedDevices = devices.filter((d) => !d.isActive);
-  const activeLinks = regLinks.filter((l) => !l.used_at && new Date() < new Date(l.expires_at));
-  const usedLinks = regLinks.filter((l) => l.used_at || new Date() >= new Date(l.expires_at));
+  const activeLinks = regLinks.filter((l) => getLinkStatus(l) === "aktiv");
+  const inactiveLinks = regLinks.filter((l) => getLinkStatus(l) !== "aktiv");
 
   if (!isSuperAdmin) return null;
 
@@ -538,106 +568,145 @@ export default function GeraeteVerwaltung() {
               </div>
             )}
 
-            {/* Aktive Links */}
+            {/* Link-Liste */}
             {regLinksLoading ? (
               <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>
+            ) : regLinks.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                Noch keine Registrierungslinks erstellt.
+              </div>
             ) : (
-              <>
-                {activeLinks.length > 0 && (
-                  <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
-                    <div className="bg-blue-50 border-b border-border/60 px-5 py-3 flex items-center gap-2">
-                      <Link2 className="w-4 h-4 text-blue-600" />
-                      <h2 className="font-semibold text-sm text-blue-800">Offene Links ({activeLinks.length})</h2>
-                    </div>
-                    <div className="divide-y divide-border/40">
-                      {activeLinks.map((link) => {
-                        const regUrl = `${window.location.origin}${import.meta.env.BASE_URL !== "/" ? import.meta.env.BASE_URL.replace(/\/$/, "") : ""}/?reg_key=${link.key}`;
-                        return (
-                          <div key={link.id} className="px-5 py-4">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-sm text-foreground">
-                                  {link.device_name_hint || <span className="text-muted-foreground italic">Kein Name vorgegeben</span>}
-                                </p>
-                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
-                                  {link.email && (
-                                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                      <Mail className="w-3 h-3" />{link.email}
-                                    </span>
-                                  )}
-                                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <Clock className="w-3 h-3" />Gültig bis {formatDateShort(link.expires_at)}
-                                  </span>
-                                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <Calendar className="w-3 h-3" />Erstellt {formatDateShort(link.created_at)}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <button
-                                  onClick={() => copyToClipboard(regUrl, link.key)}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 border border-[#1a3a6b]/30 text-[#1a3a6b] hover:bg-[#1a3a6b]/5 text-xs font-semibold rounded-lg transition-colors"
-                                  title="Link kopieren"
-                                >
-                                  {copiedKey === link.key ? <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
-                                  {copiedKey === link.key ? "Kopiert" : "Kopieren"}
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteLink(link.id)}
-                                  disabled={deletingLink === link.id}
-                                  className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                  title="Link löschen"
-                                >
-                                  {deletingLink === link.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                                </button>
-                              </div>
+              <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
+                <div className="bg-slate-50 border-b border-border/60 px-5 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Link2 className="w-4 h-4 text-muted-foreground" />
+                    <h2 className="font-semibold text-sm text-foreground">Alle Links ({regLinks.length})</h2>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block" />Aktiv: {activeLinks.length}</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" />Verw.: {inactiveLinks.filter(l => l.used_at).length}</span>
+                  </div>
+                </div>
+                <div className="divide-y divide-border/40">
+                  {regLinks.map((link) => {
+                    const status = getLinkStatus(link);
+                    const cfg = STATUS_CONFIG[status];
+                    const regUrl = `${window.location.origin}${import.meta.env.BASE_URL !== "/" ? import.meta.env.BASE_URL.replace(/\/$/, "") : ""}/?reg_key=${link.key}`;
+                    const isActive = status === "aktiv";
+                    return (
+                      <div key={link.id} className={`px-5 py-4 ${!isActive ? "opacity-70" : ""}`}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            {/* Name + Status Badge */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-semibold text-sm text-foreground">
+                                {link.device_name_hint || <span className="italic text-muted-foreground">Kein Name vorgegeben</span>}
+                              </p>
+                              <span className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.text}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                                {cfg.label}
+                              </span>
+                            </div>
+
+                            {/* Meta-Infos */}
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5">
+                              {link.email && (
+                                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Mail className="w-3 h-3" />{link.email}
+                                </span>
+                              )}
+                              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Calendar className="w-3 h-3" />Erstellt {formatDateShort(link.created_at)}
+                              </span>
+                              {isActive && (
+                                <span className="flex items-center gap-1 text-xs text-green-700 font-medium">
+                                  <Clock className="w-3 h-3" />Gültig bis {formatDateShort(link.expires_at)}
+                                </span>
+                              )}
+                              {status === "verwendet" && link.device_name && (
+                                <span className="flex items-center gap-1 text-xs text-blue-700 font-medium">
+                                  <Smartphone className="w-3 h-3" />Gerät: {link.device_name}
+                                </span>
+                              )}
+                              {status === "verwendet" && link.used_at && (
+                                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <CheckCircle2 className="w-3 h-3" />Verwendet {formatDateShort(link.used_at)}
+                                </span>
+                              )}
+                              {status === "gesperrt" && link.cancelled_at && (
+                                <span className="flex items-center gap-1 text-xs text-red-600 font-medium">
+                                  <ShieldOff className="w-3 h-3" />Gesperrt {formatDateShort(link.cancelled_at)}
+                                </span>
+                              )}
+                              {status === "abgelaufen" && (
+                                <span className="flex items-center gap-1 text-xs text-amber-600">
+                                  <Clock className="w-3 h-3" />Abgelaufen {formatDateShort(link.expires_at)}
+                                </span>
+                              )}
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
 
-                {/* Verwendete/abgelaufene Links */}
-                {usedLinks.length > 0 && (
-                  <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
-                    <div className="bg-muted/40 border-b border-border/60 px-5 py-3 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
-                      <h2 className="font-semibold text-sm text-muted-foreground">Verwendet / Abgelaufen ({usedLinks.length})</h2>
-                    </div>
-                    <div className="divide-y divide-border/40">
-                      {usedLinks.map((link) => (
-                        <div key={link.id} className="px-5 py-3 flex items-center gap-3 opacity-60">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-foreground truncate">
-                              {link.device_name_hint || "–"}
-                              {link.device_name && <span className="text-xs text-muted-foreground ml-2">→ {link.device_name}</span>}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {link.used_at ? `Verwendet ${formatDateShort(link.used_at)}` : `Abgelaufen ${formatDateShort(link.expires_at)}`}
-                              {link.email && ` · ${link.email}`}
-                            </p>
+                          {/* Aktionen */}
+                          <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                            {/* Kopieren (nur bei aktiven Links) */}
+                            {isActive && (
+                              <button
+                                onClick={() => copyToClipboard(regUrl, link.key)}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 border border-[#1a3a6b]/30 text-[#1a3a6b] hover:bg-[#1a3a6b]/5 text-xs font-semibold rounded-lg transition-colors"
+                                title="Link kopieren"
+                              >
+                                {copiedKey === link.key ? <CheckCircle2 className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+                                {copiedKey === link.key ? "Kopiert" : "Kopieren"}
+                              </button>
+                            )}
+
+                            {/* Sperren (nur bei aktiven Links) */}
+                            {isActive && (
+                              confirmCancelLink === link.id ? (
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs text-red-600 font-medium">Sperren?</span>
+                                  <button
+                                    onClick={() => handleCancelLink(link.id)}
+                                    disabled={cancellingLink === link.id}
+                                    className="px-2.5 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                                  >
+                                    {cancellingLink === link.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Ja"}
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmCancelLink(null)}
+                                    className="px-2.5 py-1.5 border border-border text-xs font-medium rounded-lg hover:bg-secondary transition-colors"
+                                  >
+                                    Nein
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setConfirmCancelLink(link.id)}
+                                  className="flex items-center gap-1.5 px-2.5 py-1.5 border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold rounded-lg transition-colors"
+                                  title="Link sperren"
+                                >
+                                  <ShieldOff className="w-3.5 h-3.5" />
+                                  Sperren
+                                </button>
+                              )
+                            )}
+
+                            {/* Löschen (immer möglich) */}
+                            <button
+                              onClick={() => handleDeleteLink(link.id)}
+                              disabled={deletingLink === link.id}
+                              className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Link endgültig löschen"
+                            >
+                              {deletingLink === link.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                            </button>
                           </div>
-                          <button
-                            onClick={() => handleDeleteLink(link.id)}
-                            disabled={deletingLink === link.id}
-                            className="p-1.5 text-muted-foreground hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0"
-                          >
-                            {deletingLink === link.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                          </button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {regLinks.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground text-sm">
-                    Noch keine Registrierungslinks erstellt.
-                  </div>
-                )}
-              </>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
         )}
