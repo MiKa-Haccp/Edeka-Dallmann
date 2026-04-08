@@ -65,6 +65,7 @@ export function MarktwahlScreen() {
           email: data.user.email,
           role: data.user.role,
           assignedMarketIds: data.assignedMarketIds || [],
+          permissions: data.permissions || [],
         });
         setLoginSuccess(true);
         setLoginEmail("");
@@ -81,7 +82,8 @@ export function MarktwahlScreen() {
     }
   };
 
-  const gpsLocked = isGpsLocked();
+  // GPS-Sperre direkt von adminSession ableiten (nicht über isGpsLocked() damit es immer reaktiv ist)
+  const gpsLocked = !adminSession;
   const isMarktleiter = adminSession?.role === "MARKTLEITER";
 
   useEffect(() => {
@@ -264,8 +266,11 @@ export function MarktwahlScreen() {
               <p className="text-red-100 font-semibold mb-1">Standortzugriff erforderlich</p>
               <p className="text-red-200 text-sm">
                 {outsideAllMarkets
-                  ? "Sie befinden sich nicht in der Nähe einer EDEKA DALLMANN Filiale. Ein GPS-gesperrter Zugriff ist nur vor Ort möglich."
-                  : "Für Ihre Rolle ist GPS-Ortung erforderlich. Bitte erlauben Sie den Standortzugriff in Ihrem Browser und versuchen Sie es erneut."}
+                  ? "Sie befinden sich nicht in der Nähe einer EDEKA DALLMANN Filiale."
+                  : "GPS-Ortung ist erforderlich. Bitte erlauben Sie den Standortzugriff und versuchen Sie es erneut."}
+              </p>
+              <p className="text-blue-300 text-xs mt-2">
+                Mit persönlicher Anmeldung können Sie eine Filiale manuell auswählen.
               </p>
               {(geoStatus === "denied" || geoStatus === "error") && (
                 <button
@@ -275,6 +280,23 @@ export function MarktwahlScreen() {
                   Erneut versuchen
                 </button>
               )}
+            </motion.div>
+          )}
+
+          {/* Hinweis für angemeldete Nutzer wenn GPS ein Problem hat */}
+          {adminSession && !gpsLocked && (outsideAllMarkets || geoStatus === "denied" || geoStatus === "unavailable" || geoStatus === "error") && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full max-w-2xl mb-6 bg-blue-500/20 border border-blue-400/30 rounded-2xl p-4 flex items-start gap-3 text-left"
+            >
+              <Info className="w-5 h-5 text-blue-300 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-blue-100 font-semibold text-sm">Manuelle Filialauswahl aktiv</p>
+                <p className="text-blue-200 text-xs mt-0.5">
+                  Als angemeldeter Nutzer können Sie die Filiale unabhängig vom GPS-Standort auswählen.
+                </p>
+              </div>
             </motion.div>
           )}
 
