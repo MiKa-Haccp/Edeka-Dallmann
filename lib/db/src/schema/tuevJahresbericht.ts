@@ -11,6 +11,9 @@ export const tuevJahresberichtTable = pgTable("tuev_jahresbericht", {
   pruefungenNotizen: text("pruefungen_notizen"),
   aktionsplanFoto: text("aktionsplan_foto"),
   aktionsplanMassnahmen: text("aktionsplan_massnahmen"),
+  nachbesserungName: text("nachbesserung_name"),
+  nachbesserungDatum: text("nachbesserung_datum"),
+  nachbesserungUnterschrift: text("nachbesserung_unterschrift"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

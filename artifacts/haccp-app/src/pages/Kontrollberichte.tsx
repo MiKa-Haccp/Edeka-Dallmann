@@ -7,7 +7,7 @@ import {
   Plus, Loader2, Save, X, Camera, ChevronDown, ChevronUp,
   Trash2, ExternalLink, AlertCircle, CheckCircle2, Clock,
   Building2, CalendarCheck, ThumbsUp, ThumbsDown, AlertTriangle,
-  ChevronLeft, ChevronRight, Upload, Pencil, Trash,
+  ChevronLeft, ChevronRight, Upload, Pencil, Trash, KeyRound,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -45,6 +45,9 @@ interface TuevJahresbericht {
   pruefungenNotizen?: string;
   aktionsplanFoto?: string;
   aktionsplanMassnahmen?: string;
+  nachbesserungName?: string;
+  nachbesserungDatum?: string;
+  nachbesserungUnterschrift?: string;
 }
 
 // ===== TAB-KONFIGURATION =====
@@ -417,6 +420,13 @@ function TuevPanel({ year }: { year: number }) {
   const [pruefNotizen, setPruefNotizen] = useState("");
   const [aktFoto, setAktFoto] = useState("");
   const [massnahmen, setMassnahmen] = useState<Massnahme[]>([]);
+  const [nachbesserungName, setNachbesserungName] = useState("");
+  const [nachbesserungDatum, setNachbesserungDatum] = useState("");
+  const [nachbesserungUnterschrift, setNachbesserungUnterschrift] = useState("");
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pinValue, setPinValue] = useState("");
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -431,6 +441,9 @@ function TuevPanel({ year }: { year: number }) {
         setPruefDok(data.pruefungenDokument || "");
         setPruefNotizen(data.pruefungenNotizen || "");
         setAktFoto(data.aktionsplanFoto || "");
+        setNachbesserungName(data.nachbesserungName || "");
+        setNachbesserungDatum(data.nachbesserungDatum || "");
+        setNachbesserungUnterschrift(data.nachbesserungUnterschrift || "");
         try {
           setMassnahmen(data.aktionsplanMassnahmen ? JSON.parse(data.aktionsplanMassnahmen) : []);
         } catch { setMassnahmen([]); }
@@ -438,6 +451,7 @@ function TuevPanel({ year }: { year: number }) {
         setZertDok(""); setZertNotizen("");
         setPruefDok(""); setPruefNotizen("");
         setAktFoto(""); setMassnahmen([]);
+        setNachbesserungName(""); setNachbesserungDatum(""); setNachbesserungUnterschrift("");
       }
     } finally { setLoading(false); }
   }, [year, selectedMarketId]);
@@ -458,11 +472,34 @@ function TuevPanel({ year }: { year: number }) {
           pruefungenNotizen: pruefNotizen,
           aktionsplanFoto: aktFoto,
           aktionsplanMassnahmen: JSON.stringify(massnahmen),
+          nachbesserungName,
+          nachbesserungDatum,
+          nachbesserungUnterschrift,
         }),
       });
       await loadData();
       setEditMode(false);
     } finally { setSaving(false); }
+  };
+
+  const handlePinSign = async () => {
+    if (pinValue.length !== 4) return;
+    setPinLoading(true);
+    setPinError("");
+    try {
+      const res = await fetch(`${BASE}/users/verify-pin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: pinValue, tenantId: 1 }),
+      });
+      if (res.status === 409) { setPinError("PIN mehrfach vergeben – bitte Admin kontaktieren."); return; }
+      const data = await res.json();
+      if (!data.valid) { setPinError("Ungültige PIN. Kein Mitarbeiter gefunden."); return; }
+      setNachbesserungUnterschrift(data.userName || "");
+      setPinDialogOpen(false);
+      setPinValue("");
+      setPinError("");
+    } finally { setPinLoading(false); }
   };
 
   const handleEdit = () => setEditMode(true);
@@ -540,12 +577,132 @@ function TuevPanel({ year }: { year: number }) {
             onFotoClear={() => setAktFoto("")}
             disabled={!editMode}
           />
+
+          {/* Bestätigung Betriebsleitung */}
+          {(massnahmen.length > 0 || aktFoto) && (
+            <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
+              <div className="bg-[#1a3a6b] text-white px-5 py-3">
+                <h3 className="font-bold text-sm">Bestätigung der Maßnahmenumsetzung – Betriebsleitung</h3>
+              </div>
+              <div className="p-5">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Die Betriebsleitung bestätigt, dass alle erforderlichen Nachbesserungen durchgeführt und geprüft wurden.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Name (Betriebsleitung)</label>
+                    <input
+                      type="text"
+                      value={nachbesserungName}
+                      onChange={(e) => setNachbesserungName(e.target.value)}
+                      disabled={!editMode}
+                      placeholder="Vor- und Nachname"
+                      className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:bg-transparent disabled:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Datum der Prüfung</label>
+                    <input
+                      type="date"
+                      value={nachbesserungDatum}
+                      onChange={(e) => setNachbesserungDatum(e.target.value)}
+                      disabled={!editMode}
+                      className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:bg-transparent disabled:border-transparent"
+                    />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Unterschrift (PIN)</label>
+                  {nachbesserungUnterschrift ? (
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-2.5 text-sm font-medium flex-1">
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        Unterschrieben von: <span className="font-bold ml-1">{nachbesserungUnterschrift}</span>
+                      </div>
+                      {editMode && (
+                        <button
+                          type="button"
+                          onClick={() => setNachbesserungUnterschrift("")}
+                          className="p-2.5 rounded-xl border border-border text-muted-foreground hover:bg-secondary transition-colors"
+                          title="Unterschrift zurücksetzen"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ) : editMode ? (
+                    <button
+                      type="button"
+                      onClick={() => setPinDialogOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-[#1a3a6b]/30 text-[#1a3a6b] rounded-xl text-sm font-medium hover:bg-[#1a3a6b]/5 transition-colors w-full justify-center"
+                    >
+                      <KeyRound className="w-4 h-4" />
+                      Mit PIN unterschreiben
+                    </button>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">Noch keine Unterschrift</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="text-center py-12 rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50">
           <ShieldCheck className="w-8 h-8 text-blue-400 mx-auto mb-3" />
           <p className="text-sm font-medium text-muted-foreground">Noch kein TÜV-Bericht für {year}</p>
           <p className="text-xs text-muted-foreground mt-1">Klicken Sie auf "Eintragen" um zu beginnen</p>
+        </div>
+      )}
+
+      {/* PIN-Dialog */}
+      {pinDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xs mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a3a6b]/10 rounded-xl flex items-center justify-center">
+                <KeyRound className="w-5 h-5 text-[#1a3a6b]" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">Bestätigung Betriebsleitung</h3>
+                <p className="text-xs text-muted-foreground">4-stellige PIN eingeben</p>
+              </div>
+            </div>
+            <input
+              type="password"
+              inputMode="numeric"
+              maxLength={4}
+              autoFocus
+              value={pinValue}
+              onChange={(e) => { setPinValue(e.target.value.replace(/\D/g, "").slice(0, 4)); setPinError(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") handlePinSign(); }}
+              placeholder="• • • •"
+              className="w-full border border-border rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] font-bold focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 focus:border-[#1a3a6b] mb-3"
+            />
+            {pinError && (
+              <p className="text-xs text-red-600 text-center mb-3 flex items-center justify-center gap-1">
+                <X className="w-3.5 h-3.5" /> {pinError}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => { setPinDialogOpen(false); setPinValue(""); setPinError(""); }}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={handlePinSign}
+                disabled={pinValue.length !== 4 || pinLoading}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              >
+                {pinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                Bestätigen
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
