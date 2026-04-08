@@ -98,6 +98,15 @@ const TABS: {
 ];
 
 // ===== HILFSFUNKTIONEN =====
+function readFileAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target!.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function compressImage(file: File, maxPx = 1400, quality = 0.8): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -159,28 +168,39 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
   const [notizen, setNotizen] = useState("");
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const fotoRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const processFile = async (file: File) => {
+    setProcessing(true);
+    try {
+      if (file.type === "application/pdf") {
+        setDokument(await readFileAsDataURL(file));
+      } else {
+        setDokument(await compressImage(file));
+      }
+    } catch { /* ignore */ } finally { setProcessing(false); }
+  };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setProcessing(true);
-    try {
-      if (file.type === "application/pdf") {
-        const reader = new FileReader();
-        reader.onload = (ev) => setDokument(ev.target!.result as string);
-        reader.readAsDataURL(file);
-      } else {
-        setDokument(await compressImage(file));
-      }
-    } finally { setProcessing(false); e.target.value = ""; }
+    e.target.value = "";
+    await processFile(file);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await processFile(file);
   };
 
   const isPdf = dokument.startsWith("data:application/pdf");
 
   const handleSubmit = async () => {
-    if (!mitarbeiterName.trim()) return;
+    if (!mitarbeiterName.trim() || processing) return;
     setSaving(true);
     try {
       await onSave({ kategorie, mitarbeiterName: mitarbeiterName.trim(), bezeichnung: bezeichnung.trim(), ausstellungsDatum, gueltigBis, dokumentBase64: dokument, notizen: notizen.trim() });
@@ -188,8 +208,8 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
   };
 
   return (
-    <div className={`${tab.bgColor} border ${tab.borderColor} rounded-2xl p-5 space-y-4`}>
-      <p className={`text-sm font-bold ${tab.color}`}>Neuer Eintrag — {tab.label}</p>
+    <div className="bg-[#1a3a6b]/5 border border-[#1a3a6b]/20 rounded-2xl p-5 space-y-4">
+      <p className="text-sm font-bold text-[#1a3a6b]">Neuer Eintrag — {tab.label}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <MitarbeiterSuchInput
           value={mitarbeiterName}
@@ -227,7 +247,7 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
               <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
                 <FileText className="w-5 h-5 text-red-600" />
               </div>
-              <div className="flex-1"><p className="text-sm font-bold text-red-700">PDF-Dokument</p></div>
+              <div className="flex-1"><p className="text-sm font-bold text-red-700">PDF-Dokument bereit</p></div>
               <button onClick={() => setDokument("")} className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -241,17 +261,25 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
             </div>
           )
         ) : (
-          <div className="grid grid-cols-2 gap-2">
+          <div
+            onDrop={handleDrop}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
+          >
             <button onClick={() => fotoRef.current?.click()} disabled={processing}
               className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-white/60 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50">
               {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
               <span className="text-xs font-semibold text-center leading-tight">Foto /<br />Screenshot</span>
             </button>
             <button onClick={() => fileRef.current?.click()} disabled={processing}
-              className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-red-200 rounded-xl text-red-600 hover:bg-white/60 hover:border-red-300 transition-colors disabled:opacity-50">
-              <FileText className="w-5 h-5" />
-              <span className="text-xs font-semibold text-center leading-tight">PDF-<br />Datei</span>
+              className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-white/60 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50">
+              {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileText className="w-5 h-5" />}
+              <span className="text-xs font-semibold text-center leading-tight">PDF /<br />Datei</span>
             </button>
+            {dragOver && (
+              <div className="col-span-2 text-center text-xs text-[#1a3a6b] font-semibold py-1">Datei hier ablegen</div>
+            )}
           </div>
         )}
         <input ref={fotoRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
@@ -259,10 +287,10 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
       </div>
 
       <div className="flex gap-3">
-        <button onClick={handleSubmit} disabled={saving || !mitarbeiterName.trim()}
+        <button onClick={handleSubmit} disabled={saving || processing || !mitarbeiterName.trim()}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-40 transition-colors">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Speichern
+          {saving || processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {processing ? "Dokument wird geladen…" : "Speichern"}
         </button>
         <button onClick={onCancel} className="px-5 py-2.5 bg-white border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
           Abbrechen
@@ -530,13 +558,16 @@ export default function Bescheinigungen() {
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         ) : liste.length === 0 ? (
-          <div className={`text-center py-12 rounded-2xl border-2 border-dashed ${tab.borderColor} ${tab.bgColor}`}>
-            <span className={`block mx-auto mb-3 w-12 h-12 ${tab.bgColor} rounded-full flex items-center justify-center`}>
-              <span className={tab.color}>{tab.icon}</span>
-            </span>
+          <button
+            onClick={() => setShowForm(true)}
+            className="w-full text-center py-12 rounded-2xl border-2 border-dashed border-[#1a3a6b]/20 bg-[#1a3a6b]/3 hover:bg-[#1a3a6b]/8 hover:border-[#1a3a6b]/30 transition-colors group"
+          >
+            <div className="w-12 h-12 bg-[#1a3a6b]/10 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:bg-[#1a3a6b]/15 transition-colors">
+              <Plus className="w-5 h-5 text-[#1a3a6b]" />
+            </div>
             <p className="text-sm font-medium text-muted-foreground">Keine {tab.label} hinterlegt</p>
-            <p className="text-xs text-muted-foreground mt-1">Klicken Sie auf "Hinzufügen"</p>
-          </div>
+            <p className="text-xs text-[#1a3a6b] font-semibold mt-1">Tippen zum Hinzufügen</p>
+          </button>
         ) : (
           <div className="space-y-3">
             {liste.map((z) => (
@@ -548,13 +579,21 @@ export default function Bescheinigungen() {
                 onDelete={() => handleDelete(z.id)}
               />
             ))}
+            {!showForm && (
+              <button
+                onClick={() => setShowForm(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-[#1a3a6b]/20 rounded-2xl text-sm font-semibold text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/30 transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Weiteren Eintrag hinzufügen
+              </button>
+            )}
           </div>
         )}
 
         {/* Gesetzlicher Hinweis */}
         {tab.hinweis && (
-          <div className={`${tab.bgColor} border ${tab.borderColor} rounded-2xl p-4`}>
-            <p className={`text-xs font-medium leading-relaxed ${tab.color}`}>
+          <div className="bg-[#1a3a6b]/5 border border-[#1a3a6b]/15 rounded-2xl p-4">
+            <p className="text-xs font-medium leading-relaxed text-[#1a3a6b]">
               <strong>Hinweis:</strong> {tab.hinweis}
             </p>
           </div>

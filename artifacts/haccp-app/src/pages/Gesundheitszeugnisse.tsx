@@ -24,6 +24,15 @@ interface Gesundheitszeugnis {
   createdAt: string;
 }
 
+function readFileAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target!.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function compressImage(file: File, maxPx = 1400, quality = 0.8): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -101,28 +110,39 @@ function ZeugnisForm({ onSave, onCancel }: {
   const [notizen, setNotizen] = useState("");
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const fotoRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const processFile = async (file: File) => {
+    setProcessing(true);
+    try {
+      if (file.type === "application/pdf") {
+        setDokument(await readFileAsDataURL(file));
+      } else {
+        setDokument(await compressImage(file));
+      }
+    } catch { /* ignore */ } finally { setProcessing(false); }
+  };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setProcessing(true);
-    try {
-      if (file.type === "application/pdf") {
-        const reader = new FileReader();
-        reader.onload = (ev) => setDokument(ev.target!.result as string);
-        reader.readAsDataURL(file);
-      } else {
-        setDokument(await compressImage(file));
-      }
-    } finally { setProcessing(false); e.target.value = ""; }
+    e.target.value = "";
+    await processFile(file);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await processFile(file);
   };
 
   const isPdf = dokument.startsWith("data:application/pdf");
 
   const handleSubmit = async () => {
-    if (!mitarbeiterName.trim()) return;
+    if (!mitarbeiterName.trim() || processing) return;
     setSaving(true);
     try {
       await onSave({
@@ -158,31 +178,33 @@ function ZeugnisForm({ onSave, onCancel }: {
           Dokument (Foto, Screenshot oder PDF)
         </label>
         {dokument ? (
-          <div className="relative">
-            {isPdf ? (
-              <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
-                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
-                  <FileText className="w-5 h-5 text-red-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-red-700">PDF-Dokument</p>
-                  <p className="text-xs text-red-500">Wird gespeichert</p>
-                </div>
-                <button onClick={() => setDokument("")} className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
-                  <X className="w-3.5 h-3.5" />
-                </button>
+          isPdf ? (
+            <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
+              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5 text-red-600" />
               </div>
-            ) : (
-              <div className="relative">
-                <img src={dokument} alt="Zeugnis" className="w-full max-h-64 object-contain rounded-xl border border-border/60" />
-                <button onClick={() => setDokument("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
-                  <X className="w-3.5 h-3.5" />
-                </button>
+              <div className="flex-1">
+                <p className="text-sm font-bold text-red-700">PDF-Dokument bereit</p>
               </div>
-            )}
-          </div>
+              <button onClick={() => setDokument("")} className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <img src={dokument} alt="Zeugnis" className="w-full max-h-64 object-contain rounded-xl border border-border/60" />
+              <button onClick={() => setDokument("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )
         ) : (
-          <div className="grid grid-cols-2 gap-2">
+          <div
+            onDrop={handleDrop}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
+          >
             <button
               onClick={() => fotoRef.current?.click()}
               disabled={processing}
@@ -194,11 +216,14 @@ function ZeugnisForm({ onSave, onCancel }: {
             <button
               onClick={() => fileRef.current?.click()}
               disabled={processing}
-              className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-red-200 rounded-xl text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50"
+              className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50"
             >
-              <FileText className="w-5 h-5" />
-              <span className="text-xs font-semibold text-center leading-tight">PDF-<br />Datei</span>
+              {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileText className="w-5 h-5" />}
+              <span className="text-xs font-semibold text-center leading-tight">PDF /<br />Datei</span>
             </button>
+            {dragOver && (
+              <div className="col-span-2 text-center text-xs text-[#1a3a6b] font-semibold py-1">Datei hier ablegen</div>
+            )}
           </div>
         )}
         <input ref={fotoRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
@@ -208,11 +233,11 @@ function ZeugnisForm({ onSave, onCancel }: {
       <div className="flex gap-3 pt-1">
         <button
           onClick={handleSubmit}
-          disabled={saving || !mitarbeiterName.trim()}
+          disabled={saving || processing || !mitarbeiterName.trim()}
           className="flex items-center gap-2 px-5 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-40 transition-colors"
         >
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Speichern
+          {saving || processing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          {processing ? "Dokument wird geladen…" : "Speichern"}
         </button>
         <button onClick={onCancel} className="px-5 py-2.5 bg-white border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
           Abbrechen
