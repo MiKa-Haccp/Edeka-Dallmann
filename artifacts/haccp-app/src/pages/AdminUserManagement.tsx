@@ -371,6 +371,9 @@ function UserRoleRow({
     } catch { setSaveMsg("Fehler"); } finally { setSaving(false); }
   };
 
+  const { adminSession: loggedInSession } = useAppStore();
+  const loggedInIsSuperAdmin = loggedInSession?.role === "SUPERADMIN";
+
   const Icon = ROLE_ICONS[role] || Users;
   const isSuperAdmin = role === "SUPERADMIN";
   const showMarkets = role === "MARKTLEITER";
@@ -527,16 +530,19 @@ function UserRoleRow({
                   <span className="flex items-center gap-1.5"><Shield className="h-3.5 w-3.5 text-blue-600" />Rolle</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {(["ADMIN", "BEREICHSLEITUNG", "MARKTLEITER", "USER"] as const).map((r) => {
-                    const RIcon = ROLE_ICONS[r] || Users;
+                  {(loggedInIsSuperAdmin
+                    ? ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER", "USER"]
+                    : ["ADMIN", "BEREICHSLEITUNG", "MARKTLEITER", "USER"]
+                  ).map((r) => {
+                    const RIcon = ROLE_ICONS[r as keyof typeof ROLE_ICONS] || Users;
                     return (
                       <button key={r} onClick={() => handleRoleChange(r)} disabled={saving}
                         className={cn(
                           "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold border-2 transition-all",
-                          role === r ? ROLE_COLORS[r] + " ring-2 ring-offset-1 ring-primary/20" : "bg-white text-muted-foreground border-border hover:border-primary/40"
+                          role === r ? (ROLE_COLORS[r as keyof typeof ROLE_COLORS] || ROLE_COLORS["USER"]) + " ring-2 ring-offset-1 ring-primary/20" : "bg-white text-muted-foreground border-border hover:border-primary/40"
                         )}
                       >
-                        <RIcon className="h-4 w-4" />{ROLE_LABELS[r]}
+                        <RIcon className="h-4 w-4" />{ROLE_LABELS[r as keyof typeof ROLE_LABELS] || r}
                       </button>
                     );
                   })}
