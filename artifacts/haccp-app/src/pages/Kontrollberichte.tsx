@@ -207,7 +207,8 @@ function DokumentCard({
     e.target.value = "";
     setProcessing(true);
     try {
-      if (file.type === "application/pdf") {
+      const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      if (isPdfFile) {
         onDokument(await readFileAsDataURL(file));
       } else {
         onDokument(await compressImage(file));
@@ -414,6 +415,231 @@ function AktionsplanCard({
   );
 }
 
+// ===== TÜV PANEL =====
+function TuevPanel({ year }: { year: number }) {
+  const { selectedMarketId } = useAppStore();
+  const [daten, setDaten] = useState<TuevJahresbericht | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [zertDok, setZertDok] = useState("");
+  const [zertNotizen, setZertNotizen] = useState("");
+  const [pruefDok, setPruefDok] = useState("");
+  const [pruefNotizen, setPruefNotizen] = useState("");
+  const [aktFoto, setAktFoto] = useState("");
+  const [massnahmen, setMassnahmen] = useState<Massnahme[]>([]);
+  const [nachbesserungName, setNachbesserungName] = useState("");
+  const [nachbesserungDatum, setNachbesserungDatum] = useState("");
+  const [nachbesserungUnterschrift, setNachbesserungUnterschrift] = useState("");
+  const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pinValue, setPinValue] = useState("");
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinError, setPinError] = useState("");
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const mktParam = selectedMarketId ? `&marketId=${selectedMarketId}` : "";
+      const res = await fetch(`${BASE}/tuev-jahresbericht?tenantId=1&year=${year}${mktParam}`);
+      const data = await res.json();
+      setDaten(data);
+      if (data) {
+        setZertDok(data.zertifikateDokument || "");
+        setZertNotizen(data.zertifikateNotizen || "");
+        setPruefDok(data.pruefungenDokument || "");
+        setPruefNotizen(data.pruefungenNotizen || "");
+        setAktFoto(data.aktionsplanFoto || "");
+        setNachbesserungName(data.nachbesserungName || "");
+        setNachbesserungDatum(data.nachbesserungDatum || "");
+        setNachbesserungUnterschrift(data.nachbesserungUnterschrift || "");
+        try { setMassnahmen(data.aktionsplanMassnahmen ? JSON.parse(data.aktionsplanMassnahmen) : []); }
+        catch { setMassnahmen([]); }
+      } else {
+        setZertDok(""); setZertNotizen(""); setPruefDok(""); setPruefNotizen("");
+        setAktFoto(""); setMassnahmen([]);
+        setNachbesserungName(""); setNachbesserungDatum(""); setNachbesserungUnterschrift("");
+      }
+    } finally { setLoading(false); }
+  }, [year, selectedMarketId]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await fetch(`${BASE}/tuev-jahresbericht`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tenantId: 1, marketId: selectedMarketId || 1, year,
+          zertifikateDokument: zertDok, zertifikateNotizen: zertNotizen,
+          pruefungenDokument: pruefDok, pruefungenNotizen: pruefNotizen,
+          aktionsplanFoto: aktFoto, aktionsplanMassnahmen: JSON.stringify(massnahmen),
+          nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift,
+        }),
+      });
+      await loadData();
+      setEditMode(false);
+    } finally { setSaving(false); }
+  };
+
+  const handlePinSign = async () => {
+    if (pinValue.length !== 4) return;
+    setPinLoading(true); setPinError("");
+    try {
+      const res = await fetch(`${BASE}/users/verify-pin`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: pinValue, tenantId: 1 }),
+      });
+      if (res.status === 409) { setPinError("PIN mehrfach vergeben – bitte Admin kontaktieren."); return; }
+      const data = await res.json();
+      if (!data.valid) { setPinError("Ungültige PIN. Kein Mitarbeiter gefunden."); return; }
+      setNachbesserungUnterschrift(data.userName || "");
+      setPinDialogOpen(false); setPinValue(""); setPinError("");
+    } finally { setPinLoading(false); }
+  };
+
+  if (loading) {
+    return <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {!daten && !editMode ? `Noch kein TÜV-Bericht für ${year}` : `TÜV-Jahresbericht ${year}`}
+        </p>
+        <div className="flex gap-2">
+          {!editMode ? (
+            <button onClick={() => setEditMode(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors">
+              <Pencil className="w-4 h-4" /> {daten ? "Bearbeiten" : "Eintragen"}
+            </button>
+          ) : (
+            <>
+              <button onClick={() => { loadData(); setEditMode(false); }}
+                className="px-4 py-2 bg-white border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
+                Abbrechen
+              </button>
+              <button onClick={handleSave} disabled={saving}
+                className="flex items-center gap-2 px-4 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-40 transition-colors">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Speichern
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {(daten || editMode) ? (
+        <div className="space-y-4">
+          <DokumentCard label="TÜV Zertifikate" dokument={zertDok} notizen={zertNotizen}
+            onDokument={setZertDok} onNotizen={setZertNotizen} onClear={() => setZertDok("")}
+            notizenPlaceholder="Zertifikat-Nummer, Gültigkeitsdatum, Ausstellungsorganisation..." disabled={!editMode} />
+          <DokumentCard label="TÜV Prüfberichte" dokument={pruefDok} notizen={pruefNotizen}
+            onDokument={setPruefDok} onNotizen={setPruefNotizen} onClear={() => setPruefDok("")}
+            notizenPlaceholder="Prüfbereich, Ergebnis, Prüfer, Datum der nächsten Prüfung..." disabled={!editMode} />
+          <AktionsplanCard foto={aktFoto} massnahmen={massnahmen}
+            onFoto={setAktFoto} onMassnahmen={setMassnahmen} onFotoClear={() => setAktFoto("")}
+            disabled={!editMode} />
+
+          {(massnahmen.length > 0 || aktFoto) && (
+            <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
+              <div className="bg-[#1a3a6b] text-white px-5 py-3">
+                <h3 className="font-bold text-sm">Bestätigung der Maßnahmenumsetzung – Betriebsleitung</h3>
+              </div>
+              <div className="p-5">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Die Betriebsleitung bestätigt, dass alle erforderlichen Nachbesserungen durchgeführt und geprüft wurden.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Name (Betriebsleitung)</label>
+                    <input type="text" value={nachbesserungName} onChange={(e) => setNachbesserungName(e.target.value)}
+                      disabled={!editMode} placeholder="Vor- und Nachname"
+                      className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:bg-transparent disabled:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Datum der Prüfung</label>
+                    <input type="date" value={nachbesserungDatum} onChange={(e) => setNachbesserungDatum(e.target.value)}
+                      disabled={!editMode}
+                      className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:bg-transparent disabled:border-transparent" />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Unterschrift (PIN)</label>
+                  {nachbesserungUnterschrift ? (
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-2.5 text-sm font-medium flex-1">
+                        <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        Unterschrieben von: <span className="font-bold ml-1">{nachbesserungUnterschrift}</span>
+                      </div>
+                      {editMode && (
+                        <button type="button" onClick={() => setNachbesserungUnterschrift("")}
+                          className="p-2.5 rounded-xl border border-border text-muted-foreground hover:bg-secondary transition-colors">
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  ) : editMode ? (
+                    <button type="button" onClick={() => setPinDialogOpen(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-[#1a3a6b]/30 text-[#1a3a6b] rounded-xl text-sm font-medium hover:bg-[#1a3a6b]/5 transition-colors w-full justify-center">
+                      <KeyRound className="w-4 h-4" /> Mit PIN unterschreiben
+                    </button>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">Noch keine Unterschrift</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="text-center py-12 rounded-2xl border-2 border-dashed border-blue-200 bg-blue-50">
+          <ShieldCheck className="w-8 h-8 text-blue-400 mx-auto mb-3" />
+          <p className="text-sm font-medium text-muted-foreground">Noch kein TÜV-Bericht für {year}</p>
+          <p className="text-xs text-muted-foreground mt-1">Klicken Sie auf "Eintragen" um zu beginnen</p>
+        </div>
+      )}
+
+      {pinDialogOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xs mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-[#1a3a6b]/10 rounded-xl flex items-center justify-center">
+                <KeyRound className="w-5 h-5 text-[#1a3a6b]" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">Bestätigung Betriebsleitung</h3>
+                <p className="text-xs text-muted-foreground">4-stellige PIN eingeben</p>
+              </div>
+            </div>
+            <input type="password" inputMode="numeric" maxLength={4} autoFocus value={pinValue}
+              onChange={(e) => { setPinValue(e.target.value.replace(/\D/g, "").slice(0, 4)); setPinError(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") handlePinSign(); }}
+              placeholder="• • • •"
+              className="w-full border border-border rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] font-bold focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 focus:border-[#1a3a6b] mb-3" />
+            {pinError && (
+              <p className="text-xs text-red-600 text-center mb-3 flex items-center justify-center gap-1">
+                <X className="w-3.5 h-3.5" /> {pinError}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <button type="button" onClick={() => { setPinDialogOpen(false); setPinValue(""); setPinError(""); }}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors">
+                Abbrechen
+              </button>
+              <button type="button" onClick={handlePinSign} disabled={pinValue.length !== 4 || pinLoading}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                {pinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Bestätigen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ===== FORMULAR =====
 function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
   kategorie: Kategorie;
@@ -439,7 +665,8 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
   const processFile = async (file: File) => {
     setProcessing(true);
     try {
-      if (file.type === "application/pdf") {
+      const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      if (isPdfFile) {
         setDokument(await readFileAsDataURL(file));
       } else {
         setDokument(await compressImage(file));
@@ -481,7 +708,11 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
   };
 
   return (
-    <div className={`${tab.bgColor} border ${tab.borderColor} rounded-2xl p-5 space-y-4`}>
+    <div
+      className={`${tab.bgColor} border ${tab.borderColor} rounded-2xl p-5 space-y-4`}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) processFile(f); }}
+    >
       <p className={`text-sm font-bold ${tab.color}`}>Neuer Bericht — {tab.label} {year}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1 sm:col-span-2">
@@ -581,11 +812,52 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
 }
 
 // ===== BERICHT KARTE =====
-function BerichtKarte({ b, tab, onDelete, isAdmin }: {
+function BerichtKarte({ b, tab, onDelete, isAdmin, onUpdate }: {
   b: Kontrollbericht; tab: typeof TABS[0]; onDelete: () => void; isAdmin: boolean;
+  onUpdate: (fields: Partial<Kontrollbericht>) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editDok, setEditDok] = useState("");
+  const [editNotizen, setEditNotizen] = useState("");
+  const [editBezeichnung, setEditBezeichnung] = useState("");
+  const [editKontrollDatum, setEditKontrollDatum] = useState("");
+  const [editGueltigBis, setEditGueltigBis] = useState("");
+  const [editErgebnis, setEditErgebnis] = useState<Ergebnis>("");
+  const [editProcessing, setEditProcessing] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const editFileRef = useRef<HTMLInputElement>(null);
+  const editFotoRef = useRef<HTMLInputElement>(null);
+
+  const startEdit = () => {
+    setEditDok(b.dokumentBase64 || "");
+    setEditNotizen(b.notizen || "");
+    setEditBezeichnung(b.bezeichnung || "");
+    setEditKontrollDatum(b.kontrollDatum || "");
+    setEditGueltigBis(b.gueltigBis || "");
+    setEditErgebnis(b.ergebnis || "");
+    setEditMode(true);
+  };
+
+  const handleEditFile = async (file: File) => {
+    setEditProcessing(true);
+    try {
+      const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      setEditDok(await (isPdf ? readFileAsDataURL(file) : compressImage(file)));
+    } catch { /* ignore */ } finally { setEditProcessing(false); }
+  };
+
+  const handleEditSave = async () => {
+    setEditSaving(true);
+    try {
+      await onUpdate({
+        dokumentBase64: editDok, notizen: editNotizen, bezeichnung: editBezeichnung,
+        kontrollDatum: editKontrollDatum, gueltigBis: editGueltigBis, ergebnis: editErgebnis,
+      });
+      setEditMode(false);
+    } finally { setEditSaving(false); }
+  };
   const status = getStatus(b.gueltigBis);
   const isPdf = b.dokumentBase64?.startsWith("data:application/pdf");
   const ergebnisConfig = b.ergebnis ? ERGEBNIS_CONFIG[b.ergebnis] : null;
@@ -636,84 +908,159 @@ function BerichtKarte({ b, tab, onDelete, isAdmin }: {
       </button>
 
       {open && (
-        <div className="px-5 pb-5 space-y-4 border-t border-border/30">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-4">
-            {b.kontrollstelle && (
-              <div className="bg-muted/30 rounded-xl px-3 py-2">
-                <p className="text-xs text-muted-foreground">Kontrollstelle</p>
-                <p className="text-sm font-bold">{b.kontrollstelle}</p>
+        <div className="px-5 pb-5 space-y-4 border-t border-border/30 pt-4">
+          {editMode ? (
+            /* ---- EDIT MODUS ---- */
+            <div className="space-y-4">
+              <p className="text-sm font-bold text-[#1a3a6b]">Eintrag bearbeiten</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bezeichnung</label>
+                  <input value={editBezeichnung} onChange={(e) => setEditBezeichnung(e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ergebnis</label>
+                  <select value={editErgebnis} onChange={(e) => setEditErgebnis(e.target.value as Ergebnis)}
+                    className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20">
+                    <option value="">Kein Ergebnis</option>
+                    <option value="bestanden">Bestanden</option>
+                    <option value="bestanden_mit_auflagen">Bestanden mit Auflagen</option>
+                    <option value="nicht_bestanden">Nicht bestanden</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Kontrolldatum</label>
+                  <input type="date" value={editKontrollDatum} onChange={(e) => setEditKontrollDatum(e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nächste Kontrolle</label>
+                  <input type="date" value={editGueltigBis} onChange={(e) => setEditGueltigBis(e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+                </div>
               </div>
-            )}
-            {b.kontrollDatum && (
-              <div className="bg-muted/30 rounded-xl px-3 py-2">
-                <p className="text-xs text-muted-foreground">Kontrolldatum</p>
-                <p className="text-sm font-bold">{new Date(b.kontrollDatum).toLocaleDateString("de-DE")}</p>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Notizen / Auflagen</label>
+                <textarea value={editNotizen} onChange={(e) => setEditNotizen(e.target.value)} rows={2}
+                  className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 resize-none" />
               </div>
-            )}
-            {b.gueltigBis && (
-              <div className={`rounded-xl px-3 py-2 ${status === "abgelaufen" ? "bg-red-50" : status === "bald" ? "bg-amber-50" : "bg-green-50"}`}>
-                <p className={`text-xs ${status === "abgelaufen" ? "text-red-500" : status === "bald" ? "text-amber-600" : "text-green-600"}`}>
-                  Nächste Kontrolle
-                </p>
-                <p className={`text-sm font-bold ${status === "abgelaufen" ? "text-red-700" : status === "bald" ? "text-amber-700" : "text-green-700"}`}>
-                  {new Date(b.gueltigBis).toLocaleDateString("de-DE")}
-                </p>
-              </div>
-            )}
-            {ergebnisConfig && (
-              <div className={`rounded-xl px-3 py-2 ${ergebnisConfig.bg}`}>
-                <p className={`text-xs ${ergebnisConfig.color}`}>Ergebnis</p>
-                <p className={`text-sm font-bold flex items-center gap-1 ${ergebnisConfig.color}`}>
-                  {ergebnisConfig.icon} {ergebnisConfig.label}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {b.notizen && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notizen / Auflagen</p>
-              <p className="text-sm text-foreground whitespace-pre-line">{b.notizen}</p>
-            </div>
-          )}
-
-          {b.dokumentBase64 ? (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dokument</p>
-              {isPdf ? (
-                <a href={b.dokumentBase64} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors">
-                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
-                    <FileText className="w-5 h-5 text-red-600" />
+              {/* Dokument */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dokument</label>
+                {editDok ? (
+                  editDok.startsWith("data:application/pdf") ? (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
+                      <FileText className="w-5 h-5 text-red-600 shrink-0" />
+                      <span className="text-sm font-bold text-red-700 flex-1">PDF-Dokument</span>
+                      <button onClick={() => setEditDok("")} className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"><X className="w-3.5 h-3.5" /></button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <img src={editDok} alt="Dokument" className="w-full max-h-48 object-contain rounded-xl border border-border/40" />
+                      <button onClick={() => setEditDok("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm"><X className="w-3.5 h-3.5" /></button>
+                    </div>
+                  )
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => editFotoRef.current?.click()} disabled={editProcessing}
+                      className="flex flex-col items-center gap-2 px-4 py-3 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 transition-colors disabled:opacity-50">
+                      {editProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+                      <span className="text-xs font-semibold">Foto / Screenshot</span>
+                    </button>
+                    <button onClick={() => editFileRef.current?.click()} disabled={editProcessing}
+                      className="flex flex-col items-center gap-2 px-4 py-3 border-2 border-dashed border-red-200 rounded-xl text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50">
+                      <Upload className="w-5 h-5" />
+                      <span className="text-xs font-semibold">PDF-Datei</span>
+                    </button>
                   </div>
-                  <div><p className="text-sm font-bold text-red-700">PDF anzeigen</p><p className="text-xs text-red-500">Klicken zum Öffnen</p></div>
-                  <ExternalLink className="w-4 h-4 text-red-400 ml-auto" />
-                </a>
-              ) : (
-                <img src={b.dokumentBase64} alt="Dokument" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
-              )}
+                )}
+                <input ref={editFotoRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) handleEditFile(f); }} />
+                <input ref={editFileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) handleEditFile(f); }} />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handleEditSave} disabled={editSaving || editProcessing}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-40 transition-colors">
+                  {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Speichern
+                </button>
+                <button onClick={() => setEditMode(false)} className="px-4 py-2.5 bg-white border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">Abbrechen</button>
+              </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-xl px-4 py-3">
-              <Camera className="w-4 h-4" /> Kein Dokument hinterlegt
-            </div>
-          )}
-
-          <p className="text-xs text-muted-foreground">Hinzugefügt: {new Date(b.createdAt).toLocaleDateString("de-DE")}</p>
-
-          {isAdmin && (
-            <div className="flex gap-2">
-              {!confirmDelete ? (
-                <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">
-                  <Trash2 className="w-3.5 h-3.5" /> Löschen
-                </button>
-              ) : (
-                <>
-                  <button onClick={onDelete} className="px-3 py-2 bg-red-600 text-white rounded-xl text-xs font-bold">Sicher löschen</button>
-                  <button onClick={() => setConfirmDelete(false)} className="px-3 py-2 bg-white border border-border/60 rounded-xl text-xs font-semibold text-muted-foreground">Abbrechen</button>
-                </>
+            /* ---- ANSICHT MODUS ---- */
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {b.kontrollstelle && (
+                  <div className="bg-muted/30 rounded-xl px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Kontrollstelle</p>
+                    <p className="text-sm font-bold">{b.kontrollstelle}</p>
+                  </div>
+                )}
+                {b.kontrollDatum && (
+                  <div className="bg-muted/30 rounded-xl px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Kontrolldatum</p>
+                    <p className="text-sm font-bold">{new Date(b.kontrollDatum).toLocaleDateString("de-DE")}</p>
+                  </div>
+                )}
+                {b.gueltigBis && (
+                  <div className={`rounded-xl px-3 py-2 ${status === "abgelaufen" ? "bg-red-50" : status === "bald" ? "bg-amber-50" : "bg-green-50"}`}>
+                    <p className={`text-xs ${status === "abgelaufen" ? "text-red-500" : status === "bald" ? "text-amber-600" : "text-green-600"}`}>Nächste Kontrolle</p>
+                    <p className={`text-sm font-bold ${status === "abgelaufen" ? "text-red-700" : status === "bald" ? "text-amber-700" : "text-green-700"}`}>
+                      {new Date(b.gueltigBis).toLocaleDateString("de-DE")}
+                    </p>
+                  </div>
+                )}
+                {ergebnisConfig && (
+                  <div className={`rounded-xl px-3 py-2 ${ergebnisConfig.bg}`}>
+                    <p className={`text-xs ${ergebnisConfig.color}`}>Ergebnis</p>
+                    <p className={`text-sm font-bold flex items-center gap-1 ${ergebnisConfig.color}`}>{ergebnisConfig.icon} {ergebnisConfig.label}</p>
+                  </div>
+                )}
+              </div>
+              {b.notizen && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notizen / Auflagen</p>
+                  <p className="text-sm text-foreground whitespace-pre-line">{b.notizen}</p>
+                </div>
               )}
-            </div>
+              {b.dokumentBase64 ? (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dokument</p>
+                  {isPdf ? (
+                    <a href={b.dokumentBase64} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors">
+                      <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0"><FileText className="w-5 h-5 text-red-600" /></div>
+                      <div><p className="text-sm font-bold text-red-700">PDF anzeigen</p><p className="text-xs text-red-500">Klicken zum Öffnen</p></div>
+                      <ExternalLink className="w-4 h-4 text-red-400 ml-auto" />
+                    </a>
+                  ) : (
+                    <img src={b.dokumentBase64} alt="Dokument" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-xl px-4 py-3">
+                  <Camera className="w-4 h-4" /> Kein Dokument hinterlegt
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">Hinzugefügt: {new Date(b.createdAt).toLocaleDateString("de-DE")}</p>
+              {isAdmin && (
+                <div className="flex gap-2">
+                  <button onClick={startEdit} className="flex items-center gap-2 px-3 py-2 bg-[#1a3a6b]/10 text-[#1a3a6b] border border-[#1a3a6b]/20 rounded-xl text-xs font-bold hover:bg-[#1a3a6b]/15 transition-colors">
+                    <Pencil className="w-3.5 h-3.5" /> Bearbeiten
+                  </button>
+                  {!confirmDelete ? (
+                    <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" /> Löschen
+                    </button>
+                  ) : (
+                    <>
+                      <button onClick={onDelete} className="px-3 py-2 bg-red-600 text-white rounded-xl text-xs font-bold">Sicher löschen</button>
+                      <button onClick={() => setConfirmDelete(false)} className="px-3 py-2 bg-white border border-border/60 rounded-xl text-xs font-semibold text-muted-foreground">Abbrechen</button>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -736,6 +1083,7 @@ export default function Kontrollberichte() {
   const [showForm, setShowForm] = useState(false);
 
   const loadKategorie = useCallback(async (k: Kategorie) => {
+    if (k === "tuev") return;
     setLoading(true);
     try {
       const res = await fetch(`${BASE}/kontrollberichte?tenantId=1&kategorie=${k}${selectedMarketId ? `&marketId=${selectedMarketId}` : ""}`);
@@ -777,6 +1125,16 @@ export default function Kontrollberichte() {
     setDaten((p) => ({ ...p, [aktiveTab]: p[aktiveTab].filter((b) => b.id !== id) }));
   };
 
+  const handleUpdate = async (id: number, fields: Partial<Kontrollbericht>) => {
+    const res = await fetch(`${BASE}/kontrollberichte/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fields),
+    });
+    const updated = await res.json();
+    setDaten((p) => ({ ...p, [aktiveTab]: p[aktiveTab].map((b) => b.id === id ? { ...b, ...updated } : b) }));
+  };
+
   const tab = TABS.find((t) => t.key === aktiveTab)!;
 
   const liste = daten[aktiveTab].filter((b) => b.kontrollDatum?.startsWith(String(year)));
@@ -804,7 +1162,7 @@ export default function Kontrollberichte() {
             </div>
             <div className="flex items-center gap-2">
               <JahrWahl year={year} onChange={handleYearChange} />
-              {!showForm && (
+              {!showForm && aktiveTab !== "tuev" && (
                 <button onClick={() => setShowForm(true)}
                   className="flex items-center gap-2 px-4 py-2.5 bg-white/15 text-white rounded-xl text-sm font-bold hover:bg-white/25 transition-colors">
                   <Plus className="w-4 h-4" /> Hinzufügen
@@ -884,47 +1242,55 @@ export default function Kontrollberichte() {
           </div>
         )}
 
-        {/* Formular */}
-        {showForm && (
-          <KontrollberichtForm
-            kategorie={aktiveTab}
-            year={year}
-            onSave={handleSave}
-            onCancel={() => setShowForm(false)}
-          />
-        )}
-
-        {/* Liste */}
-        {loading ? (
-          <div className="flex justify-center py-10">
-            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : liste.length === 0 ? (
-          <div className={`text-center py-12 rounded-2xl border-2 border-dashed ${tab.borderColor} ${tab.bgColor}`}>
-            <p className="text-sm font-medium text-muted-foreground">Keine {tab.label} für {year}</p>
-            <button onClick={() => setShowForm(true)}
-              className="mt-3 flex items-center gap-2 px-4 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors mx-auto">
-              <Plus className="w-4 h-4" /> Hinzufügen
-            </button>
-          </div>
+        {/* TÜV – spezielles Panel */}
+        {aktiveTab === "tuev" ? (
+          <TuevPanel year={year} />
         ) : (
-          <div className="space-y-3">
-            {liste.map((b) => (
-              <BerichtKarte
-                key={b.id}
-                b={b}
-                tab={tab}
-                isAdmin={canDelete}
-                onDelete={() => handleDelete(b.id)}
+          <>
+            {/* Formular */}
+            {showForm && (
+              <KontrollberichtForm
+                kategorie={aktiveTab}
+                year={year}
+                onSave={handleSave}
+                onCancel={() => setShowForm(false)}
               />
-            ))}
-            {!showForm && (
-              <button onClick={() => setShowForm(true)}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-[#1a3a6b]/25 rounded-2xl text-[#1a3a6b] text-sm font-bold hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors">
-                <Plus className="w-4 h-4" /> Weiteren Bericht hinzufügen
-              </button>
             )}
-          </div>
+
+            {/* Liste */}
+            {loading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : liste.length === 0 ? (
+              <div className={`text-center py-12 rounded-2xl border-2 border-dashed ${tab.borderColor} ${tab.bgColor}`}>
+                <p className="text-sm font-medium text-muted-foreground">Keine {tab.label} für {year}</p>
+                <button onClick={() => setShowForm(true)}
+                  className="mt-3 flex items-center gap-2 px-4 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors mx-auto">
+                  <Plus className="w-4 h-4" /> Hinzufügen
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {liste.map((b) => (
+                  <BerichtKarte
+                    key={b.id}
+                    b={b}
+                    tab={tab}
+                    isAdmin={canDelete}
+                    onDelete={() => handleDelete(b.id)}
+                    onUpdate={(fields) => handleUpdate(b.id, fields)}
+                  />
+                ))}
+                {!showForm && (
+                  <button onClick={() => setShowForm(true)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-[#1a3a6b]/25 rounded-2xl text-[#1a3a6b] text-sm font-bold hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors">
+                    <Plus className="w-4 h-4" /> Weiteren Bericht hinzufügen
+                  </button>
+                )}
+              </div>
+            )}
+          </>
         )}
 
         {/* Gesetzlicher Hinweis */}

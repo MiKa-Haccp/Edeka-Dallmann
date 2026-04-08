@@ -8,7 +8,7 @@ import {
   ChevronLeft,
   HeartPulse, Pill, ShieldCheck, Flame, FileText,
   Plus, Loader2, Save, X, Camera, ChevronDown, ChevronUp,
-  Trash2, ExternalLink, AlertCircle, CheckCircle2, Clock,
+  Trash2, ExternalLink, AlertCircle, CheckCircle2, Clock, Pencil,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -175,7 +175,8 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
   const processFile = async (file: File) => {
     setProcessing(true);
     try {
-      if (file.type === "application/pdf") {
+      const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      if (isPdfFile) {
         setDokument(await readFileAsDataURL(file));
       } else {
         setDokument(await compressImage(file));
@@ -208,7 +209,11 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
   };
 
   return (
-    <div className="bg-[#1a3a6b]/5 border border-[#1a3a6b]/20 rounded-2xl p-5 space-y-4">
+    <div
+      className="bg-[#1a3a6b]/5 border border-[#1a3a6b]/20 rounded-2xl p-5 space-y-4"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) processFile(f); }}
+    >
       <p className="text-sm font-bold text-[#1a3a6b]">Neuer Eintrag — {tab.label}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <MitarbeiterSuchInput
@@ -301,11 +306,51 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
 }
 
 // ===== EINTRAG KARTE =====
-function BescheinigungKarte({ z, tab, onDelete, isAdmin }: {
+function BescheinigungKarte({ z, tab, onDelete, isAdmin, onUpdate }: {
   z: Bescheinigung; tab: typeof TABS[0]; onDelete: () => void; isAdmin: boolean;
+  onUpdate: (fields: Partial<Bescheinigung>) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editDok, setEditDok] = useState("");
+  const [editNotizen, setEditNotizen] = useState("");
+  const [editBezeichnung, setEditBezeichnung] = useState("");
+  const [editAusstellungsDatum, setEditAusstellungsDatum] = useState("");
+  const [editGueltigBis, setEditGueltigBis] = useState("");
+  const [editProcessing, setEditProcessing] = useState(false);
+  const [editSaving, setEditSaving] = useState(false);
+  const editFileRef = useRef<HTMLInputElement>(null);
+  const editFotoRef = useRef<HTMLInputElement>(null);
+
+  const startEdit = () => {
+    setEditDok(z.dokumentBase64 || "");
+    setEditNotizen(z.notizen || "");
+    setEditBezeichnung(z.bezeichnung || "");
+    setEditAusstellungsDatum(z.ausstellungsDatum || "");
+    setEditGueltigBis(z.gueltigBis || "");
+    setEditMode(true);
+  };
+
+  const handleEditFile = async (file: File) => {
+    setEditProcessing(true);
+    try {
+      const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      setEditDok(await (isPdfFile ? readFileAsDataURL(file) : compressImage(file)));
+    } catch { /* ignore */ } finally { setEditProcessing(false); }
+  };
+
+  const handleEditSave = async () => {
+    setEditSaving(true);
+    try {
+      await onUpdate({
+        dokumentBase64: editDok, notizen: editNotizen, bezeichnung: editBezeichnung,
+        ausstellungsDatum: editAusstellungsDatum, gueltigBis: editGueltigBis,
+      });
+      setEditMode(false);
+    } finally { setEditSaving(false); }
+  };
+
   const status = getStatus(z.gueltigBis);
   const isPdf = z.dokumentBase64?.startsWith("data:application/pdf");
 
@@ -337,72 +382,143 @@ function BescheinigungKarte({ z, tab, onDelete, isAdmin }: {
       </button>
 
       {open && (
-        <div className="px-5 pb-5 space-y-4 border-t border-border/30">
-          {/* Daten */}
-          <div className="grid grid-cols-2 gap-3 pt-4">
-            {z.ausstellungsDatum && (
-              <div className="bg-muted/30 rounded-xl px-3 py-2">
-                <p className="text-xs text-muted-foreground">Ausgestellt</p>
-                <p className="text-sm font-bold">{new Date(z.ausstellungsDatum).toLocaleDateString("de-DE")}</p>
+        <div className="px-5 pb-5 space-y-4 border-t border-border/30 pt-4">
+          {editMode ? (
+            /* ---- EDIT MODUS ---- */
+            <div
+              className="space-y-4"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleEditFile(f); }}
+            >
+              <p className="text-sm font-bold text-[#1a3a6b]">Eintrag bearbeiten</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bezeichnung</label>
+                  <input value={editBezeichnung} onChange={(e) => setEditBezeichnung(e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Ausstellungsdatum</label>
+                  <input type="date" value={editAusstellungsDatum} onChange={(e) => setEditAusstellungsDatum(e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Gültig bis / Nächste Schulung</label>
+                  <input type="date" value={editGueltigBis} onChange={(e) => setEditGueltigBis(e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Notizen</label>
+                  <input value={editNotizen} onChange={(e) => setEditNotizen(e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20" />
+                </div>
               </div>
-            )}
-            {z.gueltigBis && (
-              <div className={`rounded-xl px-3 py-2 ${status === "abgelaufen" ? "bg-red-50" : status === "bald" ? "bg-amber-50" : "bg-green-50"}`}>
-                <p className={`text-xs ${status === "abgelaufen" ? "text-red-500" : status === "bald" ? "text-amber-600" : "text-green-600"}`}>
-                  {status === "abgelaufen" ? "Abgelaufen am" : "Gültig bis"}
-                </p>
-                <p className={`text-sm font-bold ${status === "abgelaufen" ? "text-red-700" : status === "bald" ? "text-amber-700" : "text-green-700"}`}>
-                  {new Date(z.gueltigBis).toLocaleDateString("de-DE")}
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Dokument */}
-          {z.dokumentBase64 ? (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dokument</p>
-              {isPdf ? (
-                <a href={z.dokumentBase64} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors">
-                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
-                    <FileText className="w-5 h-5 text-red-600" />
+              {/* Dokument Upload */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dokument (Foto, Screenshot oder PDF)</label>
+                {editDok ? (
+                  editDok.startsWith("data:application/pdf") ? (
+                    <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
+                      <FileText className="w-5 h-5 text-red-600 shrink-0" />
+                      <span className="text-sm font-bold text-red-700 flex-1">PDF-Dokument</span>
+                      <button onClick={() => setEditDok("")} className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"><X className="w-3.5 h-3.5" /></button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <img src={editDok} alt="Dokument" className="w-full max-h-48 object-contain rounded-xl border border-border/40" />
+                      <button onClick={() => setEditDok("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm"><X className="w-3.5 h-3.5" /></button>
+                    </div>
+                  )
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => editFotoRef.current?.click()} disabled={editProcessing}
+                      className="flex flex-col items-center gap-2 px-4 py-3 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 transition-colors disabled:opacity-50">
+                      {editProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+                      <span className="text-xs font-semibold">Foto / Screenshot</span>
+                    </button>
+                    <button onClick={() => editFileRef.current?.click()} disabled={editProcessing}
+                      className="flex flex-col items-center gap-2 px-4 py-3 border-2 border-dashed border-red-200 rounded-xl text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50">
+                      <FileText className="w-5 h-5" />
+                      <span className="text-xs font-semibold">PDF-Datei</span>
+                    </button>
                   </div>
-                  <div><p className="text-sm font-bold text-red-700">PDF anzeigen</p><p className="text-xs text-red-500">Klicken zum Öffnen</p></div>
-                  <ExternalLink className="w-4 h-4 text-red-400 ml-auto" />
-                </a>
-              ) : (
-                <img src={z.dokumentBase64} alt="Dokument" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
-              )}
+                )}
+                <input ref={editFotoRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) handleEditFile(f); }} />
+                <input ref={editFileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) handleEditFile(f); }} />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handleEditSave} disabled={editSaving || editProcessing}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-40 transition-colors">
+                  {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Speichern
+                </button>
+                <button onClick={() => setEditMode(false)} className="px-4 py-2.5 bg-white border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">Abbrechen</button>
+              </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-xl px-4 py-3">
-              <Camera className="w-4 h-4" /> Kein Dokument hinterlegt
-            </div>
-          )}
-
-          {z.notizen && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notizen</p>
-              <p className="text-sm text-foreground">{z.notizen}</p>
-            </div>
-          )}
-
-          <p className="text-xs text-muted-foreground">Hinzugefügt: {new Date(z.createdAt).toLocaleDateString("de-DE")}</p>
-
-          {isAdmin && (
-            <div className="flex gap-2">
-              {!confirmDelete ? (
-                <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">
-                  <Trash2 className="w-3.5 h-3.5" /> Löschen
-                </button>
+            /* ---- ANSICHT MODUS ---- */
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                {z.ausstellungsDatum && (
+                  <div className="bg-muted/30 rounded-xl px-3 py-2">
+                    <p className="text-xs text-muted-foreground">Ausgestellt</p>
+                    <p className="text-sm font-bold">{new Date(z.ausstellungsDatum).toLocaleDateString("de-DE")}</p>
+                  </div>
+                )}
+                {z.gueltigBis && (
+                  <div className={`rounded-xl px-3 py-2 ${status === "abgelaufen" ? "bg-red-50" : status === "bald" ? "bg-amber-50" : "bg-green-50"}`}>
+                    <p className={`text-xs ${status === "abgelaufen" ? "text-red-500" : status === "bald" ? "text-amber-600" : "text-green-600"}`}>
+                      {status === "abgelaufen" ? "Abgelaufen am" : "Gültig bis"}
+                    </p>
+                    <p className={`text-sm font-bold ${status === "abgelaufen" ? "text-red-700" : status === "bald" ? "text-amber-700" : "text-green-700"}`}>
+                      {new Date(z.gueltigBis).toLocaleDateString("de-DE")}
+                    </p>
+                  </div>
+                )}
+              </div>
+              {z.dokumentBase64 ? (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dokument</p>
+                  {isPdf ? (
+                    <a href={z.dokumentBase64} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors">
+                      <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0"><FileText className="w-5 h-5 text-red-600" /></div>
+                      <div><p className="text-sm font-bold text-red-700">PDF anzeigen</p><p className="text-xs text-red-500">Klicken zum Öffnen</p></div>
+                      <ExternalLink className="w-4 h-4 text-red-400 ml-auto" />
+                    </a>
+                  ) : (
+                    <img src={z.dokumentBase64} alt="Dokument" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
+                  )}
+                </div>
               ) : (
-                <>
-                  <button onClick={onDelete} className="px-3 py-2 bg-red-600 text-white rounded-xl text-xs font-bold">Sicher löschen</button>
-                  <button onClick={() => setConfirmDelete(false)} className="px-3 py-2 bg-white border border-border/60 rounded-xl text-xs font-semibold text-muted-foreground">Abbrechen</button>
-                </>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-xl px-4 py-3">
+                  <Camera className="w-4 h-4" /> Kein Dokument hinterlegt
+                </div>
               )}
-            </div>
+              {z.notizen && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Notizen</p>
+                  <p className="text-sm text-foreground">{z.notizen}</p>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">Hinzugefügt: {new Date(z.createdAt).toLocaleDateString("de-DE")}</p>
+              {isAdmin && (
+                <div className="flex gap-2">
+                  <button onClick={startEdit} className="flex items-center gap-2 px-3 py-2 bg-[#1a3a6b]/10 text-[#1a3a6b] border border-[#1a3a6b]/20 rounded-xl text-xs font-bold hover:bg-[#1a3a6b]/15 transition-colors">
+                    <Pencil className="w-3.5 h-3.5" /> Bearbeiten
+                  </button>
+                  {!confirmDelete ? (
+                    <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-2 px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors">
+                      <Trash2 className="w-3.5 h-3.5" /> Löschen
+                    </button>
+                  ) : (
+                    <>
+                      <button onClick={onDelete} className="px-3 py-2 bg-red-600 text-white rounded-xl text-xs font-bold">Sicher löschen</button>
+                      <button onClick={() => setConfirmDelete(false)} className="px-3 py-2 bg-white border border-border/60 rounded-xl text-xs font-semibold text-muted-foreground">Abbrechen</button>
+                    </>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -457,6 +573,16 @@ export default function Bescheinigungen() {
     setDaten((p) => ({ ...p, [aktiveTab]: p[aktiveTab].filter((z) => z.id !== id) }));
   };
 
+  const handleUpdate = async (id: number, fields: Partial<Bescheinigung>) => {
+    const res = await fetch(`${BASE}/bescheinigungen/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(fields),
+    });
+    const updated = await res.json();
+    setDaten((p) => ({ ...p, [aktiveTab]: p[aktiveTab].map((z) => z.id === id ? { ...z, ...updated } : z) }));
+  };
+
   const tab = TABS.find((t) => t.key === aktiveTab)!;
   const liste = daten[aktiveTab];
   const abgelaufen = liste.filter((z) => getStatus(z.gueltigBis) === "abgelaufen").length;
@@ -504,10 +630,10 @@ export default function Bescheinigungen() {
                 key={t.key}
                 onClick={() => handleTabChange(t.key)}
                 className={`relative flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl text-xs font-bold transition-all ${
-                  isActive ? "bg-white shadow-sm border border-border/40 " + t.color : "text-muted-foreground hover:text-foreground"
+                  isActive ? "bg-white shadow-sm border border-border/40 text-[#1a3a6b]" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                <span className={isActive ? t.color : ""}>{t.icon}</span>
+                <span className={isActive ? "text-[#1a3a6b]" : ""}>{t.icon}</span>
                 <span className="text-center leading-tight">{t.kurzLabel}</span>
                 {warn > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-[10px] flex items-center justify-center font-bold">
@@ -577,6 +703,7 @@ export default function Bescheinigungen() {
                 tab={tab}
                 isAdmin={canDelete}
                 onDelete={() => handleDelete(z.id)}
+                onUpdate={(fields) => handleUpdate(z.id, fields)}
               />
             ))}
             {!showForm && (
