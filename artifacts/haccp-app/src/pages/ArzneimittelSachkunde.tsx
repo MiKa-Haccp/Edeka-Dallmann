@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
+import { MitarbeiterSuchInput } from "@/components/MitarbeiterSuchInput";
 import {
   ChevronLeft,
   Pill, Plus, Loader2, Save, X, Camera, FileText,
@@ -140,7 +141,7 @@ function EintragForm({ onSave, onCancel }: {
       <p className="text-sm font-bold text-[#1a3a6b]">Sachkundenachweis hinzufügen</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FInput label="Mitarbeiter *" value={mitarbeiterName} onChange={setMitarbeiterName} placeholder="Vor- und Nachname" />
+        <MitarbeiterSuchInput value={mitarbeiterName} onChange={setMitarbeiterName} required />
         <FInput label="Zertifikat / Schulungsbezeichnung" value={bezeichnung} onChange={setBezeichnung} placeholder="z.B. Sachkunde freiverkäufliche AM" />
         <FInput label="Ausstellungsdatum" value={ausstellungsDatum} onChange={setAusstellungsDatum} type="date" />
         <FInput label="Gültig bis / Nächste Schulung" value={gueltigBis} onChange={setGueltigBis} type="date" />

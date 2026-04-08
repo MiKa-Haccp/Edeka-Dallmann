@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
+import { MitarbeiterSuchInput } from "@/components/MitarbeiterSuchInput";
 import {
   ChevronLeft,
   HeartPulse, Plus, Loader2, Save, X, Camera, FileText,
@@ -138,7 +139,7 @@ function ZeugnisForm({ onSave, onCancel }: {
       <p className="text-sm font-bold text-[#1a3a6b]">Gesundheitszeugnis hinzufügen</p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <FInput label="Mitarbeiter *" value={mitarbeiterName} onChange={setMitarbeiterName} placeholder="Vor- und Nachname" />
+        <MitarbeiterSuchInput value={mitarbeiterName} onChange={setMitarbeiterName} required />
         <FInput label="Ausstellungsdatum" value={ausstellungsDatum} onChange={setAusstellungsDatum} type="date" />
         <FInput label="Nächste Untersuchung / Ablauf" value={naechstePruefung} onChange={setNaechstePruefung} type="date" />
         <div className="flex flex-col gap-1">

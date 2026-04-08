@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
+import { MitarbeiterSuchInput } from "@/components/MitarbeiterSuchInput";
 import {
   ChevronLeft,
   HeartPulse, Pill, ShieldCheck, Flame, FileText,
@@ -190,11 +191,11 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
     <div className={`${tab.bgColor} border ${tab.borderColor} rounded-2xl p-5 space-y-4`}>
       <p className={`text-sm font-bold ${tab.color}`}>Neuer Eintrag — {tab.label}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Mitarbeiter *</label>
-          <input value={mitarbeiterName} onChange={(e) => setMitarbeiterName(e.target.value)} placeholder="Vor- und Nachname"
-            className="px-3 py-2 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 transition-all" />
-        </div>
+        <MitarbeiterSuchInput
+          value={mitarbeiterName}
+          onChange={setMitarbeiterName}
+          required
+        />
         <div className="flex flex-col gap-1">
           <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bezeichnung</label>
           <input value={bezeichnung} onChange={(e) => setBezeichnung(e.target.value)} placeholder={tab.bezeichnungPlaceholder}
