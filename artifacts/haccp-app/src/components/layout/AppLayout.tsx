@@ -39,9 +39,17 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const {
     selectedMarketId, deviceAuthorized, deviceToken,
     setDeviceToken, setDeviceAuthorized, setSelectedMarketId,
-    isGpsLocked, _hasHydrated,
+    isGpsLocked, _hasHydrated, setBetriebsstartByMarket,
   } = useAppStore();
   const { data: rawMarkets, isLoading: marketsLoading, isError: marketsError } = useListMarkets();
+
+  // Betriebsstart-Daten aus markets in den Store laden
+  useEffect(() => {
+    if (!rawMarkets) return;
+    const map: Record<number, string | null> = {};
+    rawMarkets.forEach((m: any) => { map[m.id] = m.betriebsstart ?? null; });
+    setBetriebsstartByMarket(map);
+  }, [rawMarkets, setBetriebsstartByMarket]);
   const { isWare, isHaccp, isTodo, hasSidebar } = useActiveSidebar();
 
   // Verifikations-State: "waiting" (auf Hydration warten), "verifying", "done"

@@ -23,6 +23,7 @@ router.patch("/markets/:id", async (req, res) => {
   const b = req.body as Record<string, unknown>;
   const updates: Partial<typeof marketsTable.$inferInsert> = {};
   if (typeof b.planRotiert === "boolean") updates.planRotiert = b.planRotiert;
+  if (typeof b.betriebsstart === "string" || b.betriebsstart === null) updates.betriebsstart = b.betriebsstart as string | null;
   if (Object.keys(updates).length === 0) { res.status(400).json({ error: "Keine Felder" }); return; }
   const [row] = await db.update(marketsTable).set(updates).where(eq(marketsTable.id, id)).returning();
   if (!row) { res.status(404).json({ error: "Nicht gefunden" }); return; }

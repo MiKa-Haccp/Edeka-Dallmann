@@ -13,6 +13,7 @@ export const marketsTable = pgTable("markets", {
   lng: text("lng"),
   geoRadiusKm: integer("geo_radius_km").default(10),
   planRotiert: boolean("plan_rotiert").default(false),
+  betriebsstart: text("betriebsstart"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

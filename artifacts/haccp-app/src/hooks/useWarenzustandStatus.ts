@@ -4,6 +4,13 @@ import { getBavarianHolidays } from "@/utils/holidays";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
+/** Gibt true zurück wenn das Betriebsstartdatum NACH dem gegebenen Stichtag liegt.
+ *  In diesem Fall war der Markt zu diesem Zeitpunkt noch nicht in Betrieb → keine rote Ampel. */
+function systemNochNichtGestartet(betriebsstart: string | null | undefined, periodStart: Date): boolean {
+  if (!betriebsstart) return false;
+  return new Date(betriebsstart) > periodStart;
+}
+
 // Temperaturgrenzwerte fuer Abweichungserkennung im Status-Hook
 const TEMP_LIMITS: Record<string, { min?: number; max?: number }> = {
   temp_arznei:         { min: 15, max: 25 },
@@ -625,7 +632,7 @@ function gqQuartalEnd(year: number, q: number): Date {
 }
 
 export function useGQBegehungStatus(): TrafficLight {
-  const { selectedMarketId } = useAppStore();
+  const { selectedMarketId, getBetriebsstart } = useAppStore();
   const [status, setStatus] = useState<TrafficLight>("none");
   const [tick, setTick] = useState(0);
 
@@ -643,6 +650,10 @@ export function useGQBegehungStatus(): TrafficLight {
     const q     = currentGQQuartal();
     const qEnd  = gqQuartalEnd(year, q);
     const daysLeft = Math.ceil((qEnd.getTime() - now.getTime()) / 86400000);
+    const betriebsstart = getBetriebsstart(selectedMarketId);
+    // Startdatum des aktuellen Quartals
+    const qStartMonth = (q - 1) * 3;
+    const qStart = new Date(year, qStartMonth, 1);
     let cancelled  = false;
 
     fetch(`${BASE}/gq-begehung?tenantId=1&marketId=${selectedMarketId}&year=${year}&quartal=${q}`)
@@ -650,21 +661,25 @@ export function useGQBegehungStatus(): TrafficLight {
       .then((data: unknown[]) => {
         if (cancelled) return;
         if (Array.isArray(data) && data.length > 0) { setStatus("green"); return; }
-        if (daysLeft < 0)   { setStatus("red");    return; }
+        // Kein Eintrag – aber System war beim Quartalsbeginn noch nicht aktiv → kein Rot
+        if (daysLeft < 0)   {
+          if (systemNochNichtGestartet(betriebsstart, qStart)) { setStatus("none"); return; }
+          setStatus("red"); return;
+        }
         if (daysLeft <= 14) { setStatus("yellow");  return; }
         setStatus("none");
       })
       .catch(() => { if (!cancelled) setStatus("none"); });
 
     return () => { cancelled = true; };
-  }, [selectedMarketId, tick]);
+  }, [selectedMarketId, getBetriebsstart, tick]);
 
   return status;
 }
 
 // ===== 1.1 Verantwortlichkeiten – Jahresampel =====
 export function useResponsibilitiesStatus(): TrafficLight {
-  const { selectedMarketId } = useAppStore();
+  const { selectedMarketId, getBetriebsstart } = useAppStore();
   const [status, setStatus] = useState<TrafficLight>("none");
   const [tick, setTick] = useState(0);
 
@@ -678,6 +693,8 @@ export function useResponsibilitiesStatus(): TrafficLight {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
+    const betriebsstart = getBetriebsstart(selectedMarketId);
+    const jahresstart = new Date(year, 0, 1);
     let cancelled = false;
 
     fetch(`${BASE}/markets/${selectedMarketId}/responsibilities?year=${year}`)
@@ -686,12 +703,16 @@ export function useResponsibilitiesStatus(): TrafficLight {
         if (cancelled) return;
         const hasFilled = Array.isArray(items) && items.some(r => r.responsibleName && r.responsibleName.trim() !== "");
         if (hasFilled) { setStatus("green"); return; }
-        if (month >= 11) { setStatus("red"); return; }
+        // System war zu Jahresbeginn noch nicht aktiv → kein Rot, nur Gelb
+        if (month >= 11) {
+          if (systemNochNichtGestartet(betriebsstart, jahresstart)) { setStatus("yellow"); return; }
+          setStatus("red"); return;
+        }
         setStatus("yellow");
       })
       .catch(() => { if (!cancelled) setStatus("none"); });
     return () => { cancelled = true; };
-  }, [selectedMarketId, tick]);
+  }, [selectedMarketId, getBetriebsstart, tick]);
 
   return status;
 }
@@ -722,7 +743,7 @@ function periodEndMonth(activeMonths: number[], idx: number): number {
 }
 
 export function useAnnualCleaningPlanStatus(): TrafficLight {
-  const { selectedMarketId } = useAppStore();
+  const { selectedMarketId, getBetriebsstart } = useAppStore();
   const [status, setStatus] = useState<TrafficLight>("none");
   const [tick, setTick] = useState(0);
 
@@ -736,6 +757,7 @@ export function useAnnualCleaningPlanStatus(): TrafficLight {
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
+    const betriebsstart = getBetriebsstart(selectedMarketId);
     let cancelled = false;
 
     fetch(`${BASE}/cleaning-plan?tenantId=1&marketId=${selectedMarketId}&year=${year}`)
@@ -755,17 +777,22 @@ export function useAnnualCleaningPlanStatus(): TrafficLight {
           for (let i = 0; i < item.activeMonths.length; i++) {
             const am = item.activeMonths[i];
             const periodEnd = periodEndMonth(item.activeMonths, i);
+            // Periodenanfang als Date (1. des aktiven Monats)
+            const periodStart = new Date(year, am - 1, 1);
 
             if (periodEnd < month) {
               // Periode vollständig abgelaufen → auf Überfall prüfen
-              if (!confirmedSet.has(`${item.key}__${am}`)) {
+              // Aber nur wenn das System bei Periodenanfang schon aktiv war
+              if (!confirmedSet.has(`${item.key}__${am}`) && !systemNochNichtGestartet(betriebsstart, periodStart)) {
                 anyOverdue = true;
               }
             } else if (am <= month) {
               // Wir befinden uns innerhalb dieser Periode
-              hasCurrentItems = true;
-              if (!confirmedSet.has(`${item.key}__${am}`)) {
-                allCurrentDone = false;
+              if (!systemNochNichtGestartet(betriebsstart, periodStart)) {
+                hasCurrentItems = true;
+                if (!confirmedSet.has(`${item.key}__${am}`)) {
+                  allCurrentDone = false;
+                }
               }
             }
             // Zukünftige Perioden (am > month) → ignorieren
@@ -779,14 +806,14 @@ export function useAnnualCleaningPlanStatus(): TrafficLight {
       })
       .catch(() => { if (!cancelled) setStatus("none"); });
     return () => { cancelled = true; };
-  }, [selectedMarketId, tick]);
+  }, [selectedMarketId, getBetriebsstart, tick]);
 
   return status;
 }
 
 // ===== 1.6 Betriebsbegehung – Quartalsampel =====
 export function useBetriebsbegehungStatus(): TrafficLight {
-  const { selectedMarketId } = useAppStore();
+  const { selectedMarketId, getBetriebsstart } = useAppStore();
   const [status, setStatus] = useState<TrafficLight>("none");
   const [tick, setTick] = useState(0);
 
@@ -805,6 +832,7 @@ export function useBetriebsbegehungStatus(): TrafficLight {
     const qStartMonth = (curQ - 1) * 3 + 1;
     const dayInQ = (month - qStartMonth) * 30 + now.getDate();
     const qProgress = dayInQ / 92; // ~92 Tage pro Quartal
+    const betriebsstart = getBetriebsstart(selectedMarketId);
     let cancelled = false;
 
     fetch(`${BASE}/betriebsbegehung?tenantId=1&marketId=${selectedMarketId}`)
@@ -815,14 +843,21 @@ export function useBetriebsbegehungStatus(): TrafficLight {
         const doneQ = new Set(thisYear.map(r => r.quartal));
 
         if (doneQ.has(curQ)) { setStatus("green"); return; }
-        // Vorheriges Quartal fehlt → rot
-        if (curQ > 1 && !doneQ.has(curQ - 1)) { setStatus("red"); return; }
+        // Vorheriges Quartal fehlt → rot (außer System war beim Vorquartalsbeginn noch nicht aktiv)
+        if (curQ > 1 && !doneQ.has(curQ - 1)) {
+          const prevQStart = new Date(year, (curQ - 2) * 3, 1);
+          if (systemNochNichtGestartet(betriebsstart, prevQStart)) {
+            // Vorquartal überspringen – nur aktuelles Quartal prüfen
+          } else {
+            setStatus("red"); return;
+          }
+        }
         // Aktuelles Quartal noch nicht erledigt: Fortschritt > 50% → orange, sonst keine Anzeige
         setStatus(qProgress > 0.5 ? "yellow" : "none");
       })
       .catch(() => { if (!cancelled) setStatus("none"); });
     return () => { cancelled = true; };
-  }, [selectedMarketId, tick]);
+  }, [selectedMarketId, getBetriebsstart, tick]);
 
   return status;
 }

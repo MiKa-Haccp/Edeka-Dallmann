@@ -15,6 +15,9 @@ type MarketSelectionMode = 'gps' | 'manual';
 interface AppState {
   selectedMarketId: number | null;
   setSelectedMarketId: (id: number | null) => void;
+  betriebsstartByMarket: Record<number, string | null>;
+  setBetriebsstartByMarket: (map: Record<number, string | null>) => void;
+  getBetriebsstart: (marketId: number | null) => string | null;
   marketSelectionMode: MarketSelectionMode | null;
   setMarketSelectionMode: (mode: MarketSelectionMode | null) => void;
   selectedYear: number;
@@ -40,6 +43,12 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       selectedMarketId: null,
       setSelectedMarketId: (id) => set({ selectedMarketId: id }),
+      betriebsstartByMarket: {},
+      setBetriebsstartByMarket: (map) => set({ betriebsstartByMarket: map }),
+      getBetriebsstart: (marketId) => {
+        if (!marketId) return null;
+        return get().betriebsstartByMarket[marketId] ?? null;
+      },
       marketSelectionMode: null,
       setMarketSelectionMode: (mode) => set({ marketSelectionMode: mode }),
       selectedYear: new Date().getFullYear(),

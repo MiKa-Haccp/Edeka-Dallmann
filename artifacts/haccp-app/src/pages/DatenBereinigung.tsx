@@ -11,6 +11,8 @@ import {
   History,
   CheckCircle2,
   Loader2,
+  CalendarClock,
+  Save,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -97,6 +99,11 @@ export default function DatenBereinigung() {
   const [logs, setLogs] = useState<ResetLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
 
+  // Betriebsstart-State
+  const [betriebsstartValues, setBetriebsstartValues] = useState<Record<number, string>>({});
+  const [betriebsstartSaving, setBetriebsstartSaving] = useState<number | null>(null);
+  const { setBetriebsstartByMarket } = useAppStore();
+
   useEffect(() => {
     if (!adminSession || adminSession.role !== "SUPERADMIN") {
       navigate("/");
@@ -105,7 +112,45 @@ export default function DatenBereinigung() {
 
   useEffect(() => {
     loadLogs();
+    loadBetriebsstarts();
   }, []);
+
+  async function loadBetriebsstarts() {
+    try {
+      const r = await fetch("/api/markets");
+      if (r.ok) {
+        const markets = await r.json();
+        const vals: Record<number, string> = {};
+        const storeMap: Record<number, string | null> = {};
+        markets.forEach((m: { id: number; betriebsstart?: string | null }) => {
+          vals[m.id] = m.betriebsstart ?? "";
+          storeMap[m.id] = m.betriebsstart ?? null;
+        });
+        setBetriebsstartValues(vals);
+        setBetriebsstartByMarket(storeMap);
+      }
+    } catch { /* ignore */ }
+  }
+
+  async function saveBetriebsstart(id: number) {
+    setBetriebsstartSaving(id);
+    try {
+      const val = betriebsstartValues[id] ?? "";
+      const r = await fetch(`/api/markets/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ betriebsstart: val === "" ? null : val }),
+      });
+      if (r.ok) {
+        setBetriebsstartByMarket({ ...useAppStore.getState().betriebsstartByMarket, [id]: val === "" ? null : val });
+        toast({ title: "Gespeichert", description: `Betriebsstartdatum für Filiale ${id} aktualisiert.` });
+      } else {
+        toast({ title: "Fehler", description: "Speichern fehlgeschlagen.", variant: "destructive" });
+      }
+    } finally {
+      setBetriebsstartSaving(null);
+    }
+  }
 
   async function loadLogs() {
     setLogsLoading(true);
@@ -184,6 +229,48 @@ export default function DatenBereinigung() {
             </div>
           </div>
         </PageHeader>
+
+        {/* ─── Betriebsstartdatum ───────────────────────────────── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="px-5 pt-5 pb-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+              <CalendarClock className="w-5 h-5 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-gray-900">Betriebsstartdatum</h2>
+              <p className="text-xs text-gray-500">
+                Ampeln ignorieren Perioden vor dem Betriebsstart der Filiale.
+              </p>
+            </div>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {MARKETS.map((m) => (
+              <div key={m.id} className="px-5 py-3 flex items-center gap-3">
+                <span className="text-sm font-medium text-gray-700 w-16 shrink-0">{m.name}</span>
+                <input
+                  type="date"
+                  value={betriebsstartValues[m.id] ?? ""}
+                  onChange={(e) =>
+                    setBetriebsstartValues((prev) => ({ ...prev, [m.id]: e.target.value }))
+                  }
+                  className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <button
+                  onClick={() => saveBetriebsstart(m.id)}
+                  disabled={betriebsstartSaving === m.id}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors disabled:opacity-50"
+                >
+                  {betriebsstartSaving === m.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  Speichern
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Erfolgs-Anzeige */}
         {result && (
