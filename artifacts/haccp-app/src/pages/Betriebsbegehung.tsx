@@ -581,6 +581,14 @@ export default function Betriebsbegehung() {
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <StatusButton
+                          value="ok"
+                          current={entry.status}
+                          onChange={(v) => handleStatusChange(item.nr, v)}
+                          label="In Ordnung"
+                          icon={<CheckCircle2 className="w-4 h-4" />}
+                          color="bg-green-500 text-white"
+                        />
+                        <StatusButton
                           value="mangel"
                           current={entry.status}
                           onChange={(v) => handleStatusChange(item.nr, v)}
