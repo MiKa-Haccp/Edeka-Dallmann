@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useListMarkets } from "@workspace/api-client-react";
+import { useMarketsWithCache } from "@/hooks/useMarketsWithCache";
 import { useAppStore } from "@/store/use-app-store";
 import { MapPin, LogIn, LogOut, Shield, Settings, Menu, RefreshCw, Navigation, Lock, MessageSquare } from "lucide-react";
 import { Link, useLocation } from "wouter";
@@ -8,7 +8,7 @@ import { FeedbackButton } from "@/components/FeedbackButton";
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
-  const { data: rawMarkets, isLoading } = useListMarkets();
+  const { data: rawMarkets, isLoading } = useMarketsWithCache();
   const {
     selectedMarketId,
     setSelectedMarketId,

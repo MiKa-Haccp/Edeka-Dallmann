@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { MarktwahlScreen } from "@/components/MarktwahlScreen";
 import { GeraetSperrScreen } from "@/components/GeraetSperrScreen";
 import { useAppStore } from "@/store/use-app-store";
-import { useListMarkets } from "@workspace/api-client-react";
+import { useMarketsWithCache } from "@/hooks/useMarketsWithCache";
 import { useAutoLogout } from "@/hooks/useAutoLogout";
 import { useBookingAutoReturn } from "@/hooks/useBookingAutoReturn";
 import { useLocation } from "wouter";
@@ -41,7 +41,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     setDeviceToken, setDeviceAuthorized, setSelectedMarketId,
     adminSession, _hasHydrated, setBetriebsstartByMarket,
   } = useAppStore();
-  const { data: rawMarkets } = useListMarkets();
+  const { data: rawMarkets } = useMarketsWithCache();
 
   // Betriebsstart-Daten aus markets in den Store laden
   useEffect(() => {

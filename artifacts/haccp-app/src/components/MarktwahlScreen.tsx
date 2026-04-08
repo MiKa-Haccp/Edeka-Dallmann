@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useListMarkets } from "@workspace/api-client-react";
 import { useAppStore } from "@/store/use-app-store";
+import { useMarketsWithCache } from "@/hooks/useMarketsWithCache";
 import {
   MapPin, Lock, Store, ChevronRight, Navigation, AlertCircle,
   CheckCircle2, Loader2, NavigationOff, Info, Shield, Eye, EyeOff,
@@ -27,7 +27,7 @@ function getMarketColor(code: string) {
 }
 
 export function MarktwahlScreen() {
-  const { data: markets, isLoading: marketsLoading, isError: marketsError, refetch: refetchMarkets } = useListMarkets();
+  const { data: markets, isLoading: marketsLoading, isError: marketsError, refetch: refetchMarkets } = useMarketsWithCache();
   const { adminSession, setAdminSession, setSelectedMarketId, setMarketSelectionMode, canAccessMarket, isGpsLocked } = useAppStore();
   const { position, status: geoStatus, error: geoError, request: requestGeo } = useGeolocation();
 
@@ -84,9 +84,10 @@ export function MarktwahlScreen() {
     }
   };
 
-  // Auto-Retry wenn Märkte nicht laden
+  // Auto-Retry wenn Märkte komplett fehlen (kein initialData, kein Cache, kein API-Ergebnis)
+  const hasNoMarkets = !markets || (Array.isArray(markets) && markets.length === 0);
   useEffect(() => {
-    if (!marketsError) {
+    if (!hasNoMarkets) {
       setMarketsRetryCountdown(null);
       return;
     }
@@ -102,7 +103,7 @@ export function MarktwahlScreen() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [marketsError, refetchMarkets]);
+  }, [hasNoMarkets, refetchMarkets]);
 
   // GPS-Sperre direkt von adminSession ableiten (nicht über isGpsLocked() damit es immer reaktiv ist)
   const gpsLocked = !adminSession;
@@ -374,13 +375,13 @@ export function MarktwahlScreen() {
               Filiale auswählen
             </p>
 
-            {marketsLoading || (!markets && !marketsError) ? (
+            {marketsLoading && hasNoMarkets ? (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="h-36 rounded-2xl bg-white/10 animate-pulse" />
                 ))}
               </div>
-            ) : marketsError || !markets || (Array.isArray(markets) && markets.length === 0) ? (
+            ) : hasNoMarkets ? (
               <div className="text-center py-8 bg-white/5 rounded-2xl border border-white/10 p-6">
                 <AlertCircle className="w-8 h-8 text-red-300 mx-auto mb-3" />
                 <p className="text-red-200 font-semibold mb-1">Filialdaten konnten nicht geladen werden</p>
