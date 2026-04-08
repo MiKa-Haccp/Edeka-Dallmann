@@ -54,8 +54,8 @@ export function MitarbeiterSuchInput({
 
   const gefiltert = value.trim().length >= 1
     ? optionen.filter((m) =>
-        m.name.toLowerCase().includes(value.toLowerCase()) ||
-        m.initials.toLowerCase().includes(value.toLowerCase())
+        (m.name ?? "").toLowerCase().includes(value.toLowerCase()) ||
+        (m.initials ?? "").toLowerCase().includes(value.toLowerCase())
       )
     : optionen;
 
