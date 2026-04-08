@@ -28,7 +28,8 @@ const drizzleKit = path.resolve(__dirname, "../node_modules/.bin/drizzle-kit");
 try {
   console.log("[DB] Schema-Synchronisierung läuft...");
   execSync(`"${drizzleKit}" push --force --config "${drizzleConfig}"`, {
-    stdio: "pipe",
+    input: "\n\n\n\n",
+    stdio: ["pipe", "pipe", "pipe"],
     env: process.env,
   });
   console.log("[DB] Schema ist aktuell.");

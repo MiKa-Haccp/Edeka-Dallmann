@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ClipboardCheck, ChevronLeft, ChevronRight, Save, Plus, Trash2,
-  CheckCircle2, AlertTriangle, MinusCircle, Loader2, FileText, X, KeyRound
+  CheckCircle2, AlertTriangle, MinusCircle, Loader2, FileText, X, KeyRound, Check
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -234,6 +234,9 @@ interface Report {
   durchgefuehrtVon: string | null;
   sectionData: SectionData | null;
   aktionsplan: string | null;
+  nachbesserungName: string | null;
+  nachbesserungDatum: string | null;
+  nachbesserungUnterschrift: string | null;
   createdAt: string;
 }
 
@@ -279,11 +282,15 @@ export default function Betriebsbegehung() {
   const [durchgefuehrtAm, setDurchgefuehrtAm] = useState("");
   const [durchgefuehrtVon, setDurchgefuehrtVon] = useState("");
   const [aktionsplan, setAktionsplan] = useState("");
+  const [nachbesserungName, setNachbesserungName] = useState("");
+  const [nachbesserungDatum, setNachbesserungDatum] = useState("");
+  const [nachbesserungUnterschrift, setNachbesserungUnterschrift] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [pinContext, setPinContext] = useState<"pruefer" | "betriebsleitung">("pruefer");
   const [pinValue, setPinValue] = useState("");
   const [pinLoading, setPinLoading] = useState(false);
   const [pinError, setPinError] = useState("");
@@ -309,12 +316,18 @@ export default function Betriebsbegehung() {
       setDurchgefuehrtAm(found.durchgefuehrtAm || "");
       setDurchgefuehrtVon(found.durchgefuehrtVon || "");
       setAktionsplan(found.aktionsplan || "");
+      setNachbesserungName(found.nachbesserungName || "");
+      setNachbesserungDatum(found.nachbesserungDatum || "");
+      setNachbesserungUnterschrift(found.nachbesserungUnterschrift || "");
     } else {
       setCurrentReport(null);
       setSectionData(buildEmptyData());
       setDurchgefuehrtAm("");
       setDurchgefuehrtVon("");
       setAktionsplan("");
+      setNachbesserungName("");
+      setNachbesserungDatum("");
+      setNachbesserungUnterschrift("");
     }
     setSaved(false);
   }, [quartal, year, reports]);
@@ -336,7 +349,7 @@ export default function Betriebsbegehung() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const body = { tenantId: 1, marketId: selectedMarketId || null, quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan };
+      const body = { tenantId: 1, marketId: selectedMarketId || null, quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan, nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift };
       let res: Response;
       if (currentReport) {
         res = await fetch(`${BASE}/betriebsbegehung/${currentReport.id}`, {
@@ -387,7 +400,11 @@ export default function Betriebsbegehung() {
         setPinError("Ungültige PIN. Kein Mitarbeiter gefunden.");
         return;
       }
-      setDurchgefuehrtVon(data.userName || "");
+      if (pinContext === "betriebsleitung") {
+        setNachbesserungUnterschrift(data.userName || "");
+      } else {
+        setDurchgefuehrtVon(data.userName || "");
+      }
       setPinDialogOpen(false);
       setPinValue("");
       setPinError("");
@@ -608,7 +625,7 @@ export default function Betriebsbegehung() {
         {mangelItems > 0 && (
           <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
             <div className="bg-orange-500 text-white px-5 py-3">
-              <h2 className="font-bold text-sm">Aktionsplan</h2>
+              <h2 className="font-bold text-sm">Aktionsplan – Erforderliche Nachbesserungen</h2>
             </div>
             <div className="p-5">
               <p className="text-sm text-muted-foreground mb-3">
@@ -621,6 +638,68 @@ export default function Betriebsbegehung() {
                 rows={5}
                 className="w-full border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
               />
+            </div>
+          </div>
+        )}
+
+        {mangelItems > 0 && (
+          <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
+            <div className="bg-[#1a3a6b] text-white px-5 py-3">
+              <h2 className="font-bold text-sm">Bestätigung der Maßnahmenumsetzung – Betriebsleitung</h2>
+            </div>
+            <div className="p-5">
+              <p className="text-sm text-muted-foreground mb-4">
+                Die Betriebsleitung bestätigt hiermit, dass alle erforderlichen Nachbesserungen durchgeführt und geprüft wurden.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Name (Betriebsleitung)</label>
+                  <input
+                    type="text"
+                    value={nachbesserungName}
+                    onChange={(e) => setNachbesserungName(e.target.value)}
+                    placeholder="Vor- und Nachname"
+                    className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Datum der Prüfung</label>
+                  <input
+                    type="date"
+                    value={nachbesserungDatum}
+                    onChange={(e) => setNachbesserungDatum(e.target.value)}
+                    className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+              </div>
+              <div className="mt-4">
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Unterschrift (PIN)</label>
+                {nachbesserungUnterschrift ? (
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-2.5 text-sm font-medium flex-1">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      Unterschrieben von: <span className="font-bold ml-1">{nachbesserungUnterschrift}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNachbesserungUnterschrift("")}
+                      className="p-2.5 rounded-xl border border-border text-muted-foreground hover:bg-secondary transition-colors"
+                      title="Unterschrift zurücksetzen"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { setPinContext("betriebsleitung"); setPinDialogOpen(true); }}
+                    className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-[#1a3a6b]/30 text-[#1a3a6b] rounded-xl text-sm font-medium hover:bg-[#1a3a6b]/5 transition-colors w-full justify-center"
+                  >
+                    <KeyRound className="w-4 h-4" />
+                    Mit PIN unterschreiben
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -717,8 +796,12 @@ export default function Betriebsbegehung() {
                 <KeyRound className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-bold text-foreground">PIN-Unterschrift</h3>
-                <p className="text-xs text-muted-foreground">4-stellige PIN eingeben</p>
+                <h3 className="font-bold text-foreground">
+                  {pinContext === "betriebsleitung" ? "Bestätigung Betriebsleitung" : "PIN-Unterschrift"}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {pinContext === "betriebsleitung" ? "PIN der Betriebsleitung eingeben" : "4-stellige PIN eingeben"}
+                </p>
               </div>
             </div>
             <input

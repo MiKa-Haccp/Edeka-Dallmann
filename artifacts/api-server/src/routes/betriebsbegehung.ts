@@ -30,20 +30,20 @@ router.get("/betriebsbegehung/:id", async (req, res) => {
 });
 
 router.post("/betriebsbegehung", async (req, res) => {
-  const { tenantId = 1, marketId, quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan } = req.body;
+  const { tenantId = 1, marketId, quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan, nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift } = req.body;
   const result = await db
     .insert(betriebsbegehungTable)
-    .values({ tenantId, marketId: marketId || null, quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan })
+    .values({ tenantId, marketId: marketId || null, quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan, nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift })
     .returning();
   res.json(result[0]);
 });
 
 router.put("/betriebsbegehung/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const { quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan } = req.body;
+  const { quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan, nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift } = req.body;
   const result = await db
     .update(betriebsbegehungTable)
-    .set({ quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan })
+    .set({ quartal, year, durchgefuehrtAm, durchgefuehrtVon, sectionData, aktionsplan, nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift })
     .where(eq(betriebsbegehungTable.id, id))
     .returning();
   res.json(result[0]);

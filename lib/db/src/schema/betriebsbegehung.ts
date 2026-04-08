@@ -10,6 +10,9 @@ export const betriebsbegehungTable = pgTable("betriebsbegehung", {
   durchgefuehrtVon: text("durchgefuehrt_von"),
   sectionData: jsonb("section_data"),
   aktionsplan: text("aktionsplan"),
+  nachbesserungName: text("nachbesserung_name"),
+  nachbesserungDatum: text("nachbesserung_datum"),
+  nachbesserungUnterschrift: text("nachbesserung_unterschrift"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
