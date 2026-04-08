@@ -98,6 +98,11 @@ export function MarktwahlScreen() {
         setDetectedMarketId(nearest.market.id);
         setDetectedDistance(nearest.distanceKm);
         setOutsideAllMarkets(false);
+        // GPS-Auto-Auswahl: Wenn kein Admin angemeldet ist, automatisch den erkannten Markt wählen
+        if (!adminSession && canAccessMarket(nearest.market.id)) {
+          setSelectedMarketId(nearest.market.id);
+          setMarketSelectionMode("gps");
+        }
       } else {
         setDetectedMarketId(null);
         setDetectedDistance(null);
@@ -107,7 +112,7 @@ export function MarktwahlScreen() {
     } else if (geoStatus === "denied" || geoStatus === "unavailable" || geoStatus === "error") {
       setGpsInitialized(true);
     }
-  }, [position, markets, geoStatus]);
+  }, [position, markets, geoStatus, adminSession, canAccessMarket, setSelectedMarketId, setMarketSelectionMode]);
 
   // Fallback: wenn keine Filiale GPS-Koordinaten hat, GPS-Sperre aufheben (Konfigurationsfehler)
   const noMarketsHaveGps =

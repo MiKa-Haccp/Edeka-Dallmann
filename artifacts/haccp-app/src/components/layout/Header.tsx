@@ -47,7 +47,8 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
   }, [pollUnread]);
 
   const isLoggedIn = !!adminSession;
-  const gpsLocked = isGpsLocked();
+  // GPS-Sperre direkt von adminSession ableiten (reaktiv)
+  const gpsLocked = !adminSession;
   const selectedMarket = markets.find((m) => m.id === selectedMarketId);
 
   const handleMarketChange = (newId: number) => {

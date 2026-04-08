@@ -39,9 +39,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const {
     selectedMarketId, deviceAuthorized, deviceToken,
     setDeviceToken, setDeviceAuthorized, setSelectedMarketId,
-    isGpsLocked, _hasHydrated, setBetriebsstartByMarket,
+    adminSession, _hasHydrated, setBetriebsstartByMarket,
   } = useAppStore();
-  const { data: rawMarkets, isLoading: marketsLoading, isError: marketsError } = useListMarkets();
+  const { data: rawMarkets } = useListMarkets();
 
   // Betriebsstart-Daten aus markets in den Store laden
   useEffect(() => {
@@ -111,18 +111,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
       });
   }, [_hasHydrated, deviceToken, setDeviceToken, setDeviceAuthorized]);
 
-  // GPS-Pflicht: Bei jedem App-Start Markt zurücksetzen wenn Gerät GPS-gesperrt ist
-  // → MarktwahlScreen erscheint und erzwingt Standortprüfung
+  // GPS-Pflicht: Bei jedem App-Start Markt zurücksetzen wenn kein Admin angemeldet ist
+  // → MarktwahlScreen erscheint und erzwingt Standort-/GPS-Prüfung
   useEffect(() => {
     if (verifyState !== "done") return;
     if (!deviceAuthorized) return;
     if (gpsResetDoneRef.current) return;
     gpsResetDoneRef.current = true;
 
-    if (isGpsLocked()) {
+    if (!adminSession) {
       setSelectedMarketId(null);
     }
-  }, [verifyState, deviceAuthorized, isGpsLocked, setSelectedMarketId]);
+  }, [verifyState, deviceAuthorized, adminSession, setSelectedMarketId]);
 
   // Auf Hydration oder Verifikation warten → Ladeanimation
   if (!_hasHydrated || verifyState === "waiting" || verifyState === "verifying") {
@@ -141,9 +141,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   // Marktdaten: sicher als Array normalisieren
   const markets = Array.isArray(rawMarkets) ? rawMarkets : [];
 
-  // Märkte werden noch geladen oder konnten nicht geladen werden → kein Markt wählbar
-  const marketsReady = !marketsLoading && !marketsError && markets.length > 0;
-  const showMarktwahlScreen = marketsReady && !selectedMarketId;
+  // MarktwahlScreen immer zeigen wenn kein Markt ausgewählt ist (inkl. während Ladezeit)
+  const showMarktwahlScreen = !selectedMarketId;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
