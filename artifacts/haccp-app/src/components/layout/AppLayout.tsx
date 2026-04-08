@@ -62,12 +62,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
   useBookingAutoReturn();
 
   useEffect(() => {
-    const prevent = (e: DragEvent) => e.preventDefault();
-    document.addEventListener("dragover", prevent);
-    document.addEventListener("drop", prevent);
+    const preventDragover = (e: DragEvent) => {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    };
+    const preventDrop = (e: DragEvent) => e.preventDefault();
+    window.addEventListener("dragover", preventDragover, { capture: true });
+    window.addEventListener("drop", preventDrop);
     return () => {
-      document.removeEventListener("dragover", prevent);
-      document.removeEventListener("drop", prevent);
+      window.removeEventListener("dragover", preventDragover, { capture: true });
+      window.removeEventListener("drop", preventDrop);
     };
   }, []);
 
