@@ -38,7 +38,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const {
     selectedMarketId, deviceAuthorized, deviceToken,
-    setDeviceToken, setDeviceAuthorized, _hasHydrated,
+    setDeviceToken, setDeviceAuthorized, setSelectedMarketId,
+    isGpsLocked, _hasHydrated,
   } = useAppStore();
   const { data: rawMarkets, isLoading: marketsLoading, isError: marketsError } = useListMarkets();
   const { isWare, isHaccp, isTodo, hasSidebar } = useActiveSidebar();
@@ -46,6 +47,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   // Verifikations-State: "waiting" (auf Hydration warten), "verifying", "done"
   const [verifyState, setVerifyState] = useState<"waiting" | "verifying" | "done">("waiting");
   const verifiedTokenRef = useRef<string | null>(null);
+  // Verhindert doppelten GPS-Reset in derselben Session
+  const gpsResetDoneRef = useRef(false);
 
   useAutoLogout();
   useBookingAutoReturn();
@@ -99,6 +102,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
         setVerifyState("done");
       });
   }, [_hasHydrated, deviceToken, setDeviceToken, setDeviceAuthorized]);
+
+  // GPS-Pflicht: Bei jedem App-Start Markt zurücksetzen wenn Gerät GPS-gesperrt ist
+  // → MarktwahlScreen erscheint und erzwingt Standortprüfung
+  useEffect(() => {
+    if (verifyState !== "done") return;
+    if (!deviceAuthorized) return;
+    if (gpsResetDoneRef.current) return;
+    gpsResetDoneRef.current = true;
+
+    if (isGpsLocked()) {
+      setSelectedMarketId(null);
+    }
+  }, [verifyState, deviceAuthorized, isGpsLocked, setSelectedMarketId]);
 
   // Auf Hydration oder Verifikation warten → Ladeanimation
   if (!_hasHydrated || verifyState === "waiting" || verifyState === "verifying") {
