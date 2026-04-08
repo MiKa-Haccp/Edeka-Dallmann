@@ -36,6 +36,8 @@ export function MarktwahlScreen() {
   const [outsideAllMarkets, setOutsideAllMarkets] = useState(false);
   const [gpsInitialized, setGpsInitialized] = useState(false);
 
+  const [marketsRetryCountdown, setMarketsRetryCountdown] = useState<number | null>(null);
+
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -81,6 +83,26 @@ export function MarktwahlScreen() {
       setLoginLoading(false);
     }
   };
+
+  // Auto-Retry wenn Märkte nicht laden
+  useEffect(() => {
+    if (!marketsError) {
+      setMarketsRetryCountdown(null);
+      return;
+    }
+    setMarketsRetryCountdown(15);
+    const interval = setInterval(() => {
+      setMarketsRetryCountdown((prev) => {
+        if (prev === null) return null;
+        if (prev <= 1) {
+          refetchMarkets();
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [marketsError, refetchMarkets]);
 
   // GPS-Sperre direkt von adminSession ableiten (nicht über isGpsLocked() damit es immer reaktiv ist)
   const gpsLocked = !adminSession;
@@ -185,8 +207,8 @@ export function MarktwahlScreen() {
     if (geoStatus === "denied") {
       return (
         <div className="flex items-center gap-2 bg-red-500/20 border border-red-400/30 rounded-xl px-4 py-2.5 text-red-200 text-sm">
-          <AlertCircle className="w-4 h-4 text-red-300" />
-          GPS-Zugriff verweigert
+          <AlertCircle className="w-4 h-4 text-red-300 shrink-0" />
+          <span>GPS-Zugriff verweigert – bitte in den Browser-Einstellungen aktivieren</span>
         </div>
       );
     }
@@ -268,16 +290,30 @@ export function MarktwahlScreen() {
               className="w-full max-w-2xl mb-6 bg-red-500/20 border border-red-400/30 rounded-2xl p-5 text-center"
             >
               <AlertCircle className="w-8 h-8 text-red-300 mx-auto mb-2" />
-              <p className="text-red-100 font-semibold mb-1">Standortzugriff erforderlich</p>
-              <p className="text-red-200 text-sm">
-                {outsideAllMarkets
-                  ? "Sie befinden sich nicht in der Nähe einer EDEKA DALLMANN Filiale."
-                  : "GPS-Ortung ist erforderlich. Bitte erlauben Sie den Standortzugriff und versuchen Sie es erneut."}
+              <p className="text-red-100 font-semibold mb-1">
+                {outsideAllMarkets ? "Nicht in Reichweite" : "Standortzugriff erforderlich"}
               </p>
-              <p className="text-blue-300 text-xs mt-2">
+              {outsideAllMarkets ? (
+                <p className="text-red-200 text-sm">
+                  Sie befinden sich nicht in der Nähe einer EDEKA DALLMANN Filiale (10 km Radius).
+                </p>
+              ) : geoStatus === "denied" ? (
+                <div className="text-red-200 text-sm space-y-1">
+                  <p>Der Standortzugriff wurde vom Browser blockiert.</p>
+                  <p className="text-red-300/80 text-xs mt-1">
+                    <strong>iPhone/iPad:</strong> Einstellungen → Safari → Datenschutz & Sicherheit → Standort → „Fragen"<br />
+                    <strong>Android:</strong> Browser-Einstellungen → Website-Einstellungen → Standort → erlauben
+                  </p>
+                </div>
+              ) : (
+                <p className="text-red-200 text-sm">
+                  GPS-Ortung ist nicht verfügbar. Bitte prüfen Sie Ihre Einstellungen.
+                </p>
+              )}
+              <p className="text-blue-300 text-xs mt-3 border-t border-white/10 pt-3">
                 Mit persönlicher Anmeldung können Sie eine Filiale manuell auswählen.
               </p>
-              {(geoStatus === "denied" || geoStatus === "error") && (
+              {(geoStatus === "error" || geoStatus === "unavailable") && (
                 <button
                   onClick={() => requestGeo()}
                   className="mt-3 bg-red-400/30 hover:bg-red-400/50 text-white text-xs px-4 py-2 rounded-xl transition"
@@ -345,13 +381,19 @@ export function MarktwahlScreen() {
                 ))}
               </div>
             ) : marketsError || !markets || (Array.isArray(markets) && markets.length === 0) ? (
-              <div className="text-center py-8">
-                <p className="text-red-300 text-sm mb-3">Filialdaten konnten nicht geladen werden.</p>
+              <div className="text-center py-8 bg-white/5 rounded-2xl border border-white/10 p-6">
+                <AlertCircle className="w-8 h-8 text-red-300 mx-auto mb-3" />
+                <p className="text-red-200 font-semibold mb-1">Filialdaten konnten nicht geladen werden</p>
+                <p className="text-blue-300/70 text-xs mb-4">
+                  {marketsRetryCountdown !== null
+                    ? `Automatischer Neuversuch in ${marketsRetryCountdown} Sekunden…`
+                    : "Verbindung zum Server wird hergestellt…"}
+                </p>
                 <button
-                  onClick={() => refetchMarkets()}
-                  className="bg-white/10 hover:bg-white/20 text-white text-xs px-4 py-2 rounded-xl transition"
+                  onClick={() => { setMarketsRetryCountdown(null); refetchMarkets(); }}
+                  className="bg-white/15 hover:bg-white/25 text-white text-sm px-5 py-2.5 rounded-xl transition font-medium"
                 >
-                  Erneut laden
+                  Jetzt erneut laden
                 </button>
               </div>
             ) : (
@@ -472,7 +514,11 @@ export function MarktwahlScreen() {
                   setShowAdminLogin(!showAdminLogin);
                   setLoginError(null);
                 }}
-                className="w-full flex items-center justify-center gap-2 text-blue-300 hover:text-white text-xs font-medium py-2 transition group"
+                className={`w-full flex items-center justify-center gap-2 font-medium py-2.5 transition group rounded-xl ${
+                  showGpsLockedWarning
+                    ? "bg-white/20 hover:bg-white/30 text-white text-sm border border-white/30 px-4"
+                    : "text-blue-300 hover:text-white text-xs"
+                }`}
               >
                 <Shield className="w-3.5 h-3.5" />
                 Persönliche Anmeldung
