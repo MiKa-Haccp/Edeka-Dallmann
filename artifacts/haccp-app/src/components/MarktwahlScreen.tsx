@@ -27,7 +27,7 @@ function getMarketColor(code: string) {
 }
 
 export function MarktwahlScreen() {
-  const { data: markets, isLoading: marketsLoading } = useListMarkets();
+  const { data: markets, isLoading: marketsLoading, isError: marketsError, refetch: refetchMarkets } = useListMarkets();
   const { adminSession, setAdminSession, setSelectedMarketId, setMarketSelectionMode, canAccessMarket, isGpsLocked } = useAppStore();
   const { position, status: geoStatus, error: geoError, request: requestGeo } = useGeolocation();
 
@@ -338,15 +338,25 @@ export function MarktwahlScreen() {
               Filiale auswählen
             </p>
 
-            {marketsLoading ? (
+            {marketsLoading || (!markets && !marketsError) ? (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="h-36 rounded-2xl bg-white/10 animate-pulse" />
                 ))}
               </div>
+            ) : marketsError || !markets || (Array.isArray(markets) && markets.length === 0) ? (
+              <div className="text-center py-8">
+                <p className="text-red-300 text-sm mb-3">Filialdaten konnten nicht geladen werden.</p>
+                <button
+                  onClick={() => refetchMarkets()}
+                  className="bg-white/10 hover:bg-white/20 text-white text-xs px-4 py-2 rounded-xl transition"
+                >
+                  Erneut laden
+                </button>
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {markets?.map((market, idx) => {
+                {(Array.isArray(markets) ? markets : []).map((market, idx) => {
                   const selectable = canSelectMarket(market.id);
                   const isDetected = market.id === detectedMarketId;
                   const colors = getMarketColor(market.code);
@@ -429,7 +439,7 @@ export function MarktwahlScreen() {
               transition={{ delay: 0.5 }}
               className="mt-6 text-blue-300 text-xs text-center max-w-xs"
             >
-              Mitarbeiter arbeiten immer in der GPS-erkannten Filiale. Für Aushilfen wenden Sie sich an den Marktleiter.
+              Mitarbeiter arbeiten immer in der GPS-erkannten Filiale.
             </motion.p>
           )}
         </div>
