@@ -476,7 +476,7 @@ export default function Betriebsbegehung() {
 
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white rounded-xl border border-border/60 p-4 text-center">
-            <div className="text-2xl font-bold text-foreground">{totalItems - mangelItems - countByStatus("na")}<span className="text-muted-foreground text-base font-normal">/{totalItems}</span></div>
+            <div className="text-2xl font-bold text-foreground">{countByStatus("ok")}<span className="text-muted-foreground text-base font-normal">/{totalItems}</span></div>
             <div className="text-xs text-muted-foreground mt-1">In Ordnung</div>
           </div>
           <div className={`bg-white rounded-xl border p-4 text-center ${mangelItems > 0 ? "border-red-200" : "border-border/60"}`}>
@@ -640,7 +640,7 @@ export default function Betriebsbegehung() {
                 <CheckCircle2 className="w-4 h-4" /> Bericht erfolgreich gespeichert
               </span>
             ) : (
-              <span>Q{quartal} · {year} · {totalItems - mangelItems - countByStatus("na")} von {totalItems} Punkten in Ordnung</span>
+              <span>Q{quartal} · {year} · {countByStatus("ok")} von {totalItems} Punkten in Ordnung</span>
             )}
           </div>
           <div className="flex items-center gap-3">
