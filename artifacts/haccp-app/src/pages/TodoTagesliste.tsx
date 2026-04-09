@@ -147,9 +147,11 @@ function PhotoDialog({ taskTitle, currentPhoto, onSave, onDelete, onClose }: {
             </div>
           ) : (
             <button onClick={() => inputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onDrop={async (e) => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f && f.type.startsWith("image/")) setPreview(await fileToBase64(f)); }}
               className="w-full mb-4 border-2 border-dashed border-border/60 rounded-xl py-8 flex flex-col items-center gap-2 text-muted-foreground hover:border-[#0f766e]/40 hover:text-[#0f766e] transition-colors">
               <ImagePlus className="w-8 h-8" />
-              <span className="text-sm font-medium">Foto auswählen oder aufnehmen</span>
+              <span className="text-sm font-medium">Foto auswählen, hierher ziehen oder aufnehmen</span>
               <span className="text-[10px] text-muted-foreground/60">oder Strg+V zum Einfügen</span>
             </button>
           )}
@@ -257,8 +259,10 @@ function NewAdhocDialog({ onSave, onClose }: {
                 </div>
               ) : (
                 <button onClick={() => fileRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f && f.type.startsWith("image/")) { const reader = new FileReader(); reader.onload = ev => setPhotoData(ev.target?.result as string); reader.readAsDataURL(f); } }}
                   className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border/60 rounded-xl text-sm text-muted-foreground hover:border-orange-400/60 hover:text-orange-500 w-full justify-center transition-colors">
-                  <Camera className="w-4 h-4" /> Foto aufnehmen / auswählen
+                  <Camera className="w-4 h-4" /> Foto aufnehmen, hierher ziehen oder auswählen
                 </button>
               )}
               <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} />

@@ -175,9 +175,11 @@ function TaskForm({
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              onDrop={async (e) => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f && f.type.startsWith("image/")) setPhotoData(await fileToBase64(f)); }}
               className="mt-2 w-full border-2 border-dashed border-border/60 rounded-xl py-5 flex items-center justify-center gap-2 text-muted-foreground hover:border-[#0f766e]/40 hover:text-[#0f766e] transition-colors text-sm"
             >
-              <ImagePlus className="w-4 h-4" /> Referenzfoto hinzufügen
+              <ImagePlus className="w-4 h-4" /> Referenzfoto hinzufügen oder hierher ziehen
             </button>
           )}
           {!photoData && <p className="text-center text-[10px] text-muted-foreground mt-1">oder Strg+V zum Einfügen</p>}

@@ -63,10 +63,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const preventDragover = (e: DragEvent) => {
+      if (e.defaultPrevented) return;
       e.preventDefault();
       if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
     };
-    const preventDrop = (e: DragEvent) => e.preventDefault();
+    const preventDrop = (e: DragEvent) => {
+      if (e.defaultPrevented) return;
+      e.preventDefault();
+    };
     window.addEventListener("dragover", preventDragover);
     window.addEventListener("drop", preventDrop);
     return () => {

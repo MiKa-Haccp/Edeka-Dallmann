@@ -705,7 +705,7 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
     <div
       className={`${tab.bgColor} border ${tab.borderColor} rounded-2xl p-5 space-y-4`}
       onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) processFile(f); }}
+      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f) processFile(f); }}
     >
       <p className={`text-sm font-bold ${tab.color}`}>Neuer Bericht — {tab.label} {year}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

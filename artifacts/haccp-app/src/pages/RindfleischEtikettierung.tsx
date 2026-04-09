@@ -343,9 +343,11 @@ export default function RindfleischEtikettierung() {
                         </div>
                       ) : (
                         <button onClick={() => fileRef.current?.click()}
+                          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f && f.type.startsWith("image/")) { const reader = new FileReader(); reader.onload = ev => { if (ev.target?.result) setFotoBase64(ev.target.result as string); }; reader.readAsDataURL(f); } }}
                           className="w-full aspect-video rounded-xl border-2 border-dashed border-gray-300 hover:border-[#c73d00] hover:bg-orange-50/40 flex flex-col items-center justify-center gap-2 transition-all">
                           <Camera className="w-8 h-8 text-muted-foreground"/>
-                          <span className="text-sm text-muted-foreground">Etikett fotografieren</span>
+                          <span className="text-sm text-muted-foreground">Etikett fotografieren oder hierher ziehen</span>
                           <span className="text-xs text-muted-foreground/60">Auspackdatum muss sichtbar sein</span>
                           <span className="text-[10px] text-muted-foreground/40">oder Strg+V zum Einfügen</span>
                         </button>

@@ -152,8 +152,10 @@ function NewTaskDialog({ onSave, onClose }: {
                 </div>
               ) : (
                 <button onClick={() => fileRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f && f.type.startsWith("image/")) { const reader = new FileReader(); reader.onload = ev => setPhotoData(ev.target?.result as string); reader.readAsDataURL(f); } }}
                   className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border/60 rounded-xl text-sm text-muted-foreground hover:border-[#0f766e]/40 hover:text-[#0f766e] w-full justify-center transition-colors">
-                  <Camera className="w-4 h-4" /> Foto aufnehmen / auswählen
+                  <Camera className="w-4 h-4" /> Foto aufnehmen, hierher ziehen oder auswählen
                 </button>
               )}
               <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} />

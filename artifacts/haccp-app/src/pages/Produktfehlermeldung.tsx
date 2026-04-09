@@ -324,7 +324,11 @@ export default function Produktfehlermeldung() {
     if (file.type.startsWith("image/")) {
       try {
         set("unterschriftFoto")(await compressImage(file));
-      } catch { /* ignore */ }
+      } catch {
+        const reader = new FileReader();
+        reader.onload = () => set("unterschriftFoto")(reader.result as string);
+        reader.readAsDataURL(file);
+      }
     }
   });
 
@@ -803,10 +807,12 @@ export default function Produktfehlermeldung() {
                     <>
                       <button
                         onClick={() => fotoInputRef.current?.click()}
+                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onDrop={async (e) => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f && f.type.startsWith("image/")) { try { set("unterschriftFoto")(await compressImage(f)); } catch { const reader = new FileReader(); reader.onload = () => set("unterschriftFoto")(reader.result as string); reader.readAsDataURL(f); } } }}
                         className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border/60 rounded-xl text-sm text-muted-foreground hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b] hover:bg-[#1a3a6b]/5 transition-all w-full justify-center"
                       >
                         <ImagePlus className="w-4 h-4" />
-                        Foto aufnehmen oder aus Galerie wählen
+                        Foto aufnehmen, hierher ziehen oder aus Galerie wählen
                       </button>
                       <p className="text-center text-[10px] text-muted-foreground mt-1">oder Strg+V zum Einfügen</p>
                     </>

@@ -702,9 +702,11 @@ export default function Probeentnahme() {
               ) : (
                 <button
                   onClick={() => fotoRef.current?.click()}
-                  className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border/60 rounded-xl text-sm text-muted-foreground hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b] hover:bg-[#1a3a6b]/5 transition-all w-full justify-center"
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={async (e) => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f && f.type.startsWith("image/")) { try { set("amtlichesDokumentFoto")(await compressImage(f)); } catch { const reader = new FileReader(); reader.onload = () => set("amtlichesDokumentFoto")(reader.result as string); reader.readAsDataURL(f); } } }}
+                  className="flex flex-col items-center gap-1 px-4 py-3 border-2 border-dashed border-border/60 rounded-xl text-sm text-muted-foreground hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b] hover:bg-[#1a3a6b]/5 transition-all w-full justify-center"
                 >
-                  <ImagePlus className="w-4 h-4" /> Dokument fotografieren oder aus Galerie wählen
+                  <span className="flex items-center gap-2"><ImagePlus className="w-4 h-4" /> Dokument fotografieren, hierher ziehen oder aus Galerie wählen</span>
                   <span className="text-[10px] text-muted-foreground/60">oder Strg+V zum Einfügen</span>
                 </button>
               )}
