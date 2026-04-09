@@ -278,7 +278,7 @@ function EntryChip({
           <span className="text-[10px] text-slate-500 no-underline">
             Aufgebraucht{entry.aufgebrauchtKuerzel ? ` · ${entry.aufgebrauchtKuerzel}` : ""}
           </span>
-          {canDelete&&(
+          {isAdmin&&(
             <button onClick={()=>onRueckgaengig(entry.id)}
               className="ml-1 text-[10px] px-1.5 py-0.5 rounded border border-slate-300 text-slate-500 hover:bg-slate-50 no-underline" style={{textDecoration:"none"}}>
               ↩ Rueckgaengig
@@ -296,7 +296,7 @@ function EntryChip({
         </button>
       ) : null}
 
-      {canDelete&&(
+      {isAdmin&&(
         <button
           onClick={()=>onDelete(entry.id)}
           disabled={deletingId===entry.id}
