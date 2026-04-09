@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useFilePaste } from "@/hooks/useFileUpload";
+import { buildFileFormData } from "@/lib/apiUpload";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -90,12 +91,13 @@ function FInput({ label, value, onChange, type = "text", placeholder = "", disab
 }
 
 // ===== ZERTIFIKAT-FORMULAR =====
-function ZertifikatForm({ onSave, onCancel }: { onSave: (z: Partial<Zertifikat>) => Promise<void>; onCancel: () => void }) {
+function ZertifikatForm({ onSave, onCancel }: { onSave: (z: Partial<Zertifikat>, file?: File) => Promise<void>; onCancel: () => void }) {
   const [prueferName, setPrueferName] = useState("");
   const [bezeichnung, setBezeichnung] = useState("");
   const [gueltigBis, setGueltigBis] = useState("");
   const [datei, setDatei] = useState("");          // base64 (Bild oder PDF)
   const [dateiName, setDateiName] = useState("");  // Dateiname für PDF-Anzeige
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [notizen, setNotizen] = useState("");
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -115,9 +117,11 @@ function ZertifikatForm({ onSave, onCancel }: { onSave: (z: Partial<Zertifikat>)
         });
         setDatei(dataUrl);
         setDateiName(file.name);
+        setPendingFile(file);
       } else {
         setDatei(await compressImage(file));
         setDateiName(file.name);
+        setPendingFile(null);
       }
     } finally { setProcessing(false); }
   };
@@ -147,13 +151,15 @@ function ZertifikatForm({ onSave, onCancel }: { onSave: (z: Partial<Zertifikat>)
     if (!prueferName.trim()) return;
     setSaving(true);
     try {
-      await onSave({
-        prueferName: prueferName.trim(),
-        zertifikatBezeichnung: bezeichnung.trim(),
-        gueltigBis: gueltigBis.trim(),
-        fotoBase64: datei,
-        notizen: notizen.trim(),
-      });
+      const baseFields = {
+        prueferName: prueferName.trim(), zertifikatBezeichnung: bezeichnung.trim(),
+        gueltigBis: gueltigBis.trim(), notizen: notizen.trim(),
+      };
+      if (pendingFile) {
+        await onSave(baseFields, pendingFile);
+      } else {
+        await onSave({ ...baseFields, fotoBase64: datei });
+      }
     } finally { setSaving(false); }
   };
 
@@ -417,12 +423,21 @@ export default function AntiVektorZugang() {
     } finally { setSavingZugang(false); }
   };
 
-  const handleSaveZertifikat = async (fields: Partial<Zertifikat>) => {
-    const res = await fetch(`${BASE}/anti-vektor/zertifikate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || 1, ...fields }),
-    });
+  const handleSaveZertifikat = async (fields: Partial<Zertifikat>, file?: File) => {
+    const { fotoBase64, ...restFields } = fields;
+    let res: Response;
+    if (file) {
+      res = await fetch(`${BASE}/anti-vektor/zertifikate`, {
+        method: "POST",
+        body: buildFileFormData({ tenantId: 1, marketId: selectedMarketId || 1, ...restFields }, file),
+      });
+    } else {
+      res = await fetch(`${BASE}/anti-vektor/zertifikate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || 1, ...fields }),
+      });
+    }
     const neu = await res.json();
     setZertifikate((p) => [...p, neu]);
     setShowForm(false);

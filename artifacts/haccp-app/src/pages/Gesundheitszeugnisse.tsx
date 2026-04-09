@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useFilePaste } from "@/hooks/useFileUpload";
+import { buildFileFormData } from "@/lib/apiUpload";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -101,13 +102,14 @@ function StatusBadge({ status }: { status: string }) {
 
 // ===== FORMULAR =====
 function ZeugnisForm({ onSave, onCancel }: {
-  onSave: (fields: Partial<Gesundheitszeugnis>) => Promise<void>;
+  onSave: (fields: Partial<Gesundheitszeugnis>, file?: File) => Promise<void>;
   onCancel: () => void;
 }) {
   const [mitarbeiterName, setMitarbeiterName] = useState("");
   const [ausstellungsDatum, setAusstellungsDatum] = useState("");
   const [naechstePruefung, setNaechstePruefung] = useState("");
   const [dokument, setDokument] = useState("");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [notizen, setNotizen] = useState("");
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -121,8 +123,10 @@ function ZeugnisForm({ onSave, onCancel }: {
       const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
       if (isPdfFile) {
         setDokument(await readFileAsDataURL(file));
+        setPendingFile(file);
       } else {
         setDokument(await compressImage(file));
+        setPendingFile(null);
       }
     } catch { /* ignore */ } finally { setProcessing(false); }
   };
@@ -150,12 +154,14 @@ function ZeugnisForm({ onSave, onCancel }: {
     if (!mitarbeiterName.trim() || processing) return;
     setSaving(true);
     try {
-      await onSave({
-        mitarbeiterName: mitarbeiterName.trim(),
-        ausstellungsDatum, naechstePruefung,
-        dokumentBase64: dokument,
-        notizen: notizen.trim(),
-      });
+      const baseFields = {
+        mitarbeiterName: mitarbeiterName.trim(), ausstellungsDatum, naechstePruefung, notizen: notizen.trim(),
+      };
+      if (pendingFile) {
+        await onSave(baseFields, pendingFile);
+      } else {
+        await onSave({ ...baseFields, dokumentBase64: dokument });
+      }
     } finally { setSaving(false); }
   };
 
@@ -375,12 +381,21 @@ export default function Gesundheitszeugnisse() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleSave = async (fields: Partial<Gesundheitszeugnis>) => {
-    const res = await fetch(`${BASE}/gesundheitszeugnisse`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || 1, ...fields }),
-    });
+  const handleSave = async (fields: Partial<Gesundheitszeugnis>, file?: File) => {
+    const { dokumentBase64, ...restFields } = fields;
+    let res: Response;
+    if (file) {
+      res = await fetch(`${BASE}/gesundheitszeugnisse`, {
+        method: "POST",
+        body: buildFileFormData({ tenantId: 1, marketId: selectedMarketId || 1, ...restFields }, file),
+      });
+    } else {
+      res = await fetch(`${BASE}/gesundheitszeugnisse`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || 1, ...fields }),
+      });
+    }
     const neu = await res.json();
     setZeugnisse((p) => [...p, neu].sort((a, b) => a.mitarbeiterName.localeCompare(b.mitarbeiterName)));
     setShowForm(false);

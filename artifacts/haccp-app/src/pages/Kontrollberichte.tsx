@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useFilePaste } from "@/hooks/useFileUpload";
+import { buildFileFormData } from "@/lib/apiUpload";
 import { PdfEmbed } from "@/lib/pdf";
 import { ClickableImage } from "@/lib/lightbox";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -632,7 +633,7 @@ function TuevPanel({ year }: { year: number }) {
 function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
   kategorie: Kategorie;
   year: number;
-  onSave: (fields: Partial<Kontrollbericht>) => Promise<void>;
+  onSave: (fields: Partial<Kontrollbericht>, file?: File) => Promise<void>;
   onCancel: () => void;
 }) {
   const tab = TABS.find((t) => t.key === kategorie)!;
@@ -643,6 +644,7 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
   const [ergebnis, setErgebnis] = useState<Ergebnis>("");
   const [dokument, setDokument] = useState("");
   const [dokFileName, setDokFileName] = useState("");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [notizen, setNotizen] = useState("");
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -658,9 +660,11 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
       if (isPdfFile) {
         setDokFileName(file.name);
         setDokument(await readFileAsDataURL(file));
+        setPendingFile(file);
       } else {
         setDokFileName("");
         setDokument(await compressImage(file));
+        setPendingFile(null);
       }
     } catch { /* ignore */ } finally { setProcessing(false); }
   };
@@ -688,16 +692,15 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
     if (!bezeichnung.trim() || processing) return;
     setSaving(true);
     try {
-      await onSave({
-        kategorie,
-        bezeichnung: bezeichnung.trim(),
-        kontrollstelle: kontrollstelle.trim(),
-        kontrollDatum,
-        gueltigBis,
-        ergebnis,
-        dokumentBase64: dokument,
-        notizen: notizen.trim(),
-      });
+      const baseFields = {
+        kategorie, bezeichnung: bezeichnung.trim(), kontrollstelle: kontrollstelle.trim(),
+        kontrollDatum, gueltigBis, ergebnis, notizen: notizen.trim(),
+      };
+      if (pendingFile) {
+        await onSave(baseFields, pendingFile);
+      } else {
+        await onSave({ ...baseFields, dokumentBase64: dokument });
+      }
     } finally { setSaving(false); }
   };
 
@@ -801,12 +804,13 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
 // ===== BERICHT KARTE =====
 function BerichtKarte({ b, tab, onDelete, isAdmin, onUpdate }: {
   b: Kontrollbericht; tab: typeof TABS[0]; onDelete: () => void; isAdmin: boolean;
-  onUpdate: (fields: Partial<Kontrollbericht>) => Promise<void>;
+  onUpdate: (fields: Partial<Kontrollbericht>, file?: File) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editDok, setEditDok] = useState("");
+  const [editPendingFile, setEditPendingFile] = useState<File | null>(null);
   const [editNotizen, setEditNotizen] = useState("");
   const [editBezeichnung, setEditBezeichnung] = useState("");
   const [editKontrollDatum, setEditKontrollDatum] = useState("");
@@ -819,6 +823,7 @@ function BerichtKarte({ b, tab, onDelete, isAdmin, onUpdate }: {
 
   const startEdit = () => {
     setEditDok(b.dokumentBase64 || "");
+    setEditPendingFile(null);
     setEditNotizen(b.notizen || "");
     setEditBezeichnung(b.bezeichnung || "");
     setEditKontrollDatum(b.kontrollDatum || "");
@@ -831,17 +836,30 @@ function BerichtKarte({ b, tab, onDelete, isAdmin, onUpdate }: {
     setEditProcessing(true);
     try {
       const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-      setEditDok(await (isPdf ? readFileAsDataURL(file) : compressImage(file)));
+      if (isPdf) {
+        setEditDok(await readFileAsDataURL(file));
+        setEditPendingFile(file);
+      } else {
+        setEditDok(await compressImage(file));
+        setEditPendingFile(null);
+      }
     } catch { /* ignore */ } finally { setEditProcessing(false); }
   };
 
   const handleEditSave = async () => {
     setEditSaving(true);
     try {
-      await onUpdate({
-        dokumentBase64: editDok, notizen: editNotizen, bezeichnung: editBezeichnung,
+      const payload: Partial<Kontrollbericht> = {
+        notizen: editNotizen, bezeichnung: editBezeichnung,
         kontrollDatum: editKontrollDatum, gueltigBis: editGueltigBis, ergebnis: editErgebnis,
-      });
+      };
+      if (editPendingFile) {
+        await onUpdate(payload, editPendingFile);
+      } else if (editDok !== (b.dokumentBase64 || "")) {
+        await onUpdate({ ...payload, dokumentBase64: editDok });
+      } else {
+        await onUpdate(payload);
+      }
       setEditMode(false);
     } finally { setEditSaving(false); }
   };
@@ -1082,12 +1100,21 @@ export default function Kontrollberichte() {
     setShowForm(false);
   };
 
-  const handleSave = async (fields: Partial<Kontrollbericht>) => {
-    const res = await fetch(`${BASE}/kontrollberichte`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || null, ...fields }),
-    });
+  const handleSave = async (fields: Partial<Kontrollbericht>, file?: File) => {
+    const { dokumentBase64, ...restFields } = fields;
+    let res: Response;
+    if (file) {
+      res = await fetch(`${BASE}/kontrollberichte`, {
+        method: "POST",
+        body: buildFileFormData({ tenantId: 1, marketId: selectedMarketId || null, ...restFields }, file),
+      });
+    } else {
+      res = await fetch(`${BASE}/kontrollberichte`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || null, ...fields }),
+      });
+    }
     const neu = await res.json();
     setDaten((p) => ({
       ...p,
@@ -1103,12 +1130,21 @@ export default function Kontrollberichte() {
     setDaten((p) => ({ ...p, [aktiveTab]: p[aktiveTab].filter((b) => b.id !== id) }));
   };
 
-  const handleUpdate = async (id: number, fields: Partial<Kontrollbericht>) => {
-    const res = await fetch(`${BASE}/kontrollberichte/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(fields),
-    });
+  const handleUpdate = async (id: number, fields: Partial<Kontrollbericht>, file?: File) => {
+    const { dokumentBase64, ...restFields } = fields;
+    let res: Response;
+    if (file) {
+      res = await fetch(`${BASE}/kontrollberichte/${id}`, {
+        method: "PUT",
+        body: buildFileFormData(restFields as Record<string, string | number | null | undefined>, file),
+      });
+    } else {
+      res = await fetch(`${BASE}/kontrollberichte/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(fields),
+      });
+    }
     const updated = await res.json();
     setDaten((p) => ({ ...p, [aktiveTab]: p[aktiveTab].map((b) => b.id === id ? { ...b, ...updated } : b) }));
   };
@@ -1257,7 +1293,7 @@ export default function Kontrollberichte() {
                     tab={tab}
                     isAdmin={canDelete}
                     onDelete={() => handleDelete(b.id)}
-                    onUpdate={(fields) => handleUpdate(b.id, fields)}
+                    onUpdate={(fields, file) => handleUpdate(b.id, fields, file)}
                   />
                 ))}
                 {!showForm && (

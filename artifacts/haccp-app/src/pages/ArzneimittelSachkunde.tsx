@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useFilePaste } from "@/hooks/useFileUpload";
+import { buildFileFormData } from "@/lib/apiUpload";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -94,7 +95,7 @@ function StatusBadge({ status }: { status: string }) {
 
 // ===== FORMULAR =====
 function EintragForm({ onSave, onCancel }: {
-  onSave: (fields: Partial<Eintrag>) => Promise<void>;
+  onSave: (fields: Partial<Eintrag>, file?: File) => Promise<void>;
   onCancel: () => void;
 }) {
   const [mitarbeiterName, setMitarbeiterName] = useState("");
@@ -102,6 +103,7 @@ function EintragForm({ onSave, onCancel }: {
   const [ausstellungsDatum, setAusstellungsDatum] = useState("");
   const [gueltigBis, setGueltigBis] = useState("");
   const [dokument, setDokument] = useState("");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [notizen, setNotizen] = useState("");
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -120,8 +122,10 @@ function EintragForm({ onSave, onCancel }: {
           reader.readAsDataURL(file);
         });
         setDokument(dataUrl);
+        setPendingFile(file);
       } else {
         setDokument(await compressImage(file));
+        setPendingFile(null);
       }
     } finally { setProcessing(false); }
   };
@@ -141,13 +145,15 @@ function EintragForm({ onSave, onCancel }: {
     if (!mitarbeiterName.trim()) return;
     setSaving(true);
     try {
-      await onSave({
-        mitarbeiterName: mitarbeiterName.trim(),
-        zertifikatBezeichnung: bezeichnung.trim(),
-        ausstellungsDatum, gueltigBis,
-        dokumentBase64: dokument,
-        notizen: notizen.trim(),
-      });
+      const baseFields = {
+        mitarbeiterName: mitarbeiterName.trim(), zertifikatBezeichnung: bezeichnung.trim(),
+        ausstellungsDatum, gueltigBis, notizen: notizen.trim(),
+      };
+      if (pendingFile) {
+        await onSave(baseFields, pendingFile);
+      } else {
+        await onSave({ ...baseFields, dokumentBase64: dokument });
+      }
     } finally { setSaving(false); }
   };
 
@@ -355,12 +361,21 @@ export default function ArzneimittelSachkunde() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleSave = async (fields: Partial<Eintrag>) => {
-    const res = await fetch(`${BASE}/arzneimittel-sachkunde`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || 1, ...fields }),
-    });
+  const handleSave = async (fields: Partial<Eintrag>, file?: File) => {
+    const { dokumentBase64, ...restFields } = fields;
+    let res: Response;
+    if (file) {
+      res = await fetch(`${BASE}/arzneimittel-sachkunde`, {
+        method: "POST",
+        body: buildFileFormData({ tenantId: 1, marketId: selectedMarketId || 1, ...restFields }, file),
+      });
+    } else {
+      res = await fetch(`${BASE}/arzneimittel-sachkunde`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || 1, ...fields }),
+      });
+    }
     const neu = await res.json();
     setEintraege((p) => [...p, neu].sort((a, b) => a.mitarbeiterName.localeCompare(b.mitarbeiterName)));
     setShowForm(false);

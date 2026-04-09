@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { bescheinigungenTable } from "@workspace/db/schema";
 import { eq, and } from "drizzle-orm";
+import { upload, attachFileAsBase64 } from "./uploadMiddleware";
 
 const router = Router();
 
@@ -23,20 +24,21 @@ router.get("/bescheinigungen", async (req, res) => {
   res.json(await query);
 });
 
-router.post("/bescheinigungen", async (req, res) => {
-  const { tenantId = 1, marketId, ...fields } = req.body;
+router.post("/bescheinigungen", upload.single("dokument"), attachFileAsBase64("dokumentBase64"), async (req, res) => {
+  const { tenantId, marketId, ...fields } = req.body as Record<string, string>;
   const row = await db
     .insert(bescheinigungenTable)
-    .values({ tenantId, marketId: marketId || null, ...fields })
+    .values({ tenantId: Number(tenantId) || 1, marketId: marketId ? Number(marketId) : null, ...fields })
     .returning();
   res.json(row[0]);
 });
 
-router.put("/bescheinigungen/:id", async (req, res) => {
+router.put("/bescheinigungen/:id", upload.single("dokument"), attachFileAsBase64("dokumentBase64"), async (req, res) => {
   const id = Number(req.params.id);
+  const { tenantId: _t, marketId: _m, ...fields } = req.body as Record<string, string>;
   const row = await db
     .update(bescheinigungenTable)
-    .set(req.body)
+    .set(fields)
     .where(eq(bescheinigungenTable.id, id))
     .returning();
   res.json(row[0]);

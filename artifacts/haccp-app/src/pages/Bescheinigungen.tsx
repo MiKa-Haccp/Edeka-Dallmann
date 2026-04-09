@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useFilePaste } from "@/hooks/useFileUpload";
+import { buildFileFormData } from "@/lib/apiUpload";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -159,7 +160,7 @@ function StatusBadge({ status }: { status: string }) {
 // ===== FORMULAR =====
 function BescheinigungForm({ kategorie, onSave, onCancel }: {
   kategorie: Kategorie;
-  onSave: (fields: Partial<Bescheinigung>) => Promise<void>;
+  onSave: (fields: Partial<Bescheinigung>, file?: File) => Promise<void>;
   onCancel: () => void;
 }) {
   const tab = TABS.find((t) => t.key === kategorie)!;
@@ -169,6 +170,7 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
   const [gueltigBis, setGueltigBis] = useState("");
   const [dokument, setDokument] = useState("");
   const [dokFileName, setDokFileName] = useState("");
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [notizen, setNotizen] = useState("");
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -183,9 +185,11 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
       if (isPdfFile) {
         setDokFileName(file.name);
         setDokument(await readFileAsDataURL(file));
+        setPendingFile(file);
       } else {
         setDokFileName("");
         setDokument(await compressImage(file));
+        setPendingFile(null);
       }
     } catch { /* ignore */ } finally { setProcessing(false); }
   };
@@ -213,7 +217,12 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
     if (!mitarbeiterName.trim() || processing) return;
     setSaving(true);
     try {
-      await onSave({ kategorie, mitarbeiterName: mitarbeiterName.trim(), bezeichnung: bezeichnung.trim(), ausstellungsDatum, gueltigBis, dokumentBase64: dokument, notizen: notizen.trim() });
+      const baseFields = { kategorie, mitarbeiterName: mitarbeiterName.trim(), bezeichnung: bezeichnung.trim(), ausstellungsDatum, gueltigBis, notizen: notizen.trim() };
+      if (pendingFile) {
+        await onSave(baseFields, pendingFile);
+      } else {
+        await onSave({ ...baseFields, dokumentBase64: dokument });
+      }
     } finally { setSaving(false); }
   };
 
@@ -257,7 +266,7 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dokument (Foto, Screenshot oder PDF)</label>
         {dokument ? (
           isPdf ? (
-            <PdfEmbed dataUrl={dokument} editable fileName={dokFileName} onClear={() => { setDokument(""); setDokFileName(""); }} height="240px" />
+            <PdfEmbed dataUrl={dokument} editable fileName={dokFileName} onClear={() => { setDokument(""); setDokFileName(""); setPendingFile(null); }} height="240px" />
           ) : (
             <div className="relative">
               <ClickableImage src={dokument} alt="Dokument" className="w-full max-h-56 object-contain rounded-xl border border-border/60" />
@@ -311,12 +320,13 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
 // ===== EINTRAG KARTE =====
 function BescheinigungKarte({ z, tab, onDelete, isAdmin, onUpdate }: {
   z: Bescheinigung; tab: typeof TABS[0]; onDelete: () => void; isAdmin: boolean;
-  onUpdate: (fields: Partial<Bescheinigung>) => Promise<void>;
+  onUpdate: (fields: Partial<Bescheinigung>, file?: File) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editDok, setEditDok] = useState("");
+  const [editPendingFile, setEditPendingFile] = useState<File | null>(null);
   const [editNotizen, setEditNotizen] = useState("");
   const [editBezeichnung, setEditBezeichnung] = useState("");
   const [editAusstellungsDatum, setEditAusstellungsDatum] = useState("");
@@ -328,6 +338,7 @@ function BescheinigungKarte({ z, tab, onDelete, isAdmin, onUpdate }: {
 
   const startEdit = () => {
     setEditDok(z.dokumentBase64 || "");
+    setEditPendingFile(null);
     setEditNotizen(z.notizen || "");
     setEditBezeichnung(z.bezeichnung || "");
     setEditAusstellungsDatum(z.ausstellungsDatum || "");
@@ -339,17 +350,30 @@ function BescheinigungKarte({ z, tab, onDelete, isAdmin, onUpdate }: {
     setEditProcessing(true);
     try {
       const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-      setEditDok(await (isPdfFile ? readFileAsDataURL(file) : compressImage(file)));
+      if (isPdfFile) {
+        setEditDok(await readFileAsDataURL(file));
+        setEditPendingFile(file);
+      } else {
+        setEditDok(await compressImage(file));
+        setEditPendingFile(null);
+      }
     } catch { /* ignore */ } finally { setEditProcessing(false); }
   };
 
   const handleEditSave = async () => {
     setEditSaving(true);
     try {
-      await onUpdate({
-        dokumentBase64: editDok, notizen: editNotizen, bezeichnung: editBezeichnung,
+      const payload: Partial<Bescheinigung> = {
+        notizen: editNotizen, bezeichnung: editBezeichnung,
         ausstellungsDatum: editAusstellungsDatum, gueltigBis: editGueltigBis,
-      });
+      };
+      if (editPendingFile) {
+        await onUpdate(payload, editPendingFile);
+      } else if (editDok !== (z.dokumentBase64 || "")) {
+        await onUpdate({ ...payload, dokumentBase64: editDok });
+      } else {
+        await onUpdate(payload);
+      }
       setEditMode(false);
     } finally { setEditSaving(false); }
   };
@@ -548,12 +572,21 @@ export default function Bescheinigungen() {
     setShowForm(false);
   };
 
-  const handleSave = async (fields: Partial<Bescheinigung>) => {
-    const res = await fetch(`${BASE}/bescheinigungen`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || null, ...fields }),
-    });
+  const handleSave = async (fields: Partial<Bescheinigung>, file?: File) => {
+    const { dokumentBase64, ...restFields } = fields;
+    let res: Response;
+    if (file) {
+      res = await fetch(`${BASE}/bescheinigungen`, {
+        method: "POST",
+        body: buildFileFormData({ tenantId: 1, marketId: selectedMarketId || null, ...restFields }, file),
+      });
+    } else {
+      res = await fetch(`${BASE}/bescheinigungen`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId || null, ...fields }),
+      });
+    }
     const neu = await res.json();
     setDaten((p) => ({
       ...p,
@@ -567,12 +600,21 @@ export default function Bescheinigungen() {
     setDaten((p) => ({ ...p, [aktiveTab]: p[aktiveTab].filter((z) => z.id !== id) }));
   };
 
-  const handleUpdate = async (id: number, fields: Partial<Bescheinigung>) => {
-    const res = await fetch(`${BASE}/bescheinigungen/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(fields),
-    });
+  const handleUpdate = async (id: number, fields: Partial<Bescheinigung>, file?: File) => {
+    const { dokumentBase64, ...restFields } = fields;
+    let res: Response;
+    if (file) {
+      res = await fetch(`${BASE}/bescheinigungen/${id}`, {
+        method: "PUT",
+        body: buildFileFormData(restFields as Record<string, string | number | null | undefined>, file),
+      });
+    } else {
+      res = await fetch(`${BASE}/bescheinigungen/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(fields),
+      });
+    }
     const updated = await res.json();
     setDaten((p) => ({ ...p, [aktiveTab]: p[aktiveTab].map((z) => z.id === id ? { ...z, ...updated } : z) }));
   };
@@ -697,7 +739,7 @@ export default function Bescheinigungen() {
                 tab={tab}
                 isAdmin={canDelete}
                 onDelete={() => handleDelete(z.id)}
-                onUpdate={(fields) => handleUpdate(z.id, fields)}
+                onUpdate={(fields, file) => handleUpdate(z.id, fields, file)}
               />
             ))}
             {!showForm && (
