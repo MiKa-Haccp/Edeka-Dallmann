@@ -4,10 +4,12 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { MitarbeiterSuchInput } from "@/components/MitarbeiterSuchInput";
+import { PdfEmbed } from "@/lib/pdf";
+import { ClickableImage } from "@/lib/lightbox";
 import {
   ChevronLeft,
   Pill, Plus, Loader2, Save, X, Camera, FileText,
-  ChevronDown, ChevronUp, Trash2, ExternalLink, AlertCircle,
+  ChevronDown, ChevronUp, Trash2, AlertCircle,
   CheckCircle2, Clock,
 } from "lucide-react";
 
@@ -164,21 +166,10 @@ function EintragForm({ onSave, onCancel }: {
         {dokument ? (
           <div className="relative">
             {isPdf ? (
-              <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
-                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
-                  <FileText className="w-5 h-5 text-red-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-red-700">PDF-Dokument</p>
-                  <p className="text-xs text-red-500">Wird gespeichert</p>
-                </div>
-                <button onClick={() => setDokument("")} className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
+              <PdfEmbed dataUrl={dokument} editable onClear={() => setDokument("")} height="240px" />
             ) : (
               <div className="relative">
-                <img src={dokument} alt="Sachkundenachweis" className="w-full max-h-64 object-contain rounded-xl border border-border/60" />
+                <ClickableImage src={dokument} alt="Sachkundenachweis" className="w-full max-h-64 object-contain rounded-xl border border-border/60" />
                 <button onClick={() => setDokument("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -285,21 +276,9 @@ function EintragKarte({ z, onDelete, isAdmin }: { z: Eintrag; onDelete: () => vo
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dokument</p>
               {isPdf ? (
-                <a
-                  href={z.dokumentBase64} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors"
-                >
-                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
-                    <FileText className="w-5 h-5 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-red-700">PDF-Dokument anzeigen</p>
-                    <p className="text-xs text-red-500">Klicken zum Öffnen</p>
-                  </div>
-                  <ExternalLink className="w-4 h-4 text-red-400 ml-auto" />
-                </a>
+                <PdfEmbed dataUrl={z.dokumentBase64} height="320px" />
               ) : (
-                <img src={z.dokumentBase64} alt="Sachkundenachweis" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
+                <ClickableImage src={z.dokumentBase64} alt="Sachkundenachweis" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
               )}
             </div>
           ) : (

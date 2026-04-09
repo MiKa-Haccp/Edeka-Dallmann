@@ -67,10 +67,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
       if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
     };
     const preventDrop = (e: DragEvent) => e.preventDefault();
-    window.addEventListener("dragover", preventDragover, { capture: true });
+    window.addEventListener("dragover", preventDragover);
     window.addEventListener("drop", preventDrop);
     return () => {
-      window.removeEventListener("dragover", preventDragover, { capture: true });
+      window.removeEventListener("dragover", preventDragover);
       window.removeEventListener("drop", preventDrop);
     };
   }, []);

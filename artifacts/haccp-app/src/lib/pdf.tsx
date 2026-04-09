@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { X, ExternalLink, FileText, Loader2 } from "lucide-react";
+import { X, ExternalLink, FileText, Maximize2 } from "lucide-react";
+import { useLightboxContext } from "./lightbox";
 
 export function base64ToBlob(dataUrl: string): Blob {
   const arr = dataUrl.split(",");
@@ -24,18 +25,22 @@ export function PdfEmbed({
   dataUrl,
   onClear,
   editable = false,
+  fileName,
   height = "300px",
 }: {
   dataUrl: string;
   onClear?: () => void;
   editable?: boolean;
+  fileName?: string;
   height?: string;
 }) {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [error, setError] = useState(false);
+  const { openLightbox } = useLightboxContext();
 
   useEffect(() => {
     setError(false);
+    setBlobUrl(null);
     try {
       const blob = base64ToBlob(dataUrl);
       const url = URL.createObjectURL(blob);
@@ -46,17 +51,11 @@ export function PdfEmbed({
     }
   }, [dataUrl]);
 
-  if (error || !blobUrl) {
+  if (error) {
     return (
       <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl">
         <FileText className="w-5 h-5 text-slate-500 shrink-0" />
         <span className="text-sm font-medium text-slate-700 flex-1">PDF-Dokument</span>
-        <button
-          onClick={() => openPdfNewTab(dataUrl)}
-          className="flex items-center gap-1 px-3 py-1.5 bg-[#1a3a6b] text-white rounded-lg text-xs font-semibold hover:bg-[#2d5aa0] transition-colors"
-        >
-          <ExternalLink className="w-3.5 h-3.5" /> Öffnen
-        </button>
         {editable && onClear && (
           <button onClick={onClear} className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
             <X className="w-3.5 h-3.5" />
@@ -68,34 +67,47 @@ export function PdfEmbed({
 
   return (
     <div className="relative rounded-xl overflow-hidden border border-border/40 bg-slate-50">
-      <embed
-        src={blobUrl}
-        type="application/pdf"
-        style={{ width: "100%", height, display: "block" }}
-      />
+      {blobUrl ? (
+        <iframe
+          src={blobUrl}
+          title="PDF-Vorschau"
+          className="w-full border-0 block"
+          style={{ height }}
+        />
+      ) : (
+        <div className="flex items-center justify-center bg-slate-100" style={{ height }}>
+          <div className="flex items-center gap-2 text-slate-500 text-sm">
+            <FileText className="w-5 h-5" />
+            <span>PDF wird geladen…</span>
+          </div>
+        </div>
+      )}
+
+      {fileName && (
+        <div className="px-3 py-2 bg-slate-100 border-t border-slate-200 flex items-center gap-2">
+          <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span className="text-xs text-slate-600 font-medium truncate">{fileName}</span>
+        </div>
+      )}
+
       <div className="absolute top-2 right-2 flex gap-1.5 z-10">
         <button
-          onClick={() => openPdfNewTab(dataUrl)}
-          className="flex items-center gap-1 px-3 py-1.5 bg-black/60 text-white rounded-lg text-xs font-semibold hover:bg-black/80 transition-colors backdrop-blur-sm"
+          onClick={() => openLightbox(dataUrl, "pdf")}
+          title="Vollbild"
+          className="w-8 h-8 bg-black/60 text-white rounded-lg flex items-center justify-center hover:bg-black/80 transition-colors backdrop-blur-sm"
         >
-          <ExternalLink className="w-3 h-3" /> Öffnen
+          <Maximize2 className="w-3.5 h-3.5" />
         </button>
         {editable && onClear && (
-          <button onClick={onClear} className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
+          <button
+            onClick={onClear}
+            title="Entfernen"
+            className="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm"
+          >
             <X className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
     </div>
   );
-}
-
-export function PdfUploadPreview({
-  dataUrl,
-  onClear,
-}: {
-  dataUrl: string;
-  onClear: () => void;
-}) {
-  return <PdfEmbed dataUrl={dataUrl} onClear={onClear} editable height="260px" />;
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { PdfEmbed } from "@/lib/pdf";
+import { ClickableImage } from "@/lib/lightbox";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
@@ -229,7 +230,7 @@ function DokumentCard({
               <PdfEmbed dataUrl={dokument} editable={!disabled} onClear={onClear} height="240px" />
             ) : (
               <div className="relative">
-                <img src={dokument} alt={label} className="w-full max-h-48 object-contain rounded-xl border border-border/40" />
+                <ClickableImage src={dokument} alt={label} className="w-full max-h-48 object-contain rounded-xl border border-border/40" />
                 {!disabled && (
                   <button onClick={onClear} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
                     <X className="w-3.5 h-3.5" />
@@ -640,6 +641,7 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
   const [gueltigBis, setGueltigBis] = useState("");
   const [ergebnis, setErgebnis] = useState<Ergebnis>("");
   const [dokument, setDokument] = useState("");
+  const [dokFileName, setDokFileName] = useState("");
   const [notizen, setNotizen] = useState("");
   const [saving, setSaving] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -653,8 +655,10 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
     try {
       const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
       if (isPdfFile) {
+        setDokFileName(file.name);
         setDokument(await readFileAsDataURL(file));
       } else {
+        setDokFileName("");
         setDokument(await compressImage(file));
       }
     } catch { /* ignore */ } finally { setProcessing(false); }
@@ -743,10 +747,10 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dokument (Foto, Screenshot oder PDF)</label>
         {dokument ? (
           isPdf ? (
-            <PdfEmbed dataUrl={dokument} editable onClear={() => setDokument("")} height="240px" />
+            <PdfEmbed dataUrl={dokument} editable fileName={dokFileName} onClear={() => { setDokument(""); setDokFileName(""); }} height="240px" />
           ) : (
             <div className="relative">
-              <img src={dokument} alt="Dokument" className="w-full max-h-56 object-contain rounded-xl border border-border/60" />
+              <ClickableImage src={dokument} alt="Dokument" className="w-full max-h-56 object-contain rounded-xl border border-border/60" />
               <button onClick={() => setDokument("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -1003,7 +1007,7 @@ function BerichtKarte({ b, tab, onDelete, isAdmin, onUpdate }: {
                   {isPdf ? (
                     <PdfEmbed dataUrl={b.dokumentBase64!} height="320px" />
                   ) : (
-                    <img src={b.dokumentBase64} alt="Dokument" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
+                    <ClickableImage src={b.dokumentBase64!} alt="Dokument" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
                   )}
                 </div>
               ) : (
