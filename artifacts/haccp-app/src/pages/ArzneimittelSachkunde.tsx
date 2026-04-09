@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useFilePaste } from "@/hooks/useFileUpload";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -132,20 +133,7 @@ function EintragForm({ onSave, onCancel }: {
     await processFile(file);
   };
 
-  useEffect(() => {
-    const handler = (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (const item of Array.from(items)) {
-        if (item.kind === "file") {
-          const file = item.getAsFile();
-          if (file) { e.preventDefault(); processFile(file); return; }
-        }
-      }
-    };
-    document.addEventListener("paste", handler);
-    return () => document.removeEventListener("paste", handler);
-  }, []);
+  useFilePaste(processFile);
 
   const isPdf = dokument.startsWith("data:application/pdf");
 

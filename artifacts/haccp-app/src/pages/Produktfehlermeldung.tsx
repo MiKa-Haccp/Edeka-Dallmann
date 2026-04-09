@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useFilePaste } from "@/hooks/useFileUpload";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -313,12 +314,19 @@ export default function Produktfehlermeldung() {
       const compressed = await compressImage(file);
       set("unterschriftFoto")(compressed);
     } catch {
-      // Fallback: unkomprimiert laden
       const reader = new FileReader();
       reader.onload = () => set("unterschriftFoto")(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
+
+  useFilePaste(async (file) => {
+    if (file.type.startsWith("image/")) {
+      try {
+        set("unterschriftFoto")(await compressImage(file));
+      } catch { /* ignore */ }
+    }
+  });
 
   const handleDelete = async () => {
     if (!currentReport) return;
@@ -792,13 +800,16 @@ export default function Produktfehlermeldung() {
                       </p>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => fotoInputRef.current?.click()}
-                      className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border/60 rounded-xl text-sm text-muted-foreground hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b] hover:bg-[#1a3a6b]/5 transition-all w-full justify-center"
-                    >
-                      <ImagePlus className="w-4 h-4" />
-                      Foto aufnehmen oder aus Galerie wählen
-                    </button>
+                    <>
+                      <button
+                        onClick={() => fotoInputRef.current?.click()}
+                        className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border/60 rounded-xl text-sm text-muted-foreground hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b] hover:bg-[#1a3a6b]/5 transition-all w-full justify-center"
+                      >
+                        <ImagePlus className="w-4 h-4" />
+                        Foto aufnehmen oder aus Galerie wählen
+                      </button>
+                      <p className="text-center text-[10px] text-muted-foreground mt-1">oder Strg+V zum Einfügen</p>
+                    </>
                   )}
                   <input
                     ref={fotoInputRef}

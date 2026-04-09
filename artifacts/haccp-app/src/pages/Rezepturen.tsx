@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import { useFilePaste } from "@/hooks/useFileUpload";
 import { ChefHat, Search, Plus, X, Upload, ChevronDown, ChevronUp, Trash2, Edit2, Check, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -231,9 +232,14 @@ function NeuAnlegenModal({ kategorien, onClose, onSaved, defaultKategorieId }: {
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith("image/")) handleFile(file);
   };
+
+  useFilePaste((file) => {
+    if (file.type.startsWith("image/")) handleFile(file);
+  });
 
   const handleSave = async () => {
     if (!form.name.trim()) { setError("Name ist erforderlich."); return; }
@@ -338,6 +344,7 @@ function NeuAnlegenModal({ kategorien, onClose, onSaved, defaultKategorieId }: {
                     Foto hierher ziehen oder tippen zum Auswaehlen
                   </span>
                   <span className="text-xs text-gray-300">JPG, PNG, WEBP bis 20 MB</span>
+                  <span className="text-[10px] text-gray-300">oder Strg+V zum Einfügen</span>
                 </>
               )}
             </div>

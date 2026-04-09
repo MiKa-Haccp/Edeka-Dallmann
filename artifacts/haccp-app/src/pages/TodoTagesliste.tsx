@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useState, useCallback, useRef } from "react";
+import { useFilePaste } from "@/hooks/useFileUpload";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Link } from "wouter";
@@ -113,6 +114,9 @@ function PhotoDialog({ taskTitle, currentPhoto, onSave, onDelete, onClose }: {
     if (!file) return;
     setPreview(await fileToBase64(file));
   };
+  useFilePaste(async (file) => {
+    if (file.type.startsWith("image/")) setPreview(await fileToBase64(file));
+  });
   const handleSave = async () => {
     if (!preview || preview === currentPhoto) { onClose(); return; }
     setSaving(true); await onSave(preview); setSaving(false); onClose();
@@ -146,6 +150,7 @@ function PhotoDialog({ taskTitle, currentPhoto, onSave, onDelete, onClose }: {
               className="w-full mb-4 border-2 border-dashed border-border/60 rounded-xl py-8 flex flex-col items-center gap-2 text-muted-foreground hover:border-[#0f766e]/40 hover:text-[#0f766e] transition-colors">
               <ImagePlus className="w-8 h-8" />
               <span className="text-sm font-medium">Foto auswählen oder aufnehmen</span>
+              <span className="text-[10px] text-muted-foreground/60">oder Strg+V zum Einfügen</span>
             </button>
           )}
           <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFile} />
@@ -194,6 +199,13 @@ function NewAdhocDialog({ onSave, onClose }: {
     reader.onload = ev => setPhotoData(ev.target?.result as string);
     reader.readAsDataURL(file);
   };
+  useFilePaste((file) => {
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = ev => setPhotoData(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  });
   const handleSubmit = async () => {
     if (!title.trim()) { setError("Titel erforderlich"); return; }
     if (pin.length !== 4) { setError("PIN muss 4-stellig sein"); return; }
@@ -250,6 +262,7 @@ function NewAdhocDialog({ onSave, onClose }: {
                 </button>
               )}
               <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} />
+              {!photoData && <p className="text-center text-[10px] text-muted-foreground mt-1">oder Strg+V zum Einfügen</p>}
             </div>
           </div>
           <div>

@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useState, useCallback, useRef } from "react";
+import { useFilePaste } from "@/hooks/useFileUpload";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Link } from "wouter";
@@ -59,6 +60,9 @@ function TaskForm({
     const b64 = await fileToBase64(file);
     setPhotoData(b64);
   };
+  useFilePaste(async (file) => {
+    if (file.type.startsWith("image/")) setPhotoData(await fileToBase64(file));
+  });
 
   const handleSubmit = async () => {
     if (!title.trim()) { setError("Titel erforderlich"); return; }
@@ -176,6 +180,7 @@ function TaskForm({
               <ImagePlus className="w-4 h-4" /> Referenzfoto hinzufügen
             </button>
           )}
+          {!photoData && <p className="text-center text-[10px] text-muted-foreground mt-1">oder Strg+V zum Einfügen</p>}
         </div>
 
         {error && <p className="text-xs text-red-600">{error}</p>}

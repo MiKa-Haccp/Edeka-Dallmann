@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useFilePaste } from "@/hooks/useFileUpload";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -198,25 +199,13 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file) await processFile(file);
   };
 
-  useEffect(() => {
-    const handler = (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (const item of Array.from(items)) {
-        if (item.kind === "file") {
-          const file = item.getAsFile();
-          if (file) { e.preventDefault(); processFile(file); return; }
-        }
-      }
-    };
-    document.addEventListener("paste", handler);
-    return () => document.removeEventListener("paste", handler);
-  }, []);
+  useFilePaste(processFile);
 
   const isPdf = dokument.startsWith("data:application/pdf");
 
@@ -232,7 +221,7 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
     <div
       className="bg-[#1a3a6b]/5 border border-[#1a3a6b]/20 rounded-2xl p-5 space-y-4"
       onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) processFile(f); }}
+      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); }}
     >
       <p className="text-sm font-bold text-[#1a3a6b]">Neuer Eintrag — {tab.label}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

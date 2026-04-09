@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useFilePaste } from "@/hooks/useFileUpload";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -101,27 +102,44 @@ function ZertifikatForm({ onSave, onCancel }: { onSave: (z: Partial<Zertifikat>)
   const fileRef = useRef<HTMLInputElement>(null);
   const fotoRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = async (file: File) => {
     setProcessing(true);
     try {
-      if (file.type === "application/pdf") {
-        // PDF direkt als base64 einlesen
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          setDatei(ev.target!.result as string);
-          setDateiName(file.name);
-        };
-        reader.readAsDataURL(file);
+      const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      if (isPdfFile) {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(ev.target!.result as string);
+          reader.onerror = () => reject(new Error("Fehler beim Lesen"));
+          reader.readAsDataURL(file);
+        });
+        setDatei(dataUrl);
+        setDateiName(file.name);
       } else {
-        // Bild komprimieren
         setDatei(await compressImage(file));
         setDateiName(file.name);
       }
     } finally { setProcessing(false); }
-    e.target.value = "";
   };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    await processFile(file);
+  };
+
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await processFile(file);
+  };
+
+  useFilePaste(processFile);
 
   const isPdf = datei.startsWith("data:application/pdf");
 
@@ -193,8 +211,12 @@ function ZertifikatForm({ onSave, onCancel }: { onSave: (z: Partial<Zertifikat>)
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {/* Foto / Screenshot (Galerie + Kamera) */}
+          <div
+            onDrop={handleDrop}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
+          >
             <button
               onClick={() => fotoRef.current?.click()}
               disabled={processing}
@@ -203,7 +225,6 @@ function ZertifikatForm({ onSave, onCancel }: { onSave: (z: Partial<Zertifikat>)
               {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
               <span className="text-xs text-center leading-tight">Foto /<br />Screenshot</span>
             </button>
-            {/* PDF-Datei */}
             <button
               onClick={() => fileRef.current?.click()}
               disabled={processing}
@@ -212,6 +233,11 @@ function ZertifikatForm({ onSave, onCancel }: { onSave: (z: Partial<Zertifikat>)
               <FileText className="w-5 h-5" />
               <span className="text-xs text-center leading-tight">PDF-<br />Datei</span>
             </button>
+            {dragOver ? (
+              <div className="col-span-2 text-center text-xs text-[#1a3a6b] font-semibold py-1">Datei hier ablegen</div>
+            ) : (
+              <p className="col-span-2 text-center text-[10px] text-muted-foreground">oder Strg+V zum Einfügen aus der Zwischenablage</p>
+            )}
           </div>
         )}
 

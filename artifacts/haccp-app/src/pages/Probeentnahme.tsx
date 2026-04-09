@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useFilePaste } from "@/hooks/useFileUpload";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -326,6 +327,18 @@ export default function Probeentnahme() {
       reader.readAsDataURL(file);
     }
   };
+  useFilePaste(async (file) => {
+    if (file.type.startsWith("image/")) {
+      try {
+        const compressed = await compressImage(file);
+        set("amtlichesDokumentFoto")(compressed);
+      } catch {
+        const reader = new FileReader();
+        reader.onload = () => set("amtlichesDokumentFoto")(reader.result as string);
+        reader.readAsDataURL(file);
+      }
+    }
+  });
 
   const hatGegenprobe = form.gegenprobeArt !== "" && form.gegenprobeStatus === "hinterlassen";
 
@@ -692,6 +705,7 @@ export default function Probeentnahme() {
                   className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border/60 rounded-xl text-sm text-muted-foreground hover:border-[#1a3a6b]/40 hover:text-[#1a3a6b] hover:bg-[#1a3a6b]/5 transition-all w-full justify-center"
                 >
                   <ImagePlus className="w-4 h-4" /> Dokument fotografieren oder aus Galerie wählen
+                  <span className="text-[10px] text-muted-foreground/60">oder Strg+V zum Einfügen</span>
                 </button>
               )}
               <input ref={fotoRef} type="file" accept="image/*" capture="environment" onChange={handleFoto} className="hidden" />

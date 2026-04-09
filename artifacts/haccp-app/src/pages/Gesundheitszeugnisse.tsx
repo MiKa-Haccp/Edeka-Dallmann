@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useFilePaste } from "@/hooks/useFileUpload";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -117,7 +118,8 @@ function ZeugnisForm({ onSave, onCancel }: {
   const processFile = async (file: File) => {
     setProcessing(true);
     try {
-      if (file.type === "application/pdf") {
+      const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      if (isPdfFile) {
         setDokument(await readFileAsDataURL(file));
       } else {
         setDokument(await compressImage(file));
@@ -134,10 +136,13 @@ function ZeugnisForm({ onSave, onCancel }: {
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file) await processFile(file);
   };
+
+  useFilePaste(processFile);
 
   const isPdf = dokument.startsWith("data:application/pdf");
 
@@ -221,8 +226,10 @@ function ZeugnisForm({ onSave, onCancel }: {
               {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileText className="w-5 h-5" />}
               <span className="text-xs font-semibold text-center leading-tight">PDF /<br />Datei</span>
             </button>
-            {dragOver && (
+            {dragOver ? (
               <div className="col-span-2 text-center text-xs text-[#1a3a6b] font-semibold py-1">Datei hier ablegen</div>
+            ) : (
+              <p className="col-span-2 text-center text-[10px] text-muted-foreground">oder Strg+V zum Einfügen aus der Zwischenablage</p>
             )}
           </div>
         )}

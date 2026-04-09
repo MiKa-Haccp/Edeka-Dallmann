@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useFilePaste } from "@/hooks/useFileUpload";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
@@ -163,6 +164,14 @@ export default function RindfleischEtikettierung() {
     reader.readAsDataURL(file);
     e.target.value = "";
   };
+
+  useFilePaste((file) => {
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = ev => { if (ev.target?.result) setFotoBase64(ev.target.result as string); };
+      reader.readAsDataURL(file);
+    }
+  });
 
   return (
     <AppLayout>
@@ -338,6 +347,7 @@ export default function RindfleischEtikettierung() {
                           <Camera className="w-8 h-8 text-muted-foreground"/>
                           <span className="text-sm text-muted-foreground">Etikett fotografieren</span>
                           <span className="text-xs text-muted-foreground/60">Auspackdatum muss sichtbar sein</span>
+                          <span className="text-[10px] text-muted-foreground/40">oder Strg+V zum Einfügen</span>
                         </button>
                       )}
                     </div>

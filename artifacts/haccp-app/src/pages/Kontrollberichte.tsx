@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useFilePaste } from "@/hooks/useFileUpload";
 import { PdfEmbed } from "@/lib/pdf";
 import { ClickableImage } from "@/lib/lightbox";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -673,25 +674,13 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
 
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file) await processFile(file);
   };
 
-  useEffect(() => {
-    const handler = (e: ClipboardEvent) => {
-      const items = e.clipboardData?.items;
-      if (!items) return;
-      for (const item of Array.from(items)) {
-        if (item.kind === "file") {
-          const file = item.getAsFile();
-          if (file) { e.preventDefault(); processFile(file); return; }
-        }
-      }
-    };
-    document.addEventListener("paste", handler);
-    return () => document.removeEventListener("paste", handler);
-  }, []);
+  useFilePaste(processFile);
 
   const isPdf = dokument.startsWith("data:application/pdf");
 

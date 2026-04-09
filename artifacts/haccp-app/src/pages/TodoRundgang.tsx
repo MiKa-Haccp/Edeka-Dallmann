@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useState, useCallback, useRef } from "react";
+import { useFilePaste } from "@/hooks/useFileUpload";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Link } from "wouter";
@@ -92,6 +93,13 @@ function NewTaskDialog({ onSave, onClose }: {
     reader.onload = ev => setPhotoData(ev.target?.result as string);
     reader.readAsDataURL(file);
   };
+  useFilePaste((file) => {
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = ev => setPhotoData(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  });
 
   const handleSubmit = async () => {
     if (!title.trim()) { setError("Titel erforderlich"); return; }
@@ -149,6 +157,7 @@ function NewTaskDialog({ onSave, onClose }: {
                 </button>
               )}
               <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handlePhoto} />
+              {!photoData && <p className="text-center text-[10px] text-muted-foreground mt-1">oder Strg+V zum Einfügen</p>}
             </div>
           </div>
           <div>
