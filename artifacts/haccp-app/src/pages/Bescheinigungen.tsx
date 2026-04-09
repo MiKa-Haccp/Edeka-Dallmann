@@ -203,6 +203,21 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
     if (file) await processFile(file);
   };
 
+  useEffect(() => {
+    const handler = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of Array.from(items)) {
+        if (item.kind === "file") {
+          const file = item.getAsFile();
+          if (file) { e.preventDefault(); processFile(file); return; }
+        }
+      }
+    };
+    document.addEventListener("paste", handler);
+    return () => document.removeEventListener("paste", handler);
+  }, []);
+
   const isPdf = dokument.startsWith("data:application/pdf");
 
   const handleSubmit = async () => {
@@ -279,8 +294,10 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
               {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <FileText className="w-5 h-5" />}
               <span className="text-xs font-semibold text-center leading-tight">PDF /<br />Datei</span>
             </button>
-            {dragOver && (
+            {dragOver ? (
               <div className="col-span-2 text-center text-xs text-[#1a3a6b] font-semibold py-1">Datei hier ablegen</div>
+            ) : (
+              <p className="col-span-2 text-center text-[10px] text-muted-foreground">oder Strg+V zum Einfügen aus der Zwischenablage</p>
             )}
           </div>
         )}

@@ -107,20 +107,45 @@ function EintragForm({ onSave, onCancel }: {
   const fotoRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = async (file: File) => {
     setProcessing(true);
     try {
-      if (file.type === "application/pdf") {
-        const reader = new FileReader();
-        reader.onload = (ev) => setDokument(ev.target!.result as string);
-        reader.readAsDataURL(file);
+      const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      if (isPdfFile) {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(ev.target!.result as string);
+          reader.onerror = () => reject(new Error("Fehler beim Lesen der Datei"));
+          reader.readAsDataURL(file);
+        });
+        setDokument(dataUrl);
       } else {
         setDokument(await compressImage(file));
       }
-    } finally { setProcessing(false); e.target.value = ""; }
+    } finally { setProcessing(false); }
   };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    await processFile(file);
+  };
+
+  useEffect(() => {
+    const handler = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of Array.from(items)) {
+        if (item.kind === "file") {
+          const file = item.getAsFile();
+          if (file) { e.preventDefault(); processFile(file); return; }
+        }
+      }
+    };
+    document.addEventListener("paste", handler);
+    return () => document.removeEventListener("paste", handler);
+  }, []);
 
   const isPdf = dokument.startsWith("data:application/pdf");
 
@@ -194,6 +219,7 @@ function EintragForm({ onSave, onCancel }: {
               <FileText className="w-5 h-5" />
               <span className="text-xs font-semibold text-center leading-tight">PDF-<br />Datei</span>
             </button>
+            <p className="col-span-2 text-center text-[10px] text-muted-foreground">oder Strg+V zum Einfügen aus der Zwischenablage</p>
           </div>
         )}
         <input ref={fotoRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />

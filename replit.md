@@ -171,6 +171,13 @@ Express 5 API server with routes for HACCP management.
 
 React + Vite frontend with Tailwind CSS. Features sidebar navigation with HACCP categories, header with branch switcher, and dashboard overview.
 
+**Document upload features:**
+- PDF rendering via PDF.js (canvas-based, Opera-compatible) — `src/lib/pdf.tsx`
+- Fullscreen lightbox for images and PDFs — `src/lib/lightbox.tsx` (LightboxProvider in App.tsx)
+- Ctrl+V paste upload in all forms (Bescheinigungen, Kontrollberichte, Arzneimittel-Sachkunde)
+- File upload via button click (Foto/Screenshot + PDF/Datei)
+- Image compression via canvas resizing for photos
+
 ### `lib/db` (`@workspace/db`)
 
 Database layer using Drizzle ORM with PostgreSQL. Contains schema for all HACCP entities.

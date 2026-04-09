@@ -1,6 +1,9 @@
-import { createContext, useContext, useState, useEffect } from "react";
-import { X, ZoomIn } from "lucide-react";
-import { base64ToBlob } from "./pdf";
+import { createContext, useContext, useState, useEffect, lazy, Suspense } from "react";
+import { X, ZoomIn, Loader2 } from "lucide-react";
+
+const PdfFullscreenLazy = lazy(() =>
+  import("./pdf").then((mod) => ({ default: mod.PdfFullscreen }))
+);
 
 interface LightboxState {
   src: string;
@@ -20,8 +23,6 @@ export function useLightboxContext() {
 }
 
 function LightboxOverlay({ src, type, onClose }: LightboxState & { onClose: () => void }) {
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -31,17 +32,11 @@ function LightboxOverlay({ src, type, onClose }: LightboxState & { onClose: () =
   }, [onClose]);
 
   useEffect(() => {
-    if (type === "pdf") {
-      try {
-        const blob = base64ToBlob(src);
-        const url = URL.createObjectURL(blob);
-        setBlobUrl(url);
-        return () => URL.revokeObjectURL(url);
-      } catch {
-        setBlobUrl(null);
-      }
-    }
-  }, [src, type]);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
 
   return (
     <div
@@ -66,18 +61,15 @@ function LightboxOverlay({ src, type, onClose }: LightboxState & { onClose: () =
             style={{ maxHeight: "88vh" }}
           />
         ) : (
-          type === "pdf" && blobUrl ? (
-            <iframe
-              src={blobUrl}
-              title="PDF Vollbild"
-              className="w-full rounded-xl shadow-2xl border-0"
-              style={{ height: "88vh" }}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-64 text-white/60 text-sm">
-              PDF wird geladen...
-            </div>
-          )
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="w-8 h-8 animate-spin text-white/40" />
+              </div>
+            }
+          >
+            <PdfFullscreenLazy dataUrl={src} />
+          </Suspense>
         )}
       </div>
       <p className="absolute bottom-3 left-0 right-0 text-center text-white/30 text-xs">
