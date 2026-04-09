@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useAppStore } from "@/store/use-app-store";
 import {
   ShieldCheck, ArrowRight,
-  Lock, UserCog, Package, Settings, ClipboardList, FolderKanban,
+  Lock, UserCog, Package, Settings, ClipboardList, FolderKanban, Mic,
 } from "lucide-react";
 import { Link } from "wouter";
 import { FaelligkeitenWidget } from "@/components/FaelligkeitenWidget";
@@ -66,6 +66,18 @@ const MODULES: ModuleCard[] = [
     bgColor: "bg-indigo-50",
     available: true,
     badge: "Aktiv",
+    requiredRoles: ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER"],
+  },
+  {
+    id: "sprachassistent",
+    icon: Mic,
+    title: "Sprachassistent",
+    description: "Sprich Aufgaben ein – die KI extrahiert und legt sie direkt als Projektaufgaben an.",
+    href: "/sprachassistent",
+    color: "text-purple-600",
+    bgColor: "bg-purple-50",
+    available: true,
+    badge: "KI",
     requiredRoles: ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER"],
   },
   {
