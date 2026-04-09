@@ -182,9 +182,6 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
-      '@workspace/integrations-openai-ai-server':
-        specifier: workspace:*
-        version: link:../../lib/integrations-openai-ai-server
       cookie-parser:
         specifier: ^1.4.7
         version: 1.4.7
@@ -206,9 +203,6 @@ importers:
       nodemailer:
         specifier: ^8.0.3
         version: 8.0.3
-      openai:
-        specifier: ^6.33.0
-        version: 6.33.0(zod@4.3.6)
     devDependencies:
       '@types/cookie-parser':
         specifier: ^1.4.10

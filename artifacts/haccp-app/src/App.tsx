@@ -100,7 +100,6 @@ import FeedbackAdmin from "./pages/FeedbackAdmin";
 import DatenBereinigung from "./pages/DatenBereinigung";
 import ModuleVerwaltung from "./pages/ModuleVerwaltung";
 import ProjektHub from "./pages/ProjektHub";
-import Sprachassistent from "./pages/Sprachassistent";
 import TempLagerKontrolle from "./pages/TempLagerKontrolle";
 import RindfleischEtikettierung from "./pages/RindfleischEtikettierung";
 import SectionVerwaltung from "./pages/SectionVerwaltung";
@@ -184,7 +183,6 @@ function Router() {
       <Route path="/admin/module-sichtbarkeit" component={ModuleVerwaltung} />
       <Route path="/admin/section-sichtbarkeit" component={SectionVerwaltung} />
       <Route path="/projekt-hub" component={ProjektHub} />
-      <Route path="/sprachassistent" component={Sprachassistent} />
       <Route path="/temp-lager-kontrolle" component={TempLagerKontrolle} />
       <Route path="/rindfleisch-etikettierung" component={RindfleischEtikettierung} />
       <Route path="/verwaltung/schulungsanforderungen" component={SchulungsAnforderungen} />
