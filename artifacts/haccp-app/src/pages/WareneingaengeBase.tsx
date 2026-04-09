@@ -981,6 +981,7 @@ function tabTrafficColor(row:TodaySummaryRow|undefined,holidays:Set<string>):Tra
 function WareneingaengeContent() {
   const { section, pageTitle, pageSubtitle, allCrit } = useWEConfig();
   const { adminSession, selectedMarketId, hasPermission } = useAppStore();
+  const isAdmin = !!adminSession;
   const canDelete = hasPermission("entries.delete");
   const now=new Date();
   const [year,setYear]=useState(now.getFullYear());
