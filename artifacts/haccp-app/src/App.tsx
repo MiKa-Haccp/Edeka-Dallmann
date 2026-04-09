@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LightboxProvider } from "@/lib/lightbox";
 import NotFound from "@/pages/not-found";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useEffect } from "react";
 
 // Bereinigt localStorage-Entwürfe die Bild-Daten enthalten (verhindert Screenshot-Flash beim Start)
@@ -206,18 +207,20 @@ function App() {
   useEffect(() => { cleanupImageDrafts(); }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <LightboxProvider>
-          <AutoLogoutWrapper>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
-            </WouterRouter>
-          </AutoLogoutWrapper>
-          <Toaster />
-        </LightboxProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <LightboxProvider>
+            <AutoLogoutWrapper>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Router />
+              </WouterRouter>
+            </AutoLogoutWrapper>
+            <Toaster />
+          </LightboxProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

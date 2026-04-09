@@ -88,8 +88,11 @@ function EintragModal({
       const data = await res.json();
       if (data.valid) {
         onConfirm({artikelBezeichnung:artikel.trim(),verbrauchsdatum:verbrauch,eigenherstellung,kuerzel:data.initials,userId:data.userId});
-      } else setError("PIN ungueltig.");
-    } catch { setError("Verbindungsfehler."); }
+      } else setError("PIN ungültig.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`Verbindungsfehler: ${msg}`);
+    }
     finally { setLoading(false); }
   };
 
@@ -181,8 +184,11 @@ function AufgebrauchtPinModal({
       const res = await fetch(`${BASE}/users/verify-pin`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin,tenantId:1})});
       const data = await res.json();
       if (data.valid) onConfirm(data.initials, data.userId);
-      else setError("PIN ungueltig.");
-    } catch { setError("Verbindungsfehler."); }
+      else setError("PIN ungültig.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`Verbindungsfehler: ${msg}`);
+    }
     finally { setLoading(false); }
   };
 
