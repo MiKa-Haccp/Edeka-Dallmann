@@ -424,7 +424,7 @@ export default function OeffnungSalate() {
                 <Package className="w-6 h-6 text-white"/>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">3.3 Öffnung Salate &amp; Eigenherstellung</h1>
+                <h1 className="text-xl font-bold text-white">Öffnung Salate &amp; Eigenherstellung</h1>
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">

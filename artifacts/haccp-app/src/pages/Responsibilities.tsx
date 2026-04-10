@@ -266,7 +266,7 @@ export default function Responsibilities() {
         <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
           {/* Title Bar - blue like the original */}
           <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white px-6 py-3 flex items-center justify-between">
-            <h1 className="text-lg font-bold">1.1 Verantwortlichkeiten im Markt</h1>
+            <h1 className="text-lg font-bold">Verantwortlichkeiten im Markt</h1>
             <div className="flex items-center gap-2">
               {!isEditing ? (
                 <button
@@ -355,7 +355,7 @@ export default function Responsibilities() {
 
           {/* Market Info */}
           <div className="px-6 py-4 border-b border-border/60">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex items-center gap-3">
                 <span className="text-sm font-semibold text-muted-foreground w-32 flex-shrink-0">Markt</span>
                 <div className="flex items-center gap-2 flex-1">

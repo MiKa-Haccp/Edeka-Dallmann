@@ -274,7 +274,7 @@ export default function AbteilungsfremdePersonen() {
           <div className="flex items-center gap-3">
             <div className="bg-white/15 rounded-xl p-2.5 shrink-0"><Users className="h-6 w-6 text-white" /></div>
             <div>
-              <h1 className="text-xl font-bold text-white">3.9 Abteilungsfremde Personen</h1>
+              <h1 className="text-xl font-bold text-white">Abteilungsfremde Personen</h1>
               <p className="text-sm text-white/75">{market?.name ?? "Kein Markt gewählt"}</p>
             </div>
           </div>

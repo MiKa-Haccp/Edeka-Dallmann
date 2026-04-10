@@ -424,7 +424,7 @@ export default function Gesundheitszeugnisse() {
                 <HeartPulse className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-lg font-bold leading-tight">1.12 Gesundheitszeugnisse</h1>
+                <h1 className="text-lg font-bold leading-tight">Gesundheitszeugnisse</h1>
                 <p className="text-white/70 text-sm">Nach §43 IfSG — Nachweise der Beschäftigten</p>
               </div>
             </div>

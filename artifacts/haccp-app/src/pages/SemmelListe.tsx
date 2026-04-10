@@ -373,7 +373,7 @@ export default function SemmelListe() {
               <ShoppingBag className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1">
-              <h1 className="text-xl font-bold text-white">3.5 Semmelliste</h1>
+              <h1 className="text-xl font-bold text-white">Semmelliste</h1>
               <p className="text-sm text-white/75">Zusätzliches Kontingent Bäckerei – on top zum Standard</p>
             </div>
             <div className="flex gap-2 shrink-0">

@@ -22,7 +22,7 @@ export default function TrainingBesprechung() {
             <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
               <GraduationCap className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-white">1.4 Schulung & Besprechungsprotokoll</h1>
+            <h1 className="text-xl font-bold text-white">Schulung & Besprechungsprotokoll</h1>
           </div>
         </PageHeader>
       </div>

@@ -327,7 +327,7 @@ function UserList({ isAdmin }: { isAdmin: boolean }) {
       <div className="bg-[#1a3a6b] text-white px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Users className="h-5 w-5" />
-          <h2 className="text-lg font-bold">1.2 Kürzelliste — Registrierte Mitarbeiter</h2>
+          <h2 className="text-lg font-bold">Kürzelliste — Registrierte Mitarbeiter</h2>
         </div>
         <div className="flex items-center gap-3">
           {!isAdmin && (

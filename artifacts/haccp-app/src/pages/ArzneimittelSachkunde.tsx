@@ -404,7 +404,7 @@ export default function ArzneimittelSachkunde() {
                 <Pill className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-lg font-bold leading-tight">1.11 Sachkundenachweis Arzneimittel</h1>
+                <h1 className="text-lg font-bold leading-tight">Sachkundenachweis Arzneimittel</h1>
                 <p className="text-white/70 text-sm">Schulungen &amp; Nachweise der Mitarbeiter</p>
               </div>
             </div>

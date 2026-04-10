@@ -642,7 +642,7 @@ export default function Bescheinigungen() {
                 <FileText className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-white">1.11 Bescheinigungen & Nachweise</h1>
+                <h1 className="text-lg font-bold text-white">Bescheinigungen & Nachweise</h1>
                 <p className="text-sm text-white/75">Alle mitarbeiterbezogenen Zertifikate und Nachweise</p>
               </div>
             </div>

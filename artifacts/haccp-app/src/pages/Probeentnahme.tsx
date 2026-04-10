@@ -360,7 +360,7 @@ export default function Probeentnahme() {
                 <FlaskConical className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">1.9 Probeentnahme</h1>
+                <h1 className="text-xl font-bold text-white">Probeentnahme</h1>
                 <p className="text-sm text-white/75">Amtliche Probenentnahme durch Lebensmittelüberwachung</p>
               </div>
             </div>

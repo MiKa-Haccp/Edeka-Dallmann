@@ -409,7 +409,7 @@ export default function EingefrorenesFleisch() {
               <Snowflake className="w-5 h-5 text-white"/>
             </div>
             <div className="flex-1">
-              <h1 className="text-xl font-bold text-white">3.6 Eingefrorenes Fleisch</h1>
+              <h1 className="text-xl font-bold text-white">Eingefrorenes Fleisch</h1>
             </div>
           </div>
         </PageHeader>

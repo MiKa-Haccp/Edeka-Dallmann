@@ -189,7 +189,7 @@ export default function TempLagerKontrolle() {
               <Thermometer className="w-5 h-5"/>
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg font-bold leading-tight">1.13 Temperatur-Lagerkontrolle</h1>
+              <h1 className="text-lg font-bold leading-tight">Temperatur-Lagerkontrolle</h1>
               <p className="text-white/70 text-sm">{market?.name ?? ""}</p>
             </div>
             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 ${

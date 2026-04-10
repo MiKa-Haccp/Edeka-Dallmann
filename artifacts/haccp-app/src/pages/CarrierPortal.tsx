@@ -77,7 +77,7 @@ export default function CarrierPortal() {
               <Globe className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">2.4 Zugangsdaten {config.name}</h1>
+              <h1 className="text-lg font-bold leading-tight">Zugangsdaten {config.name}</h1>
               <p className="text-white/70 text-sm">
                 Online-Serviceportal für Kühlsysteme{market ? ` — ${market.name}` : ""}
               </p>
