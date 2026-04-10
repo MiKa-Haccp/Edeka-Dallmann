@@ -453,7 +453,7 @@ export default function EingefrorenesFleisch() {
             {aktiv.length===0&&!loading&&(
               <div className="text-center py-8 text-muted-foreground text-sm border rounded-xl bg-muted/20">
                 <Snowflake className="w-8 h-8 mx-auto mb-2 text-muted-foreground/40"/>
-                Keine aktiv eingefrorenen Artikel fuer {year}.
+                Keine aktiv eingefrorenen Artikel für {year}.
               </div>
             )}
 

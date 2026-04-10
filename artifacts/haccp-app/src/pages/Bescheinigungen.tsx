@@ -635,14 +635,14 @@ export default function Bescheinigungen() {
         <PageHeader>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <Link href="/category/1" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
                 <ChevronLeft className="h-5 w-5" />
               </Link>
               <div className="bg-white/15 rounded-xl p-2 shrink-0">
                 <FileText className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">1.11 Bescheinigungen & Nachweise</h1>
+                <h1 className="text-lg font-bold text-white">1.11 Bescheinigungen & Nachweise</h1>
                 <p className="text-sm text-white/75">Alle mitarbeiterbezogenen Zertifikate und Nachweise</p>
               </div>
             </div>

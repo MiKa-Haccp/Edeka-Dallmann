@@ -364,7 +364,7 @@ export default function MHDKontrolle() {
           {!loading && entries.length === 0 && (
             <div className="bg-white rounded-2xl border border-border/60 shadow-sm p-10 text-center">
               <Package className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-sm font-semibold text-muted-foreground">Noch keine Eintraege fuer dieses Datum</p>
+              <p className="text-sm font-semibold text-muted-foreground">Noch keine Einträge für dieses Datum</p>
               <p className="text-xs text-muted-foreground mt-1">Starten Sie mit dem ersten Eintrag.</p>
             </div>
           )}

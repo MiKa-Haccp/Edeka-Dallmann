@@ -55,7 +55,7 @@ type SessionType = "schulungsprotokoll" | "taraschulung" | "lebensmittelleitkult
 const TAB_LABELS: Record<SessionType | "besprechungsprotokoll", string> = {
   schulungsprotokoll: "Schulungsprotokoll",
   taraschulung: "Taraschulung",
-  lebensmittelleitkultur: "Lebensmittelleitkultur",
+  lebensmittelleitkultur: "Lebensmittelsicherheitskultur",
   strohschwein: "Strohschwein",
   besprechungsprotokoll: "Besprechungsprotokoll",
 };

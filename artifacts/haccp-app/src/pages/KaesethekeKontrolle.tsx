@@ -414,7 +414,7 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
                       {hSt!=="none"&&<span className={`absolute right-2 top-1.5 text-[10px] font-bold ${hSt==="ok"?"text-green-600":"text-red-600"}`}>{hSt==="ok"?"i.O.":"ABWEICH."}</span>}
                     </div>
                   </div>
-                  <p className="text-[10px] text-amber-600 mt-1.5">Gilt fuer alle ausgewaehlten Produkte</p>
+                  <p className="text-[10px] text-amber-600 mt-1.5">Gilt für alle ausgewählten Produkte</p>
                 </div>
               )}
 

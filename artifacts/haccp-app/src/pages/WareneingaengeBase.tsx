@@ -805,7 +805,7 @@ function AdminView({ marketId, types, onRefresh, onDirtyChange }: {
   return(
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div><p className="text-sm font-bold">Lieferanten fuer diesen Markt</p><p className="text-xs text-muted-foreground">Aenderungen werden erst nach "Speichern" uebernommen.</p></div>
+        <div><p className="text-sm font-bold">Lieferanten für diesen Markt</p><p className="text-xs text-muted-foreground">Änderungen werden erst nach "Speichern" übernommen.</p></div>
         <div className="flex items-center gap-2">
           {isDirty&&(
             <button onClick={handleDiscard} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs hover:bg-muted text-muted-foreground">
@@ -826,7 +826,7 @@ function AdminView({ marketId, types, onRefresh, onDirtyChange }: {
       {isDirty&&(
         <div className="flex items-center gap-2 bg-amber-50 border border-amber-300 rounded-xl px-4 py-2.5">
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0"/>
-          <p className="text-xs text-amber-800 font-medium">Es gibt ungespeicherte Aenderungen. Bitte auf "Speichern" klicken.</p>
+          <p className="text-xs text-amber-800 font-medium">Es gibt ungespeicherte Änderungen. Bitte auf "Speichern" klicken.</p>
         </div>
       )}
 
@@ -933,7 +933,7 @@ function AdminView({ marketId, types, onRefresh, onDirtyChange }: {
 
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
         <div className="flex items-center gap-2"><Archive className="w-4 h-4 text-amber-600"/><p className="text-sm font-bold text-amber-800">Jahresarchiv</p></div>
-        <p className="text-xs text-amber-700">Archiviert alle Eintraege als unveraenderliche Kopie fuer spaetere Kontrollen.</p>
+        <p className="text-xs text-amber-700">Archiviert alle Einträge als unveränderliche Kopie für spätere Kontrollen.</p>
         <div className="flex items-center gap-2">
           <select className="border border-amber-300 rounded-lg px-2 py-1.5 text-sm bg-white" value={archiveYear} onChange={e=>setArchiveYear(Number(e.target.value))}>
             {[-1,-2,-3].map(d=><option key={d} value={new Date().getFullYear()+d}>{new Date().getFullYear()+d}</option>)}
@@ -1041,7 +1041,7 @@ function WareneingaengeContent() {
   const handleTabClick=async(type:WEType)=>{
     if(!selectedMarketId)return;
     if(activeTypeId==="admin"&&adminIsDirty){
-      if(!confirm("Es gibt ungespeicherte Aenderungen in der Verwaltung. Trotzdem wechseln?"))return;
+      if(!confirm("Es gibt ungespeicherte Änderungen in der Verwaltung. Trotzdem wechseln?"))return;
       setAdminIsDirty(false);
     }
     setEntries([]);

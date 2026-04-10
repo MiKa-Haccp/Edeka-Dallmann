@@ -306,7 +306,7 @@ export default function Responsibilities() {
           <div className="px-6 py-4 bg-gray-50 border-b border-border/60">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2 text-sm">
-                <span className="font-semibold text-muted-foreground">Stand vom:</span>
+                <span className="font-semibold text-muted-foreground">Stand:</span>
                 <span className="font-bold text-xl text-foreground">{selectedYear}</span>
               </div>
               <div className="flex items-center gap-1">

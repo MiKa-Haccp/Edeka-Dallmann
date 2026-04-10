@@ -7,6 +7,7 @@ import {
   useMetzgereiWareneingaengeStatus, useMetzgereiReinigungStatus, useKaesethekeStatus,
   useOeffnungSalateStatus, useGQBegehungStatus, useSchulungsnachweiseStatus,
   useResponsibilitiesStatus, useAnnualCleaningPlanStatus, useBetriebsbegehungStatus,
+  useTempLagerStatus,
   type TrafficLight,
 } from "@/hooks/useWarenzustandStatus";
 
@@ -47,6 +48,7 @@ export default function HaccpOverview() {
   const schulungsnachweiseStatus = useSchulungsnachweiseStatus();
   const cleaningPlanStatus       = useAnnualCleaningPlanStatus();
   const betriebsbegehungStatus   = useBetriebsbegehungStatus();
+  const tempLagerStatus          = useTempLagerStatus();
 
   // Kategorie 2 – Markt
   const ogStatus           = useWarenzustandOGStatus();
@@ -60,7 +62,7 @@ export default function HaccpOverview() {
   const kaesethekeStatus    = useKaesethekeStatus();
   const gqBegehungStatus    = useGQBegehungStatus();
 
-  const cat1: TrafficLight[] = [responsibilitiesStatus, schulungsnachweiseStatus, cleaningPlanStatus, betriebsbegehungStatus];
+  const cat1: TrafficLight[] = [responsibilitiesStatus, schulungsnachweiseStatus, cleaningPlanStatus, betriebsbegehungStatus, tempLagerStatus];
   const cat2: TrafficLight[] = [ogStatus, reinigungStatus, wareneingaengeStatus];
   const cat3: TrafficLight[] = [metzgereiStatus, metzReinigungStatus, oeffnungSalateStatus, kaesethekeStatus, gqBegehungStatus];
 
@@ -76,7 +78,7 @@ export default function HaccpOverview() {
       borderColor: "border-[#1a3a6b]/20",
       hoverBg: "hover:bg-[#1a3a6b]/5",
       href: "/category/1",
-      abschnitte: "1.1 – 1.12",
+      abschnitte: "1.1 – 1.13",
       statuses: cat1,
     },
     {
@@ -85,10 +87,10 @@ export default function HaccpOverview() {
       titel: "Markt",
       beschreibung: "Warenzustand Obst & Gemüse, tägliche Reinigung, Carrier-Portal, Wareneingänge und Marktkontrollen.",
       icon: ShoppingCart,
-      color: "text-gray-800",
-      bgColor: "bg-gray-100",
-      borderColor: "border-gray-200",
-      hoverBg: "hover:bg-gray-50",
+      color: "text-[#1a3a6b]",
+      bgColor: "bg-[#1a3a6b]/10",
+      borderColor: "border-[#1a3a6b]/20",
+      hoverBg: "hover:bg-[#1a3a6b]/5",
       href: "/category/2",
       abschnitte: "2.1 – 2.5",
       statuses: cat2,
@@ -99,10 +101,10 @@ export default function HaccpOverview() {
       titel: "Metzgerei",
       beschreibung: "Wareneingänge Metzgerei, Reinigungsplan, Öffnung Salate, Käsetheke, Semmelliste, Rezepturen und GQ-Begehung.",
       icon: Beef,
-      color: "text-gray-800",
-      bgColor: "bg-gray-100",
-      borderColor: "border-gray-200",
-      hoverBg: "hover:bg-gray-50",
+      color: "text-[#1a3a6b]",
+      bgColor: "bg-[#1a3a6b]/10",
+      borderColor: "border-[#1a3a6b]/20",
+      hoverBg: "hover:bg-[#1a3a6b]/5",
       href: "/category/3",
       abschnitte: "3.1 – 3.9",
       statuses: cat3,

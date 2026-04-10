@@ -36,7 +36,7 @@ const CLEANING_AREAS: CleaningArea[] = [
     title: "Warenannahme, Lager- und Verkaufsräume, Kühl- und Tiefkühleinrichtungen",
     items: [
       { key: "einkaufswagenbox", name: "Einkaufswagenbox", frequency: "monatlich" },
-      { key: "rampe_anlieferung", name: "Rampe, Anlieferung, Stellplätze Abfallcontainer", frequency: "monatlich" },
+      { key: "rampe_anlieferung", name: "Rampe, Anlieferung, Stellplätze, Abfallcontainer", frequency: "monatlich" },
       { key: "boeden_abfluesse", name: "Böden/Abflüsse im Lagerbereich", frequency: "monatlich" },
       { key: "regalboeden_aufsteller", name: "Regalböden, Aufsteller, Preisschilder im Verkaufsbereich", frequency: "monatlich" },
       { key: "umkleideschraenke", name: "Umkleideschränke in Sanitär-/Sozialräume", frequency: "monatlich" },
@@ -522,9 +522,9 @@ export default function AnnualCleaningPlan() {
         <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground px-1">
           <div className="flex items-center gap-2">
             <div className="w-16 h-6 bg-green-100 rounded flex items-center justify-center gap-1 text-green-700 font-bold font-mono text-xs px-1">
-              <CheckCircle2 className="w-3 h-3" /><span>AS</span>
+              <CheckCircle2 className="w-3 h-3" /><span>OK</span>
             </div>
-            <span>Bestätigt</span>
+            <span>Bestätigt / erledigt</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-16 h-6 bg-red-50 border border-red-300 rounded flex items-center justify-center gap-1 text-red-500 text-xs px-1">
