@@ -43,7 +43,8 @@ export default function PlanEditor() {
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const [saved, setSaved] = useState(false);
   const [zoom, setZoom] = useState(1.0);
-  const [baseWidth, setBaseWidth] = useState<number | null>(null);
+  const zoomRef = useRef(zoom);
+  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
   const viewportRef = useRef<HTMLDivElement>(null);
 
   const changeZoom = useCallback((delta: number) => {
@@ -73,33 +74,43 @@ export default function PlanEditor() {
     } catch { /* ignore */ }
   }, [rects, nextId]);
 
-  const imgRect = useCallback(() => imgRef.current?.getBoundingClientRect() ?? null, []);
+  // Layout size (unaffected by CSS transform) — use offsetWidth/offsetHeight
+  const imgLayout = useCallback(() => {
+    const img = imgRef.current;
+    if (!img) return null;
+    const br = img.getBoundingClientRect();
+    return { w: img.offsetWidth, h: img.offsetHeight, screenLeft: br.left, screenTop: br.top };
+  }, []);
 
+  // SVG layout coords → natural image coords
   const toNat = useCallback(
     (dispX: number, dispY: number) => {
-      const r = imgRect();
-      if (!r || !naturalSize) return { x: dispX, y: dispY };
-      return { x: (dispX / r.width) * naturalSize.w, y: (dispY / r.height) * naturalSize.h };
+      const l = imgLayout();
+      if (!l || !naturalSize) return { x: dispX, y: dispY };
+      return { x: (dispX / l.w) * naturalSize.w, y: (dispY / l.h) * naturalSize.h };
     },
-    [naturalSize, imgRect]
+    [naturalSize, imgLayout]
   );
 
+  // Screen mouse delta → natural image delta (accounts for zoom)
   const deltaToNat = useCallback(
     (ddx: number, ddy: number) => {
-      const r = imgRect();
-      if (!r || !naturalSize) return { dx: ddx, dy: ddy };
-      return { dx: (ddx / r.width) * naturalSize.w, dy: (ddy / r.height) * naturalSize.h };
+      const l = imgLayout();
+      if (!l || !naturalSize) return { dx: ddx, dy: ddy };
+      const z = zoomRef.current;
+      return { dx: (ddx / z / l.w) * naturalSize.w, dy: (ddy / z / l.h) * naturalSize.h };
     },
-    [naturalSize, imgRect]
+    [naturalSize, imgLayout]
   );
 
+  // Natural image coords → SVG layout coords
   const toDisp = useCallback(
     (natX: number, natY: number) => {
-      const r = imgRect();
-      if (!r || !naturalSize) return { x: natX, y: natY };
-      return { x: (natX / naturalSize.w) * r.width, y: (natY / naturalSize.h) * r.height };
+      const l = imgLayout();
+      if (!l || !naturalSize) return { x: natX, y: natY };
+      return { x: (natX / naturalSize.w) * l.w, y: (natY / naturalSize.h) * l.h };
     },
-    [naturalSize, imgRect]
+    [naturalSize, imgLayout]
   );
 
   const dispRect = useCallback(
@@ -111,11 +122,13 @@ export default function PlanEditor() {
     [toDisp]
   );
 
+  // Screen mouse coords → SVG layout coords (divide by zoom)
   const clientToSvg = useCallback((clientX: number, clientY: number) => {
-    const ir = imgRect();
-    if (!ir) return { x: clientX, y: clientY };
-    return { x: clientX - ir.left, y: clientY - ir.top };
-  }, [imgRect]);
+    const l = imgLayout();
+    if (!l) return { x: clientX, y: clientY };
+    const z = zoomRef.current;
+    return { x: (clientX - l.screenLeft) / z, y: (clientY - l.screenTop) / z };
+  }, [imgLayout]);
 
   const onSvgMouseDown = useCallback(
     (e: React.MouseEvent<SVGSVGElement>) => {
@@ -243,7 +256,6 @@ export default function PlanEditor() {
     const img = imgRef.current;
     if (!img) return;
     setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
-    setBaseWidth(img.getBoundingClientRect().width);
   };
 
   const updateLabel = (id: string, label: string) =>
@@ -337,6 +349,7 @@ export default function PlanEditor() {
       </div>
 
       <div ref={viewportRef} className="flex-1 px-4 pb-4 overflow-auto">
+        <div style={{ display: "inline-block", transformOrigin: "top left", transform: `scale(${zoom})` }}>
         <div className="relative inline-block select-none">
           <img
             ref={imgRef}
@@ -344,7 +357,7 @@ export default function PlanEditor() {
             alt="Ladenplan Leeder"
             onLoad={onImgLoad}
             draggable={false}
-            style={{ width: baseWidth ? `${Math.round(baseWidth * zoom)}px` : "100%", display: "block", userSelect: "none" }}
+            style={{ maxWidth: "100%", display: "block", userSelect: "none" }}
           />
 
           <svg
@@ -421,6 +434,7 @@ export default function PlanEditor() {
               );
             })()}
           </svg>
+        </div>
         </div>
       </div>
 
