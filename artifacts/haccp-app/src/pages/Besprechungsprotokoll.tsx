@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
+import { useState, useEffect, useCallback, useRef, Fragment, type ReactNode } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
@@ -280,7 +280,7 @@ function PinModal({
 export default function Besprechungsprotokoll({ noLayout }: { noLayout?: boolean } = {}) {
   const { adminSession, selectedMarketId, hasPermission } = useAppStore();
   const canDelete = hasPermission("entries.delete");
-  const Wrap = noLayout ? ({ children }: { children: ReactNode }) => <>{children}</> : AppLayout;
+  const Wrap = noLayout ? Fragment : AppLayout;
 
   const [view, setView] = useState<"list" | "form">("list");
   const [protokolle, setProtokolle] = useState<Protokoll[]>([]);
@@ -436,28 +436,39 @@ export default function Besprechungsprotokoll({ noLayout }: { noLayout?: boolean
     <Wrap>
       <div className="max-w-3xl mx-auto space-y-4 pb-10">
 
-        {/* Header */}
-        <PageHeader>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
-                <ChevronLeft className="h-5 w-5" />
-              </Link>
-              <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
-                <ClipboardList className="w-5 h-5" />
+        {/* Header – nur wenn keine Tab-Einbettung */}
+        {!noLayout && (
+          <PageHeader>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Link href="/" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+                  <ChevronLeft className="h-5 w-5" />
+                </Link>
+                <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
+                  <ClipboardList className="w-5 h-5" />
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold leading-tight">Besprechungsprotokoll</h1>
+                  <p className="text-white/70 text-sm">Teilnehmerbestätigung per PIN</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-lg font-bold leading-tight">Besprechungsprotokoll</h1>
-                <p className="text-white/70 text-sm">Teilnehmerbestätigung per PIN</p>
-              </div>
+              {view === "list" && (
+                <button onClick={handleNew} className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white rounded-xl text-sm font-bold transition-colors shrink-0">
+                  <Plus className="w-4 h-4" /> Neue Besprechung
+                </button>
+              )}
             </div>
-            {view === "list" && (
-              <button onClick={handleNew} className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white rounded-xl text-sm font-bold transition-colors shrink-0">
-                <Plus className="w-4 h-4" /> Neue Besprechung
-              </button>
-            )}
+          </PageHeader>
+        )}
+
+        {/* Toolbar bei Tab-Einbettung */}
+        {noLayout && view === "list" && (
+          <div className="flex justify-end">
+            <button onClick={handleNew} className="flex items-center gap-2 px-4 py-2 bg-[#1a3a6b] hover:bg-[#2d5aa0] text-white rounded-xl text-sm font-bold transition-colors">
+              <Plus className="w-4 h-4" /> Neue Besprechung
+            </button>
           </div>
-        </PageHeader>
+        )}
 
         {/* LIST VIEW */}
         {view === "list" && (

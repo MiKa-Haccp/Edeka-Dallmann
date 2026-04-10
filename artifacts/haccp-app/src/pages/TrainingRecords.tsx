@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import type { ReactNode, ElementType } from "react";
 import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -1108,9 +1109,7 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
   const adminSession = useAppStore((s) => s.adminSession);
   const hasPermission = useAppStore((s) => s.hasPermission);
   const isAdmin = hasPermission("entries.delete");
-  const Wrap = noLayout
-    ? ({ children }: { children: ReactNode }) => <>{children}</>
-    : AppLayout;
+  const Wrap = noLayout ? Fragment : AppLayout;
 
   const [activeTab, setActiveTab] = useState<TabKey>("schulungsprotokoll");
   const [selectedSessionId, setSelectedSessionId] = useState<number | null>(null);
