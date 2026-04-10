@@ -43,6 +43,7 @@ export default function PlanEditor() {
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const [saved, setSaved] = useState(false);
   const [zoom, setZoom] = useState(1.0);
+  const [baseWidth, setBaseWidth] = useState<number | null>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
 
   const changeZoom = useCallback((delta: number) => {
@@ -240,7 +241,9 @@ export default function PlanEditor() {
 
   const onImgLoad = () => {
     const img = imgRef.current;
-    if (img) setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+    if (!img) return;
+    setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+    setBaseWidth(img.getBoundingClientRect().width);
   };
 
   const updateLabel = (id: string, label: string) =>
@@ -341,7 +344,7 @@ export default function PlanEditor() {
             alt="Ladenplan Leeder"
             onLoad={onImgLoad}
             draggable={false}
-            style={{ width: `${zoom * 100}%`, minWidth: "200px", display: "block", userSelect: "none" }}
+            style={{ width: baseWidth ? `${Math.round(baseWidth * zoom)}px` : "100%", display: "block", userSelect: "none" }}
           />
 
           <svg
