@@ -218,7 +218,7 @@ export default function PlanEditor() {
     const orig = rects.find((r) => r.id === id);
     if (!orig) return;
     const newId = `rect-${Date.now()}`;
-    const newLabel = `${orig.label}-Kopie`;
+    const newLabel = `Regal-${String(nextId).padStart(2, "0")}`;
     const copy: Rect = { ...orig, id: newId, label: newLabel, x: orig.x + 30, y: orig.y + 30 };
     setRects((prev) => [...prev, copy]);
     setSelectedId(newId);
