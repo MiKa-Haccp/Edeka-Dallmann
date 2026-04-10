@@ -334,7 +334,6 @@ export default function PlanEditor() {
       </div>
 
       <div ref={viewportRef} className="flex-1 px-4 pb-4 overflow-auto">
-        <div style={{ display: "inline-block", transformOrigin: "top left", transform: `scale(${zoom})` }}>
         <div className="relative inline-block select-none">
           <img
             ref={imgRef}
@@ -342,7 +341,7 @@ export default function PlanEditor() {
             alt="Ladenplan Leeder"
             onLoad={onImgLoad}
             draggable={false}
-            style={{ maxWidth: "100%", display: "block", userSelect: "none" }}
+            style={{ width: `${zoom * 100}%`, minWidth: "200px", display: "block", userSelect: "none" }}
           />
 
           <svg
@@ -419,7 +418,6 @@ export default function PlanEditor() {
               );
             })()}
           </svg>
-        </div>
         </div>
       </div>
 
