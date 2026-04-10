@@ -11,115 +11,192 @@ type Rect = {
   rotation: number;
 };
 
-type DrawingState = {
-  startX: number;
-  startY: number;
-  currentX: number;
-  currentY: number;
-} | null;
+type Handle = "nw" | "ne" | "se" | "sw";
+
+type DragMode =
+  | { kind: "draw"; startX: number; startY: number; curX: number; curY: number }
+  | { kind: "move"; id: string; startMX: number; startMY: number; origX: number; origY: number }
+  | { kind: "resize"; id: string; handle: Handle; startMX: number; startMY: number; orig: Rect }
+  | null;
 
 const IMAGE_URL = "/images/plan-leeder.png";
+const HANDLE_R = 6;
 
 export default function PlanEditor() {
   const imgRef = useRef<HTMLImageElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const [rects, setRects] = useState<Rect[]>([]);
-  const [drawing, setDrawing] = useState<DrawingState>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [drag, setDrag] = useState<DragMode>(null);
   const [nextId, setNextId] = useState(1);
   const [copied, setCopied] = useState(false);
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
 
-  const getRelativePos = useCallback((e: React.MouseEvent | MouseEvent) => {
-    const img = imgRef.current;
-    if (!img) return { x: 0, y: 0 };
-    const rect = img.getBoundingClientRect();
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
-  }, []);
+  const imgRect = useCallback(() => imgRef.current?.getBoundingClientRect() ?? null, []);
 
-  const toNatural = useCallback(
-    (px: number, py: number) => {
-      const img = imgRef.current;
-      if (!img || !naturalSize) return { x: px, y: py };
-      const r = img.getBoundingClientRect();
-      return {
-        x: Math.round((px / r.width) * naturalSize.w),
-        y: Math.round((py / r.height) * naturalSize.h),
-      };
+  const toNat = useCallback(
+    (dispX: number, dispY: number) => {
+      const r = imgRect();
+      if (!r || !naturalSize) return { x: dispX, y: dispY };
+      return { x: (dispX / r.width) * naturalSize.w, y: (dispY / r.height) * naturalSize.h };
     },
-    [naturalSize]
+    [naturalSize, imgRect]
   );
 
-  const toDisplay = useCallback(
-    (nx: number, ny: number) => {
-      const img = imgRef.current;
-      if (!img || !naturalSize) return { x: nx, y: ny };
-      const r = img.getBoundingClientRect();
-      return {
-        x: (nx / naturalSize.w) * r.width,
-        y: (ny / naturalSize.h) * r.height,
-      };
+  const deltaToNat = useCallback(
+    (ddx: number, ddy: number) => {
+      const r = imgRect();
+      if (!r || !naturalSize) return { dx: ddx, dy: ddy };
+      return { dx: (ddx / r.width) * naturalSize.w, dy: (ddy / r.height) * naturalSize.h };
     },
-    [naturalSize]
+    [naturalSize, imgRect]
   );
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const toDisp = useCallback(
+    (natX: number, natY: number) => {
+      const r = imgRect();
+      if (!r || !naturalSize) return { x: natX, y: natY };
+      return { x: (natX / naturalSize.w) * r.width, y: (natY / naturalSize.h) * r.height };
+    },
+    [naturalSize, imgRect]
+  );
+
+  const dispRect = useCallback(
+    (r: Rect) => {
+      const tl = toDisp(r.x, r.y);
+      const br = toDisp(r.x + r.w, r.y + r.h);
+      return { x: tl.x, y: tl.y, w: br.x - tl.x, h: br.y - tl.y };
+    },
+    [toDisp]
+  );
+
+  const clientToSvg = useCallback((clientX: number, clientY: number) => {
+    const ir = imgRect();
+    if (!ir) return { x: clientX, y: clientY };
+    return { x: clientX - ir.left, y: clientY - ir.top };
+  }, [imgRect]);
+
+  const onSvgMouseDown = useCallback(
+    (e: React.MouseEvent<SVGSVGElement>) => {
       if (e.button !== 0) return;
-      const pos = getRelativePos(e);
-      setDrawing({ startX: pos.x, startY: pos.y, currentX: pos.x, currentY: pos.y });
-    },
-    [getRelativePos]
-  );
+      const pos = clientToSvg(e.clientX, e.clientY);
+      const el = e.target as Element;
+      const rectId = el.getAttribute("data-rect-id");
+      const handleId = el.getAttribute("data-handle-id");
 
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
-      if (!drawing) return;
-      const pos = getRelativePos(e);
-      setDrawing((d) => (d ? { ...d, currentX: pos.x, currentY: pos.y } : null));
-    },
-    [drawing, getRelativePos]
-  );
-
-  const handleMouseUp = useCallback(
-    (e: MouseEvent) => {
-      if (!drawing) return;
-      const pos = getRelativePos(e);
-      const x = Math.min(drawing.startX, pos.x);
-      const y = Math.min(drawing.startY, pos.y);
-      const w = Math.abs(pos.x - drawing.startX);
-      const h = Math.abs(pos.y - drawing.startY);
-      if (w > 5 && h > 5) {
-        const nat = toNatural(x, y);
-        const natBR = toNatural(x + w, y + h);
-        setRects((prev) => [
-          ...prev,
-          {
-            id: `rect-${Date.now()}`,
-            x: nat.x,
-            y: nat.y,
-            w: natBR.x - nat.x,
-            h: natBR.y - nat.y,
-            label: `Regal-${String(nextId).padStart(2, "0")}`,
-            rotation: 0,
-          },
-        ]);
-        setNextId((n) => n + 1);
+      if (handleId && rectId) {
+        e.stopPropagation();
+        const orig = rects.find((r) => r.id === rectId);
+        if (!orig) return;
+        setDrag({ kind: "resize", id: rectId, handle: handleId as Handle, startMX: e.clientX, startMY: e.clientY, orig: { ...orig } });
+        return;
       }
-      setDrawing(null);
+
+      if (rectId) {
+        e.stopPropagation();
+        setSelectedId(rectId);
+        const orig = rects.find((r) => r.id === rectId);
+        if (!orig) return;
+        setDrag({ kind: "move", id: rectId, startMX: e.clientX, startMY: e.clientY, origX: orig.x, origY: orig.y });
+        return;
+      }
+
+      setSelectedId(null);
+      setDrag({ kind: "draw", startX: pos.x, startY: pos.y, curX: pos.x, curY: pos.y });
     },
-    [drawing, getRelativePos, toNatural, nextId]
+    [clientToSvg, rects]
+  );
+
+  const onMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!drag) return;
+      if (drag.kind === "draw") {
+        const pos = clientToSvg(e.clientX, e.clientY);
+        setDrag((d) => (d?.kind === "draw" ? { ...d, curX: pos.x, curY: pos.y } : d));
+        return;
+      }
+      if (drag.kind === "move") {
+        const { dx, dy } = deltaToNat(e.clientX - drag.startMX, e.clientY - drag.startMY);
+        setRects((prev) =>
+          prev.map((r) =>
+            r.id === drag.id ? { ...r, x: Math.round(drag.origX + dx), y: Math.round(drag.origY + dy) } : r
+          )
+        );
+        return;
+      }
+      if (drag.kind === "resize") {
+        const { dx, dy } = deltaToNat(e.clientX - drag.startMX, e.clientY - drag.startMY);
+        const o = drag.orig;
+        setRects((prev) =>
+          prev.map((r) => {
+            if (r.id !== drag.id) return r;
+            let { x, y, w, h } = o;
+            switch (drag.handle) {
+              case "nw":
+                x = Math.round(o.x + dx); y = Math.round(o.y + dy);
+                w = Math.round(o.w - dx); h = Math.round(o.h - dy);
+                break;
+              case "ne":
+                y = Math.round(o.y + dy);
+                w = Math.round(o.w + dx); h = Math.round(o.h - dy);
+                break;
+              case "se":
+                w = Math.round(o.w + dx); h = Math.round(o.h + dy);
+                break;
+              case "sw":
+                x = Math.round(o.x + dx);
+                w = Math.round(o.w - dx); h = Math.round(o.h + dy);
+                break;
+            }
+            if (w < 10) w = 10;
+            if (h < 10) h = 10;
+            return { ...r, x, y, w, h };
+          })
+        );
+        return;
+      }
+    },
+    [drag, clientToSvg, deltaToNat]
+  );
+
+  const onMouseUp = useCallback(
+    (e: MouseEvent) => {
+      if (!drag) return;
+      if (drag.kind === "draw") {
+        const pos = clientToSvg(e.clientX, e.clientY);
+        const x = Math.min(drag.startX, pos.x);
+        const y = Math.min(drag.startY, pos.y);
+        const w = Math.abs(pos.x - drag.startX);
+        const h = Math.abs(pos.y - drag.startY);
+        if (w > 5 && h > 5) {
+          const tl = toNat(x, y);
+          const br = toNat(x + w, y + h);
+          setRects((prev) => [
+            ...prev,
+            {
+              id: `rect-${Date.now()}`,
+              x: tl.x, y: tl.y,
+              w: br.x - tl.x, h: br.y - tl.y,
+              label: `Regal-${String(nextId).padStart(2, "0")}`,
+              rotation: 0,
+            },
+          ]);
+          setNextId((n) => n + 1);
+        }
+      }
+      setDrag(null);
+    },
+    [drag, clientToSvg, toNat, nextId]
   );
 
   useEffect(() => {
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
     };
-  }, [handleMouseMove, handleMouseUp]);
+  }, [onMouseMove, onMouseUp]);
 
   const onImgLoad = () => {
     const img = imgRef.current;
@@ -132,17 +209,18 @@ export default function PlanEditor() {
   const updateRotation = (id: string, rotation: number) =>
     setRects((prev) => prev.map((r) => (r.id === id ? { ...r, rotation } : r)));
 
-  const deleteRect = (id: string) =>
+  const deleteRect = (id: string) => {
+    if (selectedId === id) setSelectedId(null);
     setRects((prev) => prev.filter((r) => r.id !== id));
+  };
 
-  const clearAll = () => setRects([]);
+  const clearAll = () => { setRects([]); setSelectedId(null); };
 
   const rectLines = rects
     .map((r) => {
       const cx = r.x + Math.round(r.w / 2);
       const cy = r.y + Math.round(r.h / 2);
-      const transform =
-        r.rotation !== 0 ? ` transform="rotate(${r.rotation}, ${cx}, ${cy})"` : "";
+      const transform = r.rotation !== 0 ? ` transform="rotate(${r.rotation}, ${cx}, ${cy})"` : "";
       return `  <rect id="${r.label}" x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}"${transform} fill="rgba(26,58,107,0.25)" stroke="#1a3a6b" stroke-width="2" />`;
     })
     .join("\n");
@@ -158,9 +236,10 @@ export default function PlanEditor() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const cursorStyle = drag?.kind === "move" ? "grabbing" : drag?.kind === "resize" ? "nwse-resize" : "crosshair";
+
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-      {/* Header */}
       <div className="bg-[#1a3a6b] px-6 py-3 flex items-center gap-4 shadow-lg shrink-0">
         <h1 className="text-lg font-bold tracking-wide">Plan-Editor — Regal-Koordinaten</h1>
         <span className="text-xs bg-amber-500 text-black font-bold px-2 py-0.5 rounded">TEMPORÄR</span>
@@ -179,67 +258,91 @@ export default function PlanEditor() {
 
       <div className="p-4 shrink-0">
         <p className="text-sm text-gray-400">
-          Rechteck ziehen → ID vergeben → Rotation einstellen. Dann SVG-Code kopieren.
+          Ziehen = neues Rechteck · Klick auf Regal = auswählen · Ecken ziehen = Größe · Mitte ziehen = verschieben
         </p>
       </div>
 
-      {/* Image + SVG overlay */}
       <div className="flex-1 px-4 pb-4 overflow-auto">
-        <div className="relative inline-block select-none" style={{ cursor: "crosshair" }}>
+        <div className="relative inline-block select-none">
           <img
             ref={imgRef}
             src={IMAGE_URL}
             alt="Ladenplan Leeder"
             onLoad={onImgLoad}
-            onMouseDown={handleMouseDown}
             draggable={false}
             style={{ maxWidth: "100%", display: "block", userSelect: "none" }}
           />
 
           <svg
+            ref={svgRef}
+            onMouseDown={onSvgMouseDown}
             style={{
               position: "absolute", top: 0, left: 0,
-              width: "100%", height: "100%", pointerEvents: "none",
+              width: "100%", height: "100%",
+              cursor: cursorStyle,
             }}
           >
-            {/* Saved rects */}
             {rects.map((r) => {
-              const tl = toDisplay(r.x, r.y);
-              const br = toDisplay(r.x + r.w, r.y + r.h);
-              const dw = br.x - tl.x;
-              const dh = br.y - tl.y;
-              const cx = tl.x + dw / 2;
-              const cy = tl.y + dh / 2;
+              const d = dispRect(r);
+              const cx = d.x + d.w / 2;
+              const cy = d.y + d.h / 2;
+              const isSelected = r.id === selectedId;
+              const transformStr = r.rotation !== 0 ? `rotate(${r.rotation}, ${cx}, ${cy})` : undefined;
+
               return (
-                <g key={r.id} transform={r.rotation !== 0 ? `rotate(${r.rotation}, ${cx}, ${cy})` : undefined}>
+                <g key={r.id} transform={transformStr}>
                   <rect
-                    x={tl.x} y={tl.y} width={dw} height={dh}
-                    fill="rgba(26,58,107,0.3)" stroke="#1a3a6b" strokeWidth={2}
+                    data-rect-id={r.id}
+                    x={d.x} y={d.y} width={d.w} height={d.h}
+                    fill={isSelected ? "rgba(45,90,160,0.35)" : "rgba(26,58,107,0.25)"}
+                    stroke={isSelected ? "#60a5fa" : "#1a3a6b"}
+                    strokeWidth={isSelected ? 2 : 1.5}
+                    style={{ cursor: "grab" }}
                   />
                   <text
                     x={cx} y={cy}
                     textAnchor="middle" dominantBaseline="middle"
-                    fontSize={Math.max(8, Math.min(13, dw / 8))}
-                    fill="white"
-                    style={{ fontFamily: "monospace", pointerEvents: "none" }}
+                    fontSize={Math.max(7, Math.min(12, d.w / 9))}
+                    fill={isSelected ? "#bfdbfe" : "white"}
+                    style={{ pointerEvents: "none", fontFamily: "monospace" }}
                   >
                     {r.label}
                   </text>
+
+                  {isSelected && (
+                    <>
+                      {(["nw", "ne", "se", "sw"] as Handle[]).map((h) => {
+                        const hx = h.includes("e") ? d.x + d.w : d.x;
+                        const hy = h.includes("s") ? d.y + d.h : d.y;
+                        const cur = h === "nw" || h === "se" ? "nwse-resize" : "nesw-resize";
+                        return (
+                          <circle
+                            key={h}
+                            data-rect-id={r.id}
+                            data-handle-id={h}
+                            cx={hx} cy={hy} r={HANDLE_R}
+                            fill="#60a5fa" stroke="white" strokeWidth={1.5}
+                            style={{ cursor: cur }}
+                          />
+                        );
+                      })}
+                    </>
+                  )}
                 </g>
               );
             })}
 
-            {/* Live drawing preview */}
-            {drawing && (() => {
-              const x = Math.min(drawing.startX, drawing.currentX);
-              const y = Math.min(drawing.startY, drawing.currentY);
-              const w = Math.abs(drawing.currentX - drawing.startX);
-              const h = Math.abs(drawing.currentY - drawing.startY);
+            {drag?.kind === "draw" && (() => {
+              const x = Math.min(drag.startX, drag.curX);
+              const y = Math.min(drag.startY, drag.curY);
+              const w = Math.abs(drag.curX - drag.startX);
+              const h = Math.abs(drag.curY - drag.startY);
               return (
                 <rect
                   x={x} y={y} width={w} height={h}
-                  fill="rgba(59,130,246,0.2)" stroke="#3b82f6"
+                  fill="rgba(59,130,246,0.15)" stroke="#3b82f6"
                   strokeWidth={1.5} strokeDasharray="4 2"
+                  style={{ pointerEvents: "none" }}
                 />
               );
             })()}
@@ -247,58 +350,55 @@ export default function PlanEditor() {
         </div>
       </div>
 
-      {/* Rect list + SVG code */}
       {rects.length > 0 && (
         <div className="px-4 pb-4 shrink-0 space-y-3">
           <div className="bg-gray-800 rounded-xl p-4">
             <h2 className="text-sm font-bold text-gray-300 mb-3">Gezeichnete Rechtecke</h2>
             <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
               {rects.map((r) => (
-                <div key={r.id} className="flex items-center gap-2 bg-gray-700 rounded-lg px-3 py-2">
-                  {/* Color swatch */}
-                  <div className="w-3 h-3 rounded-sm shrink-0" style={{ background: "rgba(26,58,107,0.8)", border: "2px solid #1a3a6b" }} />
+                <div
+                  key={r.id}
+                  className={`flex items-center gap-2 rounded-lg px-3 py-2 cursor-pointer transition-colors ${selectedId === r.id ? "bg-blue-900/60 ring-1 ring-blue-500" : "bg-gray-700 hover:bg-gray-600"}`}
+                  onClick={() => setSelectedId(r.id)}
+                >
+                  <div className="w-3 h-3 rounded-sm shrink-0" style={{ background: "rgba(26,58,107,0.8)", border: "2px solid #60a5fa" }} />
 
-                  {/* Label */}
                   <input
                     type="text"
                     value={r.label}
                     onChange={(e) => updateLabel(r.id, e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
                     className="w-36 bg-gray-600 text-white text-sm rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
                     placeholder="ID…"
                   />
 
-                  {/* Rotation */}
                   <div className="flex items-center gap-1 shrink-0">
                     <RotateCw className="w-3.5 h-3.5 text-gray-400" />
                     <button
-                      onClick={() => updateRotation(r.id, r.rotation - 15)}
+                      onClick={(e) => { e.stopPropagation(); updateRotation(r.id, r.rotation - 15); }}
                       className="w-6 h-6 bg-gray-600 hover:bg-gray-500 rounded text-xs font-bold flex items-center justify-center"
-                      title="-15°"
                     >−</button>
                     <input
                       type="number"
                       value={r.rotation}
                       onChange={(e) => updateRotation(r.id, Number(e.target.value))}
+                      onClick={(e) => e.stopPropagation()}
                       className="w-14 bg-gray-600 text-white text-xs rounded px-1 py-1 text-center focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
                       min={-180} max={180}
-                      title="Winkel in Grad"
                     />
                     <span className="text-xs text-gray-400">°</span>
                     <button
-                      onClick={() => updateRotation(r.id, r.rotation + 15)}
+                      onClick={(e) => { e.stopPropagation(); updateRotation(r.id, r.rotation + 15); }}
                       className="w-6 h-6 bg-gray-600 hover:bg-gray-500 rounded text-xs font-bold flex items-center justify-center"
-                      title="+15°"
                     >+</button>
                   </div>
 
-                  {/* Coords */}
-                  <span className="text-xs text-gray-400 font-mono shrink-0 ml-1 hidden lg:block">
-                    {r.x},{r.y} {r.w}×{r.h}
+                  <span className="text-xs text-gray-500 font-mono shrink-0 ml-1 hidden lg:block">
+                    {r.w}×{r.h}
                   </span>
 
-                  {/* Delete */}
                   <button
-                    onClick={() => deleteRect(r.id)}
+                    onClick={(e) => { e.stopPropagation(); deleteRect(r.id); }}
                     className="ml-auto text-gray-400 hover:text-red-400 transition-colors shrink-0"
                   >
                     <X className="w-4 h-4" />
@@ -333,3 +433,4 @@ export default function PlanEditor() {
     </div>
   );
 }
+
