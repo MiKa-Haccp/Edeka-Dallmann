@@ -150,7 +150,7 @@ export default function CategoryView() {
               <Icon className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white/70 text-xs font-semibold uppercase tracking-wide">{meta?.nummer ?? "HACCP"} · {category?.label ?? ""}</p>
+              <p className="text-white/70 text-xs font-semibold uppercase tracking-wide">{meta?.nummer ?? "HACCP"}</p>
               <h1 className="text-lg font-bold leading-tight">{meta?.label ?? category?.label ?? "Lade..."}</h1>
             </div>
           </div>
