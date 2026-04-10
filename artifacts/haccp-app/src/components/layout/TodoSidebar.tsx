@@ -137,7 +137,7 @@ export function TodoMobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClos
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 md:hidden">
+    <div className="fixed inset-0 z-50 xl:hidden">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <aside className="absolute left-0 top-0 bottom-0 w-[min(300px,85vw)] bg-white shadow-2xl flex flex-col overflow-y-auto animate-in slide-in-from-left duration-200">
         <div className="flex items-center justify-between p-4 border-b border-border/60">
@@ -179,7 +179,7 @@ export function TodoSidebar() {
 
   return (
     <aside
-      className="hidden md:flex flex-shrink-0 bg-white border-r border-border/60 h-[calc(100vh-4rem)] sticky top-16 relative"
+      className="hidden xl:flex flex-shrink-0 bg-white border-r border-border/60 h-[calc(100vh-4rem)] sticky top-16 relative"
       style={{ width }}
     >
       <div className="flex-1 flex flex-col overflow-y-auto">

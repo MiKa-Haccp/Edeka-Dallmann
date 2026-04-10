@@ -70,7 +70,7 @@ export function Header({ onMenuToggle }: { onMenuToggle?: () => void }) {
         {onMenuToggle && (
           <button
             onClick={onMenuToggle}
-            className="lg:hidden p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors -ml-1"
+            className="xl:hidden p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors -ml-1"
           >
             <Menu className="h-5 w-5" />
           </button>
