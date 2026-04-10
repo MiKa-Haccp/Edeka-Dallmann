@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Copy, Check, Trash2, X, RotateCw, CopyPlus } from "lucide-react";
+import { Copy, Check, Trash2, X, RotateCw, CopyPlus, ZoomIn, ZoomOut } from "lucide-react";
 
 type Rect = {
   id: string;
@@ -42,6 +42,25 @@ export default function PlanEditor() {
   const [copied, setCopied] = useState(false);
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const [saved, setSaved] = useState(false);
+  const [zoom, setZoom] = useState(1.0);
+  const viewportRef = useRef<HTMLDivElement>(null);
+
+  const changeZoom = useCallback((delta: number) => {
+    setZoom((z) => Math.max(0.25, Math.min(4, Math.round((z + delta) * 20) / 20)));
+  }, []);
+
+  useEffect(() => {
+    const el = viewportRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        changeZoom(-e.deltaY * 0.002);
+      }
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [changeZoom]);
 
   useEffect(() => {
     try {
@@ -281,6 +300,21 @@ export default function PlanEditor() {
               <Check className="w-3.5 h-3.5" /> Gespeichert
             </span>
           )}
+          <div className="flex items-center gap-1 bg-gray-800 rounded-lg px-1 py-0.5">
+            <button onClick={() => changeZoom(-0.25)} className="p-1 hover:text-blue-300 transition-colors" title="Herauszoomen">
+              <ZoomOut className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setZoom(1)}
+              className="text-xs font-mono w-12 text-center hover:text-blue-300 transition-colors"
+              title="Zurücksetzen"
+            >
+              {Math.round(zoom * 100)}%
+            </button>
+            <button onClick={() => changeZoom(0.25)} className="p-1 hover:text-blue-300 transition-colors" title="Reinzoomen">
+              <ZoomIn className="w-4 h-4" />
+            </button>
+          </div>
           <span className="text-sm text-blue-200">{rects.length} Rechteck{rects.length !== 1 ? "e" : ""}</span>
           {rects.length > 0 && (
             <button
@@ -299,7 +333,8 @@ export default function PlanEditor() {
         </p>
       </div>
 
-      <div className="flex-1 px-4 pb-4 overflow-auto">
+      <div ref={viewportRef} className="flex-1 px-4 pb-4 overflow-auto">
+        <div style={{ display: "inline-block", transformOrigin: "top left", transform: `scale(${zoom})` }}>
         <div className="relative inline-block select-none">
           <img
             ref={imgRef}
@@ -384,6 +419,7 @@ export default function PlanEditor() {
               );
             })()}
           </svg>
+        </div>
         </div>
       </div>
 
