@@ -25,12 +25,33 @@ const HANDLE_R = 6;
 export default function PlanEditor() {
   const imgRef = useRef<HTMLImageElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
-  const [rects, setRects] = useState<Rect[]>([]);
+
+  const [rects, setRects] = useState<Rect[]>(() => {
+    try {
+      const saved = localStorage.getItem("planeditor-rects");
+      return saved ? (JSON.parse(saved) as Rect[]) : [];
+    } catch { return []; }
+  });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drag, setDrag] = useState<DragMode>(null);
-  const [nextId, setNextId] = useState(1);
+  const [nextId, setNextId] = useState<number>(() => {
+    try {
+      return Number(localStorage.getItem("planeditor-nextid") ?? "1");
+    } catch { return 1; }
+  });
   const [copied, setCopied] = useState(false);
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("planeditor-rects", JSON.stringify(rects));
+      localStorage.setItem("planeditor-nextid", String(nextId));
+      setSaved(true);
+      const t = setTimeout(() => setSaved(false), 1200);
+      return () => clearTimeout(t);
+    } catch { /* ignore */ }
+  }, [rects, nextId]);
 
   const imgRect = useCallback(() => imgRef.current?.getBoundingClientRect() ?? null, []);
 
@@ -255,6 +276,11 @@ export default function PlanEditor() {
         <h1 className="text-lg font-bold tracking-wide">Plan-Editor — Regal-Koordinaten</h1>
         <span className="text-xs bg-amber-500 text-black font-bold px-2 py-0.5 rounded">TEMPORÄR</span>
         <div className="ml-auto flex items-center gap-3">
+          {saved && (
+            <span className="text-xs text-green-400 flex items-center gap-1">
+              <Check className="w-3.5 h-3.5" /> Gespeichert
+            </span>
+          )}
           <span className="text-sm text-blue-200">{rects.length} Rechteck{rects.length !== 1 ? "e" : ""}</span>
           {rects.length > 0 && (
             <button
