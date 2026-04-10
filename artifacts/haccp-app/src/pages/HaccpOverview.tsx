@@ -78,7 +78,6 @@ export default function HaccpOverview() {
       borderColor: "border-[#1a3a6b]/20",
       hoverBg: "hover:bg-[#1a3a6b]/5",
       href: "/category/1",
-      abschnitte: "1.1 – 1.13",
       statuses: cat1,
     },
     {
@@ -92,7 +91,6 @@ export default function HaccpOverview() {
       borderColor: "border-[#1a3a6b]/20",
       hoverBg: "hover:bg-[#1a3a6b]/5",
       href: "/category/2",
-      abschnitte: "2.1 – 2.5",
       statuses: cat2,
     },
     {
@@ -106,7 +104,6 @@ export default function HaccpOverview() {
       borderColor: "border-[#1a3a6b]/20",
       hoverBg: "hover:bg-[#1a3a6b]/5",
       href: "/category/3",
-      abschnitte: "3.1 – 3.9",
       statuses: cat3,
     },
   ];
@@ -146,8 +143,6 @@ export default function HaccpOverview() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className={`text-xs font-bold uppercase tracking-wide ${kat.color}`}>{kat.nummer}</span>
-                      <span className="text-xs text-gray-400">·</span>
-                      <span className="text-xs text-gray-400">{kat.abschnitte}</span>
                     </div>
                     <h2 className="text-lg font-bold text-gray-900 group-hover:text-gray-700">{kat.titel}</h2>
                     <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">{kat.beschreibung}</p>
