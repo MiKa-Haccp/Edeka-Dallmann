@@ -123,14 +123,19 @@ export default function PlanEditor() {
 
   const clearAll = () => setRects([]);
 
-  const svgCode = rects
+  const rectLines = rects
     .map(
       (r) =>
-        `<rect id="${r.label}" x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="rgba(26,58,107,0.25)" stroke="#1a3a6b" stroke-width="2" />`
+        `  <rect id="${r.label}" x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" fill="rgba(26,58,107,0.25)" stroke="#1a3a6b" stroke-width="2" />`
     )
     .join("\n");
 
+  const svgCode = naturalSize
+    ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${naturalSize.w} ${naturalSize.h}">\n${rectLines}\n</svg>`
+    : rectLines;
+
   const handleCopy = async () => {
+    if (!naturalSize || rects.length === 0) return;
     await navigator.clipboard.writeText(svgCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
