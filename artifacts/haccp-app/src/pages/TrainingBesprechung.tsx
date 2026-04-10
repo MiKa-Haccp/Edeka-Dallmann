@@ -38,7 +38,7 @@ export default function TrainingBesprechung() {
             }`}
           >
             <GraduationCap className="w-4 h-4" />
-            1.4 Schulungsnachweise
+            Schulungsnachweise
           </button>
           <button
             onClick={() => setAktiveTab("besprechung")}
@@ -49,7 +49,7 @@ export default function TrainingBesprechung() {
             }`}
           >
             <ClipboardList className="w-4 h-4" />
-            1.10 Besprechungsprotokoll
+            Besprechungsprotokoll
           </button>
         </div>
       </div>

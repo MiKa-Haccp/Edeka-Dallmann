@@ -73,7 +73,7 @@ function PrintProtokoll({ protokoll, teilnehmer }: { protokoll: Protokoll; teiln
           <tr>
             <td style={{ verticalAlign: "top", width: "60%" }}>
               <div style={{ background: "#4a7ab5", color: "#fff", fontWeight: "bold", fontSize: 13, padding: "4px 8px", display: "inline-block", marginBottom: 6 }}>
-                2.5 &nbsp; BESPRECHUNGSPROTOKOLL
+                BESPRECHUNGSPROTOKOLL
               </div>
               <div style={{ fontSize: 10, marginBottom: 4 }}>
                 <strong>Datum:</strong> {protokoll.datum || "___________________"}
@@ -448,7 +448,7 @@ export default function Besprechungsprotokoll({ noLayout }: { noLayout?: boolean
               </div>
               <div>
                 <h1 className="text-lg font-bold leading-tight">Besprechungsprotokoll</h1>
-                <p className="text-white/70 text-sm">EDEKA Formblatt 2.5 — Teilnehmerbestätigung per PIN</p>
+                <p className="text-white/70 text-sm">Teilnehmerbestätigung per PIN</p>
               </div>
             </div>
             {view === "list" && (
