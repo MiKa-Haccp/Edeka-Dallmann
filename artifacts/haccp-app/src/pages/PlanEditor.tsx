@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Copy, Check, Trash2, X, RotateCw } from "lucide-react";
+import { Copy, Check, Trash2, X, RotateCw, CopyPlus } from "lucide-react";
 
 type Rect = {
   id: string;
@@ -214,6 +214,17 @@ export default function PlanEditor() {
     setRects((prev) => prev.filter((r) => r.id !== id));
   };
 
+  const duplicateRect = (id: string) => {
+    const orig = rects.find((r) => r.id === id);
+    if (!orig) return;
+    const newId = `rect-${Date.now()}`;
+    const newLabel = `${orig.label}-Kopie`;
+    const copy: Rect = { ...orig, id: newId, label: newLabel, x: orig.x + 30, y: orig.y + 30 };
+    setRects((prev) => [...prev, copy]);
+    setSelectedId(newId);
+    setNextId((n) => n + 1);
+  };
+
   const clearAll = () => { setRects([]); setSelectedId(null); };
 
   const rectLines = rects
@@ -398,8 +409,16 @@ export default function PlanEditor() {
                   </span>
 
                   <button
+                    onClick={(e) => { e.stopPropagation(); duplicateRect(r.id); }}
+                    className="ml-auto text-gray-400 hover:text-green-400 transition-colors shrink-0"
+                    title="Duplizieren"
+                  >
+                    <CopyPlus className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={(e) => { e.stopPropagation(); deleteRect(r.id); }}
-                    className="ml-auto text-gray-400 hover:text-red-400 transition-colors shrink-0"
+                    className="text-gray-400 hover:text-red-400 transition-colors shrink-0"
+                    title="Löschen"
                   >
                     <X className="w-4 h-4" />
                   </button>
