@@ -21,31 +21,72 @@ type DragMode =
 
 const IMAGE_URL = "/images/plan-leeder.png";
 const HANDLE_R = 6;
+const PLAN_KEY = "leeder";
 
 export default function PlanEditor() {
   const imgRef = useRef<HTMLImageElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
-  const [rects, setRects] = useState<Rect[]>(() => {
-    try {
-      const saved = localStorage.getItem("planeditor-rects");
-      return saved ? (JSON.parse(saved) as Rect[]) : [];
-    } catch { return []; }
-  });
+  const [rects, setRects] = useState<Rect[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drag, setDrag] = useState<DragMode>(null);
-  const [nextId, setNextId] = useState<number>(() => {
-    try {
-      return Number(localStorage.getItem("planeditor-nextid") ?? "1");
-    } catch { return 1; }
-  });
+  const [nextId, setNextId] = useState<number>(1);
   const [copied, setCopied] = useState(false);
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1.0);
   const zoomRef = useRef(zoom);
   useEffect(() => { zoomRef.current = zoom; }, [zoom]);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialLoad = useRef(true);
+
+  // Load from server on mount
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/plan-editor/${PLAN_KEY}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setRects(Array.isArray(data.rects) ? (data.rects as Rect[]) : []);
+        setNextId(Number(data.nextId) || 1);
+      })
+      .catch(() => {
+        // Fallback to localStorage if server unreachable
+        try {
+          const saved = localStorage.getItem("planeditor-rects");
+          if (saved) setRects(JSON.parse(saved) as Rect[]);
+          const n = localStorage.getItem("planeditor-nextid");
+          if (n) setNextId(Number(n));
+        } catch { /* ignore */ }
+      })
+      .finally(() => { setLoading(false); initialLoad.current = false; });
+  }, []);
+
+  // Auto-save to server (debounced 1.5s) when rects/nextId change
+  useEffect(() => {
+    if (initialLoad.current || loading) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    setSaveStatus("saving");
+    saveTimerRef.current = setTimeout(async () => {
+      try {
+        // Also keep localStorage as offline cache
+        localStorage.setItem("planeditor-rects", JSON.stringify(rects));
+        localStorage.setItem("planeditor-nextid", String(nextId));
+        await fetch(`/api/plan-editor/${PLAN_KEY}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rects, nextId }),
+        });
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 1500);
+      } catch {
+        setSaveStatus("error");
+        setTimeout(() => setSaveStatus("idle"), 3000);
+      }
+    }, 1500);
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+  }, [rects, nextId, loading]);
 
   const changeZoom = useCallback((delta: number) => {
     setZoom((z) => Math.max(0.25, Math.min(4, Math.round((z + delta) * 20) / 20)));
@@ -63,16 +104,6 @@ export default function PlanEditor() {
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, [changeZoom]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("planeditor-rects", JSON.stringify(rects));
-      localStorage.setItem("planeditor-nextid", String(nextId));
-      setSaved(true);
-      const t = setTimeout(() => setSaved(false), 1200);
-      return () => clearTimeout(t);
-    } catch { /* ignore */ }
-  }, [rects, nextId]);
 
   // Layout size (unaffected by CSS transform) — use offsetWidth/offsetHeight
   const imgLayout = useCallback(() => {
@@ -310,10 +341,25 @@ export default function PlanEditor() {
         <h1 className="text-lg font-bold tracking-wide">Plan-Editor — Regal-Koordinaten</h1>
         <span className="text-xs bg-amber-500 text-black font-bold px-2 py-0.5 rounded">TEMPORÄR</span>
         <div className="ml-auto flex items-center gap-3">
-          {saved && (
+          {loading && (
+            <span className="text-xs text-blue-300 flex items-center gap-1">
+              <span className="w-3 h-3 border-2 border-blue-300 border-t-transparent rounded-full animate-spin inline-block" />
+              Laden…
+            </span>
+          )}
+          {saveStatus === "saving" && !loading && (
+            <span className="text-xs text-gray-400 flex items-center gap-1">
+              <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin inline-block" />
+              Speichert…
+            </span>
+          )}
+          {saveStatus === "saved" && (
             <span className="text-xs text-green-400 flex items-center gap-1">
               <Check className="w-3.5 h-3.5" /> Gespeichert
             </span>
+          )}
+          {saveStatus === "error" && (
+            <span className="text-xs text-red-400">Speicherfehler</span>
           )}
           <div className="flex items-center gap-1 bg-gray-800 rounded-lg px-1 py-0.5">
             <button onClick={() => changeZoom(-0.25)} className="p-1 hover:text-blue-300 transition-colors" title="Herauszoomen">

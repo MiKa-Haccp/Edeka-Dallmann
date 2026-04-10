@@ -57,6 +57,7 @@ import projectsRouter from "./projects";
 import tempLagerKontrolleRouter from "./tempLagerKontrolle";
 import rindfleischEtikettenRouter from "./rindfleischEtiketten";
 import sectionVisibilityRouter from "./sectionVisibility";
+import planEditorRouter from "./planEditor";
 
 const router: IRouter = Router();
 
@@ -118,5 +119,6 @@ router.use(projectsRouter);
 router.use(tempLagerKontrolleRouter);
 router.use(rindfleischEtikettenRouter);
 router.use(sectionVisibilityRouter);
+router.use(planEditorRouter);
 
 export default router;
