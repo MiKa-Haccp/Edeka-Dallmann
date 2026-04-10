@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Link } from "wouter";
 import { useFilePaste } from "@/hooks/useFileUpload";
 import { buildFileFormData } from "@/lib/apiUpload";
 import { PdfEmbed } from "@/lib/pdf";
