@@ -330,7 +330,7 @@ function DayDetailModal({ day, year, month, type, entry, onClose, onEdit }: {
                   <Thermometer className={`w-4 h-4 shrink-0 ${ok?"text-green-500":"text-red-500"}`}/>
                   <span className="text-xs flex-1">{c.label}</span>
                   <span className={`font-mono font-bold text-sm ${val?(ok?"text-green-700":"text-red-600"):"text-gray-300"}`}>
-                    {val?`${parseFloat(val).toFixed(1)} C`:"--"}
+                    {val?`${parseFloat(val).toFixed(1)} °C`:"--"}
                   </span>
                 </div>
               );})}
@@ -514,7 +514,7 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
                     {vals[c.key]&&!isTempOk(c,vals[c.key])&&(
                       <div className="flex items-center gap-1.5 text-[11px] text-red-600 font-semibold bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5">
                         <TriangleAlert className="w-3.5 h-3.5 shrink-0"/>
-                        Temperaturgrenzwert ueberschritten!{c.maxVal!==undefined&&c.minVal===undefined?` Erlaubt: max. ${c.maxVal} C`:c.minVal!==undefined&&c.maxVal!==undefined?` Erlaubt: ${c.minVal}–${c.maxVal} C`:""} – Massnahme erforderlich.
+                        Temperaturgrenzwert überschritten!{c.maxVal!==undefined&&c.minVal===undefined?` Erlaubt: max. ${c.maxVal} °C`:c.minVal!==undefined&&c.maxVal!==undefined?` Erlaubt: ${c.minVal}–${c.maxVal} °C`:""} – Maßnahme erforderlich.
                       </div>
                     )}
                     {showValidation&&!vals[c.key]&&(
