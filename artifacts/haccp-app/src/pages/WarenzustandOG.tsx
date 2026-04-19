@@ -7,7 +7,7 @@ import {
   X, Printer, Lock, ClipboardCheck,
 } from "lucide-react";
 import { getBavarianHolidays, getHolidayName } from "@/utils/holidays";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -443,11 +443,14 @@ export default function WarenzustandOG() {
         <PageHeader>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
+              <Link href="/category/2" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+                <ChevronLeft className="h-5 w-5" />
+              </Link>
               <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
                 <Salad className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Warenzustand Obst & Gemüse</h1>
+                <h1 className="text-lg font-bold text-white">Warenzustand Obst & Gemüse</h1>
               </div>
             </div>
             <div className="flex items-center gap-2">

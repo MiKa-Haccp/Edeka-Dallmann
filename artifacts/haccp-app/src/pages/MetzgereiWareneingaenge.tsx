@@ -47,6 +47,7 @@ const CONFIG: WEBaseConfig = {
   pageSubtitle: "Wareneingangskontrolle Metzgerei - Fleisch, Fisch, MSC",
   allCrit: ALL_CRIT,
   updateEvent: "metzgerei-wareneingaenge-updated",
+  backHref: "/category/3",
 };
 
 export default function MetzgereiWareneingaenge() {

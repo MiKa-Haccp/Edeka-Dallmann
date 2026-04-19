@@ -35,6 +35,7 @@ const CONFIG: WEBaseConfig = {
   pageSubtitle: "Wareneingangskontrolle - alle Lieferanten",
   allCrit: ALL_CRIT,
   updateEvent: "wareneingaenge-updated",
+  backHref: "/category/2",
 };
 
 export default function Wareneingaenge() {
