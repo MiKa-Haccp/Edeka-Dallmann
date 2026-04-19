@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
@@ -456,11 +457,14 @@ export default function ReinigungTaeglich() {
         <PageHeader className="print:hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
+              <Link href="/category/2" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+                <ChevronLeft className="h-5 w-5" />
+              </Link>
               <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
                 <ClipboardCheck className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Reinigungsdokumentation</h1>
+                <h1 className="text-lg font-bold text-white">Reinigungsdokumentation</h1>
                 <p className="text-sm text-white/75">tägliche Kontrolle</p>
               </div>
             </div>
