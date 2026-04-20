@@ -375,7 +375,7 @@ function DayDetailModal({ day, year, month, type, entry, onClose, onEdit }: {
           )}
           {entry.notizen&&(
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-              <p className="text-[10px] font-bold text-amber-700 uppercase mb-1">Massnahmen / Notizen</p>
+              <p className="text-[10px] font-bold text-amber-700 uppercase mb-1">Maßnahmen / Notizen</p>
               <p className="text-xs text-amber-900">{entry.notizen}</p>
             </div>
           )}
@@ -530,10 +530,10 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
         {(hasAbw||badTemp)&&(
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-1.5">
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-500"/> Massnahmen / Notizen
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-500"/> Maßnahmen / Notizen
             </label>
             <textarea className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none min-h-[72px] resize-none"
-              placeholder="Massnahmen, Termin und Verantwortlicher..." value={notizen} onChange={e=>setNotizen(e.target.value)}/>
+              placeholder="Maßnahmen, Termin und Verantwortlicher..." value={notizen} onChange={e=>setNotizen(e.target.value)}/>
           </div>
         )}
       </div>
@@ -719,7 +719,7 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
         <DayDetailModal day={detailDay} year={year} month={month} type={type} entry={detailEntry}
           onClose={()=>setDetailDay(null)} onEdit={()=>{onEditDay(detailDay);setDetailDay(null);}}/>
       )}
-      <p className="text-[10px] text-muted-foreground/50 px-1">Bei Abweichungen (A) sind Massnahmen, Termin und Umsetzung zu dokumentieren.</p>
+      <p className="text-[10px] text-muted-foreground/50 px-1">Bei Abweichungen (A) sind Maßnahmen, Termin und Umsetzung zu dokumentieren.</p>
     </div>
   );
 }
