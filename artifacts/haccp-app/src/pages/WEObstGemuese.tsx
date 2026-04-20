@@ -428,7 +428,7 @@ export default function WEObstGemuese() {
               <thead>
                 <tr className="bg-[#1a3a6b]/5 border-b border-border/60">
                   <th className="px-3 py-2.5 text-left font-semibold text-[#1a3a6b] w-10">Tag</th>
-                  <th className="px-2 py-2.5 text-left font-semibold text-[#1a3a6b] w-10">WT</th>
+                  <th className="px-2 py-2.5 text-left font-semibold text-[#1a3a6b] w-10">Wt</th>
                   {CRITERIA.map(c => (
                     <th key={c.key} className="px-1.5 py-2.5 text-center font-semibold text-[#1a3a6b] min-w-[52px] max-w-[72px] leading-tight">
                       <span className="block truncate" title={c.label}>

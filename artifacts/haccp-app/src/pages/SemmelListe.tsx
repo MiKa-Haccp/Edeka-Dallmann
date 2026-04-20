@@ -436,7 +436,7 @@ export default function SemmelListe() {
                 <thead className="sticky top-0 z-10 bg-white shadow-sm">
                   <tr className="border-b bg-muted/60">
                     <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground w-20">Tag</th>
-                    <th className="text-left px-2 py-2.5 text-xs font-semibold text-muted-foreground w-8">WT</th>
+                    <th className="text-left px-2 py-2.5 text-xs font-semibold text-muted-foreground w-8">Wt</th>
                     {itemConfigs.map(ic => (
                       <th key={ic.label} className="text-center px-3 py-2.5 text-xs font-semibold text-muted-foreground">
                         {ic.label}

@@ -528,7 +528,7 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
           <thead className="sticky top-0 z-10">
             <tr className="bg-slate-100 border-b">
               <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground w-16">Tag</th>
-              <th className="text-left px-2 py-2.5 text-xs font-semibold text-muted-foreground w-8">WT</th>
+              <th className="text-left px-2 py-2.5 text-xs font-semibold text-muted-foreground w-8">Wt</th>
               <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Temp.</th>
               {art==="reifeschrank"&&<th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Feuchte</th>}
               <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground hidden md:table-cell">Massnahme</th>
