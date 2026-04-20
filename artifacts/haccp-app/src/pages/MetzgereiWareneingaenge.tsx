@@ -7,6 +7,7 @@ const ALL_CRIT: CritDef[] = [
   { key:"etikettierung",    short:"Etikett.",      label:"Etikettierung / Verpackung i.O.",                   type:"check", group:"Allgemein" },
   { key:"qualitaet",        short:"Qualität",      label:"Qualität / Aussehen i.O.",                          type:"check", group:"Allgemein" },
   { key:"mhd",              short:"MHD",           label:"MHD / Verbrauchsdatum i.O.",                        type:"check", group:"Allgemein" },
+  { key:"geliefert_bestellt", short:"Gel.=Best.", label:"Gelieferte Ware = bestellte Ware?",                  type:"check", group:"Allgemein" },
   // ── Fleisch ───────────────────────────────────────────────
   { key:"rindfleisch",      short:"Rindfl.",       label:"Rindfleischetikettierung i.O.",                     type:"check", group:"Fleisch" },
   { key:"qs_qs",            short:"QS",            label:"QS - Qualität u. Sicherheit i.O.",                  type:"check", group:"Fleisch" },

@@ -5,6 +5,7 @@ const ALL_CRIT: CritDef[] = [
   { key:"etikettierung",     short:"Etikett.",    label:"Etikettierung / Verpackung i.O.",                    type:"check", group:"Allgemein" },
   { key:"qualitaet",         short:"Qualität",    label:"Qualität / Aussehen i.O.",                           type:"check", group:"Allgemein" },
   { key:"mhd",               short:"MHD",         label:"MHD / Verbrauchsdatum i.O.",                         type:"check", group:"Allgemein" },
+  { key:"geliefert_bestellt", short:"Gel.=Best.", label:"Gelieferte Ware = bestellte Ware?",                  type:"check", group:"Allgemein" },
   { key:"rindfleisch",       short:"Rindfl.",     label:"Rindfleischetikettierung i.O.",                      type:"check", group:"Rindfleisch" },
   { key:"kistenetikett",     short:"Kiste",       label:"Kistenetikett vorhanden i.O.",                       type:"check", group:"Obst & Gemüse" },
   { key:"qs_biosiegel",      short:"Biosiegel",   label:"Bayerisches Biosiegel geprüft i.O.",                 type:"check", group:"QS-Systeme" },
