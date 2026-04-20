@@ -73,7 +73,8 @@ function PinStep({ onVerified, onBack, loading, setLoading }: {
 type ModalState = { day: number; tempOk: boolean|null; includeRef: boolean; };
 
 export default function TempLagerKontrolle() {
-  const { selectedMarketId } = useAppStore();
+  const { selectedMarketId, isAdmin } = useAppStore();
+  const canEdit = isAdmin();
   const { data: markets } = useListMarkets();
   const now = new Date();
   const [year,setYear]  = useState(now.getFullYear());
@@ -84,6 +85,7 @@ export default function TempLagerKontrolle() {
   const [modalStep,setModalStep] = useState<"form"|"pin">("form");
   const [saving,setSaving]   = useState(false);
   const todayRef = useRef<HTMLTableRowElement>(null);
+  const hasLoaded = useRef(false);
 
   useEffect(()=>{
     if(modal){
@@ -117,6 +119,7 @@ export default function TempLagerKontrolle() {
       const map:EntryMap = {};
       for(const e of data) if(e.day>0) map[e.day]=e;
       setEntries(map);
+      hasLoaded.current = true;
     } catch(e){console.error(e);}
     finally{setLoading(false);}
   },[selectedMarketId,year,month]);
@@ -125,7 +128,7 @@ export default function TempLagerKontrolle() {
 
   // Auto-scroll und Auto-Open
   useEffect(()=>{
-    if(loading||!isCurrentMonth) return;
+    if(loading||!isCurrentMonth||!hasLoaded.current) return;
     setTimeout(()=>todayRef.current?.scrollIntoView({behavior:"smooth",block:"center"}),200);
     const todayDay = now.getDate();
     if(!isClosed(todayDay)){
@@ -144,8 +147,12 @@ export default function TempLagerKontrolle() {
   function openModal(day:number){
     if(isClosed(day)||isFuture(year,month,day)) return;
     const e = entries[day];
-    if(e?.temp_ok!=null) return; // bereits erledigt
-    setModal({day, tempOk:null, includeRef:!refDoneThisMonth});
+    if(e?.temp_ok!=null && !canEdit) return; // normal: bereits erledigt, kein Edit
+    setModal({
+      day,
+      tempOk: e?.temp_ok ?? null,
+      includeRef: e ? (e.referenz_ok === true) : !refDoneThisMonth,
+    });
     setModalStep("form");
   }
 
@@ -257,8 +264,8 @@ export default function TempLagerKontrolle() {
                         onClick={()=>openModal(day)}
                         className={[
                           "border-b transition-colors",
-                          future?"opacity-30 cursor-not-allowed":"cursor-pointer",
-                          done?"hover:bg-gray-50":"hover:bg-blue-50/50",
+                          future?"opacity-30 cursor-not-allowed":done&&!canEdit?"cursor-default":"cursor-pointer",
+                          done?"hover:bg-gray-50":canEdit?"hover:bg-blue-50/50":"hover:bg-blue-50/50",
                           today&&!bad?"bg-blue-50":"",
                           sat&&!today&&!bad?"bg-gray-50/40":"",
                           bad?"bg-red-50":"",
