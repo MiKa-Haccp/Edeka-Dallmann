@@ -227,7 +227,7 @@ function generatePrintWindow(type:WEType,entries:WEEntry[],year:number,month:num
     const e=byDay.get(day);const v=e?.criteriaValues??{};const st=entryStatus(e,enabled);
     const ampel=closed?"#d1d5db":ls==="erwartet"?(st==="full"?"#22c55e":st==="none"?"#ef4444":"#f59e0b"):"#e5e7eb";
     const critCells=checkCrit.map(c=>{const val=v[c.key];if(closed||ls==="kein_liefertag")return`<td style="background:#f9fafb;color:#9ca3af;text-align:center;border:1px solid #e5e7eb">-</td>`;if(!val)return`<td style="text-align:center;border:1px solid #e5e7eb"></td>`;const icon=val==="io"?"<b style='color:#16a34a'>&#10003;</b>":val==="abweichung"?"<b style='color:#dc2626'>A</b>":"<span style='color:#9ca3af'>-</span>";return`<td style="text-align:center;border:1px solid #e5e7eb">${icon}</td>`;}).join("");
-    const tempCell=tempCrit.map(c=>{const val=v[c.key];if(!val)return`<span style="color:#9ca3af">-</span>`;const ok=isTempOk(c,val);return`<span style="font-family:monospace;color:${ok?"#16a34a":"#dc2626"}">${parseFloat(val).toFixed(1)}C</span>`;}).join(" | ");
+    const tempCell=tempCrit.map(c=>{const val=v[c.key];if(!val)return`<span style="color:#9ca3af">-</span>`;const ok=isTempOk(c,val);return`<span style="font-family:monospace;color:${ok?"#16a34a":"#dc2626"}">${parseFloat(val).toFixed(1)}°C</span>`;}).join(" | ");
     const rowBg=closed?"#f9fafb":ls==="erwartet"&&st==="none"&&!isFuture(year,month,day)?"#fef2f2":"white";
     return`<tr style="background:${rowBg}"><td style="border:1px solid #e5e7eb;padding:3px 6px;text-align:center"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${ampel};vertical-align:middle"></span></td><td style="border:1px solid #e5e7eb;padding:3px 6px;font-weight:600;text-align:center">${day}</td><td style="border:1px solid #e5e7eb;padding:3px 6px;text-align:center;color:${wd==="So"?"#ef4444":"#374151"}">${wd}</td>${critCells}<td style="border:1px solid #e5e7eb;padding:3px 6px;text-align:center;font-size:11px">${tempCrit.length?tempCell:"-"}</td><td style="border:1px solid #e5e7eb;padding:3px 6px;text-align:center;font-family:monospace;font-size:11px;font-weight:700">${e?.kuerzel??""}</td><td style="border:1px solid #e5e7eb;padding:3px 6px;font-size:11px;color:#ef4444">${e?.notizen??""}</td></tr>`;
   }).join("");
@@ -679,7 +679,7 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
                       {tempCrit.map(c=>{const val=v[c.key];if(!val)return null;const ok=isTempOk(c,val);return(
                         <span key={c.key} title={c.label}
                           className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-full ${ok?"bg-green-100 text-green-800":"bg-red-100 text-red-700"}`}>
-                          {c.short}: {parseFloat(val).toFixed(1)}C
+                          {c.short}: {parseFloat(val).toFixed(1)}°C
                         </span>
                       );})}
                     </div>
