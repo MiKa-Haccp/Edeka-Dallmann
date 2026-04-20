@@ -304,8 +304,9 @@ export default function TempLagerKontrolle() {
 
         {/* Modal */}
         {modal&&(
-          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm my-auto">
+          <div className="fixed inset-0 bg-black/40 z-50 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm">
               <div className="p-4 border-b">
                 <div className="font-semibold">
                   {modal.day}. {MONTH_NAMES[month-1]} {year}
@@ -370,6 +371,7 @@ export default function TempLagerKontrolle() {
                   />
                 )}
               </div>
+            </div>
             </div>
           </div>
         )}
