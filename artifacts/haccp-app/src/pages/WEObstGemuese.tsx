@@ -473,7 +473,7 @@ export default function WEObstGemuese() {
                       <td className="px-1.5 py-2 text-center">
                         {e?.tempCelsius ? (
                           <span className={`font-mono font-bold text-xs ${parseFloat(e.tempCelsius) > 7 ? "text-red-600" : "text-green-700"}`}>
-                            {parseFloat(e.tempCelsius).toFixed(1)}°
+                            {parseFloat(e.tempCelsius).toFixed(1)} °C
                           </span>
                         ) : <span className="text-muted-foreground/20">—</span>}
                       </td>
