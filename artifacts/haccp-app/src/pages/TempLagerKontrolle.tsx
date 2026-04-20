@@ -85,6 +85,18 @@ export default function TempLagerKontrolle() {
   const [saving,setSaving]   = useState(false);
   const todayRef = useRef<HTMLTableRowElement>(null);
 
+  useEffect(()=>{
+    if(modal){
+      const sb = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = "hidden";
+      document.body.style.paddingRight = `${sb}px`;
+    } else {
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
+    }
+    return ()=>{ document.body.style.overflow = ""; document.body.style.paddingRight = ""; };
+  },[modal]);
+
   const market    = markets?.find((m:any)=>m.id===selectedMarketId);
   const days      = daysInMonth(year,month);
   const holidays  = useMemo(()=>getBavarianHolidays(year),[year]);
