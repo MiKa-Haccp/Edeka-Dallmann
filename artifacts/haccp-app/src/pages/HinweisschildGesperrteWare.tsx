@@ -174,7 +174,7 @@ export default function HinweisschildGesperrteWare() {
 
             <div className="flex-1 flex flex-col justify-center">
               <div className="mb-6 sm:mb-10">
-                <h1 className="text-6xl sm:text-8xl md:text-9xl font-black text-black tracking-tight leading-none">
+                <h1 className="text-6xl sm:text-8xl md:text-9xl font-black text-black tracking-tight leading-none text-center">
                   GESPERRT!
                 </h1>
                 <div className="border-b-4 border-black mt-2 sm:mt-3"></div>
