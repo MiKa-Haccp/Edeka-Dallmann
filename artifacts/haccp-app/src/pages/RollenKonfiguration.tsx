@@ -39,6 +39,7 @@ const PERMISSION_AREAS = [
   { key: "entries.view_all",        label: "Alle Einträge einsehen",               group: "HACCP Einträge" },
   { key: "entries.edit",            label: "Einträge bearbeiten",                  group: "HACCP Einträge" },
   { key: "entries.delete",          label: "Einträge löschen",                     group: "HACCP Einträge" },
+  { key: "responsibilities.edit",   label: "Verantwortlichkeiten bearbeiten (1.1)", group: "HACCP Einträge" },
   // Berichte & Dokumente
   { key: "reports.view",            label: "Berichte einsehen",                    group: "Berichte & Dokumente" },
   { key: "reports.export",          label: "Berichte exportieren",                 group: "Berichte & Dokumente" },

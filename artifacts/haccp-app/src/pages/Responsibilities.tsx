@@ -49,6 +49,8 @@ export default function Responsibilities() {
   const selectedYear = useAppStore((s) => s.selectedYear);
   const selectedMonth = useAppStore((s) => s.selectedMonth);
   const setDate = useAppStore((s) => s.setDate);
+  const hasPermission = useAppStore((s) => s.hasPermission);
+  const canEditResponsibilities = hasPermission("responsibilities.edit");
   const { data: markets } = useListMarkets();
   const selectedMarket = markets?.find((m) => m.id === selectedMarketId);
   const currentYear = new Date().getFullYear();
@@ -268,7 +270,7 @@ export default function Responsibilities() {
           <div className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white px-6 py-3 flex items-center justify-between">
             <h1 className="text-lg font-bold">Verantwortlichkeiten im Markt</h1>
             <div className="flex items-center gap-2">
-              {!isEditing ? (
+              {canEditResponsibilities && !isEditing && (
                 <button
                   onClick={() => setIsEditing(true)}
                   className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors"
@@ -276,7 +278,8 @@ export default function Responsibilities() {
                   <Pencil className="h-4 w-4" />
                   Bearbeiten
                 </button>
-              ) : (
+              )}
+              {isEditing && (
                 <>
                   <button
                     onClick={() => {
