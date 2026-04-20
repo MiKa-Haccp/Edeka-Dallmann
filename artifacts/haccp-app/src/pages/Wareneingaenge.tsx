@@ -31,7 +31,7 @@ const ALL_CRIT: CritDef[] = [
 
 const CONFIG: WEBaseConfig = {
   section: "wareneingaenge",
-  pageTitle: "2.1 Wareneingänge",
+  pageTitle: "Wareneingänge",
   pageSubtitle: "Wareneingangskontrolle - alle Lieferanten",
   allCrit: ALL_CRIT,
   updateEvent: "wareneingaenge-updated",
