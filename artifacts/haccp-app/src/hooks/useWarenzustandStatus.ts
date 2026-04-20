@@ -989,3 +989,41 @@ export function useTempLagerStatus(): TrafficLight {
 
   return status;
 }
+
+// ===== 1.11 BESCHEINIGUNGEN STATUS =====
+export function useBescheinigungenStatus(): TrafficLight {
+  const [status, setStatus] = useState<TrafficLight>("none");
+  const selectedMarketId = useAppStore(s => s.selectedMarketId);
+
+  useEffect(() => {
+    let cancelled = false;
+    const url = selectedMarketId
+      ? `${BASE}/bescheinigungen?tenantId=1&marketId=${selectedMarketId}`
+      : `${BASE}/bescheinigungen?tenantId=1`;
+
+    fetch(url)
+      .then(r => r.json())
+      .then((data: { gueltigBis?: string }[]) => {
+        if (cancelled) return;
+        if (!data.length) { setStatus("none"); return; }
+        const now = new Date();
+        const soon = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+        let hasExpired = false;
+        let hasExpiringSoon = false;
+        for (const d of data) {
+          if (!d.gueltigBis) continue;
+          const dt = new Date(d.gueltigBis);
+          if (dt < now) { hasExpired = true; break; }
+          if (dt < soon) hasExpiringSoon = true;
+        }
+        if (hasExpired) setStatus("red");
+        else if (hasExpiringSoon) setStatus("yellow");
+        else setStatus("green");
+      })
+      .catch(() => { if (!cancelled) setStatus("none"); });
+
+    return () => { cancelled = true; };
+  }, [selectedMarketId]);
+
+  return status;
+}

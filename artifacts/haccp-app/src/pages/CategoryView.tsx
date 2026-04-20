@@ -8,7 +8,7 @@ import {
   useMetzgereiWareneingaengeStatus, useMetzgereiReinigungStatus, useKaesethekeStatus,
   useOeffnungSalateStatus, useGQBegehungStatus, useSchulungsnachweiseStatus,
   useResponsibilitiesStatus, useAnnualCleaningPlanStatus, useBetriebsbegehungStatus,
-  useTempLagerStatus,
+  useTempLagerStatus, useBescheinigungenStatus,
   type TrafficLight,
 } from "@/hooks/useWarenzustandStatus";
 
@@ -94,12 +94,14 @@ export default function CategoryView() {
   const kaesethekeStatus         = useKaesethekeStatus();
   const gqBegehungStatus         = useGQBegehungStatus();
   const tempLagerStatus          = useTempLagerStatus();
+  const bescheinigungenStatus    = useBescheinigungenStatus();
 
   const sectionStatus: Record<string, TrafficLight> = {
     "1.1": responsibilitiesStatus,
     "1.4": schulungsnachweiseStatus,
     "1.5": cleaningPlanStatus,
     "1.6": betriebsbegehungStatus,
+    "1.11": bescheinigungenStatus,
     "1.13": tempLagerStatus,
     "2.1": wareneingaengeStatus,
     "2.2": ogStatus,
