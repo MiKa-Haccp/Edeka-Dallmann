@@ -249,6 +249,11 @@ function DokumentCard({
               </div>
             )}
           </div>
+        ) : disabled ? (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-muted/30 border border-dashed border-border/40">
+            <Upload className="w-4 h-4 text-muted-foreground/50" />
+            <span className="text-xs text-muted-foreground/60 italic">Kein Dokument hochgeladen</span>
+          </div>
         ) : (
           !disabled && (
             <div
@@ -369,6 +374,11 @@ function AktionsplanCard({
                 )}
               </div>
             )
+          ) : disabled ? (
+            <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-muted/30 border border-dashed border-border/40">
+              <Upload className="w-4 h-4 text-muted-foreground/50" />
+              <span className="text-xs text-muted-foreground/60 italic">Kein Dokument hochgeladen</span>
+            </div>
           ) : (
             !disabled && (
               <div
