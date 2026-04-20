@@ -4,6 +4,7 @@ import path from "path";
 import app from "./app";
 import { startNotificationCron } from "./services/notificationEngine";
 import { startMonatsberichtCron } from "./routes/monatsbericht";
+import { startTuevDeadlineCron } from "./services/tuevDeadlineNotifier";
 
 const rawPort = process.env["PORT"];
 
@@ -41,4 +42,5 @@ app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
   startNotificationCron();
   startMonatsberichtCron();
+  startTuevDeadlineCron();
 });
