@@ -190,7 +190,7 @@ export default function TempLagerKontrolle() {
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-xl font-bold text-white">Temperatur-Lagerkontrolle</h1>
-              <p className="text-white/70 text-sm">{market?.name ?? ""}</p>
+              <p className="text-sm text-white/70">{market?.name ?? ""}</p>
             </div>
             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 ${
               ampel==="green"?"bg-green-500/20 text-green-200":

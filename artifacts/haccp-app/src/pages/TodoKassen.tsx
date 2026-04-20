@@ -402,7 +402,7 @@ export default function TodoKassen() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Kasseneinteilung</h1>
-                <p className="text-white/70 text-sm">
+                <p className="text-sm text-white/70">
                   {selectedDate.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}
                 </p>
               </div>

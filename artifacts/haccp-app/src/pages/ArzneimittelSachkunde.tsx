@@ -405,7 +405,7 @@ export default function ArzneimittelSachkunde() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Sachkundenachweis Arzneimittel</h1>
-                <p className="text-white/70 text-sm">Schulungen &amp; Nachweise der Mitarbeiter</p>
+                <p className="text-sm text-white/70">Schulungen &amp; Nachweise der Mitarbeiter</p>
               </div>
             </div>
             {!showForm && (

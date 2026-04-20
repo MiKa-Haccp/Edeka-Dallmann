@@ -150,7 +150,7 @@ export default function AdminRegister() {
             <Shield className="h-6 w-6" />
             <div>
               <h2 className="text-lg font-bold">Admin Registrierung</h2>
-              <p className="text-xs text-white/70">Einladung für {inviteEmail}</p>
+              <p className="text-sm text-white/70">Einladung für {inviteEmail}</p>
             </div>
           </div>
 

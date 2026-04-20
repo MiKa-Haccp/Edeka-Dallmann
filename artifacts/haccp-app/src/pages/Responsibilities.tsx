@@ -257,7 +257,7 @@ export default function Responsibilities() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Verantwortlichkeiten</h1>
-              <p className="text-white/70 text-sm">Zuständigkeiten und Vertretungen je Abteilung</p>
+              <p className="text-sm text-white/70">Zuständigkeiten und Vertretungen je Abteilung</p>
             </div>
           </div>
         </PageHeader>

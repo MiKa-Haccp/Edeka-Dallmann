@@ -122,7 +122,7 @@ export default function HaccpOverview() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">HACCP Modul</h1>
-              <p className="text-white/70 text-sm">Wählen Sie einen Bereich</p>
+              <p className="text-sm text-white/70">Wählen Sie einen Bereich</p>
             </div>
           </div>
         </PageHeader>

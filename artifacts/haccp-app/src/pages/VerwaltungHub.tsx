@@ -32,7 +32,7 @@ export default function VerwaltungHub() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Verwaltung</h1>
-              <p className="text-white/70 text-sm">Mitarbeiterstammdaten, Kürzel und PIN-Verwaltung.</p>
+              <p className="text-sm text-white/70">Mitarbeiterstammdaten, Kürzel und PIN-Verwaltung.</p>
             </div>
           </div>
         </PageHeader>

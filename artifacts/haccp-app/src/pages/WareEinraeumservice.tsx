@@ -102,7 +102,7 @@ export default function WareEinraeumservice() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Einraumservice</h1>
-              <p className="text-white/70 text-sm">Leistungsdokumentation externer Dienstleister</p>
+              <p className="text-sm text-white/70">Leistungsdokumentation externer Dienstleister</p>
             </div>
           </div>
         </PageHeader>

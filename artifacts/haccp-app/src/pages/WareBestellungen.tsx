@@ -114,7 +114,7 @@ export default function WareBestellungen() {
               </div>
               <div className="flex-1">
                 <h1 className="text-xl font-bold text-white">Bestellungen</h1>
-                <p className="text-white/70 text-sm">Marktübersicht Rayons</p>
+                <p className="text-sm text-white/70">Marktübersicht Rayons</p>
               </div>
             </div>
           {isAdmin && (

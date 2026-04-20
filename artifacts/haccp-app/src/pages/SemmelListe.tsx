@@ -374,7 +374,7 @@ export default function SemmelListe() {
             </div>
             <div className="flex-1">
               <h1 className="text-xl font-bold text-white">Semmelliste</h1>
-              <p className="text-sm text-white/75">Zusätzliches Kontingent Bäckerei – on top zum Standard</p>
+              <p className="text-sm text-white/70">Zusätzliches Kontingent Bäckerei – on top zum Standard</p>
             </div>
             <div className="flex gap-2 shrink-0">
               {adminSession && (

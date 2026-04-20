@@ -225,7 +225,7 @@ export default function DatenBereinigung() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Daten-Bereinigung</h1>
-              <p className="text-white/70 text-sm">Selektiver System-Reset je Filiale</p>
+              <p className="text-sm text-white/70">Selektiver System-Reset je Filiale</p>
             </div>
           </div>
         </PageHeader>

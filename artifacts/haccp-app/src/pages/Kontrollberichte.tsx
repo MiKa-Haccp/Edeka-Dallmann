@@ -1175,7 +1175,7 @@ export default function Kontrollberichte() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Kontrollberichte</h1>
-                <p className="text-sm text-white/75">Behördliche Kontrollen, Zertifikate & Audits</p>
+                <p className="text-sm text-white/70">Behördliche Kontrollen, Zertifikate & Audits</p>
               </div>
             </div>
             <div className="flex items-center gap-2">

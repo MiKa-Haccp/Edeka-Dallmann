@@ -684,7 +684,7 @@ export default function SchulungsAnforderungen() {
             </div>
             <div className="flex-1">
               <h1 className="text-xl font-bold text-white">Schulungsanforderungen</h1>
-              <p className="text-sm text-white/75">Schulungen, Bescheinigungen und Compliance-Status verwalten.</p>
+              <p className="text-sm text-white/70">Schulungen, Bescheinigungen und Compliance-Status verwalten.</p>
             </div>
           </div>
         </PageHeader>
@@ -713,7 +713,7 @@ export default function SchulungsAnforderungen() {
                 </div>
                 <div className="text-left min-w-0">
                   <p className="text-sm font-bold leading-tight">Schulungspflicht</p>
-                  <p className="text-xs text-white/70 leading-tight mt-0.5">Neue Schulungsanforderung</p>
+                  <p className="text-sm text-white/70">Neue Schulungsanforderung</p>
                 </div>
                 <Plus className="w-4 h-4 ml-auto shrink-0 opacity-70" />
               </button>
@@ -724,7 +724,7 @@ export default function SchulungsAnforderungen() {
                 </div>
                 <div className="text-left min-w-0">
                   <p className="text-sm font-bold leading-tight">Bescheinigung</p>
-                  <p className="text-xs text-white/70 leading-tight mt-0.5">Zertifikat / Nachweis</p>
+                  <p className="text-sm text-white/70">Zertifikat / Nachweis</p>
                 </div>
                 <Plus className="w-4 h-4 ml-auto shrink-0 opacity-70" />
               </button>

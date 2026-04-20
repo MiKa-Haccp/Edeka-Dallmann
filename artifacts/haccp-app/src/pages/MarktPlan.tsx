@@ -781,7 +781,7 @@ export default function MarktPlan() {
             </div>
             <div className="flex-1">
               <h1 className="text-xl font-bold text-white">Interaktiver Marktplan</h1>
-              <p className="text-sm text-white/75">MHD-Kontroll-Regalmeter · EDEKA DALLMANN</p>
+              <p className="text-sm text-white/70">MHD-Kontroll-Regalmeter · EDEKA DALLMANN</p>
             </div>
             <div className="hidden sm:flex items-center gap-3 text-xs font-bold">
               {counts.faellig > 0 && <span className="flex items-center gap-1 text-white/90"><span className="w-2 h-2 rounded-full bg-red-400 animate-pulse"/>{counts.faellig} Überfällig</span>}

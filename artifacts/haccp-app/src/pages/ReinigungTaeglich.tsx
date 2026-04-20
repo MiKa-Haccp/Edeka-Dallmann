@@ -465,7 +465,7 @@ export default function ReinigungTaeglich() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Reinigungsdokumentation</h1>
-                <p className="text-sm text-white/75">tägliche Kontrolle</p>
+                <p className="text-sm text-white/70">tägliche Kontrolle</p>
               </div>
             </div>
           </div>

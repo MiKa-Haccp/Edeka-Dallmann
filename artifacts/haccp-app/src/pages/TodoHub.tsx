@@ -51,7 +51,7 @@ export default function TodoHub() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">To-Do & Einsatzplan</h1>
-              <p className="text-white/70 text-sm">{WEEKDAY_NAMES[weekday]}, {today.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}</p>
+              <p className="text-sm text-white/70">{WEEKDAY_NAMES[weekday]}, {today.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}</p>
             </div>
           </div>
         </PageHeader>

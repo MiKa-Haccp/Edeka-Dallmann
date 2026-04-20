@@ -448,7 +448,7 @@ export default function TodoTagesliste() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Meine Aufgaben</h1>
-                <p className="text-white/70 text-sm">
+                <p className="text-sm text-white/70">
                   {WEEKDAY_NAMES[weekday]}, {selectedDate.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}
                   {totalOpen > 0 && <span className="ml-2 font-semibold text-white">· {totalOpen} offen</span>}
                 </p>

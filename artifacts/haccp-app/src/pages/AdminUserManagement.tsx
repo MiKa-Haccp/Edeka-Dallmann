@@ -113,7 +113,7 @@ export default function AdminUserManagement() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Benutzerverwaltung</h1>
-              <p className="text-white/70 text-sm">Rollen und Status für alle Mitarbeiter verwalten.</p>
+              <p className="text-sm text-white/70">Rollen und Status für alle Mitarbeiter verwalten.</p>
             </div>
           </div>
         </PageHeader>

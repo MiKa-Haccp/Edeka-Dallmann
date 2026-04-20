@@ -157,7 +157,7 @@ export default function SectionVerwaltung() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Abschnitt-Sichtbarkeit</h1>
-              <p className="text-white/70 text-sm">Sidebar-Punkte pro Markt ein- oder ausblenden.</p>
+              <p className="text-sm text-white/70">Sidebar-Punkte pro Markt ein- oder ausblenden.</p>
             </div>
           </div>
         </PageHeader>

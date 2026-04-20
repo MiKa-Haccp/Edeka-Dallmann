@@ -62,7 +62,7 @@ export default function MitarbeiterListe() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Mitarbeiter & Kürzel</h1>
-              <p className="text-white/70 text-sm">Übersicht aller Mitarbeiter mit Kürzel</p>
+              <p className="text-sm text-white/70">Übersicht aller Mitarbeiter mit Kürzel</p>
             </div>
           </div>
         </PageHeader>

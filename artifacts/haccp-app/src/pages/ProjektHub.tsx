@@ -837,7 +837,7 @@ export default function ProjektHub() {
           </div>
           <div>
             <h1 className="text-base sm:text-lg font-bold text-white leading-tight">Projekt-Hub</h1>
-            <p className="text-sm text-white/75">Projekte, Logbuch & Aufgaben-Workflows</p>
+            <p className="text-sm text-white/70">Projekte, Logbuch & Aufgaben-Workflows</p>
           </div>
         </div>
       </PageHeader>

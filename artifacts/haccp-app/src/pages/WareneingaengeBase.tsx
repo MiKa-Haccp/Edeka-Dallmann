@@ -1085,7 +1085,7 @@ function WareneingaengeContent() {
               <div className="bg-white/15 rounded-xl p-2.5 shrink-0"><ClipboardList className="w-6 h-6 text-white"/></div>
               <div>
                 <h1 className="text-xl font-bold text-white">{pageTitle}</h1>
-                <p className="text-sm text-white/75">{pageSubtitle}</p>
+                <p className="text-sm text-white/70">{pageSubtitle}</p>
               </div>
             </div>
             {viewMode==="month"&&activeTypeId!=="admin"&&activeType&&(

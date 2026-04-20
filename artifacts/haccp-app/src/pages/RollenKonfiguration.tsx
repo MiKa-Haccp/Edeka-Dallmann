@@ -159,7 +159,7 @@ export default function RollenKonfiguration() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Rollen & Berechtigungen</h1>
-              <p className="text-white/70 text-sm">Zugriffsrechte je Rolle konfigurieren.</p>
+              <p className="text-sm text-white/70">Zugriffsrechte je Rolle konfigurieren.</p>
             </div>
           </div>
         </PageHeader>

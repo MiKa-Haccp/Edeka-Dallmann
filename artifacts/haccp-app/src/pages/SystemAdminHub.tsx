@@ -57,7 +57,7 @@ export default function SystemAdminHub() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Systemverwaltung</h1>
-              <p className="text-white/70 text-sm">Rollen, Benutzerrechte und Geräteverwaltung.</p>
+              <p className="text-sm text-white/70">Rollen, Benutzerrechte und Geräteverwaltung.</p>
             </div>
           </div>
         </PageHeader>

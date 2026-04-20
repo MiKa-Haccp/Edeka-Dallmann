@@ -425,7 +425,7 @@ export default function Gesundheitszeugnisse() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Gesundheitszeugnisse</h1>
-                <p className="text-white/70 text-sm">Nach §43 IfSG — Nachweise der Beschäftigten</p>
+                <p className="text-sm text-white/70">Nach §43 IfSG — Nachweise der Beschäftigten</p>
               </div>
             </div>
             {!showForm && (

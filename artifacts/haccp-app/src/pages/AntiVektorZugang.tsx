@@ -465,7 +465,7 @@ export default function AntiVektorZugang() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Anti-Vektor Zugang</h1>
-              <p className="text-sm text-white/75">Schädlingsbekämpfung — Zugangsdaten & Sachkundenachweise</p>
+              <p className="text-sm text-white/70">Schädlingsbekämpfung — Zugangsdaten & Sachkundenachweise</p>
             </div>
           </div>
         </PageHeader>

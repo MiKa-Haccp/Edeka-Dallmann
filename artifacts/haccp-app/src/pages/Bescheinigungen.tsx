@@ -643,7 +643,7 @@ export default function Bescheinigungen() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Bescheinigungen & Nachweise</h1>
-                <p className="text-sm text-white/75">Alle mitarbeiterbezogenen Zertifikate und Nachweise</p>
+                <p className="text-sm text-white/70">Alle mitarbeiterbezogenen Zertifikate und Nachweise</p>
               </div>
             </div>
             {!showForm && (

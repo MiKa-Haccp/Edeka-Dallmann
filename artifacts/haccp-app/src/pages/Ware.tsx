@@ -57,7 +57,7 @@ export default function Ware() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Ware</h1>
-              <p className="text-white/70 text-sm">Bestellungen, Einräumservice und MHD-Kontrolle.</p>
+              <p className="text-sm text-white/70">Bestellungen, Einräumservice und MHD-Kontrolle.</p>
             </div>
           </div>
         </PageHeader>

@@ -449,7 +449,7 @@ export default function Besprechungsprotokoll({ noLayout }: { noLayout?: boolean
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-white">Besprechungsprotokoll</h1>
-                  <p className="text-white/70 text-sm">Teilnehmerbestätigung per PIN</p>
+                  <p className="text-sm text-white/70">Teilnehmerbestätigung per PIN</p>
                 </div>
               </div>
               {view === "list" && (

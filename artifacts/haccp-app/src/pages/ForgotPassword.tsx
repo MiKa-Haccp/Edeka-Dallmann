@@ -42,7 +42,7 @@ export default function ForgotPassword() {
             </div>
             <div className="text-center">
               <h2 className="text-lg font-bold">Passwort vergessen</h2>
-              <p className="text-xs text-white/70 mt-1">EDEKA Dallmann HACCP</p>
+              <p className="text-sm text-white/70">EDEKA Dallmann HACCP</p>
             </div>
           </div>
 

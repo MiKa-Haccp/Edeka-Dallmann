@@ -275,7 +275,7 @@ export default function AbteilungsfremdePersonen() {
             <div className="bg-white/15 rounded-xl p-2.5 shrink-0"><Users className="h-6 w-6 text-white" /></div>
             <div>
               <h1 className="text-xl font-bold text-white">Abteilungsfremde Personen</h1>
-              <p className="text-sm text-white/75">{market?.name ?? "Kein Markt gewählt"}</p>
+              <p className="text-sm text-white/70">{market?.name ?? "Kein Markt gewählt"}</p>
             </div>
           </div>
         </PageHeader>

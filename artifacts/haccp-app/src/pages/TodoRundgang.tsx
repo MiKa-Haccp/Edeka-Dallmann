@@ -325,7 +325,7 @@ export default function TodoRundgang() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Schneller Rundgang</h1>
-                <p className="text-white/70 text-sm">Offene Aufgaben im Überblick</p>
+                <p className="text-sm text-white/70">Offene Aufgaben im Überblick</p>
               </div>
             </div>
             <button

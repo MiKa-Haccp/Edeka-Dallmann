@@ -95,7 +95,7 @@ export default function AdminLogin() {
             />
             <div className="text-center">
               <h2 className="text-lg font-bold">Admin Anmeldung</h2>
-              <p className="text-xs text-white/70 mt-1">Nur für autorisierte Administratoren</p>
+              <p className="text-sm text-white/70">Nur für autorisierte Administratoren</p>
             </div>
           </div>
 

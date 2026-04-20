@@ -188,7 +188,7 @@ export default function WareStreckenUebersicht({ noLayout }: { noLayout?: boolea
               </div>
               <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-bold text-white">Übersicht Streckenlieferanten</h1>
-                <p className="text-white/70 text-sm">
+                <p className="text-sm text-white/70">
                   {lieferanten.length > 0 ? `${lieferanten.length} Lieferanten` : "Alle Streckenlieferanten"}
                 </p>
               </div>

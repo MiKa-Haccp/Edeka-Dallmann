@@ -142,7 +142,7 @@ export default function ModuleVerwaltung() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Modul-Sichtbarkeit</h1>
-              <p className="text-white/70 text-sm">Module für alle Benutzer ein- oder ausschalten.</p>
+              <p className="text-sm text-white/70">Module für alle Benutzer ein- oder ausschalten.</p>
             </div>
           </div>
         </PageHeader>

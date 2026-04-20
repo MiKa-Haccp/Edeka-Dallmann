@@ -851,7 +851,7 @@ export default function Mitarbeiterverwaltung() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Mitarbeiterverwaltung</h1>
-                <p className="text-white/70 text-sm">Mitarbeiter-, Kürzel- und PIN-Verwaltung</p>
+                <p className="text-sm text-white/70">Mitarbeiter-, Kürzel- und PIN-Verwaltung</p>
               </div>
             </div>
             <button onClick={loadEmployees} className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0" title="Aktualisieren">

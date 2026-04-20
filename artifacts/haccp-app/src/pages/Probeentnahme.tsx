@@ -361,7 +361,7 @@ export default function Probeentnahme() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Probeentnahme</h1>
-                <p className="text-sm text-white/75">Amtliche Probenentnahme durch Lebensmittelüberwachung</p>
+                <p className="text-sm text-white/70">Amtliche Probenentnahme durch Lebensmittelüberwachung</p>
               </div>
             </div>
             {view === "list" && (

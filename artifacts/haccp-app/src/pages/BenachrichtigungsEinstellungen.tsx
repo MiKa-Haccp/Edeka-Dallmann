@@ -135,7 +135,7 @@ export default function BenachrichtigungsEinstellungen() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Benachrichtigungen</h1>
-                <p className="text-white/70 text-sm">Automatische Hinweise bei fehlenden HACCP-Einträgen.</p>
+                <p className="text-sm text-white/70">Automatische Hinweise bei fehlenden HACCP-Einträgen.</p>
               </div>
             </div>
             <div className="flex items-center gap-2">

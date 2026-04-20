@@ -596,7 +596,7 @@ export default function WareStreckenBestellung({ noLayout }: { noLayout?: boolea
               </div>
               <div className="flex-1 min-w-0">
                 <h1 className="text-xl font-bold text-white">Streckenbestellung</h1>
-                <p className="text-white/70 text-sm">Lieferanten & Bestellungen</p>
+                <p className="text-sm text-white/70">Lieferanten & Bestellungen</p>
               </div>
             </div>
           </PageHeader>

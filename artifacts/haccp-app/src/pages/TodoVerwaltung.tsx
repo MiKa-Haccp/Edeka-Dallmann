@@ -302,7 +302,7 @@ export default function TodoVerwaltung() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-white">Standardaufgaben verwalten</h1>
-                  <p className="text-white/70 text-sm">Aufgaben erstellen und bearbeiten</p>
+                  <p className="text-sm text-white/70">Aufgaben erstellen und bearbeiten</p>
                 </div>
               </div>
               {!showForm && !editTask && (

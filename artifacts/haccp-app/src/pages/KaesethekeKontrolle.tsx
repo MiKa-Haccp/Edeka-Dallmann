@@ -928,7 +928,7 @@ export default function KaesethekeKontrolle() {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">Käsetheke und Reifeschrank</h1>
-                <p className="text-white/70 text-sm">Temperaturkontrolle Reifeschrank · Käsekühlschrank · Heiße Theke</p>
+                <p className="text-sm text-white/70">Temperaturkontrolle Reifeschrank · Käsekühlschrank · Heiße Theke</p>
               </div>
             </div>
           </div>

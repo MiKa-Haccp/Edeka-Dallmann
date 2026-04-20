@@ -167,7 +167,7 @@ export default function MHDKontrolle() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">MHD Kontrolle</h1>
-              <p className="text-sm text-white/75">Mindesthaltbarkeitsdatum Ueberwachung</p>
+              <p className="text-sm text-white/70">Mindesthaltbarkeitsdatum Ueberwachung</p>
             </div>
           </div>
         </PageHeader>
