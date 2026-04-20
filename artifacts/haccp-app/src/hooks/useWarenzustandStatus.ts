@@ -966,7 +966,7 @@ export function useTempLagerStatus(): TrafficLight {
             if (e.referenz_ok === true) refDone = true;
           }
         }
-        let total = 0, filled = 0, bad = 0;
+        let total = 0, filled = 0, bad = 0, missed = 0;
         for (let d = 1; d <= days; d++) {
           const dt = new Date(year, month - 1, d);
           dt.setHours(0,0,0,0);
@@ -975,11 +975,12 @@ export function useTempLagerStatus(): TrafficLight {
           total++;
           const e = entryMap[d];
           if (e?.tempOk === false) bad++;
-          if (e?.tempOk != null) filled++;
+          if (e?.tempOk != null) { filled++; }
+          else if (dt < today) { missed++; } // vergangener Arbeitstag ohne Eintrag
         }
-        if (bad > 0) setStatus("red");
+        if (bad > 0 || missed > 0) setStatus("red");
         else if (filled === total && total > 0 && refDone) setStatus("green");
-        else setStatus("yellow");
+        else setStatus("yellow"); // nur noch heute offen
       })
       .catch(() => { if (!cancelled) setStatus("none"); });
 
