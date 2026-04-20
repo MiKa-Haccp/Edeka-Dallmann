@@ -91,8 +91,8 @@ const SECTIONS: Section[] = [
       { nr: "4.9", text: "Die Mindesthaltbarkeits- bzw. Verbrauchsdaten werden eingehalten." },
       { nr: "4.10", text: "Produktmängel sind nicht erkennbar." },
       { nr: "4.11", text: "Die Reinigung des Bereichs wird durchgeführt und im entsprechenden Formblatt zur Reinigung dokumentiert." },
-      { nr: "4.12a", text: "Die angegebenen Temperaturen bzw. Verfallsdaten auf Arzneimitteln/Medizinprodukten werden kontrolliert und eingehalten." },
-      { nr: "4.12b", text: "Sonstiges" },
+      { nr: "4.12", text: "Die angegebenen Temperaturen bzw. Verfallsdaten auf Arzneimitteln/Medizinprodukten werden kontrolliert und eingehalten." },
+      { nr: "4.13", text: "Sonstiges" },
     ],
   },
   {
