@@ -194,7 +194,7 @@ export default function LadenplanBuilder() {
   };
 
   const clearAll = () => {
-    if (!confirm("Alle Elemente loeschen?")) return;
+    if (!confirm("Alle Elemente löschen?")) return;
     setItems([]); setSelected(null);
   };
 

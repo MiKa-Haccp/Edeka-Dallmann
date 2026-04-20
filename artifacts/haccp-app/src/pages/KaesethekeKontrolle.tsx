@@ -14,7 +14,7 @@ import {
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 const WOCHENTAGE = ["So","Mo","Di","Mi","Do","Fr","Sa"];
-const MONTH_NAMES = ["Januar","Februar","Maerz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 
 type KontrolleArt = "reifeschrank" | "kaesekühlschrank" | "heisse_theke";
 type TrafficLight = "green" | "yellow" | "red" | "none";
@@ -152,7 +152,7 @@ function PinStep({onVerified,onBack,loading,setLoading}:{
       const res=await fetch(`${BASE}/users/verify-pin`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin,tenantId:1})});
       const data=await res.json();
       if(data.valid)onVerified(data.userName,data.userId,data.initials);
-      else setError("PIN ungueltig.");
+      else setError("PIN ungültig.");
     }catch{setError("Verbindungsfehler.");}
     finally{setLoading(false);}
   };
@@ -340,7 +340,7 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
           });
           onConfirm(items);
         }
-      }else setError("PIN ungueltig.");
+      }else setError("PIN ungültig.");
     }catch{setError("Verbindungsfehler.");}
     finally{setLoading(false);}
   };
@@ -652,7 +652,7 @@ function HeisseThekeEditModal({entry,onConfirm,onClose}:{
       const res=await fetch(`${BASE}/users/verify-pin`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin,tenantId:1})});
       const data=await res.json();
       if(data.valid){onConfirm({kernTempGaren:kernTemp,tempHeisshalten:heissTemp,massnahme,kuerzel:data.initials,userId:data.userId,aenderungsgrund});}
-      else setError("PIN ungueltig.");
+      else setError("PIN ungültig.");
     }catch{setError("Verbindungsfehler.");}
     finally{setLoading(false);}
   };
@@ -844,7 +844,7 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
                 </div>
               ):(
                 <div onClick={()=>!future&&setModal(day)} className={`px-4 py-3 text-sm text-center text-muted-foreground/60 ${!future?"cursor-pointer hover:bg-primary/5 hover:text-primary/70":""}`}>
-                  {!future?"Tippen um erstes Produkt einzutragen":"Keine Eintraege"}
+                  {!future?"Tippen um erstes Produkt einzutragen":"Keine Einträge"}
                 </div>
               )}
             </div>

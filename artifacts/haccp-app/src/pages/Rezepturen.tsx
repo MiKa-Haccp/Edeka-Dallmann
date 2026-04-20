@@ -179,7 +179,7 @@ function DetailModal({ r, onClose, onDelete }: {
         <div className="border-t border-gray-100 px-5 py-3 flex justify-between flex-shrink-0">
           {delConfirm ? (
             <div className="flex items-center gap-2">
-              <span className="text-sm text-red-600">Wirklich loeschen?</span>
+              <span className="text-sm text-red-600">Wirklich löschen?</span>
               <button onClick={handleDelete} className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg font-medium">Ja</button>
               <button onClick={() => setDelConfirm(false)} className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg">Abbrechen</button>
             </div>
@@ -300,7 +300,7 @@ function NeuAnlegenModal({ kategorien, onClose, onSaved, defaultKategorieId }: {
               type="text"
               value={form.name}
               onChange={set("name")}
-              placeholder="z.B. Kraeuterbratwurst"
+              placeholder="z.B. Kräuterbratwurst"
               className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40"
             />
           </div>

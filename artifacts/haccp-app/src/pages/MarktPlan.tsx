@@ -139,8 +139,8 @@ function markerStatus(m: Marker): St {
 const ST: Record<St, { dot: string; btn: string; ring: string; label: string }> = {
   neu:     { dot: "bg-gray-400",  btn: "border-gray-300 bg-white/95 text-gray-700",       ring: "ring-gray-200",  label: "Neu" },
   ok:      { dot: "bg-green-500", btn: "border-green-300 bg-green-50/95 text-green-800",  ring: "ring-green-200", label: "Im Limit" },
-  bald:    { dot: "bg-amber-400", btn: "border-amber-300 bg-amber-50/95 text-amber-800",  ring: "ring-amber-200", label: "Knick ueberschritten" },
-  faellig: { dot: "bg-red-500",   btn: "border-red-300 bg-red-50/95 text-red-800",        ring: "ring-red-200",   label: "Kontrolle faellig" },
+  bald:    { dot: "bg-amber-400", btn: "border-amber-300 bg-amber-50/95 text-amber-800",  ring: "ring-amber-200", label: "Knick überschritten" },
+  faellig: { dot: "bg-red-500",   btn: "border-red-300 bg-red-50/95 text-red-800",        ring: "ring-red-200",   label: "Kontrolle fällig" },
 };
 
 const SIZE_CLASSES: Record<string, string> = {
@@ -735,7 +735,7 @@ export default function MarktPlan() {
   }, [modal, load]);
 
   const handleDelete = async () => {
-    if (!modal?.marker || !confirm(`"${modal.marker.label}" wirklich loeschen?`)) return;
+    if (!modal?.marker || !confirm(`"${modal.marker.label}" wirklich löschen?`)) return;
     await fetch(`${BASE}/shelf-markers/${modal.marker.id}`, { method: "DELETE" });
     await load();
     setModal(null);

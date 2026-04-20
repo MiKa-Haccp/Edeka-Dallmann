@@ -12,11 +12,11 @@ const BASE = import.meta.env.VITE_API_URL || "/api";
 
 const BEREICHE = [
   "Molkerei", "Fleisch & Wurst", "Backwaren", "Feinkost",
-  "Tiefkuehl", "Getraenke", "Obst & Gemuese", "Trockensortiment", "Sonstiges",
+  "Tiefkühl", "Getränke", "Obst & Gemüse", "Trockensortiment", "Sonstiges",
 ];
 
 const AKTIONEN: { value: string; label: string; color: string }[] = [
-  { value: "geprueft",    label: "Geprueft / noch O.K.",       color: "text-green-600 bg-green-50 border-green-200" },
+  { value: "geprueft",    label: "Geprüft / noch O.K.",       color: "text-green-600 bg-green-50 border-green-200" },
   { value: "reduziert",   label: "Preis reduziert",             color: "text-amber-600 bg-amber-50 border-amber-200" },
   { value: "ausgezeichnet", label: "Ausgezeichnet / etikettiert", color: "text-blue-600 bg-blue-50 border-blue-200" },
   { value: "entsorgt",    label: "Entsorgt / entnommen",        color: "text-red-600 bg-red-50 border-red-200" },
@@ -203,7 +203,7 @@ export default function MHDKontrolle() {
             <div className="flex gap-3">
               <div className="text-center">
                 <div className="text-xl font-bold text-foreground">{entries.length}</div>
-                <div className="text-xs text-muted-foreground">Eintraege</div>
+                <div className="text-xs text-muted-foreground">Einträge</div>
               </div>
               {criticalCount > 0 && (
                 <div className="text-center">
@@ -318,7 +318,7 @@ export default function MHDKontrolle() {
                   rows={2}
                   value={form.bemerkung}
                   onChange={e => setForm(p => ({ ...p, bemerkung: e.target.value }))}
-                  placeholder="Zusaetzliche Informationen..."
+                  placeholder="Zusätzliche Informationen..."
                   className="w-full text-sm border border-border rounded-xl px-3 py-2.5 bg-background focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
                 />
               </div>
@@ -352,7 +352,7 @@ export default function MHDKontrolle() {
         <div>
           <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
             <Clock className="w-4 h-4" />
-            Eintraege vom {new Date(datum+"T12:00:00").toLocaleDateString("de-DE", { weekday:"long", day:"2-digit", month:"long", year:"numeric" })}
+            Einträge vom {new Date(datum+"T12:00:00").toLocaleDateString("de-DE", { weekday:"long", day:"2-digit", month:"long", year:"numeric" })}
           </h2>
 
           {loading && (
@@ -405,7 +405,7 @@ export default function MHDKontrolle() {
                         onClick={() => handleDelete(e.id)}
                         disabled={deletingId === e.id}
                         className="p-2 rounded-xl hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors flex-shrink-0"
-                        title="Eintrag loeschen"
+                        title="Eintrag löschen"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>

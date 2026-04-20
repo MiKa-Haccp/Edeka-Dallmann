@@ -38,7 +38,7 @@ function PinStep({onVerified,onBack,loading,setLoading}:{
       const res=await fetch(`${BASE}/users/verify-pin`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin,tenantId:1})});
       const data=await res.json();
       if(data.valid)onVerified(data.userName,data.userId,data.initials);
-      else setError("PIN ungueltig.");
+      else setError("PIN ungültig.");
     }catch{setError("Verbindungsfehler.");}
     finally{setLoading(false);}
   };

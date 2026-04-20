@@ -11,7 +11,7 @@ import { useListMarkets } from "@workspace/api-client-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 const WOCHENTAGE = ["So","Mo","Di","Mi","Do","Fr","Sa"];
-const MONTH_NAMES = ["Januar","Februar","Maerz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+const MONTH_NAMES = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 
 type SalateEntry = {
   id: number;
@@ -506,7 +506,7 @@ export default function OeffnungSalate() {
                   <tr className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white">
                     <th className="px-3 py-3 text-left font-semibold text-xs w-20 sticky left-0 z-10 bg-[#1a3a6b]">Tag</th>
                     <th className="px-2 py-2 text-center font-semibold text-xs w-10 opacity-70">Wt</th>
-                    <th className="px-3 py-3 text-left font-semibold text-xs">Eintraege (Artikel / MHD / Kuerzel)</th>
+                    <th className="px-3 py-3 text-left font-semibold text-xs">Einträge (Artikel / MHD / Kürzel)</th>
                     <th className="px-3 py-3 text-center font-semibold text-xs w-20">Aktion</th>
                   </tr>
                 </thead>

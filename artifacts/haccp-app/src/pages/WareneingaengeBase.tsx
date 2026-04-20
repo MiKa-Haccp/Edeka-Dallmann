@@ -16,7 +16,7 @@ const BASE = import.meta.env.VITE_API_URL || "/api";
 const MARKET_NAMES: Record<number, string> = { 1: "Leeder", 2: "Buching", 3: "MOD" };
 const WD_SHORT = ["So","Mo","Di","Mi","Do","Fr","Sa"];
 const WD_FULL  = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
-const MONTHS_DE = ["","Januar","Februar","Maerz","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+const MONTHS_DE = ["","Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 
 // ── KRITERIEN ─────────────────────────────────────────────────
 type CrType = "check" | "temp" | "fisch_mhd_list" | "nemat_list";
@@ -247,7 +247,7 @@ function PinModal({ onConfirm, onCancel }: { onConfirm:(id:{name:string;userId:n
       const r = await fetch(`${BASE}/users/verify-pin`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({pin,tenantId:1}) });
       const d = await r.json();
       if (d.valid) onConfirm({ name:d.userName, userId:d.userId, kuerzel:d.initials });
-      else setError("PIN ungueltig.");
+      else setError("PIN ungültig.");
     } catch { setError("Verbindungsfehler."); }
     finally { setLoading(false); }
   };
@@ -787,7 +787,7 @@ function AdminView({ marketId, types, onRefresh, onDirtyChange }: {
     return{hygiene:true,etikettierung:true,qualitaet:true,mhd:true};
   };
 
-  const handleDelete=async(id:number)=>{if(!confirm("Diesen Lieferanten loeschen?"))return;await fetch(`${BASE}/wareneingang-types/${id}`,{method:"DELETE"});onRefresh();};
+  const handleDelete=async(id:number)=>{if(!confirm("Diesen Lieferanten löschen?"))return;await fetch(`${BASE}/wareneingang-types/${id}`,{method:"DELETE"});onRefresh();};
   const handleAdd=async()=>{
     if(!newName.trim())return;
     setSaving(true);
@@ -800,8 +800,8 @@ function AdminView({ marketId, types, onRefresh, onDirtyChange }: {
 
   // WareArt-Optionen je nach Section
   const wareArtOptions = section==="metzgerei"
-    ? [{v:"fisch",l:"Frischfisch"},{v:"msc_fisch",l:"MSC-Fisch"},{v:"kuehl",l:"Kuehlware (Fleisch)"},{v:"tk",l:"Tiefkuehl"}]
-    : [{v:"kuehl",l:"Kuehlware"},{v:"tk",l:"Tiefkuehl"},{v:"ungekuehlt",l:"Ungekuehlt"}];
+    ? [{v:"fisch",l:"Frischfisch"},{v:"msc_fisch",l:"MSC-Fisch"},{v:"kuehl",l:"Kühlware (Fleisch)"},{v:"tk",l:"Tiefkühl"}]
+    : [{v:"kuehl",l:"Kühlware"},{v:"tk",l:"Tiefkühl"},{v:"ungekuehlt",l:"Ungekühlt"}];
 
   return(
     <div className="space-y-4">

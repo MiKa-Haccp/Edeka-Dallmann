@@ -194,17 +194,17 @@ export default function WareEinraeumservice() {
           </div>
         )}
 
-        {/* Eintraege */}
+        {/* Einträge */}
         <div>
           <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
             <FileText className="w-4 h-4" />
-            Eintraege {new Date(datum+"T12:00:00").toLocaleDateString("de-DE", { day:"2-digit", month:"long", year:"numeric" })}
+            Einträge {new Date(datum+"T12:00:00").toLocaleDateString("de-DE", { day:"2-digit", month:"long", year:"numeric" })}
           </h2>
           {loading && <div className="space-y-3">{[1,2].map(i=><div key={i} className="h-24 bg-secondary/50 rounded-2xl animate-pulse"/>)}</div>}
           {!loading && entries.length === 0 && (
             <div className="bg-white rounded-2xl border border-border/60 p-10 text-center">
               <Truck className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-sm font-semibold text-muted-foreground">Keine Eintraege fur dieses Datum</p>
+              <p className="text-sm font-semibold text-muted-foreground">Keine Einträge für dieses Datum</p>
             </div>
           )}
           {!loading && entries.length > 0 && (

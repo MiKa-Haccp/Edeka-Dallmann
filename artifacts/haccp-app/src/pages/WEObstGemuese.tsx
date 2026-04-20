@@ -10,14 +10,14 @@ import { getBavarianHolidays, getHolidayName } from "@/utils/holidays";
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 const CRITERIA: { key: string; label: string; note?: string }[] = [
-  { key: "hygiene",       label: "Hygiene LKW / Fahrer i.O.",          note: "entfaellt bei Nachtanlieferung" },
+  { key: "hygiene",       label: "Hygiene LKW / Fahrer i.O.",          note: "entfällt bei Nachtanlieferung" },
   { key: "etikettierung", label: "Etikettierung / Verpackung i.O." },
-  { key: "qualitaet",     label: "Qualitaet / Aussehen i.O." },
+  { key: "qualitaet",     label: "Qualität / Aussehen i.O." },
   { key: "mhd",           label: "MHD / Verbrauchsdatum i.O." },
   { key: "kistenetikett", label: "Kistenetikett vorhanden und i.O.",    note: "Sorte / Herkunft / Klassenangabe" },
-  { key: "qsBiosiegel",   label: "Bayerisches Biosiegel geprueft i.O." },
-  { key: "qsBy",          label: "Geprueft. Qualitaet BY i.O." },
-  { key: "qsQs",          label: "QS - Qualitaet u. Sicherheit i.O." },
+  { key: "qsBiosiegel",   label: "Bayerisches Biosiegel geprüft i.O." },
+  { key: "qsBy",          label: "Geprüft. Qualität BY i.O." },
+  { key: "qsQs",          label: "QS - Qualität u. Sicherheit i.O." },
 ];
 
 const STATUS_OPTIONS = [
@@ -120,7 +120,7 @@ function EntryModal({
       if (data.valid) {
         setIdentified({ name: data.userName, userId: data.userId, kuerzel: data.initials });
         setStep("form");
-      } else { setPinError("PIN ungueltig."); }
+      } else { setPinError("PIN ungültig."); }
     } catch { setPinError("Verbindungsfehler."); }
     finally { setPinLoading(false); }
   };
@@ -145,7 +145,7 @@ function EntryModal({
         {/* Header */}
         <div className="sticky top-0 bg-white rounded-t-2xl border-b border-border px-5 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold">WE Obst und Gemuese</h2>
+            <h2 className="text-base font-bold">WE Obst und Gemüse</h2>
             <p className="text-xs text-muted-foreground">{weekday}, {day.toString().padStart(2, "0")}.{month.toString().padStart(2, "0")}.{year}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
@@ -173,7 +173,7 @@ function EntryModal({
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#2d5aa0] transition-colors"
               >
                 {pinLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-                PIN pruefen
+                PIN prüfen
               </button>
             </div>
           )}
@@ -188,13 +188,13 @@ function EntryModal({
                 </div>
                 <div>
                   <p className="text-sm font-bold text-green-800">{identified.name}</p>
-                  <p className="text-xs text-green-600">Kuerzel: <span className="font-mono font-bold">{identified.kuerzel}</span></p>
+                  <p className="text-xs text-green-600">Kürzel: <span className="font-mono font-bold">{identified.kuerzel}</span></p>
                 </div>
               </div>
 
               {/* Criteria */}
               <div className="space-y-2">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Pruefkriterien</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Prüfkriterien</p>
                 {CRITERIA.map(c => (
                   <div key={c.key} className="flex items-center gap-2">
                     <div className="flex-1 min-w-0">
@@ -224,7 +224,7 @@ function EntryModal({
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
                   <Thermometer className="w-3.5 h-3.5" />
-                  Temperatur Obst/Gemuese (max. +7 C)
+                  Temperatur Obst/Gemüse (max. +7 C)
                 </label>
                 <div className="flex items-center gap-2">
                   <input
