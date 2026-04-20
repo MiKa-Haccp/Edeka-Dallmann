@@ -202,23 +202,30 @@ function DokumentCard({
   disabled?: boolean;
 }) {
   const [processing, setProcessing] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const fotoRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const isPdf = dokument.startsWith("data:application/pdf");
+
+  const processFile = async (file: File) => {
+    setProcessing(true);
+    try {
+      const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      onDokument(isPdfFile ? await readFileAsDataURL(file) : await compressImage(file));
+    } catch { /* ignore */ } finally { setProcessing(false); }
+  };
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
-    setProcessing(true);
-    try {
-      const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-      if (isPdfFile) {
-        onDokument(await readFileAsDataURL(file));
-      } else {
-        onDokument(await compressImage(file));
-      }
-    } catch { /* ignore */ } finally { setProcessing(false); }
+    await processFile(file);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation(); setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await processFile(file);
   };
 
   return (
@@ -244,7 +251,12 @@ function DokumentCard({
           </div>
         ) : (
           !disabled && (
-            <div className="grid grid-cols-2 gap-2">
+            <div
+              className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+            >
               <button onClick={() => fotoRef.current?.click()} disabled={processing}
                 className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50">
                 {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
@@ -255,6 +267,9 @@ function DokumentCard({
                 <Upload className="w-5 h-5" />
                 <span className="text-xs font-semibold text-center leading-tight">PDF-<br />Datei</span>
               </button>
+              {dragOver && (
+                <div className="col-span-2 text-center text-xs text-[#1a3a6b] font-semibold py-1">Datei hier ablegen</div>
+              )}
             </div>
           )
         )}
@@ -289,23 +304,30 @@ function AktionsplanCard({
   disabled?: boolean;
 }) {
   const [processing, setProcessing] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const fotoRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const isPdf = foto.startsWith("data:application/pdf");
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const processFile = async (file: File) => {
     setProcessing(true);
     try {
       const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-      if (isPdfFile) {
-        onFoto(await readFileAsDataURL(file));
-      } else {
-        onFoto(await compressImage(file));
-      }
-    }
-    finally { setProcessing(false); e.target.value = ""; }
+      onFoto(isPdfFile ? await readFileAsDataURL(file) : await compressImage(file));
+    } finally { setProcessing(false); }
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    await processFile(file);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation(); setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await processFile(file);
   };
 
   const addRow = () => {
@@ -349,7 +371,12 @@ function AktionsplanCard({
             )
           ) : (
             !disabled && (
-              <div className="grid grid-cols-2 gap-2">
+              <div
+                className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+              >
                 <button onClick={() => fotoRef.current?.click()} disabled={processing}
                   className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50">
                   {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
@@ -360,6 +387,9 @@ function AktionsplanCard({
                   <Upload className="w-5 h-5" />
                   <span className="text-xs font-semibold text-center leading-tight">PDF-<br />Datei</span>
                 </button>
+                {dragOver && (
+                  <div className="col-span-2 text-center text-xs text-[#1a3a6b] font-semibold py-1">Datei hier ablegen</div>
+                )}
               </div>
             )
           )}
