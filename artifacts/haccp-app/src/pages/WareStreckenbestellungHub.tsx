@@ -36,7 +36,7 @@ export default function WareStreckenbestellungHub() {
               <Truck className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Streckenbestellung</h1>
+              <h1 className="text-xl font-bold text-white">Streckenbestellung</h1>
               <p className="text-white/70 text-sm">Übersicht und Bestellung für Streckenlieferanten</p>
             </div>
           </div>

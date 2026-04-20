@@ -1160,7 +1160,7 @@ export default function TrainingRecords({ noLayout }: { noLayout?: boolean } = {
                 <GraduationCap className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-white">Schulungsnachweise und Besprechungsprotokolle</h1>
+                <h1 className="text-xl font-bold text-white">Schulungsnachweise und Besprechungsprotokolle</h1>
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">

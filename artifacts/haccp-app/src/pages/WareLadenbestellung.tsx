@@ -404,7 +404,7 @@ export default function WareLadenbestellung() {
               <ShoppingBag className="w-5 h-5" />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg font-bold leading-tight">Ladenbestellung</h1>
+              <h1 className="text-xl font-bold text-white">Ladenbestellung</h1>
               <p className="text-white/70 text-sm">Bestellgebiete markieren</p>
             </div>
             {isAdmin && (

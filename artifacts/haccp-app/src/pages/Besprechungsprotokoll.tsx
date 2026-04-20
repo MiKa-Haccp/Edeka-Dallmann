@@ -448,7 +448,7 @@ export default function Besprechungsprotokoll({ noLayout }: { noLayout?: boolean
                   <ClipboardList className="w-5 h-5" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold leading-tight">Besprechungsprotokoll</h1>
+                  <h1 className="text-xl font-bold text-white">Besprechungsprotokoll</h1>
                   <p className="text-white/70 text-sm">Teilnehmerbestätigung per PIN</p>
                 </div>
               </div>

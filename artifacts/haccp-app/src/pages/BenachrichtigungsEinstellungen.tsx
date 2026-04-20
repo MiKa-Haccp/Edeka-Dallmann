@@ -134,7 +134,7 @@ export default function BenachrichtigungsEinstellungen() {
                 <Bell className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-lg font-bold leading-tight">Benachrichtigungen</h1>
+                <h1 className="text-xl font-bold text-white">Benachrichtigungen</h1>
                 <p className="text-white/70 text-sm">Automatische Hinweise bei fehlenden HACCP-Einträgen.</p>
               </div>
             </div>

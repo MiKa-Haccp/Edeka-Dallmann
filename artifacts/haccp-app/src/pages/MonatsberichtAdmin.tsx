@@ -189,7 +189,7 @@ export default function MonatsberichtAdmin() {
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Monatsbericht</h1>
+              <h1 className="text-xl font-bold text-white">Monatsbericht</h1>
               <p className="text-white/70 text-sm">HACCP-Daten aggregieren und per E-Mail versenden.</p>
             </div>
           </div>

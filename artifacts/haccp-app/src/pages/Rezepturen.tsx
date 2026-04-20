@@ -531,7 +531,7 @@ export default function Rezepturen() {
               <ChefHat className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Eigenherstellung / Rezepturen</h1>
+              <h1 className="text-xl font-bold text-white">Eigenherstellung / Rezepturen</h1>
               <p className="text-white/70 text-sm">Rezepturübersicht und Eigenherstellungen</p>
             </div>
           </div>

@@ -927,7 +927,7 @@ export default function KaesethekeKontrolle() {
                 <Thermometer className="w-5 h-5"/>
               </div>
               <div>
-                <h1 className="text-lg font-bold leading-tight">Käsetheke und Reifeschrank</h1>
+                <h1 className="text-xl font-bold text-white">Käsetheke und Reifeschrank</h1>
                 <p className="text-white/70 text-sm">Temperaturkontrolle Reifeschrank · Käsekühlschrank · Heiße Theke</p>
               </div>
             </div>

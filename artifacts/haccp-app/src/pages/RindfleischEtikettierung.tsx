@@ -185,7 +185,7 @@ export default function RindfleischEtikettierung() {
               <Tag className="w-5 h-5"/>
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-lg font-bold leading-tight">Rindfleischetikettierung</h1>
+              <h1 className="text-xl font-bold text-white">Rindfleischetikettierung</h1>
               <p className="text-white/70 text-sm">{market?.name ?? ""}</p>
             </div>
           </div>

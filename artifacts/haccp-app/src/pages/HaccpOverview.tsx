@@ -121,7 +121,7 @@ export default function HaccpOverview() {
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">HACCP Modul</h1>
+              <h1 className="text-xl font-bold text-white">HACCP Modul</h1>
               <p className="text-white/70 text-sm">Wählen Sie einen Bereich</p>
             </div>
           </div>

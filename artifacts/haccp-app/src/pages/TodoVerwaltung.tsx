@@ -301,7 +301,7 @@ export default function TodoVerwaltung() {
                   <Plus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-bold leading-tight">Standardaufgaben verwalten</h1>
+                  <h1 className="text-xl font-bold text-white">Standardaufgaben verwalten</h1>
                   <p className="text-white/70 text-sm">Aufgaben erstellen und bearbeiten</p>
                 </div>
               </div>

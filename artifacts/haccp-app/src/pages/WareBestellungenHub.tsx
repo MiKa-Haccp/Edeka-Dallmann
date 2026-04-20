@@ -42,7 +42,7 @@ export default function WareBestellungenHub() {
               <ShoppingCart className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Bestellungen</h1>
+              <h1 className="text-xl font-bold text-white">Bestellungen</h1>
               <p className="text-white/70 text-sm">Ladenbestellung und Streckenbestellung.</p>
             </div>
           </div>

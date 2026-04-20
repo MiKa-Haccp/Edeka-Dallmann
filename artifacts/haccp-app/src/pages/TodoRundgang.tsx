@@ -324,7 +324,7 @@ export default function TodoRundgang() {
                 <RotateCcw className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-lg font-bold leading-tight">Schneller Rundgang</h1>
+                <h1 className="text-xl font-bold text-white">Schneller Rundgang</h1>
                 <p className="text-white/70 text-sm">Offene Aufgaben im Überblick</p>
               </div>
             </div>

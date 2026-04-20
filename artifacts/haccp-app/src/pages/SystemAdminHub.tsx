@@ -56,7 +56,7 @@ export default function SystemAdminHub() {
               <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Systemverwaltung</h1>
+              <h1 className="text-xl font-bold text-white">Systemverwaltung</h1>
               <p className="text-white/70 text-sm">Rollen, Benutzerrechte und Geräteverwaltung.</p>
             </div>
           </div>

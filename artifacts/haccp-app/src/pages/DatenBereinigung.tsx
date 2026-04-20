@@ -224,7 +224,7 @@ export default function DatenBereinigung() {
               <Trash2 className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Daten-Bereinigung</h1>
+              <h1 className="text-xl font-bold text-white">Daten-Bereinigung</h1>
               <p className="text-white/70 text-sm">Selektiver System-Reset je Filiale</p>
             </div>
           </div>

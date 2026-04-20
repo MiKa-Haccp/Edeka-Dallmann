@@ -401,7 +401,7 @@ export default function TodoKassen() {
                 <TableProperties className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-lg font-bold leading-tight">Kasseneinteilung</h1>
+                <h1 className="text-xl font-bold text-white">Kasseneinteilung</h1>
                 <p className="text-white/70 text-sm">
                   {selectedDate.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}
                 </p>

@@ -141,7 +141,7 @@ export default function ModuleVerwaltung() {
               <LayoutGrid className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Modul-Sichtbarkeit</h1>
+              <h1 className="text-xl font-bold text-white">Modul-Sichtbarkeit</h1>
               <p className="text-white/70 text-sm">Module für alle Benutzer ein- oder ausschalten.</p>
             </div>
           </div>

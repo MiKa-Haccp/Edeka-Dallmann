@@ -113,7 +113,7 @@ export default function WareBestellungen() {
                 <ShoppingCart className="w-5 h-5" />
               </div>
               <div className="flex-1">
-                <h1 className="text-lg font-bold leading-tight">Bestellungen</h1>
+                <h1 className="text-xl font-bold text-white">Bestellungen</h1>
                 <p className="text-white/70 text-sm">Marktübersicht Rayons</p>
               </div>
             </div>

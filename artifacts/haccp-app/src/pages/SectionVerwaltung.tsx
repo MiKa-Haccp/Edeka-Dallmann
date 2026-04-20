@@ -156,7 +156,7 @@ export default function SectionVerwaltung() {
               <LayoutList className="w-5 h-5"/>
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Abschnitt-Sichtbarkeit</h1>
+              <h1 className="text-xl font-bold text-white">Abschnitt-Sichtbarkeit</h1>
               <p className="text-white/70 text-sm">Sidebar-Punkte pro Markt ein- oder ausblenden.</p>
             </div>
           </div>

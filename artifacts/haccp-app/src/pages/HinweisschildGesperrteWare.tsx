@@ -81,7 +81,7 @@ export default function HinweisschildGesperrteWare() {
               <Printer className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Hinweisschild gesperrte Ware</h1>
+              <h1 className="text-xl font-bold text-white">Hinweisschild gesperrte Ware</h1>
             </div>
           </div>
         </PageHeader>

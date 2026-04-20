@@ -450,7 +450,7 @@ export default function WarenzustandOG() {
                 <Salad className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-white">Warenzustand Obst & Gemüse</h1>
+                <h1 className="text-xl font-bold text-white">Warenzustand Obst & Gemüse</h1>
               </div>
             </div>
             <div className="flex items-center gap-2">

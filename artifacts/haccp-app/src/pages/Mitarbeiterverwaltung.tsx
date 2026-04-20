@@ -850,7 +850,7 @@ export default function Mitarbeiterverwaltung() {
                 <Users className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-lg font-bold leading-tight">Mitarbeiterverwaltung</h1>
+                <h1 className="text-xl font-bold text-white">Mitarbeiterverwaltung</h1>
                 <p className="text-white/70 text-sm">Mitarbeiter-, Kürzel- und PIN-Verwaltung</p>
               </div>
             </div>

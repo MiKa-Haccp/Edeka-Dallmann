@@ -112,7 +112,7 @@ export default function AdminUserManagement() {
               <UserCog className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Benutzerverwaltung</h1>
+              <h1 className="text-xl font-bold text-white">Benutzerverwaltung</h1>
               <p className="text-white/70 text-sm">Rollen und Status für alle Mitarbeiter verwalten.</p>
             </div>
           </div>

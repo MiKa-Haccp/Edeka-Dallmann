@@ -57,7 +57,7 @@ export default function InfoDocumentation() {
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Info Dokumentation und Ablagefristen</h1>
+              <h1 className="text-xl font-bold text-white">Info Dokumentation und Ablagefristen</h1>
             </div>
           </div>
         </PageHeader>

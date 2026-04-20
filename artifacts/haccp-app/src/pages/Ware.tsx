@@ -56,7 +56,7 @@ export default function Ware() {
               <Package className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Ware</h1>
+              <h1 className="text-xl font-bold text-white">Ware</h1>
               <p className="text-white/70 text-sm">Bestellungen, Einräumservice und MHD-Kontrolle.</p>
             </div>
           </div>

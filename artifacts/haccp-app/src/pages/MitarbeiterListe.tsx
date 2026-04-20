@@ -61,7 +61,7 @@ export default function MitarbeiterListe() {
               <Users className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold leading-tight">Mitarbeiter & Kürzel</h1>
+              <h1 className="text-xl font-bold text-white">Mitarbeiter & Kürzel</h1>
               <p className="text-white/70 text-sm">Übersicht aller Mitarbeiter mit Kürzel</p>
             </div>
           </div>
