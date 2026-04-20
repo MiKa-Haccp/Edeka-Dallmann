@@ -205,24 +205,6 @@ const SECTIONS: Section[] = [
       { nr: "12.7", text: "Sonstiges" },
     ],
   },
-  {
-    id: "13",
-    title: "13. Gastronomie",
-    items: [
-      { nr: "13.1", text: "Baulicher Zustand in Ordnung." },
-      { nr: "13.2", text: "Es gibt keine Anzeichen auf Schädlingsbefall." },
-      { nr: "13.3", text: "Allgemeine Hygiene in Ordnung (Personal-, Betriebshygiene, Umsetzung der Reinigungspläne), Gastraum hygienisch in Ordnung." },
-      { nr: "13.4", text: "Die Reinigung des Bereichs wird durchgeführt und im entsprechenden Formblatt zur Reinigung dokumentiert." },
-      { nr: "13.5", text: "Erforderliche Dokumentationen (Wareneingangskontrollen, Temperaturkontrollen etc.) werden durchgeführt und dokumentiert." },
-      { nr: "13.6", text: "Rezepturen sind vorhanden und werden eingehalten." },
-      { nr: "13.7", text: "Alle Zutaten werden vorschriftsgemäß gelagert. Es wird keine Ware mit abgelaufenen Verbrauchsdatum verarbeitet. Zutaten mit abgelaufenen MHD werden vor Verarbeitung sensorisch geprüft." },
-      { nr: "13.8", text: "Die Verbraucherinformation (Allergene, Zusatzstoffinformationen) ist aktuell, vollständig und liegt für den Kunden aus." },
-      { nr: "13.9", text: "Alle vorgeschriebenen Kennzeichnungen / Deklarationen sind vorhanden und korrekt." },
-      { nr: "13.10", text: "Allergenmanagement wird während Produktion und an der Essensausgabe eingehalten." },
-      { nr: "13.11", text: "Gar- und Heißhaltezeiten bzw. -temperaturen werden kontrolliert und dokumentiert, Frittierfettkontrolle wird durchgeführt und dokumentiert." },
-      { nr: "13.12", text: "Sonstiges" },
-    ],
-  },
 ];
 
 type SectionData = Record<string, { status: CheckStatus; bemerkung: string; extraDate?: string }>;
