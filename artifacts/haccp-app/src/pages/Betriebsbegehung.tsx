@@ -19,6 +19,7 @@ type CheckStatus = "ok" | "mangel" | "na" | "";
 interface CheckItem {
   nr: string;
   text: string;
+  dateField?: string;
 }
 
 interface Section {
@@ -196,7 +197,7 @@ const SECTIONS: Section[] = [
     title: "12. Weitere Kontrollpunkte",
     items: [
       { nr: "12.1", text: "Die Kundentoiletten sind ordentlich und sauber." },
-      { nr: "12.2", text: "Schädlingsmonitoring und -bekämpfung wird regelmäßig durchgeführt und dokumentiert." },
+      { nr: "12.2", text: "Schädlingsmonitoring und -bekämpfung wird regelmäßig durchgeführt und dokumentiert.", dateField: "Datum der letzten Kontrolle" },
       { nr: "12.3", text: "Abfall wird vorschriftsmäßig getrennt, gelagert und entsorgt." },
       { nr: "12.4", text: "Warenrückrufprotokolle werden gemäß den Vorgaben bearbeitet und für 2 Jahre in der Verkaufsstelle archiviert." },
       { nr: "12.5", text: "Behördliche Gegenproben werden vorschriftsmäßig gelagert. Entnahmebelege werden per E-Mail an die QM-Abteilung weitergeleitet." },
@@ -224,7 +225,7 @@ const SECTIONS: Section[] = [
   },
 ];
 
-type SectionData = Record<string, { status: CheckStatus; bemerkung: string }>;
+type SectionData = Record<string, { status: CheckStatus; bemerkung: string; extraDate?: string }>;
 
 interface Report {
   id: number;
@@ -330,6 +331,13 @@ export default function Betriebsbegehung() {
     setSectionData((prev) => ({
       ...prev,
       [nr]: { ...prev[nr], bemerkung },
+    }));
+  };
+
+  const handleExtraDateChange = (nr: string, extraDate: string) => {
+    setSectionData((prev) => ({
+      ...prev,
+      [nr]: { ...prev[nr], extraDate },
     }));
   };
 
@@ -569,6 +577,17 @@ export default function Betriebsbegehung() {
                       <span className="text-xs font-bold text-muted-foreground w-8 flex-shrink-0 pt-1">{item.nr}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-foreground leading-relaxed">{item.text}</p>
+                        {item.dateField && (
+                          <div className="mt-2 flex items-center gap-2 flex-wrap">
+                            <label className="text-xs text-muted-foreground whitespace-nowrap">{item.dateField}:</label>
+                            <input
+                              type="date"
+                              value={entry.extraDate || ""}
+                              onChange={(e) => handleExtraDateChange(item.nr, e.target.value)}
+                              className="border border-border/60 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/40 bg-white"
+                            />
+                          </div>
+                        )}
                         {entry.status === "mangel" && (
                           <textarea
                             value={entry.bemerkung}
