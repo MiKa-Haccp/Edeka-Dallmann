@@ -645,8 +645,7 @@ export default function AntiVektorZugang() {
 
             <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
               <p className="text-sm text-amber-800 font-medium">
-                Diese Zugangsdaten sind vertraulich. Nur berechtigte Mitarbeiter mit Administratorrechten
-                konnen diese Daten einsehen und bearbeiten.
+                Diese Zugangsdaten sind vertraulich.
               </p>
             </div>
           </>
