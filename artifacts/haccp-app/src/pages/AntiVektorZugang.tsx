@@ -369,8 +369,9 @@ function ZertifikatKarte({ z, onDelete, isAdmin }: { z: Zertifikat; onDelete: ()
 
 // ===== HAUPTSEITE =====
 export default function AntiVektorZugang() {
-  const { adminSession, selectedMarketId, hasPermission } = useAppStore();
+  const { adminSession, selectedMarketId, isAdmin, hasPermission } = useAppStore();
   const canDelete = hasPermission("entries.delete");
+  const canEdit = isAdmin() || adminSession?.role === 'MARKTLEITER';
 
   const [tab, setTab] = useState<Tab>("zugang");
   const [zugangsdaten, setZugangsdaten] = useState<Zugangsdaten>({
@@ -609,7 +610,7 @@ export default function AntiVektorZugang() {
               </div>
 
               {/* Edit / Save Actions */}
-              {canDelete && (
+              {canEdit && (
                 <div className="flex gap-3 pt-2">
                   {!editMode ? (
                     <button
@@ -660,7 +661,7 @@ export default function AntiVektorZugang() {
                   ? "Noch keine Nachweise hinterlegt"
                   : `${zertifikate.length} Nachweis${zertifikate.length !== 1 ? "e" : ""} gespeichert`}
               </p>
-              {!showForm && (
+              {canEdit && !showForm && (
                 <button
                   onClick={() => setShowForm(true)}
                   className="flex items-center gap-2 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors shadow-sm"
@@ -693,7 +694,7 @@ export default function AntiVektorZugang() {
                   <ZertifikatKarte
                     key={z.id}
                     z={z}
-                    isAdmin={canDelete}
+                    isAdmin={canEdit}
                     onDelete={() => handleDeleteZertifikat(z.id)}
                   />
                 ))}
