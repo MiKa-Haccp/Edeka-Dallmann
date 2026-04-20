@@ -258,7 +258,7 @@ function PinModal({ onConfirm, onCancel }: { onConfirm:(id:{name:string;userId:n
           <div className="w-12 h-12 rounded-full bg-[#1a3a6b]/10 flex items-center justify-center mx-auto mb-3">
             <Lock className="w-6 h-6 text-[#1a3a6b]" />
           </div>
-          <p className="font-bold text-base">PIN bestaetigen</p>
+          <p className="font-bold text-base">PIN bestätigen</p>
           <p className="text-xs text-muted-foreground mt-1">Bitte PIN eingeben um den Eintrag zu speichern</p>
         </div>
         <input type="password" inputMode="numeric"
