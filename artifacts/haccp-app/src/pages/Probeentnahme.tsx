@@ -343,7 +343,84 @@ export default function Probeentnahme() {
   const hatGegenprobe = form.gegenprobeArt !== "" && form.gegenprobeStatus === "hinterlassen";
 
   // Print helpers
-  const handlePrint322_1 = () => { setShowDruckMenu(false); setTimeout(() => window.print(), 50); };
+  const buildPrintHtml = (sections: "3221" | "3222" | "both") => {
+    const label = (l: string, v: string) =>
+      `<tr><td style="font-size:10px;color:#6b7280;padding:3px 8px 3px 0;white-space:nowrap;vertical-align:top;font-weight:600">${l}</td><td style="font-size:11px;padding:3px 0 3px 8px;border-left:1px solid #e5e7eb;padding-left:8px">${v || "–"}</td></tr>`;
+    const section = (title: string, rows: string) =>
+      `<div style="margin-bottom:14px"><div style="background:#1a3a6b;color:white;font-size:11px;font-weight:700;padding:5px 10px;border-radius:4px 4px 0 0">${title}</div><div style="border:1px solid #1a3a6b;border-top:none;border-radius:0 0 4px 4px;padding:8px 10px"><table style="width:100%;border-collapse:collapse">${rows}</table></div></div>`;
+
+    const s3221 = sections === "3221" || sections === "both" ? section("Probenahmebogen (3.22-1)", [
+      label("Markt", form.markt),
+      label("Ansprechpartner", form.ansprechpartner),
+      label("Behörde", form.behoerdeBezeichnung),
+      label("Datum der Probenentnahme", form.datumEntnahme),
+      label("Grund der Probenahme", form.grundProbenahme),
+      label("Untersuchungsziel (UZ)", form.untersuchungsziel),
+      label("Art der Rückhalteprobe", form.gegenprobeArt === "gegenprobe" ? "Gegenprobe" : form.gegenprobeArt === "zweitprobe" ? "Zweitprobe" : "–"),
+      label("Status Rückhalteprobe", form.gegenprobeStatus === "hinterlassen" ? "Hinterlassen" : form.gegenprobeStatus === "nicht_vorhanden" ? "Nicht vorhanden" : "–"),
+      label("Art der Probe", form.probentyp === "fertigpackung" ? "Fertigpackung" : form.probentyp === "lose_ware" ? "Lose Ware" : form.probentyp === "bedientheke" ? "Bedientheke" : "–"),
+      label("EAN / PLU", form.ean),
+      label("Artikel-Nr.", form.artikelNr),
+      label("Verkehrsbezeichnung", form.verkehrsbezeichnung),
+      label("MHD / Verbrauchsdatum", form.mhd),
+      label("Losnummer / Charge", form.losnummer),
+      label("Füllmenge / Gewicht", form.fuellmenge),
+      label("Angegebener Hersteller", form.hersteller),
+      label("Durchschrift gefaxt durch", form.durchschriftGefaxtDurch),
+      label("Gefaxt am", form.durchschriftGefaxtAm),
+    ].join("")) : "";
+
+    const sig = (title: string, dataUrl: string) =>
+      dataUrl ? `<div style="margin-top:10px"><div style="font-size:10px;color:#6b7280;font-weight:600;margin-bottom:4px">${title}</div><img src="${dataUrl}" style="max-height:80px;border:1px solid #e5e7eb;border-radius:4px" /></div>` : `<div style="margin-top:10px"><div style="font-size:10px;color:#6b7280;font-weight:600;margin-bottom:4px">${title}</div><div style="height:60px;border-bottom:1px solid #374151;margin-top:30px"></div></div>`;
+
+    const s3222 = (sections === "3222" || sections === "both") && hatGegenprobe ? section("Probenübergabeprotokoll (3.22-2)", [
+      label("Name des Abholers / Fahrers", form.abholerName),
+      label("Firma des Abholers", form.abholerFirmaName),
+      label("Straße", form.abholerFirmaStrasse),
+      label("Postfach", form.abholerFirmaPostfach),
+      label("PLZ, Ort", form.abholerFirmaPlzOrt),
+      label("Amtliche Probennummer", form.amtlicheProbennummer),
+      label("Siegeldatum", form.siegeldatum),
+      label("Artikelbezeichnung", form.uebergabeArtikel),
+      label("Ort, Datum (Übergabe)", form.uebergabeOrtDatum),
+      label("Gegenprobe abgeholt am", form.gegenprobeAbgeholtAm),
+      label("Abgeholt durch", form.gegenprobeAbgeholtDurch),
+    ].join("")) + sig("Unterschrift Abholer / Fahrer", form.unterschriftAbholerDigital) + sig("Unterschrift Markt-Mitarbeiter/in", form.unterschriftMitarbeiterDigital) : "";
+
+    const fotoHtml = form.amtlichesDokumentFoto
+      ? `<div style="margin-top:14px"><div style="background:#1a3a6b;color:white;font-size:11px;font-weight:700;padding:5px 10px;border-radius:4px 4px 0 0">Amtliches Dokument der Behörde</div><div style="border:1px solid #1a3a6b;border-top:none;border-radius:0 0 4px 4px;padding:10px"><img src="${form.amtlichesDokumentFoto}" style="max-width:100%;max-height:300px;object-fit:contain;border-radius:4px" /></div></div>`
+      : "";
+
+    const marktMeta = selectedMarketId ? MARKT_META[selectedMarketId] : null;
+
+    return `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"><title>Probeentnahme – ${form.datumEntnahme || "–"}</title>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Arial,sans-serif;font-size:12px;color:#111;padding:16px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a3a6b;padding-bottom:10px;margin-bottom:14px}
+.header h1{font-size:14px;font-weight:800;color:#1a3a6b}.header p{font-size:10px;color:#6b7280;margin-top:3px}
+.meta{text-align:right;font-size:10px;color:#6b7280}
+.notice{font-size:10px;color:#92400e;background:#fffbeb;border:1px solid #fcd34d;padding:6px 10px;border-radius:4px;margin-top:14px}
+@media print{body{padding:8px}@page{margin:8mm;size:A4 portrait}}</style></head>
+<body>
+<div class="header">
+  <div>
+    <h1>EDEKA DALLMANN – Probeentnahme Protokoll</h1>
+    <p>${marktMeta ? marktMeta.name : (form.markt || "")}</p>
+    <p>Datum: ${form.datumEntnahme || "–"} | Behörde: ${form.behoerdeBezeichnung || "–"}</p>
+  </div>
+  <div class="meta">Erstellt: ${new Date().toLocaleDateString("de-DE")}</div>
+</div>
+${s3221}${s3222}${fotoHtml}
+<div class="notice">Ausgefüllten Probenahmebogen und amtlichen Durchschlag umgehend weiterleiten: 📠 Fax 08458/62-510 | ✉️ qm.suedbayern@edeka.de</div>
+<script>window.onload=function(){window.print()}<\/script>
+</body></html>`;
+  };
+
+  const handlePrint322_1 = () => {
+    setShowDruckMenu(false);
+    const html = buildPrintHtml("3221");
+    const win = window.open("", "_blank", "width=900,height=700");
+    if (win) { win.document.write(html); win.document.close(); }
+  };
 
   return (
     <AppLayout>
@@ -749,12 +826,28 @@ export default function Probeentnahme() {
                     </button>
                     {hatGegenprobe && (
                       <button
-                        onClick={() => { setShowDruckMenu(false); setTimeout(() => window.print(), 50); }}
-                        className="w-full text-left px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted/40"
+                        onClick={() => {
+                          setShowDruckMenu(false);
+                          const html = buildPrintHtml("3222");
+                          const win = window.open("", "_blank", "width=900,height=700");
+                          if (win) { win.document.write(html); win.document.close(); }
+                        }}
+                        className="w-full text-left px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted/40 border-b border-border/30"
                       >
                         📦 Übergabeprotokoll (3.22-2)
                       </button>
                     )}
+                    <button
+                      onClick={() => {
+                        setShowDruckMenu(false);
+                        const html = buildPrintHtml("both");
+                        const win = window.open("", "_blank", "width=900,height=700");
+                        if (win) { win.document.write(html); win.document.close(); }
+                      }}
+                      className="w-full text-left px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted/40"
+                    >
+                      🖨️ Vollständiges Protokoll
+                    </button>
                   </div>
                 )}
               </div>
@@ -841,14 +934,6 @@ export default function Probeentnahme() {
         onCancel={() => setShowPinModal(false)}
       />
 
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          body > *:not(#probe-print-root) { display: none !important; }
-          #probe-print-root { display: block !important; }
-          @page { margin: 10mm; size: A4 portrait; }
-        }
-      `}</style>
     </AppLayout>
   );
 }
