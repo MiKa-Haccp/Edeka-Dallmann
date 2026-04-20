@@ -1360,7 +1360,7 @@ export default function Kontrollberichte() {
               <div className="flex justify-center py-10">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
-            ) : liste.length === 0 ? (
+            ) : !showForm && liste.length === 0 ? (
               <div className={`text-center py-12 rounded-2xl border-2 border-dashed ${tab.borderColor} ${tab.bgColor}`}>
                 <p className="text-sm font-medium text-muted-foreground">Keine {tab.label} für {year}</p>
                 <button onClick={() => setShowForm(true)}
