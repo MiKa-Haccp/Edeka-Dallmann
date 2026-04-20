@@ -704,6 +704,8 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [dragOver, setDragOver] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
 
   const processFile = async (file: File) => {
     setProcessing(true);
@@ -736,6 +738,26 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
     if (file) await processFile(file);
   };
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (e.dataTransfer.types.includes("Files")) {
+      dragCounter.current++;
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = () => {
+    dragCounter.current--;
+    if (dragCounter.current <= 0) { dragCounter.current = 0; setIsDragging(false); }
+  };
+
+  const handleOverlayDrop = async (e: React.DragEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    dragCounter.current = 0; setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) await processFile(file);
+  };
+
   useFilePaste(processFile);
 
   const isPdf = dokument.startsWith("data:application/pdf");
@@ -758,10 +780,21 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
 
   return (
     <div
-      className={`${tab.bgColor} border ${tab.borderColor} rounded-2xl p-5 space-y-4`}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f) processFile(f); }}
+      className={`relative ${tab.bgColor} border ${tab.borderColor} rounded-2xl p-5 space-y-4`}
+      onDragEnter={handleDragEnter}
     >
+      {isDragging && (
+        <div
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#1a3a6b]/10 rounded-2xl border-2 border-dashed border-[#1a3a6b]/50 backdrop-blur-[1px]"
+          onDragOver={(e) => e.preventDefault()}
+          onDragLeave={handleDragLeave}
+          onDrop={handleOverlayDrop}
+        >
+          <Upload className="w-8 h-8 text-[#1a3a6b] mb-2 pointer-events-none" />
+          <p className="text-sm font-bold text-[#1a3a6b] pointer-events-none">Datei hier ablegen</p>
+          <p className="text-xs text-[#1a3a6b]/60 pointer-events-none">Foto, Screenshot oder PDF</p>
+        </div>
+      )}
       <p className={`text-sm font-bold ${tab.color}`}>Neuer Bericht — {tab.label} {year}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1 sm:col-span-2">
