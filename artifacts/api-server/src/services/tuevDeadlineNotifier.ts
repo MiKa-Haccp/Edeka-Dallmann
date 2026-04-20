@@ -61,7 +61,7 @@ function escapeHtml(text: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function buildEmailHtml(marktName: string, year: number, fristDatum: Date, massnahmen: string): string {
+function buildEmailHtml(marktName: string, year: number, fristDatum: Date, massnahmen: string, isToday = false): string {
   const fristFormatted = fristDatum.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 
   let massnahmenHtml = "<em style='color:#9ca3af;'>Keine Maßnahmen eingetragen.</em>";
@@ -89,15 +89,24 @@ function buildEmailHtml(marktName: string, year: number, fristDatum: Date, massn
   const appUrl = process.env.APP_URL || `https://${process.env.REPLIT_DEV_DOMAIN || ""}`;
   const kontrollberichtLink = `${appUrl}/kontrollberichte`;
 
+  const headerTitle = isToday ? "TÜV-Aktionsplan – Frist läuft heute ab" : "TÜV-Aktionsplan – Frist läuft ab";
+  const bannerBg = isToday ? "#fde8e8" : "#fff3cd";
+  const bannerBorder = isToday ? "#e53e3e" : "#ffc107";
+  const bannerTextColor = isToday ? "#9b1c1c" : "#856404";
+  const bannerLabel = isToday ? "Dringend:" : "Erinnerung:";
+  const bannerMessage = isToday
+    ? ` Die TÜV-Aktionsplan-Frist für <strong>${marktName}</strong> läuft <strong>heute</strong> ab!`
+    : ` Die TÜV-Aktionsplan-Frist für <strong>${marktName}</strong> läuft in 2 Tagen ab.`;
+
   return `<div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;">
     <div style="background:#1a3a6b;color:white;padding:20px 24px;border-radius:8px 8px 0 0;">
-      <h2 style="margin:0;font-size:19px;">TÜV-Aktionsplan – Frist läuft ab</h2>
+      <h2 style="margin:0;font-size:19px;">${headerTitle}</h2>
       <p style="margin:5px 0 0;opacity:0.8;font-size:13px;">EDEKA Dallmann – ${marktName} | Jahr ${year}</p>
     </div>
     <div style="background:#fff;padding:20px 24px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
-      <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:12px 16px;margin-bottom:16px;">
-        <strong style="color:#856404;">Erinnerung:</strong>
-        <span style="color:#856404;"> Die TÜV-Aktionsplan-Frist für <strong>${marktName}</strong> läuft in 2 Tagen ab.</span>
+      <div style="background:${bannerBg};border:1px solid ${bannerBorder};border-radius:6px;padding:12px 16px;margin-bottom:16px;">
+        <strong style="color:${bannerTextColor};">${bannerLabel}</strong>
+        <span style="color:${bannerTextColor};">${bannerMessage}</span>
       </div>
 
       <h3 style="color:#1a3a6b;font-size:14px;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin:16px 0 6px;">Details</h3>
@@ -122,49 +131,28 @@ function buildEmailHtml(marktName: string, year: number, fristDatum: Date, massn
 const AKTIONSPLAN_FRIST_DAYS = 21;
 const NOTIFY_DAYS_BEFORE = 2;
 
-async function checkAndNotifyExpiringAktionsplaene() {
-  console.log("[TÜV-Notifier] Prüfe ablaufende Aktionsplan-Fristen...");
+function getDateRange(now: Date, offsetDays: number): { start: Date; end: Date } {
+  const target = new Date(now);
+  target.setDate(target.getDate() + offsetDays);
+  const start = new Date(target);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start, end };
+}
 
-  const global = await getGlobalSettings();
-  if (!global?.enabled) {
-    console.log("[TÜV-Notifier] E-Mail-Versand deaktiviert – übersprungen.");
-    return;
-  }
-
-  // dueDate = aktionsplanDatum + 21 days
-  // We want records where dueDate is exactly 2 days from now:
-  //   aktionsplanDatum + 21 = today + 2
-  //   aktionsplanDatum = today + 2 - 21 = today - 19
-  const now = new Date();
-  const aktionsplanTargetDate = new Date(now);
-  aktionsplanTargetDate.setDate(aktionsplanTargetDate.getDate() + NOTIFY_DAYS_BEFORE - AKTIONSPLAN_FRIST_DAYS);
-
-  const targetStart = new Date(aktionsplanTargetDate);
-  targetStart.setHours(0, 0, 0, 0);
-  const nextDayStart = new Date(targetStart);
-  nextDayStart.setDate(nextDayStart.getDate() + 1);
-
-  const records = await db
-    .select()
-    .from(tuevJahresberichtTable)
-    .where(
-      and(
-        gte(tuevJahresberichtTable.aktionsplanDatum, targetStart),
-        lt(tuevJahresberichtTable.aktionsplanDatum, nextDayStart)
-      )
-    );
-
-  if (records.length === 0) {
-    console.log("[TÜV-Notifier] Keine ablaufenden Fristen gefunden.");
-    return;
-  }
-
-  console.log(`[TÜV-Notifier] ${records.length} Frist(en) laufen in 2 Tagen ab.`);
+async function notifyRecords(
+  records: (typeof tuevJahresberichtTable.$inferSelect)[],
+  globalSettings: typeof emailSettingsTable.$inferSelect,
+  isToday: boolean
+) {
+  const label = isToday ? "heute" : "in 2 Tagen";
+  console.log(`[TÜV-Notifier] ${records.length} Frist(en) laufen ${label} ab.`);
 
   for (const record of records) {
     const marktName = MARKETS[record.marketId]?.name || `Markt ${record.marketId}`;
     const marketConfig = await getMarketConfig(record.marketId);
-    const transporter = await buildTransporter(global, marketConfig);
+    const transporter = await buildTransporter(globalSettings, marketConfig);
     if (!transporter) {
       console.warn(`[TÜV-Notifier] Kein Transporter für Markt ${marktName} – übersprungen.`);
       continue;
@@ -191,20 +179,77 @@ async function checkAndNotifyExpiringAktionsplaene() {
     const fristDatum = new Date(erstelltAm);
     fristDatum.setDate(fristDatum.getDate() + AKTIONSPLAN_FRIST_DAYS);
     const massnahmen = record.aktionsplanMassnahmen || "[]";
-    const html = buildEmailHtml(marktName, record.year, fristDatum, massnahmen);
+    const html = buildEmailHtml(marktName, record.year, fristDatum, massnahmen, isToday);
     const fristFormatted = fristDatum.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
-    const subject = `Erinnerung: TÜV-Aktionsplan-Frist läuft ab – ${marktName} (${fristFormatted})`;
-    const from = buildFromAddress(global, marketConfig);
+    const subject = isToday
+      ? `DRINGEND: TÜV-Aktionsplan-Frist läuft heute ab – ${marktName} (${fristFormatted})`
+      : `Erinnerung: TÜV-Aktionsplan-Frist läuft ab – ${marktName} (${fristFormatted})`;
+    const from = buildFromAddress(globalSettings, marketConfig);
 
     for (const user of emailRecipients) {
       try {
         await transporter.sendMail({ from, to: user.email!, subject, html });
-        console.log(`[TÜV-Notifier] E-Mail gesendet an ${user.email} (${user.name}, ${marktName}).`);
+        console.log(`[TÜV-Notifier] E-Mail gesendet an ${user.email} (${user.name}, ${marktName}) [${label}].`);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         console.error(`[TÜV-Notifier] Fehler beim Senden an ${user.email}: ${message}`);
       }
     }
+  }
+}
+
+async function checkAndNotifyExpiringAktionsplaene() {
+  console.log("[TÜV-Notifier] Prüfe ablaufende Aktionsplan-Fristen...");
+
+  const global = await getGlobalSettings();
+  if (!global?.enabled) {
+    console.log("[TÜV-Notifier] E-Mail-Versand deaktiviert – übersprungen.");
+    return;
+  }
+
+  const now = new Date();
+
+  // --- 2-day-ahead check ---
+  // dueDate = aktionsplanDatum + 21 = today + 2  →  aktionsplanDatum = today - 19
+  const twoDayAheadOffset = NOTIFY_DAYS_BEFORE - AKTIONSPLAN_FRIST_DAYS; // -19
+  const { start: twoDayStart, end: twoDayEnd } = getDateRange(now, twoDayAheadOffset);
+
+  const twoDayRecords = await db
+    .select()
+    .from(tuevJahresberichtTable)
+    .where(
+      and(
+        gte(tuevJahresberichtTable.aktionsplanDatum, twoDayStart),
+        lt(tuevJahresberichtTable.aktionsplanDatum, twoDayEnd)
+      )
+    );
+
+  // --- Same-day check ---
+  // dueDate = aktionsplanDatum + 21 = today  →  aktionsplanDatum = today - 21
+  const todayOffset = -AKTIONSPLAN_FRIST_DAYS; // -21
+  const { start: todayStart, end: todayEnd } = getDateRange(now, todayOffset);
+
+  const todayRecords = await db
+    .select()
+    .from(tuevJahresberichtTable)
+    .where(
+      and(
+        gte(tuevJahresberichtTable.aktionsplanDatum, todayStart),
+        lt(tuevJahresberichtTable.aktionsplanDatum, todayEnd)
+      )
+    );
+
+  if (twoDayRecords.length === 0 && todayRecords.length === 0) {
+    console.log("[TÜV-Notifier] Keine ablaufenden Fristen gefunden.");
+    return;
+  }
+
+  if (twoDayRecords.length > 0) {
+    await notifyRecords(twoDayRecords, global, false);
+  }
+
+  if (todayRecords.length > 0) {
+    await notifyRecords(todayRecords, global, true);
   }
 }
 
