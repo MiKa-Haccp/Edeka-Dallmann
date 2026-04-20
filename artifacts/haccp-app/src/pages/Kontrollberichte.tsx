@@ -249,34 +249,27 @@ function DokumentCard({
               </div>
             )}
           </div>
-        ) : disabled ? (
-          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-muted/30 border border-dashed border-border/40">
-            <Upload className="w-4 h-4 text-muted-foreground/50" />
-            <span className="text-xs text-muted-foreground/60 italic">Kein Dokument hochgeladen</span>
-          </div>
         ) : (
-          !disabled && (
-            <div
-              className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragLeave={() => setDragOver(false)}
-              onDrop={handleDrop}
-            >
-              <button onClick={() => fotoRef.current?.click()} disabled={processing}
-                className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50">
-                {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
-                <span className="text-xs font-semibold text-center leading-tight">Foto /<br />Screenshot</span>
-              </button>
-              <button onClick={() => fileRef.current?.click()} disabled={processing}
-                className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-red-200 rounded-xl text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50">
-                <Upload className="w-5 h-5" />
-                <span className="text-xs font-semibold text-center leading-tight">PDF-<br />Datei</span>
-              </button>
-              {dragOver && (
-                <div className="col-span-2 text-center text-xs text-[#1a3a6b] font-semibold py-1">Datei hier ablegen</div>
-              )}
-            </div>
-          )
+          <div
+            className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+          >
+            <button onClick={() => fotoRef.current?.click()} disabled={processing}
+              className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50">
+              {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+              <span className="text-xs font-semibold text-center leading-tight">Foto /<br />Screenshot</span>
+            </button>
+            <button onClick={() => fileRef.current?.click()} disabled={processing}
+              className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-red-200 rounded-xl text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50">
+              <Upload className="w-5 h-5" />
+              <span className="text-xs font-semibold text-center leading-tight">PDF-<br />Datei</span>
+            </button>
+            {dragOver && (
+              <div className="col-span-2 text-center text-xs text-[#1a3a6b] font-semibold py-1">Datei hier ablegen</div>
+            )}
+          </div>
         )}
         <input ref={fotoRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
         <input ref={fileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={handleFile} />
@@ -374,34 +367,27 @@ function AktionsplanCard({
                 )}
               </div>
             )
-          ) : disabled ? (
-            <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-muted/30 border border-dashed border-border/40">
-              <Upload className="w-4 h-4 text-muted-foreground/50" />
-              <span className="text-xs text-muted-foreground/60 italic">Kein Dokument hochgeladen</span>
-            </div>
           ) : (
-            !disabled && (
-              <div
-                className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={handleDrop}
-              >
-                <button onClick={() => fotoRef.current?.click()} disabled={processing}
-                  className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50">
-                  {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
-                  <span className="text-xs font-semibold text-center leading-tight">Foto /<br />Screenshot</span>
-                </button>
-                <button onClick={() => fileRef.current?.click()} disabled={processing}
-                  className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-red-200 rounded-xl text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50">
-                  <Upload className="w-5 h-5" />
-                  <span className="text-xs font-semibold text-center leading-tight">PDF-<br />Datei</span>
-                </button>
-                {dragOver && (
-                  <div className="col-span-2 text-center text-xs text-[#1a3a6b] font-semibold py-1">Datei hier ablegen</div>
-                )}
-              </div>
-            )
+            <div
+              className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+            >
+              <button onClick={() => fotoRef.current?.click()} disabled={processing}
+                className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50">
+                {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+                <span className="text-xs font-semibold text-center leading-tight">Foto /<br />Screenshot</span>
+              </button>
+              <button onClick={() => fileRef.current?.click()} disabled={processing}
+                className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-red-200 rounded-xl text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50">
+                <Upload className="w-5 h-5" />
+                <span className="text-xs font-semibold text-center leading-tight">PDF-<br />Datei</span>
+              </button>
+              {dragOver && (
+                <div className="col-span-2 text-center text-xs text-[#1a3a6b] font-semibold py-1">Datei hier ablegen</div>
+              )}
+            </div>
           )}
           <input ref={fotoRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
           <input ref={fileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={handleFile} />
@@ -584,13 +570,13 @@ function TuevPanel({ year }: { year: number }) {
       {(daten || editMode) ? (
         <div className="space-y-4">
           <DokumentCard label="TÜV Zertifikate" dokument={zertDok} notizen={zertNotizen}
-            onDokument={setZertDok} onNotizen={setZertNotizen} onClear={() => setZertDok("")}
+            onDokument={(v) => { setZertDok(v); setEditMode(true); }} onNotizen={(v) => { setZertNotizen(v); setEditMode(true); }} onClear={() => { setZertDok(""); setEditMode(true); }}
             notizenPlaceholder="Zertifikat-Nummer, Gültigkeitsdatum, Ausstellungsorganisation..." disabled={!editMode} />
           <DokumentCard label="TÜV Prüfberichte" dokument={pruefDok} notizen={pruefNotizen}
-            onDokument={setPruefDok} onNotizen={setPruefNotizen} onClear={() => setPruefDok("")}
+            onDokument={(v) => { setPruefDok(v); setEditMode(true); }} onNotizen={(v) => { setPruefNotizen(v); setEditMode(true); }} onClear={() => { setPruefDok(""); setEditMode(true); }}
             notizenPlaceholder="Prüfbereich, Ergebnis, Prüfer, Datum der nächsten Prüfung..." disabled={!editMode} />
           <AktionsplanCard foto={aktFoto} massnahmen={massnahmen}
-            onFoto={setAktFoto} onMassnahmen={setMassnahmen} onFotoClear={() => setAktFoto("")}
+            onFoto={(v) => { setAktFoto(v); setEditMode(true); }} onMassnahmen={(v) => { setMassnahmen(v); setEditMode(true); }} onFotoClear={() => { setAktFoto(""); setEditMode(true); }}
             disabled={!editMode} />
 
           {(massnahmen.length > 0 || aktFoto) && (
