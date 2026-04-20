@@ -224,7 +224,7 @@ function EntryModal({
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
                   <Thermometer className="w-3.5 h-3.5" />
-                  Temperatur Obst/Gemüse (max. +7 C)
+                  Temperatur Obst/Gemüse (max. +7 °C)
                 </label>
                 <div className="flex items-center gap-2">
                   <input
