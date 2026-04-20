@@ -349,7 +349,7 @@ export default function Probeentnahme() {
     const section = (title: string, rows: string) =>
       `<div style="margin-bottom:14px"><div style="background:#1a3a6b;color:white;font-size:11px;font-weight:700;padding:5px 10px;border-radius:4px 4px 0 0">${title}</div><div style="border:1px solid #1a3a6b;border-top:none;border-radius:0 0 4px 4px;padding:8px 10px"><table style="width:100%;border-collapse:collapse">${rows}</table></div></div>`;
 
-    const s3221 = sections === "3221" || sections === "both" ? section("Probenahmebogen (3.22-1)", [
+    const s3221 = sections === "3221" || sections === "both" ? section("Probenahmebogen", [
       label("Markt", form.markt),
       label("Ansprechpartner", form.ansprechpartner),
       label("Behörde", form.behoerdeBezeichnung),
@@ -542,7 +542,7 @@ ${s3221}${s3222}${fotoHtml}
 
             {/* ===== 3.22-1 Probenahmebogen ===== */}
             <SectionCard
-              title="Probenahmebogen (3.22-1)"
+              title="Probenahmebogen"
               subtitle="Zur amtlichen Probenentnahme — in Druckbuchstaben"
               icon={<FlaskConical className="w-4 h-4" />}
             >
@@ -822,7 +822,7 @@ ${s3221}${s3222}${fotoHtml}
                       onClick={handlePrint322_1}
                       className="w-full text-left px-4 py-3 text-sm font-semibold text-foreground hover:bg-muted/40 border-b border-border/30"
                     >
-                      🧪 Probenahmebogen (3.22-1)
+                      🧪 Probenahmebogen
                     </button>
                     {hatGegenprobe && (
                       <button
