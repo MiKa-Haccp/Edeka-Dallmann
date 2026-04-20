@@ -128,7 +128,6 @@ function buildEmailHtml(marktName: string, year: number, fristDatum: Date, massn
   </div>`;
 }
 
-const AKTIONSPLAN_FRIST_DAYS = 21;
 const NOTIFY_DAYS_BEFORE = 2;
 
 function getDateRange(now: Date, offsetDays: number): { start: Date; end: Date } {
@@ -175,9 +174,7 @@ async function notifyRecords(
       continue;
     }
 
-    const erstelltAm = record.aktionsplanDatum!;
-    const fristDatum = new Date(erstelltAm);
-    fristDatum.setDate(fristDatum.getDate() + AKTIONSPLAN_FRIST_DAYS);
+    const fristDatum = new Date(record.aktionsplanDatum!);
     const massnahmen = record.aktionsplanMassnahmen || "[]";
     const html = buildEmailHtml(marktName, record.year, fristDatum, massnahmen, isToday);
     const fristFormatted = fristDatum.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -209,10 +206,8 @@ async function checkAndNotifyExpiringAktionsplaene() {
 
   const now = new Date();
 
-  // --- 2-day-ahead check ---
-  // dueDate = aktionsplanDatum + 21 = today + 2  →  aktionsplanDatum = today - 19
-  const twoDayAheadOffset = NOTIFY_DAYS_BEFORE - AKTIONSPLAN_FRIST_DAYS; // -19
-  const { start: twoDayStart, end: twoDayEnd } = getDateRange(now, twoDayAheadOffset);
+  // --- 2-day-ahead check: aktionsplanDatum IS the deadline, fire when deadline = today + 2 ---
+  const { start: twoDayStart, end: twoDayEnd } = getDateRange(now, NOTIFY_DAYS_BEFORE);
 
   const twoDayRecords = await db
     .select()
@@ -224,10 +219,8 @@ async function checkAndNotifyExpiringAktionsplaene() {
       )
     );
 
-  // --- Same-day check ---
-  // dueDate = aktionsplanDatum + 21 = today  →  aktionsplanDatum = today - 21
-  const todayOffset = -AKTIONSPLAN_FRIST_DAYS; // -21
-  const { start: todayStart, end: todayEnd } = getDateRange(now, todayOffset);
+  // --- Same-day check: aktionsplanDatum IS the deadline, fire when deadline = today ---
+  const { start: todayStart, end: todayEnd } = getDateRange(now, 0);
 
   const todayRecords = await db
     .select()

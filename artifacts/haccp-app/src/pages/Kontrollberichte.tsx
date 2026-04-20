@@ -293,13 +293,15 @@ function DokumentCard({
 
 // ===== AKTIONSPLAN CARD =====
 function AktionsplanCard({
-  foto, massnahmen, onFoto, onMassnahmen, onFotoClear, disabled,
+  foto, massnahmen, datum, onFoto, onMassnahmen, onFotoClear, onDatum, disabled,
 }: {
   foto: string;
   massnahmen: Massnahme[];
+  datum: string;
   onFoto: (v: string) => void;
   onMassnahmen: (v: Massnahme[]) => void;
   onFotoClear: () => void;
+  onDatum: (v: string) => void;
   disabled?: boolean;
 }) {
   const [processing, setProcessing] = useState(false);
@@ -448,6 +450,18 @@ function AktionsplanCard({
             </button>
           )}
         </div>
+
+        {/* Fristdatum */}
+        <div>
+          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Frist (Deadline)</label>
+          <input
+            type="date"
+            value={datum}
+            onChange={(e) => onDatum(e.target.value)}
+            disabled={disabled}
+            className="w-full border border-border/60 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[#1a3a6b]/20 disabled:bg-transparent disabled:border-transparent"
+          />
+        </div>
       </div>
     </div>
   );
@@ -465,7 +479,7 @@ function TuevPanel({ year }: { year: number }) {
   const [pruefDok, setPruefDok] = useState("");
   const [pruefNotizen, setPruefNotizen] = useState("");
   const [aktFoto, setAktFoto] = useState("");
-  const [aktionsplanDatum, setAktionsplanDatum] = useState<string | null>(null);
+  const [aktionsplanDatum, setAktionsplanDatum] = useState<string>("");
   const [massnahmen, setMassnahmen] = useState<Massnahme[]>([]);
   const [nachbesserungName, setNachbesserungName] = useState("");
   const [nachbesserungDatum, setNachbesserungDatum] = useState("");
@@ -488,7 +502,7 @@ function TuevPanel({ year }: { year: number }) {
         setPruefDok(data.pruefungenDokument || "");
         setPruefNotizen(data.pruefungenNotizen || "");
         setAktFoto(data.aktionsplanFoto || "");
-        setAktionsplanDatum(data.aktionsplanDatum || null);
+        setAktionsplanDatum(data.aktionsplanDatum ? new Date(data.aktionsplanDatum).toISOString().slice(0, 10) : "");
         setNachbesserungName(data.nachbesserungName || "");
         setNachbesserungDatum(data.nachbesserungDatum || "");
         setNachbesserungUnterschrift(data.nachbesserungUnterschrift || "");
@@ -496,7 +510,7 @@ function TuevPanel({ year }: { year: number }) {
         catch { setMassnahmen([]); }
       } else {
         setZertDok(""); setZertNotizen(""); setPruefDok(""); setPruefNotizen("");
-        setAktFoto(""); setAktionsplanDatum(null); setMassnahmen([]);
+        setAktFoto(""); setAktionsplanDatum(""); setMassnahmen([]);
         setNachbesserungName(""); setNachbesserungDatum(""); setNachbesserungUnterschrift("");
       }
     } finally { setLoading(false); }
@@ -515,6 +529,7 @@ function TuevPanel({ year }: { year: number }) {
           zertifikateDokument: zertDok, zertifikateNotizen: zertNotizen,
           pruefungenDokument: pruefDok, pruefungenNotizen: pruefNotizen,
           aktionsplanFoto: aktFoto, aktionsplanMassnahmen: JSON.stringify(massnahmen),
+          aktionsplanDatum: aktionsplanDatum || null,
           nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift,
         }),
       });
@@ -578,36 +593,38 @@ function TuevPanel({ year }: { year: number }) {
           <DokumentCard label="TÜV Prüfberichte" dokument={pruefDok} notizen={pruefNotizen}
             onDokument={(v) => { setPruefDok(v); setEditMode(true); }} onNotizen={(v) => { setPruefNotizen(v); setEditMode(true); }} onClear={() => { setPruefDok(""); setEditMode(true); }}
             notizenPlaceholder="Prüfbereich, Ergebnis, Prüfer, Datum der nächsten Prüfung..." disabled={!editMode} />
-          <AktionsplanCard foto={aktFoto} massnahmen={massnahmen}
+          <AktionsplanCard foto={aktFoto} massnahmen={massnahmen} datum={aktionsplanDatum}
             onFoto={(v) => { setAktFoto(v); setEditMode(true); }} onMassnahmen={(v) => { setMassnahmen(v); setEditMode(true); }} onFotoClear={() => { setAktFoto(""); setEditMode(true); }}
+            onDatum={(v) => { setAktionsplanDatum(v); setEditMode(true); }}
             disabled={!editMode} />
 
           {(massnahmen.length > 0 || aktFoto) && (() => {
             const hasNachbesserung = !!nachbesserungDatum?.trim();
-            const daysSince = aktionsplanDatum ? Math.floor((Date.now() - new Date(aktionsplanDatum).getTime()) / (1000 * 60 * 60 * 24)) : null;
-            const daysLeft = daysSince !== null ? 21 - daysSince : null;
+            const daysLeft = aktionsplanDatum
+              ? Math.ceil((new Date(aktionsplanDatum).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+              : null;
             if (hasNachbesserung) return (
               <div className="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-2xl text-green-800 text-sm font-medium">
                 <span className="text-lg">🟢</span>
                 <span>Maßnahmen wurden bestätigt – Aktionsplan abgeschlossen.</span>
               </div>
             );
-            if (daysSince === null) return (
+            if (daysLeft === null) return (
               <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-sm font-medium">
                 <span className="text-lg">🟡</span>
                 <span>Aktionsplan offen – Maßnahmen noch nicht bestätigt.</span>
               </div>
             );
-            if (daysLeft !== null && daysLeft > 0) return (
+            if (daysLeft > 0) return (
               <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-sm font-medium">
                 <span className="text-lg">🟡</span>
-                <span>Aktionsplan offen – noch <strong>{daysLeft} Tag{daysLeft !== 1 ? "e" : ""}</strong> bis zur 3-Wochen-Frist.</span>
+                <span>Aktionsplan offen – noch <strong>{daysLeft} Tag{daysLeft !== 1 ? "e" : ""}</strong> bis zur Frist.</span>
               </div>
             );
             return (
               <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-sm font-medium">
                 <span className="text-lg">🔴</span>
-                <span>3-Wochen-Frist überschritten! Aktionsplan seit <strong>{Math.abs(daysLeft ?? 0)} Tag{Math.abs(daysLeft ?? 0) !== 1 ? "en" : ""}</strong> überfällig – Maßnahmen sofort einleiten.</span>
+                <span>Frist überschritten! Aktionsplan seit <strong>{Math.abs(daysLeft)} Tag{Math.abs(daysLeft) !== 1 ? "en" : ""}</strong> überfällig – Maßnahmen sofort einleiten.</span>
               </div>
             );
           })()}

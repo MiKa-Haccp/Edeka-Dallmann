@@ -32,14 +32,10 @@ router.put("/tuev-jahresbericht", async (req, res) => {
       )
     );
 
-  const hasAktionsplan =
-    (fields.aktionsplanFoto && fields.aktionsplanFoto.trim()) ||
-    (fields.aktionsplanMassnahmen && fields.aktionsplanMassnahmen !== "[]" && fields.aktionsplanMassnahmen.trim());
-
   if (existing.length > 0) {
     const updateFields: Record<string, unknown> = { ...fields, updatedAt: new Date() };
-    if (hasAktionsplan && !existing[0].aktionsplanDatum) {
-      updateFields.aktionsplanDatum = new Date();
+    if (fields.aktionsplanDatum !== undefined) {
+      updateFields.aktionsplanDatum = fields.aktionsplanDatum ? new Date(fields.aktionsplanDatum) : null;
     }
     const row = await db
       .update(tuevJahresberichtTable)
@@ -55,8 +51,8 @@ router.put("/tuev-jahresbericht", async (req, res) => {
     res.json(row[0]);
   } else {
     const insertFields = { tenantId, marketId, year, ...fields } as typeof tuevJahresberichtTable.$inferInsert;
-    if (hasAktionsplan) {
-      (insertFields as Record<string, unknown>).aktionsplanDatum = new Date();
+    if (fields.aktionsplanDatum !== undefined) {
+      (insertFields as Record<string, unknown>).aktionsplanDatum = fields.aktionsplanDatum ? new Date(fields.aktionsplanDatum) : null;
     }
     const row = await db
       .insert(tuevJahresberichtTable)
