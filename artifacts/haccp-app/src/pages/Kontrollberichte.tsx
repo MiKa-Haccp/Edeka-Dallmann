@@ -252,7 +252,7 @@ function DokumentCard({
         ) : (
           <div
             className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
           >
@@ -262,7 +262,7 @@ function DokumentCard({
               <span className="text-xs font-semibold text-center leading-tight">Foto /<br />Screenshot</span>
             </button>
             <button onClick={() => fileRef.current?.click()} disabled={processing}
-              className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-red-200 rounded-xl text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50">
+              className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50">
               <Upload className="w-5 h-5" />
               <span className="text-xs font-semibold text-center leading-tight">PDF-<br />Datei</span>
             </button>
@@ -370,7 +370,7 @@ function AktionsplanCard({
           ) : (
             <div
               className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
             >
@@ -380,7 +380,7 @@ function AktionsplanCard({
                 <span className="text-xs font-semibold text-center leading-tight">Foto /<br />Screenshot</span>
               </button>
               <button onClick={() => fileRef.current?.click()} disabled={processing}
-                className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-red-200 rounded-xl text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50">
+                className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50">
                 <Upload className="w-5 h-5" />
                 <span className="text-xs font-semibold text-center leading-tight">PDF-<br />Datei</span>
               </button>
@@ -736,6 +736,7 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
 
   const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
     if (e.dataTransfer.types.includes("Files")) {
       dragCounter.current++;
       setIsDragging(true);
@@ -782,7 +783,7 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
       {isDragging && (
         <div
           className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#1a3a6b]/10 rounded-2xl border-2 border-dashed border-[#1a3a6b]/50 backdrop-blur-[1px]"
-          onDragOver={(e) => e.preventDefault()}
+          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; }}
           onDragLeave={handleDragLeave}
           onDrop={handleOverlayDrop}
         >
@@ -847,7 +848,7 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
         ) : (
           <div
             onDrop={handleDrop}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
           >
