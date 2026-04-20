@@ -6,7 +6,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 
-import { useWarenzustandOGStatus, useReinigungTaeglichStatus, useWareneingaengeStatus, useMetzgereiWareneingaengeStatus, useMetzgereiReinigungStatus, useKaesethekeStatus, useOeffnungSalateStatus, useGQBegehungStatus, useSchulungsnachweiseStatus, useResponsibilitiesStatus, useAnnualCleaningPlanStatus, useBetriebsbegehungStatus, useTempLagerStatus, useBescheinigungenStatus, type TrafficLight } from "@/hooks/useWarenzustandStatus";
+import { useWarenzustandOGStatus, useReinigungTaeglichStatus, useWareneingaengeStatus, useMetzgereiWareneingaengeStatus, useMetzgereiReinigungStatus, useKaesethekeStatus, useOeffnungSalateStatus, useGQBegehungStatus, useSchulungsnachweiseStatus, useResponsibilitiesStatus, useAnnualCleaningPlanStatus, useBetriebsbegehungStatus, useTempLagerStatus, useBescheinigungenStatus, useTuevAktionsplanStatus, type TrafficLight } from "@/hooks/useWarenzustandStatus";
 import { useAppStore } from "@/store/use-app-store";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -52,6 +52,7 @@ function CategorySections({ categoryId, onNavigate, visibility }: { categoryId: 
   const betriebsbegehungStatus   = useBetriebsbegehungStatus();
   const tempLagerStatus          = useTempLagerStatus();
   const bescheinigungenStatus    = useBescheinigungenStatus();
+  const tuevAktionsplanStatus    = useTuevAktionsplanStatus();
 
   const SECTION_HREF: Record<string, string> = {
     "1.1": "/responsibilities", "1.2": "/mitarbeiter-liste", "1.3": "/info-documentation",
@@ -81,7 +82,7 @@ function CategorySections({ categoryId, onNavigate, visibility }: { categoryId: 
         const href = SECTION_HREF[section.number] ?? `/section/${section.id}`;
         const displayNum = `${categoryId}.${idx + 1}`;
         const isActive = location === href;
-        const trafficStatus: TrafficLight = section.number === "1.1" ? responsibilitiesStatus : section.number === "1.4" ? schulungsnachweiseStatus : section.number === "1.5" ? cleaningPlanStatus : section.number === "1.6" ? betriebsbegehungStatus : section.number === "1.11" ? bescheinigungenStatus : section.number === "1.13" ? tempLagerStatus : section.number === "2.1" ? wareneingaengeStatus : section.number === "2.2" ? ogStatus : section.number === "2.3" ? reinigungStatus : section.number === "3.1" ? metzgereiStatus : section.number === "3.2" ? metzReinigungStatus : section.number === "3.3" ? oeffnungSalateStatus : section.number === "3.4" ? kaesethekeStatus : section.number === "3.8" ? gqBegehungStatus : "none";
+        const trafficStatus: TrafficLight = section.number === "1.1" ? responsibilitiesStatus : section.number === "1.4" ? schulungsnachweiseStatus : section.number === "1.5" ? cleaningPlanStatus : section.number === "1.6" ? betriebsbegehungStatus : section.number === "1.11" ? bescheinigungenStatus : section.number === "1.12" ? tuevAktionsplanStatus : section.number === "1.13" ? tempLagerStatus : section.number === "2.1" ? wareneingaengeStatus : section.number === "2.2" ? ogStatus : section.number === "2.3" ? reinigungStatus : section.number === "3.1" ? metzgereiStatus : section.number === "3.2" ? metzReinigungStatus : section.number === "3.3" ? oeffnungSalateStatus : section.number === "3.4" ? kaesethekeStatus : section.number === "3.8" ? gqBegehungStatus : "none";
         const iconColor = trafficStatus === "green"
           ? "text-green-500"
           : trafficStatus === "yellow"

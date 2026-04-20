@@ -50,6 +50,7 @@ interface TuevJahresbericht {
   pruefungenNotizen?: string;
   aktionsplanFoto?: string;
   aktionsplanMassnahmen?: string;
+  aktionsplanDatum?: string;
   nachbesserungName?: string;
   nachbesserungDatum?: string;
   nachbesserungUnterschrift?: string;
@@ -464,6 +465,7 @@ function TuevPanel({ year }: { year: number }) {
   const [pruefDok, setPruefDok] = useState("");
   const [pruefNotizen, setPruefNotizen] = useState("");
   const [aktFoto, setAktFoto] = useState("");
+  const [aktionsplanDatum, setAktionsplanDatum] = useState<string | null>(null);
   const [massnahmen, setMassnahmen] = useState<Massnahme[]>([]);
   const [nachbesserungName, setNachbesserungName] = useState("");
   const [nachbesserungDatum, setNachbesserungDatum] = useState("");
@@ -486,6 +488,7 @@ function TuevPanel({ year }: { year: number }) {
         setPruefDok(data.pruefungenDokument || "");
         setPruefNotizen(data.pruefungenNotizen || "");
         setAktFoto(data.aktionsplanFoto || "");
+        setAktionsplanDatum(data.aktionsplanDatum || null);
         setNachbesserungName(data.nachbesserungName || "");
         setNachbesserungDatum(data.nachbesserungDatum || "");
         setNachbesserungUnterschrift(data.nachbesserungUnterschrift || "");
@@ -493,7 +496,7 @@ function TuevPanel({ year }: { year: number }) {
         catch { setMassnahmen([]); }
       } else {
         setZertDok(""); setZertNotizen(""); setPruefDok(""); setPruefNotizen("");
-        setAktFoto(""); setMassnahmen([]);
+        setAktFoto(""); setAktionsplanDatum(null); setMassnahmen([]);
         setNachbesserungName(""); setNachbesserungDatum(""); setNachbesserungUnterschrift("");
       }
     } finally { setLoading(false); }
@@ -578,6 +581,36 @@ function TuevPanel({ year }: { year: number }) {
           <AktionsplanCard foto={aktFoto} massnahmen={massnahmen}
             onFoto={(v) => { setAktFoto(v); setEditMode(true); }} onMassnahmen={(v) => { setMassnahmen(v); setEditMode(true); }} onFotoClear={() => { setAktFoto(""); setEditMode(true); }}
             disabled={!editMode} />
+
+          {(massnahmen.length > 0 || aktFoto) && (() => {
+            const hasNachbesserung = !!nachbesserungDatum?.trim();
+            const daysSince = aktionsplanDatum ? Math.floor((Date.now() - new Date(aktionsplanDatum).getTime()) / (1000 * 60 * 60 * 24)) : null;
+            const daysLeft = daysSince !== null ? 21 - daysSince : null;
+            if (hasNachbesserung) return (
+              <div className="flex items-center gap-3 px-4 py-3 bg-green-50 border border-green-200 rounded-2xl text-green-800 text-sm font-medium">
+                <span className="text-lg">🟢</span>
+                <span>Maßnahmen wurden bestätigt – Aktionsplan abgeschlossen.</span>
+              </div>
+            );
+            if (daysSince === null) return (
+              <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-sm font-medium">
+                <span className="text-lg">🟡</span>
+                <span>Aktionsplan offen – Maßnahmen noch nicht bestätigt.</span>
+              </div>
+            );
+            if (daysLeft !== null && daysLeft > 0) return (
+              <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-2xl text-amber-800 text-sm font-medium">
+                <span className="text-lg">🟡</span>
+                <span>Aktionsplan offen – noch <strong>{daysLeft} Tag{daysLeft !== 1 ? "e" : ""}</strong> bis zur 3-Wochen-Frist.</span>
+              </div>
+            );
+            return (
+              <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-2xl text-red-800 text-sm font-medium">
+                <span className="text-lg">🔴</span>
+                <span>3-Wochen-Frist überschritten! Aktionsplan seit <strong>{Math.abs(daysLeft ?? 0)} Tag{Math.abs(daysLeft ?? 0) !== 1 ? "en" : ""}</strong> überfällig – Maßnahmen sofort einleiten.</span>
+              </div>
+            );
+          })()}
 
           {(massnahmen.length > 0 || aktFoto) && (
             <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">

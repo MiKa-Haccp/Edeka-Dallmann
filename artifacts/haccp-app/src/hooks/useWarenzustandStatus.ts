@@ -1027,3 +1027,53 @@ export function useBescheinigungenStatus(): TrafficLight {
 
   return status;
 }
+
+// ===== 1.12 TÜV-Aktionsplan Ampel =====
+// Grün  = Aktionsplan vorhanden + Nachbesserung erledigt
+// Gelb  = Aktionsplan vorhanden + Nachbesserung fehlt + < 3 Wochen
+// Rot   = Aktionsplan vorhanden + Nachbesserung fehlt + >= 3 Wochen
+// None  = kein Aktionsplan eingetragen
+
+const THREE_WEEKS_MS = 21 * 24 * 60 * 60 * 1000;
+
+export function useTuevAktionsplanStatus(): TrafficLight {
+  const { selectedMarketId } = useAppStore();
+  const [status, setStatus] = useState<TrafficLight>("none");
+
+  useEffect(() => {
+    if (!selectedMarketId) { setStatus("none"); return; }
+
+    const year = new Date().getFullYear();
+    let cancelled = false;
+
+    fetch(`${BASE}/tuev-jahresbericht?tenantId=1&marketId=${selectedMarketId}&year=${year}`)
+      .then(r => r.json())
+      .then((data: {
+        aktionsplanFoto?: string | null;
+        aktionsplanMassnahmen?: string | null;
+        aktionsplanDatum?: string | null;
+        nachbesserungDatum?: string | null;
+      } | null) => {
+        if (cancelled) return;
+        if (!data) { setStatus("none"); return; }
+
+        const hasFoto = !!data.aktionsplanFoto?.trim();
+        const hasMassnahmen = !!data.aktionsplanMassnahmen && data.aktionsplanMassnahmen !== "[]";
+        const hasContent = hasFoto || hasMassnahmen;
+
+        if (!hasContent) { setStatus("none"); return; }
+
+        if (data.nachbesserungDatum?.trim()) { setStatus("green"); return; }
+
+        if (!data.aktionsplanDatum) { setStatus("yellow"); return; }
+
+        const since = Date.now() - new Date(data.aktionsplanDatum).getTime();
+        setStatus(since >= THREE_WEEKS_MS ? "red" : "yellow");
+      })
+      .catch(() => { if (!cancelled) setStatus("none"); });
+
+    return () => { cancelled = true; };
+  }, [selectedMarketId]);
+
+  return status;
+}
