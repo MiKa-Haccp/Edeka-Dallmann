@@ -290,12 +290,21 @@ function AktionsplanCard({
 }) {
   const [processing, setProcessing] = useState(false);
   const fotoRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const isPdf = foto.startsWith("data:application/pdf");
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setProcessing(true);
-    try { onFoto(await compressImage(file)); }
+    try {
+      const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      if (isPdfFile) {
+        onFoto(await readFileAsDataURL(file));
+      } else {
+        onFoto(await compressImage(file));
+      }
+    }
     finally { setProcessing(false); e.target.value = ""; }
   };
 
@@ -322,28 +331,40 @@ function AktionsplanCard({
         <h3 className="font-semibold text-sm text-[#1a3a6b]">Aktionsplan</h3>
       </div>
       <div className="p-5 space-y-4">
-        {/* Foto */}
+        {/* Dokument (Foto oder PDF) */}
         <div>
-          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Kontrollbericht (Foto)</label>
+          <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dokument / Foto des Aktionsplans</label>
           {foto ? (
-            <div className="relative">
-              <img src={foto} alt="Aktionsplan" className="w-full max-h-48 object-contain rounded-xl border border-border/40" />
-              {!disabled && (
-                <button onClick={onFotoClear} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
+            isPdf ? (
+              <PdfEmbed dataUrl={foto} editable={!disabled} onClear={onFotoClear} height="240px" />
+            ) : (
+              <div className="relative">
+                <ClickableImage src={foto} alt="Aktionsplan" className="w-full max-h-48 object-contain rounded-xl border border-border/40" />
+                {!disabled && (
+                  <button onClick={onFotoClear} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )
           ) : (
             !disabled && (
-              <button onClick={() => fotoRef.current?.click()} disabled={processing}
-                className="w-full flex items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50">
-                {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
-                <span className="text-sm font-semibold">Foto des Kontrollberichts</span>
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => fotoRef.current?.click()} disabled={processing}
+                  className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50">
+                  {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+                  <span className="text-xs font-semibold text-center leading-tight">Foto /<br />Screenshot</span>
+                </button>
+                <button onClick={() => fileRef.current?.click()} disabled={processing}
+                  className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-red-200 rounded-xl text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-50">
+                  <Upload className="w-5 h-5" />
+                  <span className="text-xs font-semibold text-center leading-tight">PDF-<br />Datei</span>
+                </button>
+              </div>
             )
           )}
           <input ref={fotoRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+          <input ref={fileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={handleFile} />
         </div>
 
         {/* Maßnahmen-Tabelle */}
