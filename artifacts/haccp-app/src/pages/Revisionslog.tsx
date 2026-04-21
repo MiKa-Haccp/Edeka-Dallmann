@@ -12,6 +12,7 @@ const ALLOWED_ROLES = ["SUPERADMIN", "ADMIN"];
 const MONTHS_DE = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
 const FULL_MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 const CURRENT_YEAR = new Date().getFullYear();
+const MIN_YEAR = 2025;
 
 const MODULE_OPTIONS = [
   { value: "", label: "Alle Module" },
@@ -128,7 +129,7 @@ export default function Revisionslog() {
               <select value={year} onChange={e => setYear(e.target.value)}
                 className="w-full border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#1a3a6b]/40">
                 <option value="">Alle Jahre</option>
-                {Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i).map(y => <option key={y} value={y}>{y}</option>)}
+                {Array.from({ length: CURRENT_YEAR - MIN_YEAR + 1 }, (_, i) => CURRENT_YEAR - i).map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
             <div>

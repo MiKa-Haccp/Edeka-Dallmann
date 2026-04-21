@@ -67,5 +67,5 @@ export function useMarketsWithCache() {
     }
   }, [result.data]);
 
-  return result;
+  return { ...result, markets: result.data };
 }

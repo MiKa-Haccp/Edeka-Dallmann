@@ -17,7 +17,8 @@ interface ArchivLock {
 }
 
 const CURRENT_YEAR = new Date().getFullYear();
-const YEARS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - i);
+const MIN_YEAR = 2025;
+const YEARS = Array.from({ length: CURRENT_YEAR - MIN_YEAR + 1 }, (_, i) => CURRENT_YEAR - i);
 
 export default function Jahresarchiv() {
   const { adminSession } = useAppStore();
@@ -61,7 +62,7 @@ export default function Jahresarchiv() {
     try {
       const res = await fetch(`${BASE}/archiv/lock`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ marketId: selectedMarket, year, lockedByName: adminSession?.name || adminSession?.email, lockedBy: adminSession?.id }),
+        body: JSON.stringify({ marketId: selectedMarket, year, lockedByName: adminSession?.name || adminSession?.email, lockedBy: adminSession?.userId ?? null }),
       });
       if (!res.ok) { const e = await res.json(); setMsg({ type: "err", text: e.error || "Fehler" }); return; }
       const newLock = await res.json();
