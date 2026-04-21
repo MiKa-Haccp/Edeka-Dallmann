@@ -488,11 +488,8 @@ export default function ReinigungTaeglich() {
               {MONTH_NAMES[month - 1]} {year}
             </span>
             {isCurrentMonth && (
-              <p className="text-xs mt-0.5">
-                <span className="text-muted-foreground">Heute ({now.getDate()}. {MONTH_NAMES[month - 1]}): </span>
-                <span className={`font-bold ${todayDone === AREAS.length ? "text-green-600" : todayDone > 0 ? "text-amber-600" : "text-muted-foreground"}`}>
-                  {todayDone} / {AREAS.length} abgezeichnet
-                </span>
+              <p className="text-xs mt-0.5 text-muted-foreground">
+                Heute, {now.getDate()}. {MONTH_NAMES[month - 1]}
               </p>
             )}
           </div>
