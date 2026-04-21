@@ -1,7 +1,6 @@
 import { Router, type IRouter } from "express";
-import { db, archivLocksTable } from "@workspace/db";
+import { db, pool, archivLocksTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
-import pg from "pg";
 
 const router: IRouter = Router();
 
@@ -100,9 +99,7 @@ router.get("/archiv/revisionslog", async (req, res) => {
   `;
 
   try {
-    const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
     const { rows } = await pool.query(finalQuery, params);
-    await pool.end();
     res.json(rows);
   } catch (err: any) {
     console.error("Revisionslog error:", err?.message);
