@@ -9,6 +9,9 @@ import {
   Lock, Plus, Trash2, Printer, ArrowLeft, Package, AlertCircle,
 } from "lucide-react";
 
+import { useArchivLock } from "@/hooks/useArchivLock";
+import { ArchivBanner } from "@/components/ArchivBanner";
+
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 type FleischEntry = {
@@ -363,6 +366,7 @@ export default function EingefrorenesFleisch() {
   const [,navigate] = useLocation();
   const now = new Date();
   const [year,setYear]=useState(now.getFullYear());
+  const { isLocked, lockInfo } = useArchivLock(year, selectedMarketId);
   const [entries,setEntries]=useState<FleischEntry[]>([]);
   const [loading,setLoading]=useState(false);
   const [showNeuer,setShowNeuer]=useState(false);
@@ -382,6 +386,7 @@ export default function EingefrorenesFleisch() {
   useEffect(()=>{fetchEntries();},[fetchEntries]);
 
   const handleNeu=async(data:{artikel:string;vkp:string;mengeKg:string;eingefrorenAm:string;eingefrorenDurch:string;kuerzel:string;userId:number|null})=>{
+    if(isLocked)return;
     await fetch(`${BASE}/eingefrorenes-fleisch`,{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({marketId,year,artikel:data.artikel,vkp:data.vkp||null,mengeKg:data.mengeKg||null,eingefrorenAm:data.eingefrorenAm||null,eingefrorenDurch:data.eingefrorenDurch||null,kuerzel:data.kuerzel,userId:data.userId})});
     setShowNeuer(false);fetchEntries();
@@ -413,6 +418,8 @@ export default function EingefrorenesFleisch() {
             </div>
           </div>
         </PageHeader>
+
+        {isLocked && <ArchivBanner lockInfo={lockInfo} year={year} className="print:hidden" />}
 
         {/* Jahresnavigation + Header */}
         <div className="flex items-center justify-between bg-card border rounded-xl px-4 py-3">

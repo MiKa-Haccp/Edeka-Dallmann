@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { getBavarianHolidays, getHolidayName } from "@/utils/holidays";
 import { useListMarkets } from "@workspace/api-client-react";
+import { useArchivLock } from "@/hooks/useArchivLock";
+import { ArchivBanner } from "@/components/ArchivBanner";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 const WOCHENTAGE = ["So","Mo","Di","Mi","Do","Fr","Sa"];
@@ -319,6 +321,7 @@ export default function OeffnungSalate() {
   const now = new Date();
   const [year,  setYear]  = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth()+1);
+  const { isLocked, lockInfo } = useArchivLock(year, selectedMarketId);
 
   const [entries, setEntries] = useState<SalateEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -364,6 +367,7 @@ export default function OeffnungSalate() {
   ,[entries]);
 
   const handleSave = async(data:{artikelBezeichnung:string;verbrauchsdatum:string;eigenherstellung:boolean;kuerzel:string;userId:number|null})=>{
+    if (isLocked) return;
     if (activeDay===null||!selectedMarketId) return;
     setSaving(true);
     try {
@@ -432,6 +436,8 @@ export default function OeffnungSalate() {
             </div>
           </div>
         </PageHeader>
+
+        {isLocked && <ArchivBanner lockInfo={lockInfo} year={year} className="print:hidden" />}
 
         {/* Monats-Navigation */}
         <div className="bg-card border border-border/60 rounded-2xl px-5 py-4">

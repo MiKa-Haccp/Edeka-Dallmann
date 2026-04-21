@@ -8,6 +8,8 @@ import {
   X, Printer, Lock, ListChecks,
 } from "lucide-react";
 import { getBavarianHolidays, getHolidayName } from "@/utils/holidays";
+import { useArchivLock } from "@/hooks/useArchivLock";
+import { ArchivBanner } from "@/components/ArchivBanner";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -307,6 +309,7 @@ export default function ReinigungTaeglich() {
   const now = new Date();
   const [year, setYear]   = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
+  const { isLocked, lockInfo } = useArchivLock(year, selectedMarketId);
 
   const [entries, setEntries]       = useState<CheckEntry[]>([]);
   const [loading, setLoading]       = useState(false);
@@ -364,6 +367,7 @@ export default function ReinigungTaeglich() {
     entries.find(e => e.day === day && e.area === areaKey) ?? null;
 
   const handleSign = async (kuerzel: string, userId: number | null) => {
+    if (isLocked) return;
     if (!activeCell || !selectedMarketId) return;
     const savedScroll = scrollRef.current?.scrollTop ?? 0;
     setSaving(true);
@@ -393,6 +397,7 @@ export default function ReinigungTaeglich() {
   };
 
   const handleBulkSign = async (kuerzel: string, userId: number | null, areaKeys: string[]) => {
+    if (isLocked) return;
     if (!selectedMarketId || areaKeys.length === 0) return;
     const savedScroll = scrollRef.current?.scrollTop ?? 0;
     setSaving(true);
@@ -470,6 +475,8 @@ export default function ReinigungTaeglich() {
             </div>
           </div>
         </PageHeader>
+
+        {isLocked && <ArchivBanner lockInfo={lockInfo} year={year} className="mx-4 print:hidden" />}
 
         {/* MONATSNAVIGATION + Tages-Badge */}
         <div className="bg-white rounded-xl border border-border/60 p-4 flex items-center justify-between gap-4 print:hidden">

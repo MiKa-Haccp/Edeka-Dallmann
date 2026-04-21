@@ -5,6 +5,8 @@ import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
 import { getBavarianHolidays } from "@/utils/holidays";
+import { useArchivLock } from "@/hooks/useArchivLock";
+import { ArchivBanner } from "@/components/ArchivBanner";
 import {
   Thermometer, ChevronLeft, ChevronRight, Loader2, Check,
   X, Printer, Lock, Plus, Trash2, Wind, Flame, Snowflake,
@@ -464,11 +466,11 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
 }
 
 // ─── Tab: Reifeschrank / Käsekühlschrank ──────────────────────────────────────
-function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession,openTodayModal,onTodayModalHandled}:{
+function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession,openTodayModal,onTodayModalHandled,isLocked}:{
   art:"reifeschrank"|"kaesekühlschrank";
   entries:KontrolleEntry[]; year:number; month:number; marketId:number;
   onSaved:()=>void; onDeleted:(id:number)=>void; adminSession:boolean;
-  openTodayModal:boolean; onTodayModalHandled:()=>void;
+  openTodayModal:boolean; onTodayModalHandled:()=>void; isLocked:boolean;
 }){
   const {d:todayD,y:ty,m:tm}=todayBerlin();
   const isCurrentMonth=year===ty&&month===tm;
@@ -506,6 +508,7 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
 
   type TempData={temperatur:string;luftfeuchtigkeit?:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean;aenderungsgrund?:string};
   const handleCreate=async(day:number,data:TempData)=>{
+    if(isLocked)return;
     await fetch(`${BASE}/kaesetheke-kontrolle`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marketId,year,month,day,kontrolleArt:art,temperatur:data.temperatur,luftfeuchtigkeit:data.luftfeuchtigkeit||null,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:data.defekt})});
     setModal(null);onSaved();
     window.dispatchEvent(new Event("kaesetheke-updated"));
@@ -726,10 +729,10 @@ function HeisseThekeEditModal({entry,onConfirm,onClose}:{
 }
 
 // ─── Tab: Heiße Theke ─────────────────────────────────────────────────────────
-function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSession,openTodayModal,onTodayModalHandled}:{
+function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSession,openTodayModal,onTodayModalHandled,isLocked}:{
   entries:KontrolleEntry[]; year:number; month:number; marketId:number;
   onSaved:()=>void; onDeleted:(id:number)=>void; adminSession:boolean;
-  openTodayModal:boolean; onTodayModalHandled:()=>void;
+  openTodayModal:boolean; onTodayModalHandled:()=>void; isLocked:boolean;
 }){
   const {d:todayD,y:ty,m:tm}=todayBerlin();
   const isCurrentMonth=year===ty&&month===tm;
@@ -764,6 +767,7 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
   },[entries]);
 
   const handleSave=async(day:number,items:{produkt:string;kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean}[])=>{
+    if(isLocked)return;
     await Promise.all(items.map(data=>
       fetch(`${BASE}/kaesetheke-kontrolle`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marketId,year,month,day,kontrolleArt:"heisse_theke",produkt:data.produkt,kernTempGaren:data.kernTempGaren,tempHeisshalten:data.tempHeisshalten,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:data.defekt})})
     ));
@@ -868,6 +872,7 @@ export default function KaesethekeKontrolle() {
   const now = new Date();
   const [year,setYear]=useState(now.getFullYear());
   const [month,setMonth]=useState(now.getMonth()+1);
+  const { isLocked, lockInfo } = useArchivLock(year, selectedMarketId);
   const [tab,setTab]=useState<Tab>("reifeschrank");
   const [entries,setEntries]=useState<KontrolleEntry[]>([]);
   const [loading,setLoading]=useState(false);
@@ -934,6 +939,8 @@ export default function KaesethekeKontrolle() {
           </div>
         </PageHeader>
 
+        {isLocked && <ArchivBanner lockInfo={lockInfo} year={year} className="print:hidden" />}
+
         {/* Monatsnavigation */}
         <div className="flex items-center justify-between bg-card border rounded-xl px-4 py-3">
           <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-secondary"><ChevronLeft className="w-5 h-5"/></button>
@@ -969,17 +976,17 @@ export default function KaesethekeKontrolle() {
             {tab==="reifeschrank"&&(
               <TempTab art="reifeschrank" entries={filteredEntries} year={year} month={month} marketId={marketId}
                 onSaved={fetchEntries} onDeleted={handleDeleted} adminSession={hasPermission("entries.delete")}
-                openTodayModal={openTodayFor==="reifeschrank"} onTodayModalHandled={()=>setOpenTodayFor(null)}/>
+                openTodayModal={openTodayFor==="reifeschrank"} onTodayModalHandled={()=>setOpenTodayFor(null)} isLocked={isLocked}/>
             )}
             {tab==="kaesekühlschrank"&&(
               <TempTab art="kaesekühlschrank" entries={filteredEntries} year={year} month={month} marketId={marketId}
                 onSaved={fetchEntries} onDeleted={handleDeleted} adminSession={hasPermission("entries.delete")}
-                openTodayModal={openTodayFor==="kaesekühlschrank"} onTodayModalHandled={()=>setOpenTodayFor(null)}/>
+                openTodayModal={openTodayFor==="kaesekühlschrank"} onTodayModalHandled={()=>setOpenTodayFor(null)} isLocked={isLocked}/>
             )}
             {tab==="heisse_theke"&&(
               <HeisseThekeTab entries={filteredEntries} year={year} month={month} marketId={marketId}
                 onSaved={fetchEntries} onDeleted={handleDeleted} adminSession={hasPermission("entries.delete")}
-                openTodayModal={openTodayFor==="heisse_theke"} onTodayModalHandled={()=>setOpenTodayFor(null)}/>
+                openTodayModal={openTodayFor==="heisse_theke"} onTodayModalHandled={()=>setOpenTodayFor(null)} isLocked={isLocked}/>
             )}
           </>
         )}

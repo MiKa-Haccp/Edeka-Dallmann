@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { Link, useLocation } from "wouter";
-import { Users, KeyRound, ArrowRight, UserCog, ChevronLeft, GraduationCap } from "lucide-react";
+import { Users, KeyRound, ArrowRight, UserCog, ChevronLeft, GraduationCap, Archive, FileSearch } from "lucide-react";
 import { useEffect } from "react";
 
 const ALLOWED_ROLES = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER"];
@@ -87,6 +87,42 @@ export default function VerwaltungHub() {
                 Pflichtschulungen pro Gruppe definieren. Wer muss wann geschult sein? Ersthelfer, Brandschutz & mehr.
               </p>
               <div className="flex items-center gap-1.5 text-sm font-bold text-teal-600 group-hover:gap-3 transition-all duration-200">
+                Öffnen <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/verwaltung/jahresarchiv">
+            <div className="group bg-white rounded-2xl border border-border/60 shadow-sm hover:shadow-md hover:border-amber-300 transition-all duration-200 p-6 cursor-pointer">
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Archive className="w-6 h-6 text-amber-600" />
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">Neu</span>
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-1">Jahresarchiv</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Vergangene Jahre sperren und archivieren. Daten bleiben sichtbar, aber schreibgeschützt für Mitarbeiter.
+              </p>
+              <div className="flex items-center gap-1.5 text-sm font-bold text-amber-600 group-hover:gap-3 transition-all duration-200">
+                Öffnen <ArrowRight className="w-4 h-4" />
+              </div>
+            </div>
+          </Link>
+
+          <Link href="/verwaltung/revisionslog">
+            <div className="group bg-white rounded-2xl border border-border/60 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all duration-200 p-6 cursor-pointer">
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <FileSearch className="w-6 h-6 text-emerald-600" />
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">Admin</span>
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-1">Revisionslog</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                Vollständige Protokollierung: wer hat wann welchen Eintrag gemacht – revisionssicher für Behörden.
+              </p>
+              <div className="flex items-center gap-1.5 text-sm font-bold text-emerald-600 group-hover:gap-3 transition-all duration-200">
                 Öffnen <ArrowRight className="w-4 h-4" />
               </div>
             </div>

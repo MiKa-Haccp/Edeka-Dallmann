@@ -104,6 +104,8 @@ import TempLagerKontrolle from "./pages/TempLagerKontrolle";
 import RindfleischEtikettierung from "./pages/RindfleischEtikettierung";
 import SectionVerwaltung from "./pages/SectionVerwaltung";
 import PlanEditor from "./pages/PlanEditor";
+import Jahresarchiv from "./pages/Jahresarchiv";
+import Revisionslog from "./pages/Revisionslog";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
@@ -188,6 +190,8 @@ function Router() {
       <Route path="/temp-lager-kontrolle" component={TempLagerKontrolle} />
       <Route path="/rindfleisch-etikettierung" component={RindfleischEtikettierung} />
       <Route path="/verwaltung/schulungsanforderungen" component={SchulungsAnforderungen} />
+      <Route path="/verwaltung/jahresarchiv" component={Jahresarchiv} />
+      <Route path="/verwaltung/revisionslog" component={Revisionslog} />
       <Route path="/todo" component={TodoHub} />
       <Route path="/todo-tagesliste" component={TodoTagesliste} />
       <Route path="/todo-rundgang" component={TodoTagesliste} />

@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { useListMarkets } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
+import { useArchivLock } from "@/hooks/useArchivLock";
+import { ArchivBanner } from "@/components/ArchivBanner";
 import {
   ChevronLeft, ChevronRight, Loader2, Check, X, Lock,
   Printer, ArrowLeft, ShoppingBag, Plus, Pencil, Settings2, Trash2,
@@ -279,6 +281,8 @@ export default function SemmelListe() {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
+  const { isLocked, lockInfo } = useArchivLock(year, selectedMarketId ?? null);
+
   const [entries, setEntries] = useState<SemmelEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState<number | null>(null);
@@ -342,6 +346,7 @@ export default function SemmelListe() {
   const nextMonth = () => { if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); };
 
   const handleSave = async (day: number, data: { items: Record<string, string>; semmel: string; sandwich: string; kuerzel: string; userId: number | null }) => {
+    if (isLocked) return;
     await fetch(`${BASE}/semmelliste`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ marketId, year, month, day, semmel: data.semmel || null, sandwich: data.sandwich || null, kuerzel: data.kuerzel, userId: data.userId, items: data.items })
@@ -386,6 +391,8 @@ export default function SemmelListe() {
             </div>
           </div>
         </PageHeader>
+
+        {isLocked && <ArchivBanner lockInfo={lockInfo} year={year} className="print:hidden" />}
 
         {/* Monatsnavigation */}
         <div className="flex items-center justify-between bg-card border rounded-xl px-4 py-3 mb-2 shrink-0">

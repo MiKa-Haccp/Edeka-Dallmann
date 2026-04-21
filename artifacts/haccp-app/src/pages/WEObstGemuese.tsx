@@ -6,6 +6,8 @@ import {
   Thermometer, ClipboardList, Printer, Trash2, AlertTriangle,
 } from "lucide-react";
 import { getBavarianHolidays, getHolidayName } from "@/utils/holidays";
+import { useArchivLock } from "@/hooks/useArchivLock";
+import { ArchivBanner } from "@/components/ArchivBanner";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -304,6 +306,8 @@ export default function WEObstGemuese() {
   const now = new Date();
   const [year, setYear]   = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
+  const { isLocked, lockInfo } = useArchivLock(year, selectedMarketId);
+
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeDay, setActiveDay] = useState<number | null>(null);
@@ -330,6 +334,7 @@ export default function WEObstGemuese() {
   const activeEntry = activeDay != null ? (entryByDay.get(activeDay) ?? null) : null;
 
   const handleSave = async (form: EntryForm, kuerzel: string, userId: number | null) => {
+    if (isLocked) return;
     if (!selectedMarketId || activeDay == null) return;
     await fetch(`${BASE}/wareneingang-og`, {
       method: "POST",
@@ -370,6 +375,7 @@ export default function WEObstGemuese() {
   return (
     <AppLayout>
       <div className="space-y-5 pb-10">
+        {isLocked && <ArchivBanner lockInfo={lockInfo} year={year} className="print:hidden" />}
         {/* HEADER */}
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
