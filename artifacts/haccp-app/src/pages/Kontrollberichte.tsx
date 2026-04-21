@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "wouter";
 import { useFilePaste } from "@/hooks/useFileUpload";
 import { buildFileFormData } from "@/lib/apiUpload";
-import { PdfEmbed } from "@/lib/pdf";
+import { PdfMultiEmbed } from "@/lib/pdf";
 import { ClickableImage } from "@/lib/lightbox";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -206,7 +206,7 @@ function DokumentCard({
   const [dragOver, setDragOver] = useState(false);
   const fotoRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const isPdf = dokument.startsWith("data:application/pdf");
+  const isAttachment = dokument.startsWith("data:application/pdf") || dokument.startsWith("[");
 
   const processFile = async (file: File) => {
     setProcessing(true);
@@ -235,21 +235,17 @@ function DokumentCard({
         <h3 className="font-semibold text-sm text-[#1a3a6b]">{label}</h3>
       </div>
       <div className="p-5 space-y-4">
-        {dokument ? (
+        {dokument && !isAttachment ? (
           <div className="relative">
-            {isPdf ? (
-              <PdfEmbed dataUrl={dokument} editable={!disabled} onClear={onClear} height="240px" />
-            ) : (
-              <div className="relative">
-                <ClickableImage src={dokument} alt={label} className="w-full max-h-48 object-contain rounded-xl border border-border/40" />
-                {!disabled && (
-                  <button onClick={onClear} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
+            <ClickableImage src={dokument} alt={label} className="w-full max-h-48 object-contain rounded-xl border border-border/40" />
+            {!disabled && (
+              <button onClick={onClear} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
+                <X className="w-3.5 h-3.5" />
+              </button>
             )}
           </div>
+        ) : isAttachment ? (
+          <PdfMultiEmbed raw={dokument} onChange={onDokument} editable={!disabled} />
         ) : (
           <div
             className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
@@ -308,7 +304,7 @@ function AktionsplanCard({
   const [dragOver, setDragOver] = useState(false);
   const fotoRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const isPdf = foto.startsWith("data:application/pdf");
+  const isFotoAttachment = foto.startsWith("data:application/pdf") || foto.startsWith("[");
 
   const processFile = async (file: File) => {
     setProcessing(true);
@@ -357,19 +353,17 @@ function AktionsplanCard({
         {/* Dokument (Foto oder PDF) */}
         <div>
           <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dokument / Foto des Aktionsplans</label>
-          {foto ? (
-            isPdf ? (
-              <PdfEmbed dataUrl={foto} editable={!disabled} onClear={onFotoClear} height="240px" />
-            ) : (
-              <div className="relative">
-                <ClickableImage src={foto} alt="Aktionsplan" className="w-full max-h-48 object-contain rounded-xl border border-border/40" />
-                {!disabled && (
-                  <button onClick={onFotoClear} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            )
+          {foto && !isFotoAttachment ? (
+            <div className="relative">
+              <ClickableImage src={foto} alt="Aktionsplan" className="w-full max-h-48 object-contain rounded-xl border border-border/40" />
+              {!disabled && (
+                <button onClick={onFotoClear} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          ) : isFotoAttachment ? (
+            <PdfMultiEmbed raw={foto} onChange={onFoto} editable={!disabled} />
           ) : (
             <div
               className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
@@ -807,7 +801,7 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
 
   useFilePaste(processFile);
 
-  const isPdf = dokument.startsWith("data:application/pdf");
+  const isDokAttachment = dokument.startsWith("data:application/pdf") || dokument.startsWith("[");
 
   const handleSubmit = async () => {
     if (!bezeichnung.trim() || processing) return;
@@ -884,17 +878,15 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
 
       <div className="flex flex-col gap-2">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dokument (Foto, Screenshot oder PDF)</label>
-        {dokument ? (
-          isPdf ? (
-            <PdfEmbed dataUrl={dokument} editable fileName={dokFileName} onClear={() => { setDokument(""); setDokFileName(""); }} height="240px" />
-          ) : (
-            <div className="relative">
-              <ClickableImage src={dokument} alt="Dokument" className="w-full max-h-56 object-contain rounded-xl border border-border/60" />
-              <button onClick={() => setDokument("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )
+        {dokument && !isDokAttachment ? (
+          <div className="relative">
+            <ClickableImage src={dokument} alt="Dokument" className="w-full max-h-56 object-contain rounded-xl border border-border/60" />
+            <button onClick={() => setDokument("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : isDokAttachment ? (
+          <PdfMultiEmbed raw={dokument} onChange={(v) => { setDokument(v); if (!v) setDokFileName(""); }} editable />
         ) : (
           <div
             onDrop={handleDrop}
@@ -996,7 +988,7 @@ function BerichtKarte({ b, tab, onDelete, isAdmin, onUpdate }: {
     } finally { setEditSaving(false); }
   };
   const status = getStatus(b.gueltigBis);
-  const isPdf = b.dokumentBase64?.startsWith("data:application/pdf");
+  const isDocAttachment = b.dokumentBase64?.startsWith("data:application/pdf") || b.dokumentBase64?.startsWith("[");
   const ergebnisConfig = b.ergebnis ? ERGEBNIS_CONFIG[b.ergebnis] : null;
 
   return (
@@ -1085,15 +1077,13 @@ function BerichtKarte({ b, tab, onDelete, isAdmin, onUpdate }: {
               {/* Dokument */}
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dokument</label>
-                {editDok ? (
-                  editDok.startsWith("data:application/pdf") ? (
-                    <PdfEmbed dataUrl={editDok} editable onClear={() => setEditDok("")} height="240px" />
-                  ) : (
-                    <div className="relative">
-                      <img src={editDok} alt="Dokument" className="w-full max-h-48 object-contain rounded-xl border border-border/40" />
-                      <button onClick={() => setEditDok("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm"><X className="w-3.5 h-3.5" /></button>
-                    </div>
-                  )
+                {editDok && !editDok.startsWith("data:application/pdf") && !editDok.startsWith("[") ? (
+                  <div className="relative">
+                    <img src={editDok} alt="Dokument" className="w-full max-h-48 object-contain rounded-xl border border-border/40" />
+                    <button onClick={() => setEditDok("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                ) : editDok.startsWith("data:application/pdf") || editDok.startsWith("[") ? (
+                  <PdfMultiEmbed raw={editDok} onChange={setEditDok} editable />
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     <button onClick={() => editFotoRef.current?.click()} disabled={editProcessing}
@@ -1159,8 +1149,8 @@ function BerichtKarte({ b, tab, onDelete, isAdmin, onUpdate }: {
               {b.dokumentBase64 ? (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dokument</p>
-                  {isPdf ? (
-                    <PdfEmbed dataUrl={b.dokumentBase64!} height="320px" />
+                  {isDocAttachment ? (
+                    <PdfMultiEmbed raw={b.dokumentBase64!} />
                   ) : (
                     <ClickableImage src={b.dokumentBase64!} alt="Dokument" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
                   )}

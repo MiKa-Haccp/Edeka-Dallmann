@@ -6,7 +6,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { MitarbeiterSuchInput } from "@/components/MitarbeiterSuchInput";
-import { PdfEmbed } from "@/lib/pdf";
+import { PdfMultiEmbed } from "@/lib/pdf";
 import { ClickableImage } from "@/lib/lightbox";
 import {
   ChevronLeft,
@@ -211,7 +211,7 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
 
   useFilePaste(processFile);
 
-  const isPdf = dokument.startsWith("data:application/pdf");
+  const isDokAttachment = dokument.startsWith("data:application/pdf") || dokument.startsWith("[");
 
   const handleSubmit = async () => {
     if (!mitarbeiterName.trim() || processing) return;
@@ -264,17 +264,15 @@ function BescheinigungForm({ kategorie, onSave, onCancel }: {
       {/* Dokument Upload */}
       <div className="flex flex-col gap-2">
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dokument (Foto, Screenshot oder PDF)</label>
-        {dokument ? (
-          isPdf ? (
-            <PdfEmbed dataUrl={dokument} editable fileName={dokFileName} onClear={() => { setDokument(""); setDokFileName(""); setPendingFile(null); }} height="240px" />
-          ) : (
-            <div className="relative">
-              <ClickableImage src={dokument} alt="Dokument" className="w-full max-h-56 object-contain rounded-xl border border-border/60" />
-              <button onClick={() => setDokument("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )
+        {dokument && !isDokAttachment ? (
+          <div className="relative">
+            <ClickableImage src={dokument} alt="Dokument" className="w-full max-h-56 object-contain rounded-xl border border-border/60" />
+            <button onClick={() => { setDokument(""); setDokFileName(""); setPendingFile(null); }} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : isDokAttachment ? (
+          <PdfMultiEmbed raw={dokument} onChange={(v) => { setDokument(v); if (!v) { setDokFileName(""); setPendingFile(null); } }} editable />
         ) : (
           <div
             onDrop={handleDrop}
@@ -379,7 +377,7 @@ function BescheinigungKarte({ z, tab, onDelete, isAdmin, onUpdate }: {
   };
 
   const status = getStatus(z.gueltigBis);
-  const isPdf = z.dokumentBase64?.startsWith("data:application/pdf");
+  const isZAttachment = z.dokumentBase64?.startsWith("data:application/pdf") || z.dokumentBase64?.startsWith("[");
 
   return (
     <div className={`bg-white rounded-2xl border-2 overflow-hidden ${status === "abgelaufen" ? "border-red-200" : status === "bald" ? "border-amber-200" : "border-border/40"}`}>
@@ -443,15 +441,13 @@ function BescheinigungKarte({ z, tab, onDelete, isAdmin, onUpdate }: {
               {/* Dokument Upload */}
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Dokument (Foto, Screenshot oder PDF)</label>
-                {editDok ? (
-                  editDok.startsWith("data:application/pdf") ? (
-                    <PdfEmbed dataUrl={editDok} editable onClear={() => setEditDok("")} height="240px" />
-                  ) : (
-                    <div className="relative">
-                      <img src={editDok} alt="Dokument" className="w-full max-h-48 object-contain rounded-xl border border-border/40" />
-                      <button onClick={() => setEditDok("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm"><X className="w-3.5 h-3.5" /></button>
-                    </div>
-                  )
+                {editDok && !editDok.startsWith("data:application/pdf") && !editDok.startsWith("[") ? (
+                  <div className="relative">
+                    <img src={editDok} alt="Dokument" className="w-full max-h-48 object-contain rounded-xl border border-border/40" />
+                    <button onClick={() => setEditDok("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                ) : editDok.startsWith("data:application/pdf") || editDok.startsWith("[") ? (
+                  <PdfMultiEmbed raw={editDok} onChange={setEditDok} editable />
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     <button onClick={() => editFotoRef.current?.click()} disabled={editProcessing}
@@ -501,8 +497,8 @@ function BescheinigungKarte({ z, tab, onDelete, isAdmin, onUpdate }: {
               {z.dokumentBase64 ? (
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dokument</p>
-                  {isPdf ? (
-                    <PdfEmbed dataUrl={z.dokumentBase64} height="320px" />
+                  {isZAttachment ? (
+                    <PdfMultiEmbed raw={z.dokumentBase64} />
                   ) : (
                     <ClickableImage src={z.dokumentBase64} alt="Dokument" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
                   )}

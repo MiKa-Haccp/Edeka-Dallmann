@@ -6,10 +6,12 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { MitarbeiterSuchInput } from "@/components/MitarbeiterSuchInput";
+import { PdfMultiEmbed } from "@/lib/pdf";
+import { ClickableImage } from "@/lib/lightbox";
 import {
   ChevronLeft,
   HeartPulse, Plus, Loader2, Save, X, Camera, FileText,
-  ChevronDown, ChevronUp, Trash2, ExternalLink, AlertCircle,
+  ChevronDown, ChevronUp, Trash2, AlertCircle,
   CheckCircle2, Clock,
 } from "lucide-react";
 
@@ -148,7 +150,7 @@ function ZeugnisForm({ onSave, onCancel }: {
 
   useFilePaste(processFile);
 
-  const isPdf = dokument.startsWith("data:application/pdf");
+  const isDokAttachment = dokument.startsWith("data:application/pdf") || dokument.startsWith("[");
 
   const handleSubmit = async () => {
     if (!mitarbeiterName.trim() || processing) return;
@@ -188,27 +190,15 @@ function ZeugnisForm({ onSave, onCancel }: {
         <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Dokument (Foto, Screenshot oder PDF)
         </label>
-        {dokument ? (
-          isPdf ? (
-            <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
-              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
-                <FileText className="w-5 h-5 text-red-600" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-red-700">PDF-Dokument bereit</p>
-              </div>
-              <button onClick={() => setDokument("")} className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ) : (
-            <div className="relative">
-              <img src={dokument} alt="Zeugnis" className="w-full max-h-64 object-contain rounded-xl border border-border/60" />
-              <button onClick={() => setDokument("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )
+        {dokument && !isDokAttachment ? (
+          <div className="relative">
+            <ClickableImage src={dokument} alt="Zeugnis" className="w-full max-h-64 object-contain rounded-xl border border-border/60" />
+            <button onClick={() => setDokument("")} className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : isDokAttachment ? (
+          <PdfMultiEmbed raw={dokument} onChange={(v) => { setDokument(v); if (!v) setPendingFile(null); }} editable />
         ) : (
           <div
             onDrop={handleDrop}
@@ -265,7 +255,7 @@ function ZeugnisKarte({ z, onDelete, isAdmin }: { z: Gesundheitszeugnis; onDelet
   const [open, setOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const status = getStatus(z);
-  const isPdf = z.dokumentBase64?.startsWith("data:application/pdf");
+  const isZAttachment = z.dokumentBase64?.startsWith("data:application/pdf") || z.dokumentBase64?.startsWith("[");
 
   const borderColor = status === "abgelaufen" ? "border-red-200" : status === "bald" ? "border-amber-200" : "border-border/50";
   const iconBg = status === "abgelaufen" ? "bg-red-100" : status === "bald" ? "bg-amber-100" : "bg-green-100";
@@ -301,22 +291,10 @@ function ZeugnisKarte({ z, onDelete, isAdmin }: { z: Gesundheitszeugnis; onDelet
           {z.dokumentBase64 ? (
             <div className="pt-4">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dokument</p>
-              {isPdf ? (
-                <a
-                  href={z.dokumentBase64} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors"
-                >
-                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
-                    <FileText className="w-5 h-5 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-red-700">PDF-Dokument anzeigen</p>
-                    <p className="text-xs text-red-500">Klicken zum Öffnen</p>
-                  </div>
-                  <ExternalLink className="w-4 h-4 text-red-400 ml-auto" />
-                </a>
+              {isZAttachment ? (
+                <PdfMultiEmbed raw={z.dokumentBase64} />
               ) : (
-                <img src={z.dokumentBase64} alt="Gesundheitszeugnis" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
+                <ClickableImage src={z.dokumentBase64} alt="Gesundheitszeugnis" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
               )}
             </div>
           ) : (

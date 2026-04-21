@@ -11,6 +11,8 @@ import {
   Plus, Trash2, Eye, EyeOff, Camera, X, ChevronDown, ChevronUp, Pencil,
   FileText,
 } from "lucide-react";
+import { PdfMultiEmbed } from "@/lib/pdf";
+import { ClickableImage } from "@/lib/lightbox";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -145,7 +147,7 @@ function ZertifikatForm({ onSave, onCancel }: { onSave: (z: Partial<Zertifikat>,
 
   useFilePaste(processFile);
 
-  const isPdf = datei.startsWith("data:application/pdf");
+  const isDateiAttachment = datei.startsWith("data:application/pdf") || datei.startsWith("[");
 
   const handleSubmit = async () => {
     if (!prueferName.trim()) return;
@@ -186,36 +188,18 @@ function ZertifikatForm({ onSave, onCancel }: { onSave: (z: Partial<Zertifikat>,
           Dokument (Foto, Screenshot oder PDF)
         </label>
 
-        {datei ? (
+        {datei && !isDateiAttachment ? (
           <div className="relative">
-            {isPdf ? (
-              <div className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl">
-                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
-                  <FileText className="w-5 h-5 text-red-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-red-700 truncate">{dateiName || "Dokument.pdf"}</p>
-                  <p className="text-xs text-red-500">PDF-Datei</p>
-                </div>
-                <button
-                  onClick={() => { setDatei(""); setDateiName(""); }}
-                  className="w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shrink-0"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ) : (
-              <div className="relative">
-                <img src={datei} alt="Nachweis" className="w-full max-h-64 object-contain rounded-xl border border-border/60" />
-                <button
-                  onClick={() => { setDatei(""); setDateiName(""); }}
-                  className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
+            <ClickableImage src={datei} alt="Nachweis" className="w-full max-h-64 object-contain rounded-xl border border-border/60" />
+            <button
+              onClick={() => { setDatei(""); setDateiName(""); }}
+              className="absolute top-2 right-2 w-7 h-7 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow-sm"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
           </div>
+        ) : isDateiAttachment ? (
+          <PdfMultiEmbed raw={datei} onChange={(v) => { setDatei(v); if (!v) setDateiName(""); }} editable />
         ) : (
           <div
             onDrop={handleDrop}
@@ -314,24 +298,10 @@ function ZertifikatKarte({ z, onDelete, isAdmin }: { z: Zertifikat; onDelete: ()
           {z.fotoBase64 && (
             <div className="pt-4">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Dokument</p>
-              {z.fotoBase64.startsWith("data:application/pdf") ? (
-                <a
-                  href={z.fotoBase64}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl hover:bg-red-100 transition-colors"
-                >
-                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center shrink-0">
-                    <FileText className="w-5 h-5 text-red-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-red-700">PDF-Dokument anzeigen</p>
-                    <p className="text-xs text-red-500">Klicken zum Öffnen</p>
-                  </div>
-                  <ExternalLink className="w-4 h-4 text-red-400 ml-auto" />
-                </a>
+              {z.fotoBase64.startsWith("data:application/pdf") || z.fotoBase64.startsWith("[") ? (
+                <PdfMultiEmbed raw={z.fotoBase64} />
               ) : (
-                <img src={z.fotoBase64} alt="Nachweis" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
+                <ClickableImage src={z.fotoBase64} alt="Nachweis" className="w-full max-h-80 object-contain rounded-xl border border-border/40" />
               )}
             </div>
           )}
