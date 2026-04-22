@@ -502,8 +502,7 @@ export default function WarenzustandOG() {
               <table className="w-full text-sm border-collapse">
                 <thead className="sticky top-0 z-20">
                   <tr className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white">
-                    <th className="px-3 py-3 text-left font-semibold text-xs w-16 sticky left-0 top-0 bg-[#1a3a6b] z-30">Tag</th>
-                    <th className="px-2 py-2 text-center font-semibold text-xs w-10 opacity-70">Wt</th>
+                    <th className="px-3 py-3 text-left font-semibold text-xs w-14 sticky left-0 top-0 bg-[#1a3a6b] z-30">Tag</th>
                     {SLOTS.map(s => (
                       <th key={s.key} className="px-2 py-3 text-center font-semibold text-xs min-w-[110px]">
                         {s.label}
@@ -541,16 +540,16 @@ export default function WarenzustandOG() {
                         ].filter(Boolean).join(" ")}
                       >
                         <td className="px-3 py-2 sticky left-0 bg-inherit z-10">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`text-sm font-bold tabular-nums ${today ? "text-green-700" : isClosed ? "text-slate-400" : "text-foreground"}`}>
-                              {String(day).padStart(2, "0")}
-                            </span>
-                            {today && <span className="text-[9px] font-bold bg-green-500 text-white px-1 rounded-full">HEUTE</span>}
-                            {isHoliday && !isSunday && <span className="text-[9px] font-bold bg-amber-400 text-white px-1 rounded-full">FT</span>}
+                          <div className="flex flex-col items-start leading-none">
+                            <div className="flex items-center gap-1">
+                              <span className={`text-sm font-bold tabular-nums ${today ? "text-green-700" : isClosed ? "text-slate-400" : "text-foreground"}`}>
+                                {String(day).padStart(2, "0")}
+                              </span>
+                              {today && <span className="text-[9px] font-bold bg-green-500 text-white px-1 rounded-full">HEUTE</span>}
+                              {isHoliday && !isSunday && <span className="text-[9px] font-bold bg-amber-400 text-white px-1 rounded-full">FT</span>}
+                            </div>
+                            <span className={`text-[10px] font-medium mt-0.5 ${isClosed ? "text-slate-400" : isSaturday ? "text-blue-400" : "text-muted-foreground"}`}>{wd}</span>
                           </div>
-                        </td>
-                        <td className={`px-2 py-2 text-center text-xs font-medium ${isClosed ? "text-slate-400" : isSaturday ? "text-blue-500" : "text-muted-foreground"}`}>
-                          {wd}
                         </td>
                         {isClosed ? (
                           <td colSpan={SLOTS.length + 1} className="px-3 py-2 text-center text-xs text-slate-400 italic">

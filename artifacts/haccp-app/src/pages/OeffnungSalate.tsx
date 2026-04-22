@@ -510,8 +510,7 @@ export default function OeffnungSalate() {
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white">
-                    <th className="px-3 py-3 text-left font-semibold text-xs w-20 sticky left-0 z-10 bg-[#1a3a6b]">Tag</th>
-                    <th className="px-2 py-2 text-center font-semibold text-xs w-10 opacity-70">Wt</th>
+                    <th className="px-3 py-3 text-left font-semibold text-xs w-14 sticky left-0 z-10 bg-[#1a3a6b]">Tag</th>
                     <th className="px-3 py-3 text-left font-semibold text-xs">Einträge (Artikel / MHD / Kürzel)</th>
                     <th className="px-3 py-3 text-center font-semibold text-xs w-20">Aktion</th>
                   </tr>
@@ -540,17 +539,15 @@ export default function OeffnungSalate() {
                         isSaturday&&!today&&!isHoliday?"bg-slate-50/60":"",
                       ].filter(Boolean).join(" ")}>
                         <td className="px-3 py-2.5 sticky left-0 bg-inherit z-10">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`text-sm font-bold tabular-nums ${today?"text-amber-700":isClosed?"text-slate-400":"text-foreground"}`}>
-                              {String(day).padStart(2,"0")}
-                            </span>
-                            {today&&<span className="text-[9px] font-bold bg-amber-500 text-white px-1 rounded-full">HEUTE</span>}
+                          <div className="flex flex-col items-start leading-none">
+                            <div className="flex items-center gap-1">
+                              <span className={`text-sm font-bold tabular-nums ${today?"text-amber-700":isClosed?"text-slate-400":"text-foreground"}`}>
+                                {String(day).padStart(2,"0")}
+                              </span>
+                              {today&&<span className="text-[9px] font-bold bg-amber-500 text-white px-1 rounded-full">HEUTE</span>}
+                            </div>
+                            <span className={`text-[10px] font-medium mt-0.5 ${isClosed?"text-slate-400":holidayName?"text-red-400":isSaturday?"text-blue-400":"text-muted-foreground"}`}>{wd}</span>
                           </div>
-                        </td>
-                        <td className="px-2 py-2.5 text-center text-xs text-muted-foreground font-medium">
-                          {holidayName ? (
-                            <span title={holidayName} className="text-red-400 font-bold cursor-help">{wd}</span>
-                          ) : wd}
                         </td>
                         <td className="px-3 py-2 min-w-[260px]">
                           {isClosed ? (

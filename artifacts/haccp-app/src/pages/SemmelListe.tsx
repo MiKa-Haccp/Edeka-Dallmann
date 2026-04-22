@@ -442,8 +442,7 @@ export default function SemmelListe() {
               <table className="w-full text-sm border-collapse">
                 <thead className="sticky top-0 z-10 bg-white shadow-sm">
                   <tr className="border-b bg-muted/60">
-                    <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground w-20">Tag</th>
-                    <th className="text-left px-2 py-2.5 text-xs font-semibold text-muted-foreground w-8">Wt</th>
+                    <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground w-14">Tag</th>
                     {itemConfigs.map(ic => (
                       <th key={ic.label} className="text-center px-3 py-2.5 text-xs font-semibold text-muted-foreground">
                         {ic.label}
@@ -476,14 +475,14 @@ export default function SemmelListe() {
 
                         {/* Tag */}
                         <td className="px-3 py-2.5">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-mono font-bold text-base">{String(day).padStart(2, "0")}</span>
-                            {today && <span className="text-[10px] font-bold text-blue-500 bg-blue-100 px-1.5 py-0.5 rounded-full">HEUTE</span>}
+                          <div className="flex flex-col items-start leading-none">
+                            <div className="flex items-center gap-1">
+                              <span className="font-mono font-bold text-base">{String(day).padStart(2, "0")}</span>
+                              {today && <span className="text-[10px] font-bold text-blue-500 bg-blue-100 px-1.5 py-0.5 rounded-full">HEUTE</span>}
+                            </div>
+                            <span className={`text-[10px] font-medium mt-0.5 ${weekend ? "text-red-500" : "text-muted-foreground"}`}>{wt}</span>
                           </div>
                         </td>
-
-                        {/* Wochentag */}
-                        <td className={`px-2 py-2.5 text-xs font-medium ${weekend ? "text-red-500" : "text-muted-foreground"}`}>{wt}</td>
 
                         {/* Item-Spalten: Summe + Einzeleinträge */}
                         {itemConfigs.map((ic, idx) => {

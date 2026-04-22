@@ -433,8 +433,7 @@ export default function WEObstGemuese() {
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-[#1a3a6b]/5 border-b border-border/60">
-                  <th className="px-3 py-2.5 text-left font-semibold text-[#1a3a6b] w-10">Tag</th>
-                  <th className="px-2 py-2.5 text-left font-semibold text-[#1a3a6b] w-10">Wt</th>
+                  <th className="px-3 py-2.5 text-left font-semibold text-[#1a3a6b] w-12">Tag</th>
                   {CRITERIA.map(c => (
                     <th key={c.key} className="px-1.5 py-2.5 text-center font-semibold text-[#1a3a6b] min-w-[52px] max-w-[72px] leading-tight">
                       <span className="block truncate" title={c.label}>
@@ -466,8 +465,12 @@ export default function WEObstGemuese() {
 
                   return (
                     <tr key={day} className={`border-b border-border/30 hover:bg-muted/20 transition-colors ${rowBg}`}>
-                      <td className="px-3 py-2 font-bold text-foreground">{day}</td>
-                      <td className={`px-2 py-2 font-medium ${wd === "So" ? "text-red-500" : "text-muted-foreground"}`}>{wd}</td>
+                      <td className="px-3 py-2">
+                        <div className="flex flex-col items-start leading-none">
+                          <span className={`font-bold tabular-nums ${today ? "text-blue-700" : "text-foreground"}`}>{String(day).padStart(2, "0")}</span>
+                          <span className={`text-[10px] font-medium mt-0.5 ${wd === "So" ? "text-red-500" : "text-muted-foreground"}`}>{wd}</span>
+                        </div>
+                      </td>
 
                       {CRITERIA.map(c => (
                         <td key={c.key} className="px-1.5 py-2 text-center">

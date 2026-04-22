@@ -530,8 +530,7 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10">
             <tr className="bg-slate-100 border-b">
-              <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground w-16">Tag</th>
-              <th className="text-left px-2 py-2.5 text-xs font-semibold text-muted-foreground w-8">Wt</th>
+              <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground w-14">Tag</th>
               <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Temp.</th>
               {art==="reifeschrank"&&<th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground">Feuchte</th>}
               <th className="text-left px-3 py-2.5 text-xs font-semibold text-muted-foreground hidden md:table-cell">Massnahme</th>
@@ -561,13 +560,15 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
                     clickable?"cursor-pointer hover:bg-primary/5 active:bg-primary/10":"opacity-40",
                   ].filter(Boolean).join(" ")}>
                   <td className="px-3 py-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-mono font-bold text-base">{String(day).padStart(2,"0")}</span>
-                      {today&&<span className="text-[10px] font-bold text-blue-500 bg-blue-100 px-1.5 py-0.5 rounded-full">HEUTE</span>}
-                      {!latestEntry&&clickable&&<span className="text-[10px] text-primary/50 hidden sm:inline">+ Eintragen</span>}
+                    <div className="flex flex-col items-start leading-none">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono font-bold text-base">{String(day).padStart(2,"0")}</span>
+                        {today&&<span className="text-[10px] font-bold text-blue-500 bg-blue-100 px-1.5 py-0.5 rounded-full">HEUTE</span>}
+                        {!latestEntry&&clickable&&<span className="text-[10px] text-primary/50 hidden sm:inline">+ Eintragen</span>}
+                      </div>
+                      <span className={`text-[10px] font-medium mt-0.5 ${weekend?"text-red-500":"text-muted-foreground"}`}>{wt}</span>
                     </div>
                   </td>
-                  <td className={`px-2 py-3 text-xs font-medium ${weekend?"text-red-500":"text-muted-foreground"}`}>{wt}</td>
                   <td className="px-3 py-3">
                     {latestEntry?.defekt?(
                       <span className="flex items-center gap-1 text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded px-2 py-0.5"><AlertTriangle className="w-3 h-3"/>Defekt</span>
