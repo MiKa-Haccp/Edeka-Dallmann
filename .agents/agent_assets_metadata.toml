@@ -5,10 +5,10 @@ generated = []
 id = "fW_0ysRhmpLhvacGjttfq"
 uri = "file://MiKa_Kurzanleitung_Mitarbeiter.docx"
 type = "word_document"
-title = "MiKa Kurzanleitung Mitarbeiter – neue Version"
+title = "MiKa Kurzanleitung Mitarbeiter"
 
 [[outputs]]
 id = "gq-SWv1zjJfCmxifE7L3W"
 uri = "file://MiKa_Anleitung_Verwaltung_Admin.docx"
 type = "word_document"
-title = "MiKa Anleitung Verwaltung & Admin – neue Version"
+title = "MiKa Anleitung Verwaltung & Admin"
