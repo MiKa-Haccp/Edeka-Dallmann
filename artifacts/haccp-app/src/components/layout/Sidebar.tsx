@@ -71,9 +71,15 @@ function CategorySections({ categoryId, onNavigate, visibility }: { categoryId: 
   if (isLoading) return <div className="p-4 text-xs text-muted-foreground">Lade Bereiche...</div>;
   if (!sections?.length) return <div className="p-4 text-xs text-muted-foreground">Keine Bereiche gefunden.</div>;
 
+  const SIDEBAR_TITLE_OVERRIDE: Record<string, string> = {
+    "3.11": "Bestellungen",
+  };
+
   const visibleSections = sections.filter((s) => {
     if (s.number.includes("_") || s.number.startsWith("hidden")) return false;
     if (!(s.id in visibility ? visibility[s.id] : true)) return false;
+    const m = s.number.match(/^(\d+)\.(\d+)$/);
+    if (m && parseInt(m[2]) >= 12) return false;
     return true;
   });
 
@@ -106,7 +112,7 @@ function CategorySections({ categoryId, onNavigate, visibility }: { categoryId: 
             )}
           >
             <FileText className={cn("h-4 w-4 flex-shrink-0", iconColor)} />
-            <span className="truncate">{displayNum} {(selectedMarketId && MARKET_SECTION_TITLE_OVERRIDES[selectedMarketId]?.[section.number]) || section.title}</span>
+            <span className="truncate">{displayNum} {SIDEBAR_TITLE_OVERRIDE[section.number] || (selectedMarketId && MARKET_SECTION_TITLE_OVERRIDES[selectedMarketId]?.[section.number]) || section.title}</span>
           </Link>
         );
       })}

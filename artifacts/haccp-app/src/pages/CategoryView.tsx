@@ -50,6 +50,7 @@ const SECTION_HREFS: Record<string, string> = {
 };
 
 const SECTION_LABEL_OVERRIDE: Record<string, string> = {
+  "3.10": "Rindfleisch-Etikettierung",
   "3.11": "Bestellungen",
 };
 
