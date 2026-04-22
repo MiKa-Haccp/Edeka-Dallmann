@@ -106,7 +106,7 @@ function EintragModal({
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold">Eroeffnung Salat / Gastro</h2>
+            <h2 className="text-base font-bold">Öffnung Salat / Eigenherstellung</h2>
             <p className="text-xs text-muted-foreground mt-0.5">{wd}, {String(day).padStart(2,"0")}. {MONTH_NAMES[month-1]} {year}</p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted"><X className="w-4 h-4"/></button>
