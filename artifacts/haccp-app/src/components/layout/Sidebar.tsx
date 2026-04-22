@@ -126,6 +126,7 @@ const SIDEBAR_OPEN_PATHS = [
   "/section/", "/category/", "/we-", "/besprechungsprotokoll",
   "/gesundheitszeugnisse", "/mitarbeiterverwaltung", "/admin/",
   "/projekt-hub", "/temp-lager-kontrolle", "/rindfleisch-etikettierung",
+  "/metz-bestellungen",
 ];
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {

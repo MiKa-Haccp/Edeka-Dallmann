@@ -3,6 +3,14 @@ import { pool } from "@workspace/db";
 
 const router = Router();
 
+function toCamel(row: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(row)) {
+    out[k.replace(/_([a-z])/g, (_, c) => c.toUpperCase())] = v;
+  }
+  return out;
+}
+
 // ── Alle Bestellungen für Monat laden ─────────────────────────────────────────
 router.get("/metz-bestellungen", async (req, res) => {
   const { tenantId = "1", marketId, year, month } = req.query as Record<string, string>;
@@ -24,7 +32,7 @@ router.get("/metz-bestellungen", async (req, res) => {
   query += " ORDER BY datum, created_at";
 
   const { rows } = await pool.query(query, params);
-  res.json(rows);
+  res.json(rows.map(toCamel));
 });
 
 // ── Neue Bestellung erstellen ──────────────────────────────────────────────────
@@ -44,7 +52,7 @@ router.post("/metz-bestellungen", async (req, res) => {
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
     [tenantId, marketId ?? null, datum, kundeName, kundeTelefon ?? null, artikel, menge ?? null, notizen ?? null]
   );
-  res.json(rows[0]);
+  res.json(toCamel(rows[0]));
 });
 
 // ── Als "Bestellt" abzeichnen ──────────────────────────────────────────────────
@@ -60,7 +68,7 @@ router.put("/metz-bestellungen/:id/bestellt", async (req, res) => {
     [kuerzel, userId ?? null, id]
   );
   if (!rows.length) return res.status(404).json({ error: "Not found" });
-  res.json(rows[0]);
+  res.json(toCamel(rows[0]));
 });
 
 // ── Als "Abgeholt" abzeichnen ─────────────────────────────────────────────────
@@ -76,7 +84,7 @@ router.put("/metz-bestellungen/:id/abgeholt", async (req, res) => {
     [kuerzel, userId ?? null, id]
   );
   if (!rows.length) return res.status(404).json({ error: "Not found" });
-  res.json(rows[0]);
+  res.json(toCamel(rows[0]));
 });
 
 // ── Bestellung löschen ────────────────────────────────────────────────────────

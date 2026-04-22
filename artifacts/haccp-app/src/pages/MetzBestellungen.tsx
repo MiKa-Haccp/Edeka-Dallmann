@@ -114,23 +114,42 @@ function NeueBestellungModal({
   onSave: (data: Partial<Bestellung>) => Promise<void>;
   onClose: () => void;
 }) {
-  const [kundeName, setKundeName] = useState("");
+  const [step, setStep]         = useState<"form" | "pin">("form");
+  const [kundeName, setKundeName]       = useState("");
   const [kundeTelefon, setKundeTelefon] = useState("");
-  const [artikel, setArtikel] = useState("");
-  const [menge, setMenge] = useState("");
-  const [notizen, setNotizen] = useState("");
+  const [artikel, setArtikel]           = useState("");
+  const [menge, setMenge]               = useState("");
+  const [notizen, setNotizen]           = useState("");
+
+  const [pin, setPin]     = useState("");
+  const [pinErr, setPinErr] = useState("");
   const [saving, setSaving] = useState(false);
+  const pinRef = useRef<HTMLInputElement>(null);
 
   const d = new Date(datum + "T00:00:00");
   const dayLabel = `${String(d.getDate()).padStart(2, "0")}. ${MONATE[d.getMonth()]} ${d.getFullYear()}`;
   const wd = WOCHENTAGE[d.getDay()];
 
+  const goToPin = () => { setStep("pin"); setTimeout(() => pinRef.current?.focus(), 100); };
+
   const handleSave = async () => {
-    if (!kundeName.trim() || !artikel.trim()) return;
-    setSaving(true);
+    setPinErr(""); setSaving(true);
     try {
-      await onSave({ kundeName: kundeName.trim(), kundeTelefon: kundeTelefon.trim() || undefined, artikel: artikel.trim(), menge: menge.trim() || undefined, notizen: notizen.trim() || undefined });
-    } finally { setSaving(false); }
+      const r = await fetch(`${BASE}/users/verify-pin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin, tenantId: 1 }),
+      });
+      const d = await r.json();
+      if (!d.valid) { setPinErr("PIN ungültig."); setSaving(false); return; }
+      await onSave({
+        kundeName: kundeName.trim(),
+        kundeTelefon: kundeTelefon.trim() || undefined,
+        artikel: artikel.trim(),
+        menge: menge.trim() || undefined,
+        notizen: notizen.trim() || undefined,
+      });
+    } catch { setPinErr("Verbindungsfehler."); } finally { setSaving(false); }
   };
 
   return (
@@ -146,73 +165,105 @@ function NeueBestellungModal({
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted"><X className="w-4 h-4" /></button>
         </div>
 
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2 flex flex-col gap-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Kundenname *</label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+        {step === "form" ? (
+          <>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Kundenname *</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <input
+                      value={kundeName} onChange={(e) => setKundeName(e.target.value)}
+                      placeholder="Vor- und Nachname"
+                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Telefon</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <input
+                      value={kundeTelefon} onChange={(e) => setKundeTelefon(e.target.value)}
+                      placeholder="Optional"
+                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Menge</label>
+                  <div className="relative">
+                    <Package className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <input
+                      value={menge} onChange={(e) => setMenge(e.target.value)}
+                      placeholder="z. B. 2 kg"
+                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Was wurde bestellt? *</label>
+                <textarea
+                  value={artikel} onChange={(e) => setArtikel(e.target.value)}
+                  placeholder="Artikel, Sorte, Verarbeitung …"
+                  rows={2}
+                  className="w-full px-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 transition-all resize-none"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Interne Notizen</label>
                 <input
-                  value={kundeName} onChange={(e) => setKundeName(e.target.value)}
-                  placeholder="Vor- und Nachname"
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 transition-all"
+                  value={notizen} onChange={(e) => setNotizen(e.target.value)}
+                  placeholder="Besonderheiten, Wünsche …"
+                  className="w-full px-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 transition-all"
                 />
               </div>
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Telefon</label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <input
-                  value={kundeTelefon} onChange={(e) => setKundeTelefon(e.target.value)}
-                  placeholder="Optional"
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 transition-all"
-                />
-              </div>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={goToPin} disabled={!kundeName.trim() || !artikel.trim()}
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-40 transition-colors"
+              >
+                <Check className="w-4 h-4" /> Weiter
+              </button>
+              <button onClick={onClose} className="px-5 py-2.5 bg-white border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
+                Abbrechen
+              </button>
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Menge</label>
-              <div className="relative">
-                <Package className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                <input
-                  value={menge} onChange={(e) => setMenge(e.target.value)}
-                  placeholder="z. B. 2 kg"
-                  className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 transition-all"
-                />
-              </div>
+          </>
+        ) : (
+          <>
+            <div className="bg-secondary/40 rounded-xl px-4 py-3 text-sm">
+              <p className="font-semibold">{kundeName}</p>
+              <p className="text-muted-foreground text-xs">{artikel}{menge ? ` · ${menge}` : ""}</p>
             </div>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Was wurde bestellt? *</label>
-            <textarea
-              value={artikel} onChange={(e) => setArtikel(e.target.value)}
-              placeholder="Artikel, Sorte, Verarbeitung …"
-              rows={2}
-              className="w-full px-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 transition-all resize-none"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Interne Notizen</label>
-            <input
-              value={notizen} onChange={(e) => setNotizen(e.target.value)}
-              placeholder="Besonderheiten, Wünsche …"
-              className="w-full px-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 transition-all"
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-3 pt-1">
-          <button
-            onClick={handleSave} disabled={saving || !kundeName.trim() || !artikel.trim()}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-40 transition-colors"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-            Speichern
-          </button>
-          <button onClick={onClose} className="px-5 py-2.5 bg-white border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
-            Abbrechen
-          </button>
-        </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">PIN zur Bestätigung</label>
+              <input
+                ref={pinRef} type="password" value={pin}
+                onChange={(e) => setPin(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && pin && handleSave()}
+                className="w-full px-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm text-center tracking-widest font-mono focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 transition-all"
+                placeholder="••••"
+              />
+              {pinErr && <p className="text-xs text-red-500 text-center">{pinErr}</p>}
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={handleSave} disabled={!pin || saving}
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-40 transition-colors"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Speichern
+              </button>
+              <button onClick={() => { setStep("form"); setPin(""); setPinErr(""); }} className="px-5 py-2.5 bg-white border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
+                Zurück
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -268,6 +319,9 @@ function BestellungCard({
         <p className="text-sm font-medium leading-snug">{b.artikel}</p>
         {b.menge && <p className="text-xs text-muted-foreground mt-0.5">Menge: <strong>{b.menge}</strong></p>}
         {b.notizen && <p className="text-xs text-muted-foreground mt-0.5 italic">{b.notizen}</p>}
+        <p className="text-[10px] text-muted-foreground/60 mt-1.5">
+          Aufgenommen: {new Date(b.createdAt).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })} Uhr
+        </p>
       </div>
 
       {/* Status-Trail */}
