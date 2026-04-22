@@ -45,7 +45,7 @@ const ALL_CRIT: CritDef[] = [
 const CONFIG: WEBaseConfig = {
   section: "metzgerei",
   pageTitle: "Wareneingänge Metzgerei",
-  pageSubtitle: "Wareneingangskontrolle Metzgerei - Fleisch, Fisch, MSC",
+  pageSubtitle: "Wareneingangskontrolle Metzgerei - Fleisch, Fisch, MSC, Käse",
   allCrit: ALL_CRIT,
   updateEvent: "metzgerei-wareneingaenge-updated",
   backHref: "/category/3",
