@@ -7,7 +7,7 @@ import { useListMarkets } from "@workspace/api-client-react";
 import {
   ShoppingBag, ChevronLeft, ChevronRight, Plus, X, Check,
   Loader2, Phone, User, Package, ClipboardCheck, Trash2,
-  CheckCircle2, Clock, AlertCircle,
+  CheckCircle2, Clock, AlertCircle, Calendar,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -28,6 +28,7 @@ interface Bestellung {
   artikel: string;
   menge: string | null;
   notizen: string | null;
+  abholdatum: string | null;
   bestelltKuerzel: string | null;
   bestelltUserId: number | null;
   bestelltAm: string | null;
@@ -41,6 +42,11 @@ function getStatus(b: Bestellung): "neu" | "bestellt" | "abgeholt" {
   if (b.abgeholtKuerzel) return "abgeholt";
   if (b.bestelltKuerzel) return "bestellt";
   return "neu";
+}
+
+function formatDate(iso: string) {
+  const [y, m, d] = iso.split("-");
+  return `${d}.${m}.${y}`;
 }
 
 // ── PIN-Modal ──────────────────────────────────────────────────────────────────
@@ -114,14 +120,15 @@ function NeueBestellungModal({
   onSave: (data: Partial<Bestellung>) => Promise<void>;
   onClose: () => void;
 }) {
-  const [step, setStep]         = useState<"form" | "pin">("form");
-  const [kundeName, setKundeName]       = useState("");
+  const [step, setStep]               = useState<"form" | "pin">("form");
+  const [kundeName, setKundeName]     = useState("");
   const [kundeTelefon, setKundeTelefon] = useState("");
-  const [artikel, setArtikel]           = useState("");
-  const [menge, setMenge]               = useState("");
-  const [notizen, setNotizen]           = useState("");
+  const [artikel, setArtikel]         = useState("");
+  const [menge, setMenge]             = useState("");
+  const [notizen, setNotizen]         = useState("");
+  const [abholdatum, setAbholdatum]   = useState("");
 
-  const [pin, setPin]     = useState("");
+  const [pin, setPin]       = useState("");
   const [pinErr, setPinErr] = useState("");
   const [saving, setSaving] = useState(false);
   const pinRef = useRef<HTMLInputElement>(null);
@@ -143,13 +150,17 @@ function NeueBestellungModal({
       const d = await r.json();
       if (!d.valid) { setPinErr("PIN ungültig."); setSaving(false); return; }
       await onSave({
-        kundeName: kundeName.trim(),
+        kundeName:    kundeName.trim(),
         kundeTelefon: kundeTelefon.trim() || undefined,
-        artikel: artikel.trim(),
-        menge: menge.trim() || undefined,
-        notizen: notizen.trim() || undefined,
+        artikel:      artikel.trim(),
+        menge:        menge.trim() || undefined,
+        notizen:      notizen.trim() || undefined,
+        abholdatum:   abholdatum || null,
       });
-    } catch { setPinErr("Verbindungsfehler."); } finally { setSaving(false); }
+    } catch (err) {
+      console.error("Speichern fehlgeschlagen:", err);
+      setPinErr("Verbindungsfehler beim Speichern.");
+    } finally { setSaving(false); }
   };
 
   return (
@@ -203,6 +214,7 @@ function NeueBestellungModal({
                   </div>
                 </div>
               </div>
+
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Was wurde bestellt? *</label>
                 <textarea
@@ -212,6 +224,19 @@ function NeueBestellungModal({
                   className="w-full px-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 transition-all resize-none"
                 />
               </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5" /> Abholdatum (geplant)
+                </label>
+                <input
+                  type="date"
+                  value={abholdatum}
+                  onChange={(e) => setAbholdatum(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-border/60 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 transition-all"
+                />
+              </div>
+
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Interne Notizen</label>
                 <input
@@ -235,9 +260,14 @@ function NeueBestellungModal({
           </>
         ) : (
           <>
-            <div className="bg-secondary/40 rounded-xl px-4 py-3 text-sm">
+            <div className="bg-secondary/40 rounded-xl px-4 py-3 text-sm space-y-1">
               <p className="font-semibold">{kundeName}</p>
               <p className="text-muted-foreground text-xs">{artikel}{menge ? ` · ${menge}` : ""}</p>
+              {abholdatum && (
+                <p className="text-xs text-[#1a3a6b] font-medium flex items-center gap-1">
+                  <Calendar className="w-3 h-3" /> Abholdatum: {formatDate(abholdatum)}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">PIN zur Bestätigung</label>
@@ -286,9 +316,9 @@ function BestellungCard({
   const status = getStatus(b);
 
   const statusConfig = {
-    neu:       { bg: "bg-red-50",    border: "border-red-200",    dot: "bg-red-500",    label: "Noch nicht bestellt", icon: <AlertCircle className="w-3 h-3 text-red-500" /> },
-    bestellt:  { bg: "bg-amber-50",  border: "border-amber-200",  dot: "bg-amber-500",  label: "Bestellt",            icon: <Clock className="w-3 h-3 text-amber-500" /> },
-    abgeholt:  { bg: "bg-green-50",  border: "border-green-200",  dot: "bg-green-500",  label: "Abgeholt",            icon: <CheckCircle2 className="w-3 h-3 text-green-600" /> },
+    neu:      { bg: "bg-red-50",   border: "border-red-200",   dot: "bg-red-500",   label: "Noch nicht bestellt", icon: <AlertCircle className="w-3 h-3 text-red-500" /> },
+    bestellt: { bg: "bg-amber-50", border: "border-amber-200", dot: "bg-amber-500", label: "Bestellt",            icon: <Clock className="w-3 h-3 text-amber-500" /> },
+    abgeholt: { bg: "bg-green-50", border: "border-green-200", dot: "bg-green-500", label: "Abgeholt",            icon: <CheckCircle2 className="w-3 h-3 text-green-600" /> },
   };
   const sc = statusConfig[status];
 
@@ -318,6 +348,11 @@ function BestellungCard({
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-0.5">Bestellung</p>
         <p className="text-sm font-medium leading-snug">{b.artikel}</p>
         {b.menge && <p className="text-xs text-muted-foreground mt-0.5">Menge: <strong>{b.menge}</strong></p>}
+        {b.abholdatum && (
+          <p className="text-xs text-[#1a3a6b] font-semibold mt-1 flex items-center gap-1">
+            <Calendar className="w-3 h-3" /> Abholdatum: {formatDate(b.abholdatum)}
+          </p>
+        )}
         {b.notizen && <p className="text-xs text-muted-foreground mt-0.5 italic">{b.notizen}</p>}
         <p className="text-[10px] text-muted-foreground/60 mt-1.5">
           Aufgenommen: {new Date(b.createdAt).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })} Uhr
@@ -430,11 +465,9 @@ export default function MetzBestellungen() {
   const dayBestellungen = (day: number) =>
     bestellungen.filter(b => b.datum === `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
 
-  const isToday = (day: number) =>
-    year === now.getFullYear() && month === now.getMonth() + 1 && day === now.getDate();
-  const isFuture = (day: number) =>
-    new Date(year, month - 1, day) > new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const getWd = (day: number) => WOCHENTAGE[new Date(year, month - 1, day).getDay()];
+  const isToday  = (day: number) => year === now.getFullYear() && month === now.getMonth() + 1 && day === now.getDate();
+  const isFuture = (day: number) => new Date(year, month - 1, day) > new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const getWd    = (day: number) => WOCHENTAGE[new Date(year, month - 1, day).getDay()];
 
   const handleSave = async (data: Partial<Bestellung>) => {
     if (!activeDay) return;
@@ -443,6 +476,7 @@ export default function MetzBestellungen() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tenantId: 1, marketId: selectedMarketId, datum: activeDay, ...data }),
     });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const neu = await r.json();
     setBestellungen(prev => [...prev, neu]);
     setActiveDay(null);
@@ -455,6 +489,7 @@ export default function MetzBestellungen() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ kuerzel, userId }),
     });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const updated = await r.json();
     setBestellungen(prev => prev.map(b => b.id === updated.id ? updated : b));
     setPinTarget(null);
@@ -467,6 +502,7 @@ export default function MetzBestellungen() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ kuerzel, userId }),
     });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const updated = await r.json();
     setBestellungen(prev => prev.map(b => b.id === updated.id ? updated : b));
     setPinTarget(null);
@@ -479,7 +515,7 @@ export default function MetzBestellungen() {
 
   const marketName = markets?.find(m => m.id === selectedMarketId)?.name ?? "";
 
-  const totalNeu     = bestellungen.filter(b => getStatus(b) === "neu").length;
+  const totalNeu      = bestellungen.filter(b => getStatus(b) === "neu").length;
   const totalBestellt = bestellungen.filter(b => getStatus(b) === "bestellt").length;
   const totalAbgeholt = bestellungen.filter(b => getStatus(b) === "abgeholt").length;
 
@@ -502,7 +538,7 @@ export default function MetzBestellungen() {
                 {marketName && <p className="text-sm text-white/70">{marketName}</p>}
               </div>
             </div>
-            {/* Ampel */}
+            {/* Ampel-Zusammenfassung */}
             {bestellungen.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
                 {totalNeu > 0 && (
@@ -525,7 +561,6 @@ export default function MetzBestellungen() {
           </div>
         </PageHeader>
 
-        {/* Kein Markt */}
         {!selectedMarketId ? (
           <div className="bg-white rounded-2xl border border-border p-12 text-center">
             <ShoppingBag className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
@@ -562,16 +597,16 @@ export default function MetzBestellungen() {
             ) : (
               <div className="space-y-2">
                 {Array.from({ length: totalDays }, (_, i) => i + 1).map(day => {
-                  const wd = getWd(day);
-                  const today = isToday(day);
-                  const future = isFuture(day);
+                  const wd      = getWd(day);
+                  const today   = isToday(day);
+                  const future  = isFuture(day);
                   const isSunday = wd === "So";
-                  const db = dayBestellungen(day);
-                  const datum = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                  const db      = dayBestellungen(day);
+                  const datum   = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-                  const hasOffen = db.some(b => getStatus(b) === "neu");
+                  const hasOffen    = db.some(b => getStatus(b) === "neu");
                   const hasBestellt = db.some(b => getStatus(b) === "bestellt");
-                  const allDone = db.length > 0 && db.every(b => getStatus(b) === "abgeholt");
+                  const allDone     = db.length > 0 && db.every(b => getStatus(b) === "abgeholt");
 
                   return (
                     <div
@@ -597,7 +632,6 @@ export default function MetzBestellungen() {
                           </div>
                           {today && <span className="text-[10px] font-bold bg-amber-500 text-white px-2 py-0.5 rounded-full">HEUTE</span>}
                           {isSunday && <span className="text-xs text-slate-400 italic">Sonntag</span>}
-                          {/* Ampel-Dots */}
                           {db.length > 0 && (
                             <div className="flex items-center gap-1">
                               {hasOffen && <span className="w-2 h-2 rounded-full bg-red-500" />}
@@ -607,24 +641,19 @@ export default function MetzBestellungen() {
                             </div>
                           )}
                         </div>
-                        {!isSunday && !future && (
+                        {!isSunday && (
                           <button
                             onClick={() => setActiveDay(datum)}
-                            className={[
-                              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all",
-                              today
-                                ? "bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
-                                : "border border-border text-muted-foreground hover:bg-muted",
-                            ].join(" ")}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1a3a6b] hover:bg-[#2d5aa0] text-white rounded-xl text-xs font-bold transition-colors"
                           >
                             <Plus className="w-3.5 h-3.5" /> Bestellung
                           </button>
                         )}
                       </div>
 
-                      {/* Bestellungen des Tages */}
+                      {/* Bestellungs-Karten */}
                       {db.length > 0 && (
-                        <div className="p-4 grid sm:grid-cols-2 gap-3">
+                        <div className="p-3 grid gap-2 sm:grid-cols-2">
                           {db.map(b => (
                             <BestellungCard
                               key={b.id}
@@ -637,6 +666,12 @@ export default function MetzBestellungen() {
                           ))}
                         </div>
                       )}
+
+                      {db.length === 0 && !isSunday && (
+                        <div className="px-4 py-3 text-xs text-muted-foreground/50 italic">
+                          Keine Bestellungen
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -646,17 +681,19 @@ export default function MetzBestellungen() {
         )}
       </div>
 
-      {/* Modals */}
-      {activeDay !== null && (
+      {/* Neue Bestellung Modal */}
+      {activeDay && (
         <NeueBestellungModal
           datum={activeDay}
           onSave={handleSave}
           onClose={() => setActiveDay(null)}
         />
       )}
+
+      {/* PIN-Modal für Bestellt/Abgeholt */}
       {pinTarget && (
         <PinModal
-          label={pinTarget.action === "bestellt" ? "Bestellung abzeichnen — Bestellt" : "Abholung bestätigen — Abgeholt"}
+          label={pinTarget.action === "bestellt" ? "Als bestellt abzeichnen" : "Als abgeholt abzeichnen"}
           onConfirm={pinTarget.action === "bestellt" ? handleBestellt : handleAbgeholt}
           onClose={() => setPinTarget(null)}
         />

@@ -13,6 +13,7 @@ export const metzBestellungenTable = pgTable("metz_bestellungen", {
   bestelltKuerzel: varchar("bestellt_kuerzel", { length: 20 }),
   bestelltUserId: integer("bestellt_user_id"),
   bestelltAm: timestamp("bestellt_am"),
+  abholdatum: varchar("abholdatum", { length: 10 }),
   abgeholtKuerzel: varchar("abgeholt_kuerzel", { length: 20 }),
   abgeholtUserId: integer("abgeholt_user_id"),
   abgeholtAm: timestamp("abgeholt_am"),

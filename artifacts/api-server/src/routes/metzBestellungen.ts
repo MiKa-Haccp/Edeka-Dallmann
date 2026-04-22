@@ -39,7 +39,7 @@ router.get("/metz-bestellungen", async (req, res) => {
 router.post("/metz-bestellungen", async (req, res) => {
   const {
     tenantId = 1, marketId, datum,
-    kundeName, kundeTelefon, artikel, menge, notizen,
+    kundeName, kundeTelefon, artikel, menge, notizen, abholdatum,
   } = req.body;
 
   if (!datum || !kundeName || !artikel) {
@@ -48,9 +48,9 @@ router.post("/metz-bestellungen", async (req, res) => {
 
   const { rows } = await pool.query(
     `INSERT INTO metz_bestellungen
-     (tenant_id, market_id, datum, kunde_name, kunde_telefon, artikel, menge, notizen)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-    [tenantId, marketId ?? null, datum, kundeName, kundeTelefon ?? null, artikel, menge ?? null, notizen ?? null]
+     (tenant_id, market_id, datum, kunde_name, kunde_telefon, artikel, menge, notizen, abholdatum)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+    [tenantId, marketId ?? null, datum, kundeName, kundeTelefon ?? null, artikel, menge ?? null, notizen ?? null, abholdatum ?? null]
   );
   res.json(toCamel(rows[0]));
 });
