@@ -467,14 +467,6 @@ export default function MetzgereiReinigung() {
               })}
             </div>
 
-            {/* Hinweis */}
-            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-xs text-amber-800">
-              <strong>T</strong> = täglich &nbsp;·&nbsp; <strong>W</strong> = wöchentlich &nbsp;·&nbsp;
-              <strong>R</strong> = Reinigung &nbsp;·&nbsp; <strong>D</strong> = Desinfektion &nbsp;·&nbsp;
-              <strong>R+D</strong> = Reinigung + Desinfektion
-              &nbsp;·&nbsp; Die angegebene Häufigkeit ist <u>Mindestanforderung</u>.
-            </div>
-
             {/* Tabelle */}
             <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
               {/* Section-Titel */}
@@ -612,9 +604,7 @@ export default function MetzgereiReinigung() {
                   </tbody>
                   <tfoot className="print:hidden">
                     <tr className="border-t-2 border-border/60 bg-secondary/20">
-                      <td colSpan={2} className="px-4 py-2 text-[10px] text-muted-foreground">
-                        T = täglich · W = wöchentlich
-                      </td>
+                      <td colSpan={2} className="px-4 py-2 text-[10px] text-muted-foreground"></td>
                       {dates.map((d)=>{
                         const iso  = toIso(d);
                         const fut  = iso > todayStr;
@@ -647,6 +637,14 @@ export default function MetzgereiReinigung() {
               <div className="px-4 py-2 bg-secondary/30 border-t border-border/60 text-[10px] text-muted-foreground">
                 Zelle anklicken zum Abzeichnen mit PIN · Spalten-Icon = alle Positionen dieses Tages abzeichnen
               </div>
+            </div>
+
+            {/* Legende */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-xs text-amber-800">
+              <strong>T</strong> = täglich &nbsp;·&nbsp; <strong>W</strong> = wöchentlich &nbsp;·&nbsp;
+              <strong>R</strong> = Reinigung &nbsp;·&nbsp; <strong>D</strong> = Desinfektion &nbsp;·&nbsp;
+              <strong>R+D</strong> = Reinigung + Desinfektion
+              &nbsp;·&nbsp; Die angegebene Häufigkeit ist <u>Mindestanforderung</u>.
             </div>
           </>
         )}
