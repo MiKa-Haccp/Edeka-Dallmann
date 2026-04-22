@@ -925,7 +925,7 @@ export default function KaesethekeKontrolle() {
         <PageHeader className="print:hidden">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <button onClick={()=>navigate("/metzgerei-wareneingaenge")}
+              <button onClick={()=>navigate("/category/3")}
                 className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0" title="Zurueck">
                 <ChevronLeft className="w-5 h-5"/>
               </button>
