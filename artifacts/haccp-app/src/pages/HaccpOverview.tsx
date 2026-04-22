@@ -84,7 +84,7 @@ export default function HaccpOverview() {
       id: 2,
       nummer: "HACCP 2",
       titel: "Markt",
-      beschreibung: "Warenzustand Obst & Gemüse, tägliche Reinigung, Carrier-Portal, Wareneingänge und Marktkontrollen.",
+      beschreibung: "Warenzustand Obst & Gemüse, tägliche Reinigung, Carrier-Portal und Wareneingänge.",
       icon: ShoppingCart,
       color: "text-[#1a3a6b]",
       bgColor: "bg-[#1a3a6b]/10",
