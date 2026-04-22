@@ -24,6 +24,7 @@ const HACCP_SIDEBAR_PATHS = [
   "/marktplan",
   "/section/", "/category/", "/we-", "/besprechungsprotokoll",
   "/gesundheitszeugnisse", "/temp-lager-kontrolle", "/rindfleisch-etikettierung",
+  "/metz-bestellungen",
 ];
 
 function useActiveSidebar() {

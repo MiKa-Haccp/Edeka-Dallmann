@@ -11,6 +11,15 @@ function toCamel(row: Record<string, unknown>): Record<string, unknown> {
   return out;
 }
 
+function dbErr(res: any, err: unknown) {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.includes("does not exist")) {
+    return res.status(503).json({ error: "Tabelle nicht gefunden – bitte Migration ausführen.", detail: msg });
+  }
+  console.error("[metzBestellungen]", msg);
+  return res.status(500).json({ error: "Datenbankfehler", detail: msg });
+}
+
 // ── Alle Bestellungen für Monat laden ─────────────────────────────────────────
 router.get("/metz-bestellungen", async (req, res) => {
   const { tenantId = "1", marketId, year, month } = req.query as Record<string, string>;
@@ -31,28 +40,32 @@ router.get("/metz-bestellungen", async (req, res) => {
   }
   query += " ORDER BY datum, created_at";
 
-  const { rows } = await pool.query(query, params);
-  res.json(rows.map(toCamel));
+  try {
+    const { rows } = await pool.query(query, params);
+    res.json(rows.map(toCamel));
+  } catch (err) { dbErr(res, err); }
 });
 
 // ── Neue Bestellung erstellen ──────────────────────────────────────────────────
 router.post("/metz-bestellungen", async (req, res) => {
   const {
     tenantId = 1, marketId, datum,
-    kundeName, kundeTelefon, artikel, menge, notizen, abholdatum,
+    kundeName, kundeTelefon, artikel, menge, notizen,
   } = req.body;
 
   if (!datum || !kundeName || !artikel) {
     return res.status(400).json({ error: "datum, kundeName, artikel required" });
   }
 
-  const { rows } = await pool.query(
-    `INSERT INTO metz_bestellungen
-     (tenant_id, market_id, datum, kunde_name, kunde_telefon, artikel, menge, notizen, abholdatum)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-    [tenantId, marketId ?? null, datum, kundeName, kundeTelefon ?? null, artikel, menge ?? null, notizen ?? null, abholdatum ?? null]
-  );
-  res.json(toCamel(rows[0]));
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO metz_bestellungen
+       (tenant_id, market_id, datum, kunde_name, kunde_telefon, artikel, menge, notizen)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [tenantId, marketId ?? null, datum, kundeName, kundeTelefon ?? null, artikel, menge ?? null, notizen ?? null]
+    );
+    res.json(toCamel(rows[0]));
+  } catch (err) { dbErr(res, err); }
 });
 
 // ── Als "Bestellt" abzeichnen ──────────────────────────────────────────────────
@@ -61,14 +74,16 @@ router.put("/metz-bestellungen/:id/bestellt", async (req, res) => {
   const { kuerzel, userId } = req.body;
   if (!kuerzel) return res.status(400).json({ error: "kuerzel required" });
 
-  const { rows } = await pool.query(
-    `UPDATE metz_bestellungen
-     SET bestellt_kuerzel=$1, bestellt_user_id=$2, bestellt_am=NOW()
-     WHERE id=$3 RETURNING *`,
-    [kuerzel, userId ?? null, id]
-  );
-  if (!rows.length) return res.status(404).json({ error: "Not found" });
-  res.json(toCamel(rows[0]));
+  try {
+    const { rows } = await pool.query(
+      `UPDATE metz_bestellungen
+       SET bestellt_kuerzel=$1, bestellt_user_id=$2, bestellt_am=NOW()
+       WHERE id=$3 RETURNING *`,
+      [kuerzel, userId ?? null, id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Not found" });
+    res.json(toCamel(rows[0]));
+  } catch (err) { dbErr(res, err); }
 });
 
 // ── Als "Abgeholt" abzeichnen ─────────────────────────────────────────────────
@@ -77,21 +92,24 @@ router.put("/metz-bestellungen/:id/abgeholt", async (req, res) => {
   const { kuerzel, userId } = req.body;
   if (!kuerzel) return res.status(400).json({ error: "kuerzel required" });
 
-  const { rows } = await pool.query(
-    `UPDATE metz_bestellungen
-     SET abgeholt_kuerzel=$1, abgeholt_user_id=$2, abgeholt_am=NOW()
-     WHERE id=$3 RETURNING *`,
-    [kuerzel, userId ?? null, id]
-  );
-  if (!rows.length) return res.status(404).json({ error: "Not found" });
-  res.json(toCamel(rows[0]));
+  try {
+    const { rows } = await pool.query(
+      `UPDATE metz_bestellungen
+       SET abgeholt_kuerzel=$1, abgeholt_user_id=$2, abgeholt_am=NOW()
+       WHERE id=$3 RETURNING *`,
+      [kuerzel, userId ?? null, id]
+    );
+    if (!rows.length) return res.status(404).json({ error: "Not found" });
+    res.json(toCamel(rows[0]));
+  } catch (err) { dbErr(res, err); }
 });
 
 // ── Bestellung löschen ────────────────────────────────────────────────────────
 router.delete("/metz-bestellungen/:id", async (req, res) => {
-  const { id } = req.params;
-  await pool.query("DELETE FROM metz_bestellungen WHERE id=$1", [id]);
-  res.json({ ok: true });
+  try {
+    await pool.query("DELETE FROM metz_bestellungen WHERE id=$1", [req.params.id]);
+    res.json({ ok: true });
+  } catch (err) { dbErr(res, err); }
 });
 
 export default router;
