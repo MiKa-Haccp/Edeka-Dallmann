@@ -64,6 +64,7 @@ import WareMHD from "./pages/WareMHD";
 import LadenplanBuilder from "./pages/LadenplanBuilder";
 import MarktPlan from "./pages/MarktPlan";
 import MetzgereiReinigung from "./pages/MetzgereiReinigung";
+import MetzBestellungen from "./pages/MetzBestellungen";
 import OeffnungSalate from "./pages/OeffnungSalate";
 import KaesethekeKontrolle from "./pages/KaesethekeKontrolle";
 import SemmelListe from "./pages/SemmelListe";
@@ -151,6 +152,7 @@ function Router() {
       <Route path="/marktplan" component={MarktPlan} />
       <Route path="/wareneingaenge" component={Wareneingaenge} />
       <Route path="/metzgerei-wareneingaenge" component={MetzgereiWareneingaenge} />
+      <Route path="/metz-bestellungen" component={MetzBestellungen} />
       <Route path="/reinigungsplan-metzgerei" component={MetzgereiReinigung} />
       <Route path="/oeffnung-salate" component={OeffnungSalate} />
       <Route path="/kaesetheke-kontrolle" component={KaesethekeKontrolle} />

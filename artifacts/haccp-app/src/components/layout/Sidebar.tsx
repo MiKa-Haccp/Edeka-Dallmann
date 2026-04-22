@@ -65,6 +65,7 @@ function CategorySections({ categoryId, onNavigate, visibility }: { categoryId: 
     "3.4": "/kaesetheke-kontrolle", "3.5": "/semmelliste", "3.6": "/eingefrorenes-fleisch",
     "3.7": "/rezepturen", "3.8": "/gq-begehung", "3.9": "/abteilungsfremde-personen",
     "3.10": "/rindfleisch-etikettierung",
+    "3.11": "/metz-bestellungen",
   };
 
   if (isLoading) return <div className="p-4 text-xs text-muted-foreground">Lade Bereiche...</div>;

@@ -41,3 +41,4 @@ export * from "./ladenBestellung";
 export * from "./monatsberichtConfig";
 export * from "./planEditor";
 export * from "./archivLock";
+export * from "./metzBestellungen";

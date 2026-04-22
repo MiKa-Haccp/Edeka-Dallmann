@@ -46,6 +46,11 @@ const SECTION_HREFS: Record<string, string> = {
   "3.8": "/gq-begehung",
   "3.9": "/abteilungsfremde-personen",
   "3.10": "/rindfleisch-etikettierung",
+  "3.11": "/metz-bestellungen",
+};
+
+const SECTION_LABEL_OVERRIDE: Record<string, string> = {
+  "3.11": "Bestellungen",
 };
 
 const STATUS_ORDER: Record<TrafficLight, number> = { red: 0, yellow: 1, none: 2, green: 3 };
@@ -121,7 +126,7 @@ export default function CategoryView() {
     if (s.number.includes("_")) return false;
     if (s.number.startsWith("hidden")) return false;
     const m = s.number.match(/^3\.(\d+)$/);
-    if (m && parseInt(m[1]) >= 10) return false;
+    if (m && parseInt(m[1]) >= 10 && !SECTION_LABEL_OVERRIDE[s.number]) return false;
     return true;
   }) ?? [];
 
@@ -202,7 +207,7 @@ export default function CategoryView() {
 
                     {/* Titel – prominent */}
                     <p className="text-sm font-bold text-gray-800 leading-snug group-hover:text-gray-900 flex-1">
-                      {section.title}
+                      {SECTION_LABEL_OVERRIDE[section.number] ?? section.title}
                     </p>
 
                     {/* Nummer – zentriert unten */}
