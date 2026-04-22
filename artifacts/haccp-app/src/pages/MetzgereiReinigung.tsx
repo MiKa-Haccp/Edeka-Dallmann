@@ -655,7 +655,7 @@ export default function MetzgereiReinigung() {
                   <thead>
                     {/* Quartal-Zeile */}
                     <tr className="bg-secondary/30">
-                      <th rowSpan={2} className="text-left px-4 py-2 text-xs font-bold text-muted-foreground w-72 border-b border-border/60 align-bottom">Aufgabe</th>
+                      <th rowSpan={2} className="text-left px-4 py-2 text-xs font-bold text-muted-foreground w-72 border-b border-border/60 align-bottom">Gegenstand</th>
                       <th rowSpan={2} className="text-center px-2 py-2 text-xs font-bold text-muted-foreground w-16 border-b border-border/60 align-bottom">Art</th>
                       {QUARTALE.map((q,qi)=>(
                         <th key={q.label} colSpan={3}
@@ -668,7 +668,7 @@ export default function MetzgereiReinigung() {
                     <tr className="bg-secondary/50 border-b border-border/60">
                       {MONATE.map((m,mi)=>(
                         <th key={m}
-                          className={`text-center px-1 py-1.5 text-[10px] font-bold text-muted-foreground w-[52px] ${mi%3===0&&mi>0?"border-l border-border/40":""}`}>
+                          className={`text-center px-1 py-2.5 text-xs font-bold text-muted-foreground w-[52px] ${mi%3===0&&mi>0?"border-l border-border/40":""}`}>
                           {m}
                         </th>
                       ))}
@@ -817,6 +817,14 @@ export default function MetzgereiReinigung() {
                 <span>·</span>
                 <span>Pflichttermine mit PIN abzeichnen · Rot = offen · Grün = erledigt</span>
               </div>
+            </div>
+
+            {/* Legende */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-600">
+              <strong>R</strong> = Reinigung &nbsp;·&nbsp; <strong>D</strong> = Desinfektion &nbsp;·&nbsp;
+              <strong>R+D</strong> = Reinigung + Desinfektion &nbsp;·&nbsp;
+              <strong>Kontrolle</strong> = Sichtkontrolle &nbsp;·&nbsp; <strong>Wartung</strong> = Fachbetrieb &nbsp;·&nbsp;
+              Die angegebene Häufigkeit ist <u>Mindestanforderung</u>.
             </div>
           </>
         )}
