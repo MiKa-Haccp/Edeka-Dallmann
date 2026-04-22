@@ -79,7 +79,7 @@ export default function CarrierPortal() {
             <div>
               <h1 className="text-xl font-bold text-white">Zugangsdaten {config.name}</h1>
               <p className="text-sm text-white/70">
-                Online-Serviceportal für Kühlsysteme{market ? ` — ${market.name}` : ""}
+                Online-Serviceportal für Kühlsysteme
               </p>
             </div>
           </div>
