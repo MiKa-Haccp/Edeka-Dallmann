@@ -561,6 +561,26 @@ export default function Bescheinigungen() {
     } finally { setLoading(false); }
   }, [selectedMarketId]);
 
+  // Alle Kategorien beim Start (und bei Marktwechsel) parallel laden,
+  // damit die Warn-Badges sofort korrekt angezeigt werden.
+  const loadAll = useCallback(async () => {
+    const kategorien = TABS.map((t) => t.key);
+    const results = await Promise.all(
+      kategorien.map((k) =>
+        fetch(`${BASE}/bescheinigungen?tenantId=1&kategorie=${k}${selectedMarketId ? `&marketId=${selectedMarketId}` : ""}`)
+          .then((r) => r.json())
+          .then((rows) => ({ k, rows }))
+      )
+    );
+    setDaten((p) => {
+      const next = { ...p };
+      for (const { k, rows } of results) next[k] = rows;
+      return next;
+    });
+  }, [selectedMarketId]);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
+
   useEffect(() => { loadKategorie(aktiveTab); }, [aktiveTab, loadKategorie]);
 
   const handleTabChange = (k: Kategorie) => {
