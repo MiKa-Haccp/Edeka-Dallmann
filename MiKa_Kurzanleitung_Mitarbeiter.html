@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>MiKa – Kurzanleitung Mitarbeiter</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --blue-dark:  #1a3a6b;
+    --blue-mid:   #2d5aa0;
+    --blue-light: #dce8f5;
+    --blue-xlight:#eef4fb;
+    --green:      #15803d;
+    --green-light:#dcfce7;
+    --yellow:     #92400e;
+    --yellow-light:#fef3c7;
+    --red:        #b91c1c;
+    --red-light:  #fee2e2;
+    --gray:       #6b7280;
+    --gray-light: #f3f4f6;
+    --gray-border:#e5e7eb;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 13px;
+    color: #111827;
+    background: white;
+    line-height: 1.55;
+  }
+
+  /* ── Print ── */
+  @media print {
+    @page { size: A4; margin: 15mm 14mm; }
+    body { font-size: 11.5px; }
+    .page-break { page-break-before: always; }
+    .no-break { page-break-inside: avoid; }
+    a { color: inherit; text-decoration: none; }
+    .screen-only { display: none; }
+  }
+  @media screen {
+    body { max-width: 820px; margin: 0 auto; padding: 32px 24px; background: #f8fafc; }
+    .page { background: white; padding: 40px 48px; margin-bottom: 24px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    .page-break { margin-top: 0; }
+  }
+
+  /* ── Cover ── */
+  .cover { text-align: center; padding: 60px 0 40px; }
+  .cover .logo-emoji { font-size: 64px; display: block; margin-bottom: 16px; }
+  .cover h1 { font-size: 48px; font-weight: 800; color: var(--blue-dark); letter-spacing: -1px; }
+  .cover .subtitle { font-size: 20px; color: var(--gray); margin-top: 8px; font-weight: 500; }
+  .cover .markets { font-size: 14px; color: var(--gray); margin-top: 6px; }
+  .cover .intro-box {
+    margin: 32px auto 0; max-width: 540px; text-align: left;
+    background: var(--blue-xlight); border-left: 4px solid var(--blue-mid);
+    border-radius: 8px; padding: 16px 20px;
+  }
+  .cover .intro-box strong { color: var(--blue-dark); }
+
+  /* ── Section Banner ── */
+  .section-banner {
+    background: var(--blue-dark); color: white;
+    padding: 12px 20px; border-radius: 8px;
+    font-size: 18px; font-weight: 700;
+    margin: 28px 0 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-banner .icon { font-size: 22px; }
+
+  .sub-banner {
+    background: var(--blue-mid); color: white;
+    padding: 9px 16px; border-radius: 6px;
+    font-size: 14px; font-weight: 600;
+    margin: 22px 0 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── Steps ── */
+  .steps { display: flex; flex-direction: column; gap: 8px; margin: 14px 0; }
+  .step {
+    display: flex; align-items: flex-start; gap: 0;
+    border-radius: 8px; overflow: hidden;
+  }
+  .step-num {
+    background: var(--blue-mid); color: white;
+    font-size: 18px; font-weight: 800;
+    width: 44px; min-width: 44px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 14px 0;
+  }
+  .step-content {
+    background: var(--blue-xlight); flex: 1;
+    padding: 10px 16px;
+    border-left: 3px solid var(--blue-mid);
+  }
+  .step-content strong { color: var(--blue-dark); font-size: 13.5px; display: block; margin-bottom: 2px; }
+  .step-content span { color: #374151; font-size: 12.5px; }
+
+  /* ── Bullets ── */
+  ul.bullets { list-style: none; margin: 8px 0; padding: 0; }
+  ul.bullets li {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 4px 0 4px 4px; font-size: 12.5px;
+  }
+  ul.bullets li .bi { font-size: 14px; flex-shrink: 0; }
+  ul.bullets li.sub { padding-left: 28px; color: var(--gray); font-size: 12px; }
+
+  /* ── Info Boxes ── */
+  .box { border-radius: 8px; padding: 14px 18px; margin: 12px 0; }
+  .box.info { background: var(--blue-light); border-left: 4px solid var(--blue-dark); }
+  .box.tip  { background: var(--green-light); border-left: 4px solid var(--green); }
+  .box.warn { background: var(--yellow-light); border-left: 4px solid #d97706; }
+  .box.err  { background: var(--red-light); border-left: 4px solid var(--red); }
+  .box-head { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+  .box.info .box-head { color: var(--blue-dark); }
+  .box.tip  .box-head { color: var(--green); }
+  .box.warn .box-head { color: #92400e; }
+  .box.err  .box-head { color: var(--red); }
+  .box p, .box ul { font-size: 12.5px; color: #374151; margin-top: 2px; }
+
+  /* ── UI Mockup ── */
+  .mockup-wrap { margin: 14px 0 20px; }
+  .mockup-label { font-size: 11px; color: var(--gray); font-style: italic; margin-bottom: 4px; }
+  .mockup {
+    border-radius: 8px; overflow: hidden;
+    border: 2px solid #374151; font-family: 'Courier New', monospace;
+    font-size: 12px;
+  }
+  .mockup-bar {
+    background: #374151; color: white; padding: 7px 14px;
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Inter', Arial, sans-serif; font-size: 12px; font-weight: 600;
+  }
+  .mockup-bar .dots { color: #ef4444; letter-spacing: 3px; font-size: 16px; }
+  .mockup-body { background: white; }
+  .mockup-row {
+    padding: 7px 18px; border-bottom: 1px solid #f0f0f0;
+    color: #111827; font-size: 12px;
+  }
+  .mockup-row.header { background: var(--blue-xlight); font-weight: 700; color: var(--blue-dark); border-bottom: 2px solid var(--gray-border); font-family: 'Inter', Arial, sans-serif; }
+  .mockup-row.sidebar-head { background: var(--blue-dark); color: white; font-weight: 700; font-family: 'Inter', Arial, sans-serif; padding: 8px 14px; }
+  .mockup-row.sidebar-item { padding: 5px 28px; background: white; color: #374151; font-family: 'Inter', Arial, sans-serif; font-size: 12px; }
+  .mockup-row.sidebar-item.highlight { color: var(--blue-mid); font-weight: 600; }
+  .mockup-row.muted { color: #9ca3af; }
+  .mockup-row.ok { color: #15803d; }
+  .mockup-row.warn-row { color: #92400e; }
+  .mockup-row.err-row { color: var(--red); font-weight: 600; }
+  .mockup-row.action { color: var(--blue-mid); font-weight: 600; font-family: 'Inter', Arial, sans-serif; }
+
+  /* ── Ampel Tabelle ── */
+  .ampel-table { width: 100%; border-collapse: collapse; margin: 12px 0; border-radius: 8px; overflow: hidden; }
+  .ampel-table th { background: var(--blue-dark); color: white; padding: 9px 14px; text-align: left; font-size: 12.5px; }
+  .ampel-table td { padding: 9px 14px; font-size: 12.5px; border-bottom: 1px solid var(--gray-border); }
+  .ampel-table tr.green td { background: #dcfce7; }
+  .ampel-table tr.yellow td { background: #fef3c7; }
+  .ampel-table tr.red td { background: #fee2e2; }
+  .ampel-table tr.gray td { background: var(--gray-light); color: var(--gray); }
+
+  /* ── Karten-Grid ── */
+  .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 14px 0; }
+  .card {
+    border-radius: 10px; padding: 18px 14px; text-align: center;
+    border: 1px solid var(--gray-border);
+  }
+  .card .card-icon { font-size: 32px; display: block; margin-bottom: 8px; }
+  .card .card-title { font-size: 13px; font-weight: 700; color: var(--blue-dark); margin-bottom: 4px; }
+  .card .card-text { font-size: 11.5px; color: var(--gray); }
+
+  /* ── FAQ ── */
+  .faq { margin: 10px 0; border-radius: 8px; overflow: hidden; border: 1px solid var(--gray-border); }
+  .faq-q { background: var(--blue-xlight); padding: 10px 16px; font-weight: 600; color: var(--blue-dark); font-size: 12.5px; border-left: 4px solid var(--blue-dark); }
+  .faq-a { background: var(--gray-light); padding: 9px 16px 9px 20px; font-size: 12.5px; color: #374151; }
+
+  /* ── Footer ── */
+  .doc-footer { text-align: center; color: var(--gray); font-size: 11px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--gray-border); }
+
+  /* ── Print button (screen only) ── */
+  .print-btn {
+    position: fixed; top: 20px; right: 20px;
+    background: var(--blue-dark); color: white;
+    border: none; border-radius: 8px; padding: 10px 20px;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(26,58,107,0.3);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .print-btn:hover { background: var(--blue-mid); }
+  @media print { .print-btn { display: none; } }
+
+  p { margin: 6px 0; font-size: 12.5px; }
+  strong { color: var(--blue-dark); }
+</style>
+</head>
+<body>
+
+<button class="print-btn screen-only" onclick="window.print()">🖨️ Als PDF speichern</button>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- SEITE 1: DECKBLATT + EINSTIEG                 -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="page">
+
+  <div class="cover">
+    <span class="logo-emoji">🏪</span>
+    <h1>MiKa</h1>
+    <p class="subtitle">Deine Kurzanleitung zur HACCP-App</p>
+    <p class="markets">EDEKA DALLMANN &nbsp;·&nbsp; Leeder &nbsp;·&nbsp; Buching &nbsp;·&nbsp; MOD &nbsp;·&nbsp; Stand: April 2025</p>
+    <div class="intro-box">
+      <div class="box-head">💡 Was ist MiKa?</div>
+      <p>MiKa ist die digitale HACCP-Dokumentation für alle drei Märkte. Hier trägst du täglich deine Kontrollen ein – Wareneingänge, Temperaturen, Reinigung – und alles ist sofort sicher gespeichert. Kein Papierchaos mehr! 🎉</p>
+    </div>
+  </div>
+
+  <!-- Einstieg -->
+  <div class="section-banner"><span class="icon">🚀</span> So fängst du an</div>
+
+  <div class="steps">
+    <div class="step no-break">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <strong>App öffnen</strong>
+        <span>Die MiKa-App öffnet sich im Browser auf dem Tablet oder PC.</span>
+      </div>
+    </div>
+    <div class="step no-break">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>Markt auswählen</strong>
+        <span>Oben rechts deinen Markt wählen: <em>Leeder</em>, <em>Buching</em> oder <em>MOD</em>.</span>
+      </div>
+    </div>
+    <div class="step no-break">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>PIN bereit haben</strong>
+        <span>Beim Speichern fragt MiKa immer nach deinem persönlichen PIN. Der zeigt, dass der Eintrag von dir stammt.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="box tip">
+    <div class="box-head">✅ Tipp</div>
+    <p>Der Markt wird gespeichert – beim nächsten Öffnen ist er schon voreingestellt. Trotzdem kurz checken! 👀</p>
+  </div>
+
+  <!-- Navigation Mockup -->
+  <div class="mockup-wrap">
+    <div class="mockup-label">So sieht die Seitenleiste aus:</div>
+    <div class="mockup">
+      <div class="mockup-bar"><span class="dots">●●●</span> MiKa – EDEKA DALLMANN</div>
+      <div class="mockup-body">
+        <div class="mockup-row sidebar-head">📋&nbsp; Allgemein</div>
+        <div class="mockup-row sidebar-item">1.1 &nbsp; Verantwortlichkeiten</div>
+        <div class="mockup-row sidebar-item">1.2 &nbsp; Mitarbeiter &amp; Kürzel</div>
+        <div class="mockup-row sidebar-item">1.4 &nbsp; Schulungsnachweise</div>
+        <div class="mockup-row sidebar-head">🥦&nbsp; Obst &amp; Gemüse / Allgemein</div>
+        <div class="mockup-row sidebar-item highlight">2.1 &nbsp; Wareneingänge &nbsp; ← täglich eintragen!</div>
+        <div class="mockup-row sidebar-item">2.2 &nbsp; Warenzustand Obst &amp; Gemüse</div>
+        <div class="mockup-row sidebar-item highlight">2.3 &nbsp; Reinigungsdokumentation täglich</div>
+        <div class="mockup-row sidebar-head">🥩&nbsp; Metzgerei / Käsetheke</div>
+        <div class="mockup-row sidebar-item highlight">3.1 &nbsp; Wareneingänge Metzgerei &nbsp; ← täglich!</div>
+        <div class="mockup-row sidebar-item">3.3 &nbsp; Öffnung Salate</div>
+        <div class="mockup-row sidebar-item">3.4 &nbsp; Käsetheke und Reifeschrank</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="box warn">
+    <div class="box-head">⚠️ Noch kein PIN?</div>
+    <p>Einfach bei der Verwaltung melden – die richten das schnell ein!</p>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- SEITE 2: WARENEINGÄNGE                        -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="page page-break">
+
+  <div class="section-banner"><span class="icon">📦</span> Wareneingänge eintragen</div>
+
+  <p>Das machst du an jedem Liefertag – dauert nur ein paar Minuten.</p>
+  <ul class="bullets" style="margin-bottom:12px">
+    <li><span class="bi">📋</span> <strong>Bereich 2.1</strong> – für Obst &amp; Gemüse und allgemeine Lieferanten</li>
+    <li><span class="bi">🥩</span> <strong>Bereich 3.1</strong> – für Metzgerei, Fisch und Molkerei</li>
+  </ul>
+
+  <!-- Monatsübersicht Mockup -->
+  <div class="mockup-wrap">
+    <div class="mockup-label">So sieht die Monatsübersicht aus:</div>
+    <div class="mockup">
+      <div class="mockup-bar"><span class="dots">●●●</span> Wareneingänge – Frische GmbH – Mai 2025</div>
+      <div class="mockup-body">
+        <div class="mockup-row header">📅&nbsp; Lieferant: Frische GmbH &nbsp;|&nbsp; Liefertage: Di, Do, Fr</div>
+        <div class="mockup-row muted">&nbsp;&nbsp;05 &nbsp;Mo &nbsp;&nbsp; kein Liefertag</div>
+        <div class="mockup-row ok">&nbsp;&nbsp;06 &nbsp;Di &nbsp;&nbsp; 🟢 i.O. &nbsp; Temp: 4,2 °C &nbsp;&nbsp; [MH]</div>
+        <div class="mockup-row muted">&nbsp;&nbsp;07 &nbsp;Mi &nbsp;&nbsp; kein Liefertag</div>
+        <div class="mockup-row err-row">&nbsp;&nbsp;08 &nbsp;Do &nbsp;&nbsp; 🔴 Eintrag fehlt! &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [+ Eintrag]</div>
+        <div class="mockup-row warn-row">&nbsp;&nbsp;09 &nbsp;Fr &nbsp;&nbsp; 🟡 Abweichung &nbsp; Temp: 8,1 °C – zu hoch! &nbsp;&nbsp; [AS]</div>
+        <div class="mockup-row muted">&nbsp;&nbsp;10 &nbsp;Sa &nbsp;&nbsp; kein Liefertag</div>
+        <div class="mockup-row ok">&nbsp;&nbsp;13 &nbsp;Di &nbsp;&nbsp; 🟢 i.O. &nbsp; Temp: 3,8 °C &nbsp;&nbsp; [AS]</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-banner"><span>📝</span> Schritt für Schritt – neuen Eintrag machen</div>
+
+  <div class="steps">
+    <div class="step no-break">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <strong>Tag anklicken</strong>
+        <span>Beim richtigen Tag auf den Knopf <em>«+ Eintrag»</em> klicken.</span>
+      </div>
+    </div>
+    <div class="step no-break">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>Formular ausfüllen</strong>
+        <span>Alle Punkte mit <strong>*</strong> sind Pflicht. Checkboxen: <strong>i.O.</strong> = alles gut &nbsp;|&nbsp; <strong>A</strong> = Abweichung &nbsp;|&nbsp; <strong>–</strong> = entfällt</span>
+      </div>
+    </div>
+    <div class="step no-break">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>Temperatur eintragen</strong>
+        <span>Zahlenwert eingeben, z.&nbsp;B. <code>4.5</code>. Falls ein Temperaturbereich heute nicht relevant ist: «entf.» drücken.</span>
+      </div>
+    </div>
+    <div class="step no-break">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <strong>PIN eingeben &amp; speichern</strong>
+        <span>Auf «Speichern» klicken → PIN eintippen → fertig! 🎉</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sub-banner"><span>⚠️</span> Abweichung? Kein Stress!</div>
+
+  <ul class="bullets">
+    <li><span class="bi">📝</span> «A» bei dem Punkt anklicken, der nicht in Ordnung war</li>
+    <li><span class="bi">📝</span> Im Notizfeld unten genau beschreiben, was passiert ist</li>
+    <li><span class="bi">📝</span> Maßnahme angeben: Was wurde gemacht? Von wem? Bis wann?</li>
+  </ul>
+  <div class="box tip">
+    <div class="box-head">✅ Beispiel Notiz</div>
+    <p>„Temp. Hackfleisch 5 °C – zu hoch. Ware zurückgewiesen. Rückruf Lieferant durch A. Schulze. 08.05.2025"</p>
+  </div>
+
+  <div class="sub-banner"><span>🚚</span> Lieferung ausgefallen?</div>
+  <ul class="bullets">
+    <li><span class="bi">1️⃣</span> Beim betreffenden Tag auf «+ Eintrag» klicken</li>
+    <li><span class="bi">2️⃣</span> Oben den Schalter «Lieferung ausgefallen» aktivieren</li>
+    <li><span class="bi">3️⃣</span> Speichern – alle anderen Felder bleiben leer</li>
+  </ul>
+
+  <div class="sub-banner"><span>🚦</span> Ampel-Bedeutung</div>
+  <table class="ampel-table">
+    <tr><th>Farbe</th><th>Bedeutung</th></tr>
+    <tr class="green"><td>🟢&nbsp; Grün</td><td>Alles erledigt – passt!</td></tr>
+    <tr class="yellow"><td>🟡&nbsp; Gelb</td><td>Abweichung eingetragen – Maßnahme prüfen</td></tr>
+    <tr class="red"><td>🔴&nbsp; Rot</td><td>Eintrag fehlt – bitte nachholen!</td></tr>
+    <tr class="gray"><td>⚫&nbsp; Grau</td><td>Kein Liefertag – nichts zu tun</td></tr>
+  </table>
+
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- SEITE 3: WEITERE AUFGABEN                     -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="page page-break">
+
+  <div class="section-banner"><span class="icon">📋</span> Weitere tägliche Aufgaben</div>
+
+  <div class="card-grid">
+    <div class="card" style="background:#fff7ed">
+      <span class="card-icon">🧹</span>
+      <div class="card-title">Reinigung täglich</div>
+      <div class="card-text">Bereich 2.3 – alle Reinigungspunkte abhaken</div>
+    </div>
+    <div class="card" style="background:#f0fdf4">
+      <span class="card-icon">🥦</span>
+      <div class="card-title">Warencheck O&amp;G</div>
+      <div class="card-text">Bereich 2.2 – Qualität, Frische und MHD prüfen</div>
+    </div>
+    <div class="card" style="background:var(--blue-xlight)">
+      <span class="card-icon">🌡️</span>
+      <div class="card-title">Lagertemperaturen</div>
+      <div class="card-text">Bereich 1.13 – Kühlraum-Temperaturen eintragen</div>
+    </div>
+    <div class="card" style="background:#fef9c3">
+      <span class="card-icon">🧀</span>
+      <div class="card-title">Käsetheke</div>
+      <div class="card-text">Bereich 3.4 – Temperatur und Hygiene dokumentieren</div>
+    </div>
+    <div class="card" style="background:#fdf2f8">
+      <span class="card-icon">🥗</span>
+      <div class="card-title">Öffnung Salate</div>
+      <div class="card-text">Bereich 3.3 – Öffnungszeit von Fertigsalaten eintragen</div>
+    </div>
+    <div class="card" style="background:var(--blue-xlight)">
+      <span class="card-icon">❄️</span>
+      <div class="card-title">Reifeschrank</div>
+      <div class="card-text">Bereich 3.4 – Reifeschrank-Temperatur prüfen</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════ -->
+<!-- SEITE 4: FAQ & HILFE                          -->
+<!-- ══════════════════════════════════════════════ -->
+<div class="page page-break">
+
+  <div class="section-banner"><span class="icon">🙋</span> Häufige Fragen &amp; Hilfe</div>
+
+  <div class="faq no-break">
+    <div class="faq-q">❓ Ich habe den falschen Markt ausgewählt?</div>
+    <div class="faq-a">👉 Oben rechts auf den Marktnamen klicken → anderen Markt wählen. Dann neu eintragen.</div>
+  </div>
+  <div class="faq no-break">
+    <div class="faq-q">❓ Mein PIN wird nicht erkannt?</div>
+    <div class="faq-a">👉 Bitte die Verwaltung ansprechen – die können den PIN zurücksetzen.</div>
+  </div>
+  <div class="faq no-break">
+    <div class="faq-q">❓ Ich habe einen falschen Wert eingetragen?</div>
+    <div class="faq-a">👉 Nochmal auf «Bearb.» beim entsprechenden Tag klicken, korrigieren und neu speichern.</div>
+  </div>
+  <div class="faq no-break">
+    <div class="faq-q">❓ Lieferung kam an einem anderen Tag (Lieferdatum verschoben)?</div>
+    <div class="faq-a">👉 Am verschobenen Tag auf den grauen «+ Eintrag»-Knopf klicken – das geht auch an Nicht-Liefertagen!</div>
+  </div>
+  <div class="faq no-break">
+    <div class="faq-q">❓ Die App lädt nicht?</div>
+    <div class="faq-a">👉 Browser-Seite neu laden (F5 oder Seite aktualisieren). Klappt es dann noch nicht → Verwaltung informieren.</div>
+  </div>
+  <div class="faq no-break">
+    <div class="faq-q">❓ Ich weiß nicht, was ich eintragen soll?</div>
+    <div class="faq-a">👉 Im Formular sind alle Felder beschriftet. Im Zweifelsfall: Verwaltung fragen – besser einmal zu viel fragen als falsch eintragen!</div>
+  </div>
+
+  <div class="box tip" style="margin-top:20px">
+    <div class="box-head">✅ Noch ein letzter Tipp</div>
+    <p>Immer vor dem Eintragen prüfen, ob der richtige Markt oben ausgewählt ist. Das ist der häufigste Fehler! 😄</p>
+  </div>
+
+  <div class="doc-footer">
+    MiKa – Digitale HACCP-Dokumentation &nbsp;·&nbsp; EDEKA DALLMANN &nbsp;·&nbsp; Stand: April 2025<br>
+    Bei Fragen steht die Verwaltung gerne zur Verfügung.
+  </div>
+
+</div>
+
+</body>
+</html>

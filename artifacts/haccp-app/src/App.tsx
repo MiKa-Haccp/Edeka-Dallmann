@@ -107,6 +107,7 @@ import SectionVerwaltung from "./pages/SectionVerwaltung";
 import PlanEditor from "./pages/PlanEditor";
 import Jahresarchiv from "./pages/Jahresarchiv";
 import Revisionslog from "./pages/Revisionslog";
+import Dokumente from "./pages/Dokumente";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
@@ -194,6 +195,7 @@ function Router() {
       <Route path="/verwaltung/schulungsanforderungen" component={SchulungsAnforderungen} />
       <Route path="/verwaltung/jahresarchiv" component={Jahresarchiv} />
       <Route path="/verwaltung/revisionslog" component={Revisionslog} />
+      <Route path="/dokumente" component={Dokumente} />
       <Route path="/todo" component={TodoHub} />
       <Route path="/todo-tagesliste" component={TodoTagesliste} />
       <Route path="/todo-rundgang" component={TodoTagesliste} />

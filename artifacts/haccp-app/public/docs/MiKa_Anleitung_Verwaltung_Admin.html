@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>MiKa – Anleitung Verwaltung & Admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --blue-dark:  #1a3a6b;
+    --blue-mid:   #2d5aa0;
+    --blue-light: #dce8f5;
+    --blue-xlight:#eef4fb;
+    --green:      #15803d;
+    --green-light:#dcfce7;
+    --yellow:     #92400e;
+    --yellow-light:#fef3c7;
+    --red:        #b91c1c;
+    --red-light:  #fee2e2;
+    --gray:       #6b7280;
+    --gray-light: #f3f4f6;
+    --gray-border:#e5e7eb;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', Arial, sans-serif; font-size: 13px; color: #111827; background: white; line-height: 1.55; }
+
+  @media print {
+    @page { size: A4; margin: 14mm 14mm; }
+    body { font-size: 11px; }
+    .page-break { page-break-before: always; }
+    .no-break { page-break-inside: avoid; }
+    a { color: inherit; text-decoration: none; }
+    .screen-only { display: none; }
+  }
+  @media screen {
+    body { max-width: 820px; margin: 0 auto; padding: 32px 24px; background: #f8fafc; }
+    .page { background: white; padding: 38px 46px; margin-bottom: 24px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  }
+
+  .cover { text-align: center; padding: 50px 0 36px; }
+  .cover .logo-emoji { font-size: 64px; display: block; margin-bottom: 14px; }
+  .cover h1 { font-size: 46px; font-weight: 800; color: var(--blue-dark); letter-spacing: -1px; }
+  .cover .subtitle { font-size: 19px; color: var(--gray); margin-top: 8px; font-weight: 500; }
+  .cover .markets { font-size: 13px; color: var(--gray); margin-top: 6px; }
+  .cover .intro-box { margin: 28px auto 0; max-width: 560px; text-align: left; background: var(--blue-xlight); border-left: 4px solid var(--blue-mid); border-radius: 8px; padding: 14px 18px; }
+
+  /* Inhaltsverzeichnis */
+  .toc { margin: 20px 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--gray-border); }
+  .toc-head { background: var(--blue-dark); color: white; padding: 10px 18px; font-weight: 700; font-size: 14px; }
+  .toc-row { display: flex; align-items: center; gap: 14px; padding: 9px 18px; border-bottom: 1px solid var(--gray-border); font-size: 12.5px; }
+  .toc-row:last-child { border-bottom: none; }
+  .toc-row:nth-child(even) { background: var(--gray-light); }
+  .toc-letter { background: var(--blue-mid); color: white; width: 36px; min-width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; }
+  .toc-title { font-weight: 700; color: var(--blue-dark); }
+  .toc-desc { color: var(--gray); font-size: 11.5px; }
+
+  .section-banner { background: var(--blue-dark); color: white; padding: 11px 18px; border-radius: 8px; font-size: 17px; font-weight: 700; margin: 24px 0 14px; display: flex; align-items: center; gap: 10px; }
+  .section-banner .icon { font-size: 20px; }
+  .sub-banner { background: var(--blue-mid); color: white; padding: 8px 14px; border-radius: 6px; font-size: 13.5px; font-weight: 600; margin: 18px 0 10px; display: flex; align-items: center; gap: 8px; }
+
+  .steps { display: flex; flex-direction: column; gap: 7px; margin: 12px 0; }
+  .step { display: flex; align-items: flex-start; gap: 0; border-radius: 8px; overflow: hidden; }
+  .step-num { background: var(--blue-mid); color: white; font-size: 17px; font-weight: 800; width: 42px; min-width: 42px; display: flex; align-items: center; justify-content: center; padding: 12px 0; }
+  .step-content { background: var(--blue-xlight); flex: 1; padding: 9px 14px; border-left: 3px solid var(--blue-mid); }
+  .step-content strong { color: var(--blue-dark); font-size: 13px; display: block; margin-bottom: 2px; }
+  .step-content span { color: #374151; font-size: 12px; }
+
+  ul.bullets { list-style: none; margin: 6px 0; padding: 0; }
+  ul.bullets li { display: flex; align-items: baseline; gap: 8px; padding: 3px 0 3px 4px; font-size: 12.5px; }
+  ul.bullets li .bi { font-size: 13px; flex-shrink: 0; }
+  ul.bullets li.sub { padding-left: 28px; color: var(--gray); font-size: 11.5px; }
+
+  .box { border-radius: 8px; padding: 12px 16px; margin: 10px 0; }
+  .box.info { background: var(--blue-light); border-left: 4px solid var(--blue-dark); }
+  .box.tip  { background: var(--green-light); border-left: 4px solid var(--green); }
+  .box.warn { background: var(--yellow-light); border-left: 4px solid #d97706; }
+  .box.err  { background: var(--red-light); border-left: 4px solid var(--red); }
+  .box-head { font-weight: 700; font-size: 12.5px; margin-bottom: 4px; }
+  .box.info .box-head { color: var(--blue-dark); }
+  .box.tip  .box-head { color: var(--green); }
+  .box.warn .box-head { color: #92400e; }
+  .box.err  .box-head { color: var(--red); }
+  .box p { font-size: 12px; color: #374151; margin-top: 2px; }
+
+  .mockup-wrap { margin: 12px 0 18px; }
+  .mockup-label { font-size: 11px; color: var(--gray); font-style: italic; margin-bottom: 4px; }
+  .mockup { border-radius: 8px; overflow: hidden; border: 2px solid #374151; font-family: 'Courier New', monospace; font-size: 11.5px; }
+  .mockup-bar { background: #374151; color: white; padding: 6px 12px; display: flex; align-items: center; gap: 10px; font-family: 'Inter', Arial, sans-serif; font-size: 11.5px; font-weight: 600; }
+  .mockup-bar .dots { color: #ef4444; letter-spacing: 3px; font-size: 14px; }
+  .mockup-body { background: white; }
+  .mockup-row { padding: 6px 16px; border-bottom: 1px solid #f0f0f0; color: #111827; font-size: 11.5px; }
+  .mockup-row.header { background: var(--blue-xlight); font-weight: 700; color: var(--blue-dark); border-bottom: 2px solid var(--gray-border); font-family: 'Inter', Arial, sans-serif; }
+  .mockup-row.muted { color: #9ca3af; }
+  .mockup-row.action { color: var(--blue-mid); font-weight: 600; font-family: 'Inter', Arial, sans-serif; }
+  .mockup-row.note { color: var(--gray); font-size: 11px; font-style: italic; }
+
+  /* Rollen-Tabelle */
+  .role-table { width: 100%; border-collapse: collapse; margin: 12px 0; border-radius: 8px; overflow: hidden; font-size: 12px; }
+  .role-table th { background: var(--blue-dark); color: white; padding: 8px 12px; text-align: left; }
+  .role-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray-border); vertical-align: top; }
+  .role-table tr:nth-child(even) td { background: var(--gray-light); }
+
+  /* Checkliste Monatsabschluss */
+  .checklist { margin: 10px 0; }
+  .check-item { display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-bottom: 1px solid var(--gray-border); font-size: 12.5px; }
+  .check-item:first-child { border-radius: 8px 8px 0 0; }
+  .check-item:last-child { border-bottom: none; border-radius: 0 0 8px 8px; }
+  .check-item:nth-child(odd) { background: var(--blue-xlight); }
+  .check-item:nth-child(even) { background: white; border: 1px solid var(--gray-border); border-top: none; }
+  .check-box { width: 22px; height: 22px; border: 2px solid var(--blue-mid); border-radius: 5px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+
+  /* Notfall-Tabelle */
+  .notfall-table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  .notfall-table tr td:first-child { background: var(--blue-xlight); font-weight: 600; color: var(--blue-dark); padding: 9px 12px; width: 35%; border-bottom: 1px solid var(--gray-border); font-size: 12px; }
+  .notfall-table tr td:last-child { padding: 9px 12px; border-bottom: 1px solid var(--gray-border); font-size: 12px; }
+  .notfall-table tr:nth-child(even) td:first-child { background: var(--blue-light); }
+  .notfall-table tr:nth-child(even) td:last-child { background: var(--gray-light); }
+
+  .doc-footer { text-align: center; color: var(--gray); font-size: 11px; margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--gray-border); }
+  p { margin: 5px 0; font-size: 12.5px; }
+  strong { color: var(--blue-dark); }
+  code { background: var(--gray-light); padding: 1px 5px; border-radius: 3px; font-size: 11.5px; }
+
+  .print-btn { position: fixed; top: 20px; right: 20px; background: var(--blue-dark); color: white; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(26,58,107,0.3); display: flex; align-items: center; gap: 8px; }
+  .print-btn:hover { background: var(--blue-mid); }
+  @media print { .print-btn { display: none; } }
+</style>
+</head>
+<body>
+
+<button class="print-btn screen-only" onclick="window.print()">🖨️ Als PDF speichern</button>
+
+<!-- ══════════════════════════════════ DECKBLATT ══ -->
+<div class="page">
+  <div class="cover">
+    <span class="logo-emoji">⚙️</span>
+    <h1>MiKa</h1>
+    <p class="subtitle">Anleitung für Verwaltung &amp; Administration</p>
+    <p class="markets">EDEKA DALLMANN &nbsp;·&nbsp; Leeder &nbsp;·&nbsp; Buching &nbsp;·&nbsp; MOD &nbsp;·&nbsp; Stand: April 2025</p>
+    <div class="intro-box">
+      <div class="box-head" style="color:var(--blue-dark)">⚙️ Für wen ist das?</div>
+      <p style="font-size:12.5px;margin-top:4px">Diese Anleitung richtet sich an Personen mit Verwaltungs- oder Admin-Zugang. Sie erklärt alle Funktionen des Systems – von der täglichen Nutzung bis zur Systemkonfiguration.</p>
+    </div>
+  </div>
+
+  <div class="toc">
+    <div class="toc-head">📑 Inhaltsübersicht</div>
+    <div class="toc-row">
+      <div class="toc-letter">A</div>
+      <div><div class="toc-title">Tägliche Aufgaben</div><div class="toc-desc">Wareneingänge, Reinigung, Temperaturen – wie alle Mitarbeiter</div></div>
+    </div>
+    <div class="toc-row">
+      <div class="toc-letter">B</div>
+      <div><div class="toc-title">Verwaltungsfunktionen</div><div class="toc-desc">Mitarbeiter, Schulungen, Lieferanten konfigurieren, Berichte, Archiv</div></div>
+    </div>
+    <div class="toc-row">
+      <div class="toc-letter">C</div>
+      <div><div class="toc-title">Systemadministration</div><div class="toc-desc">Benutzerverwaltung, Module, E-Mail, Geräteverwaltung, Datenschutz</div></div>
+    </div>
+    <div class="toc-row">
+      <div class="toc-letter">D</div>
+      <div><div class="toc-title">Tipps &amp; Sicherheit</div><div class="toc-desc">Master-Passwort, Notfälle, Behördenprüfungen, Monatsabschluss</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ TEIL A ════ -->
+<div class="page page-break">
+  <div class="section-banner"><span class="icon">📋</span> Teil A – Tägliche Aufgaben</div>
+
+  <div class="box info">
+    <div class="box-head">💡 Kurzinfo</div>
+    <p>Die täglichen Aufgaben sind für Verwaltung und Mitarbeiter identisch. Alle Details stehen in der Mitarbeiter-Kurzanleitung. Hier die wichtigsten Punkte im Überblick:</p>
+  </div>
+
+  <ul class="bullets" style="margin-top:12px">
+    <li><span class="bi">📦</span> <strong>Wareneingänge 2.1</strong> – Obst &amp; Gemüse, allgemeine Lieferanten</li>
+    <li><span class="bi">🥩</span> <strong>Wareneingänge 3.1</strong> – Metzgerei, Fisch, Molkerei</li>
+    <li><span class="bi">🧹</span> <strong>Reinigungsdokumentation 2.3</strong> – alle Punkte täglich abhaken</li>
+    <li><span class="bi">🥦</span> <strong>Warencheck 2.2</strong> – Qualität und Frische prüfen</li>
+    <li><span class="bi">🌡️</span> <strong>Lagertemperaturen 1.13</strong> – Kühlraum-Temps eintragen</li>
+    <li><span class="bi">🧀</span> <strong>Käsetheke &amp; Reifeschrank 3.4</strong> – Temperatur und Hygiene</li>
+  </ul>
+
+  <div class="box tip" style="margin-top:16px">
+    <div class="box-head">✅ Admin-Tipp</div>
+    <p>Als Verwaltung/Admin hast du zusätzlich Zugriff auf den Admin-Bereich über das <strong>Zahnrad-Symbol</strong> oben rechts in der App. Damit öffnest du alle Verwaltungsfunktionen.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ TEIL B ════ -->
+<div class="page page-break">
+  <div class="section-banner"><span class="icon">🗂️</span> Teil B – Verwaltungsfunktionen</div>
+
+  <!-- B1: Mitarbeiter -->
+  <div class="sub-banner"><span>👥</span> B1 &nbsp; Mitarbeiter &amp; Kürzel (1.2)</div>
+  <p><strong>Pfad:</strong> Seitenleiste → 1.2 Mitarbeiter &amp; Kürzel</p>
+
+  <div class="mockup-wrap" style="margin-top:10px">
+    <div class="mockup-label">So sieht die Mitarbeiterliste aus:</div>
+    <div class="mockup">
+      <div class="mockup-bar"><span class="dots">●●●</span> MiKa – Mitarbeiter &amp; Kürzel</div>
+      <div class="mockup-body">
+        <div class="mockup-row header">👥 Mitarbeiter &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [+ Neuer Mitarbeiter]</div>
+        <div class="mockup-row">&nbsp;&nbsp; Max Müller &nbsp;&nbsp;&nbsp;&nbsp; Kürzel: MM &nbsp;&nbsp; Rolle: Mitarbeiter &nbsp;&nbsp; ✅ aktiv &nbsp;&nbsp; [Bearbeiten]</div>
+        <div class="mockup-row">&nbsp;&nbsp; Anna Schulze &nbsp; Kürzel: AS &nbsp;&nbsp; Rolle: Verwaltung &nbsp;&nbsp; ✅ aktiv &nbsp;&nbsp; [Bearbeiten]</div>
+        <div class="mockup-row">&nbsp;&nbsp; Klaus Fischer &nbsp; Kürzel: KF &nbsp;&nbsp; Rolle: Admin &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ✅ aktiv &nbsp;&nbsp; [Bearbeiten]</div>
+        <div class="mockup-row muted">&nbsp;&nbsp; Maria Huber &nbsp;&nbsp; Kürzel: MH &nbsp;&nbsp; Rolle: Mitarbeiter &nbsp;&nbsp; ⛔ inaktiv</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step no-break">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <strong>Neuen Mitarbeiter anlegen</strong>
+        <span>«+ Neuer Mitarbeiter» → Name, Kürzel (2–4 Zeichen), PIN vergeben, Rolle wählen → Speichern</span>
+      </div>
+    </div>
+    <div class="step no-break">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>PIN ändern</strong>
+        <span>Mitarbeiter anklicken → «PIN ändern» → neuen PIN eingeben. Sofort aktiv.</span>
+      </div>
+    </div>
+    <div class="step no-break">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>Mitarbeiter deaktivieren</strong>
+        <span>Mitarbeiter anklicken → «Deaktivieren». Alle bisherigen Einträge bleiben erhalten.</span>
+      </div>
+    </div>
+  </div>
+  <div class="box warn">
+    <div class="box-head">⚠️ Wichtig</div>
+    <p>Wenn ein Mitarbeiter das Unternehmen verlässt: sofort deaktivieren! PINs sollten regelmäßig geändert werden.</p>
+  </div>
+
+  <!-- B2: Schulungen -->
+  <div class="sub-banner"><span>🎓</span> B2 &nbsp; Schulungsnachweise (1.4)</div>
+  <p><strong>Pfad:</strong> Seitenleiste → 1.4 Schulungsnachweise</p>
+  <ul class="bullets" style="margin-top:8px">
+    <li><span class="bi">📅</span> Schulung eintragen: Datum, Thema und Teilnehmer angeben</li>
+    <li><span class="bi">📎</span> Belege vermerken: Zertifikate als Kommentar hinterlegen</li>
+    <li><span class="bi">📊</span> Übersicht: letzte Schulung pro Mitarbeiter immer sichtbar</li>
+  </ul>
+
+  <!-- B3: Reinigungsplan -->
+  <div class="sub-banner"><span>🧹</span> B3 &nbsp; Jahres-Reinigungsplan (1.5)</div>
+  <p><strong>Pfad:</strong> Seitenleiste → 1.5 Reinigungsplan Jahr</p>
+  <ul class="bullets" style="margin-top:8px">
+    <li><span class="bi">📋</span> Jährliche Reinigungsintervalle planen (täglich / wöchentlich / monatlich)</li>
+    <li><span class="bi">🖨️</span> Am Jahresende als PDF ausdrucken – fertig für die Behörden</li>
+  </ul>
+</div>
+
+<!-- ══════════════════════════════════ TEIL B (2) ════ -->
+<div class="page page-break">
+
+  <!-- B4: Lieferanten -->
+  <div class="sub-banner"><span>🚛</span> B4 &nbsp; Lieferanten konfigurieren</div>
+  <p><strong>Pfad:</strong> Wareneingänge (2.1 oder 3.1) → oben auf das ⚙️ Zahnrad-Icon klicken</p>
+
+  <div class="mockup-wrap" style="margin-top:10px">
+    <div class="mockup-label">So sieht die Lieferanten-Konfiguration aus:</div>
+    <div class="mockup">
+      <div class="mockup-bar"><span class="dots">●●●</span> Admin – Lieferanten konfigurieren</div>
+      <div class="mockup-body">
+        <div class="mockup-row header">⚙️ Lieferanten &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [+ Neuer Lieferant]</div>
+        <div class="mockup-row action">&nbsp;&nbsp; ▼  Frische GmbH &nbsp;(Obst &amp; Gemüse) &nbsp;&nbsp; Liefertage: Di, Do, Fr</div>
+        <div class="mockup-row note">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Kriterien: ✅ Hygiene &nbsp; ✅ Etikettierung &nbsp; ✅ QS-Siegel &nbsp; ✅ Temp. OG</div>
+        <div class="mockup-row note">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Ausnahme: 15.05.2025 → kein Liefertag (Feiertag)</div>
+        <div class="mockup-row">&nbsp;&nbsp; ▶  Metzger König &nbsp;(Fleisch) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Liefertage: Mo, Mi, Fr</div>
+        <div class="mockup-row">&nbsp;&nbsp; ▶  Fisch Maier &nbsp;&nbsp; (Fisch) &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Liefertage: Di, Fr</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step no-break">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <strong>Lieferant anlegen</strong>
+        <span>«+ Neuer Lieferant» → Name &amp; Warenart → Kriterien aktivieren → Liefertage einstellen → Speichern</span>
+      </div>
+    </div>
+    <div class="step no-break">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <strong>Temperaturbereiche wählen</strong>
+        <span>Nur die Bereiche aktivieren, die wirklich relevant sind. Z.B. Metzgerei-Lieferant → Fleisch + Molkerei aktivieren.</span>
+      </div>
+    </div>
+    <div class="step no-break">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <strong>Liefertag-Ausnahmen</strong>
+        <span>Datum eingeben → Typ wählen («Liefertag» oder «Kein Liefertag») → Hinzufügen. Ideal für Feiertage.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- B5: Monatsberichte -->
+  <div class="sub-banner"><span>📊</span> B5 &nbsp; Monatsberichte</div>
+  <ul class="bullets" style="margin-top:8px">
+    <li><span class="bi">🖨️</span> Monat wählen → «PDF erstellen» → fertig</li>
+    <li><span class="bi">📧</span> Direkt aus dem System per E-Mail versenden</li>
+    <li><span class="bi">⚙️</span> Automatischer Versand konfigurierbar (siehe C3)</li>
+    <li><span class="bi">📁</span> Alle Berichte automatisch im Jahresarchiv gespeichert</li>
+  </ul>
+
+  <!-- B6: Archiv -->
+  <div class="sub-banner"><span>🗄️</span> B6 &nbsp; Jahresarchiv</div>
+  <ul class="bullets" style="margin-top:8px">
+    <li><span class="bi">📅</span> Abgeschlossene Monate werden automatisch archiviert</li>
+    <li><span class="bi">🔒</span> Archivierte Einträge lesbar, aber nicht mehr veränderbar</li>
+    <li><span class="bi">🖨️</span> Für Behörden: Archiv → Monat → PDF/Drucken</li>
+  </ul>
+  <div class="box tip">
+    <div class="box-head">✅ Bei Behördenprüfungen</div>
+    <p>Jahresarchiv öffnen → gewünschten Monat wählen → «Drucken». Alle HACCP-Daten sind vollständig enthalten. 📋</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ TEIL C ════ -->
+<div class="page page-break">
+  <div class="section-banner"><span class="icon">⚙️</span> Teil C – Systemadministration</div>
+
+  <div class="box err">
+    <div class="box-head">🚨 Nur für Admins!</div>
+    <p>Dieser Bereich ist nur für Systemadministratoren bestimmt. Falsche Einstellungen können den Betrieb stören. Im Zweifel erst fragen.</p>
+  </div>
+
+  <!-- C1: Rollen -->
+  <div class="sub-banner"><span>🔐</span> C1 &nbsp; Benutzerverwaltung &amp; Rollen</div>
+  <table class="role-table">
+    <tr>
+      <th>Rolle</th>
+      <th>Kann&nbsp;…</th>
+      <th>Darf&nbsp;NICHT&nbsp;…</th>
+    </tr>
+    <tr>
+      <td>👤&nbsp; Mitarbeiter</td>
+      <td>Einträge lesen &amp; erstellen, eigene Tageseinträge</td>
+      <td>Systemeinstellungen, Mitarbeiter verwalten</td>
+    </tr>
+    <tr>
+      <td>👔&nbsp; Verwaltung</td>
+      <td>Alles + Lieferanten, Schulungen, Berichte, Archiv</td>
+      <td>Benutzerverwaltung, System-Konfiguration</td>
+    </tr>
+    <tr>
+      <td>🔧&nbsp; Admin</td>
+      <td>Vollzugriff – alles im System</td>
+      <td>–</td>
+    </tr>
+  </table>
+
+  <!-- C2: Module -->
+  <div class="sub-banner"><span>👁️</span> C2 &nbsp; Module &amp; Sichtbarkeit</div>
+  <p><strong>Pfad:</strong> Admin-Menü → Sektionssichtbarkeit</p>
+  <ul class="bullets" style="margin-top:8px">
+    <li><span class="bi">✅</span> Bereiche ein-/ausblenden: pro Markt einzeln konfigurierbar</li>
+    <li><span class="bi">💡</span> Nützlich wenn z.B. Metzgerei-Bereiche in einem Markt nicht gebraucht werden</li>
+    <li><span class="bi">⚡</span> Änderungen wirken sofort – keine Abmeldung nötig</li>
+  </ul>
+  <div class="box tip">
+    <div class="box-head">✅ Beruhigend zu wissen</div>
+    <p>Ausgeblendete Bereiche sind nicht weg – sie können jederzeit wieder eingeschaltet werden. Keine Daten gehen verloren.</p>
+  </div>
+
+  <!-- C3: E-Mail -->
+  <div class="sub-banner"><span>📧</span> C3 &nbsp; E-Mail-Einstellungen</div>
+  <p><strong>Pfad:</strong> Admin-Menü → E-Mail-Einstellungen</p>
+
+  <div class="mockup-wrap" style="margin-top:10px">
+    <div class="mockup-label">E-Mail-Einstellungen in MiKa:</div>
+    <div class="mockup">
+      <div class="mockup-bar"><span class="dots">●●●</span> MiKa – E-Mail-Einstellungen</div>
+      <div class="mockup-body">
+        <div class="mockup-row header">📧 E-Mail-Einstellungen</div>
+        <div class="mockup-row">&nbsp;&nbsp; SMTP-Server: &nbsp;&nbsp; mail.edeka-dallmann.de</div>
+        <div class="mockup-row">&nbsp;&nbsp; SMTP-Port: &nbsp;&nbsp;&nbsp;&nbsp; 587 (TLS)</div>
+        <div class="mockup-row">&nbsp;&nbsp; Absender: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; mika@edeka-dallmann.de</div>
+        <div class="mockup-row">&nbsp;&nbsp; Empfänger: &nbsp;&nbsp;&nbsp;&nbsp; verwaltung@edeka-dallmann.de</div>
+        <div class="mockup-row">&nbsp;&nbsp; ✅ Automatischer Monatsbericht (1. des Monats, 06:00 Uhr)</div>
+        <div class="mockup-row action">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; [💾 Speichern] &nbsp;&nbsp;&nbsp; [📧 Testmail senden]</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C4: Geräte -->
+  <div class="sub-banner"><span>🔧</span> C4 &nbsp; Geräteverwaltung &amp; TÜV-Fristen</div>
+  <ul class="bullets" style="margin-top:8px">
+    <li><span class="bi">📋</span> Messgeräte hinterlegen: Thermometer, Waagen, Messgeräte</li>
+    <li><span class="bi">📅</span> Kalibrierungsdaten und nächste Wartungstermine eintragen</li>
+    <li><span class="bi">🔔</span> Automatische Erinnerungen wenn Fristen ablaufen (täglich 07:00 Uhr geprüft)</li>
+  </ul>
+
+  <!-- C5: Datenschutz -->
+  <div class="sub-banner"><span>🗑️</span> C5 &nbsp; Datenschutz &amp; Bereinigung</div>
+  <ul class="bullets" style="margin-top:8px">
+    <li><span class="bi">📅</span> Gesetzliche Aufbewahrungsfrist: mindestens 3 Jahre</li>
+    <li><span class="bi">📊</span> Revisionslog: zeigt wer wann was eingetragen oder geändert hat</li>
+    <li><span class="bi">🗑️</span> Bereinigung: nur nach Ablauf der Frist durchführen</li>
+  </ul>
+  <div class="box err">
+    <div class="box-head">🚨 Vor jeder Bereinigung</div>
+    <p>Zuerst einen PDF-Export aller betroffenen Monate erstellen und sicher lokal speichern!</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════ TEIL D ════ -->
+<div class="page page-break">
+  <div class="section-banner"><span class="icon">🔒</span> Teil D – Tipps &amp; Sicherheit</div>
+
+  <!-- D1: Master-Passwort -->
+  <div class="sub-banner"><span>🗝️</span> D1 &nbsp; Master-Passwort</div>
+  <div class="box err">
+    <div class="box-head">🚨 Achtung</div>
+    <p>Das Master-Passwort ist der Hauptzugang zur Systemkonfiguration. Nur für Geschäftsleitung/IT – niemals an Mitarbeiter weitergeben! Bei Verlust: IT-Support kontaktieren.</p>
+  </div>
+
+  <!-- D2: Notfälle -->
+  <div class="sub-banner"><span>🚨</span> D2 &nbsp; Systemausfall – Was tun?</div>
+  <table class="notfall-table">
+    <tr>
+      <td>⚡ App lädt nicht</td>
+      <td>Browser neu laden (F5). Danach 5 Min. warten und nochmal probieren.</td>
+    </tr>
+    <tr>
+      <td>⚡ Kein Internet</td>
+      <td>Einträge auf dem HACCP-Papierbogen machen, danach digital nachtragen.</td>
+    </tr>
+    <tr>
+      <td>⚡ Daten scheinen zu fehlen</td>
+      <td>Keine Panik! Daten werden gesichert. IT-Support anrufen.</td>
+    </tr>
+    <tr>
+      <td>⚡ Falscher Eintrag gespeichert</td>
+      <td>Auf «Bearb.» klicken und korrigieren. Im Revisionslog ist alles nachvollziehbar.</td>
+    </tr>
+  </table>
+
+  <!-- D3: Behördenprüfungen -->
+  <div class="sub-banner"><span>🏛️</span> D3 &nbsp; Checkliste Behördenprüfungen</div>
+  <div class="checklist">
+    <div class="check-item"><div class="check-box">☐</div> <span>Jahresarchiv → gewünschten Zeitraum öffnen → PDF drucken</span></div>
+    <div class="check-item"><div class="check-box">☐</div> <span>Schulungsnachweise (1.4) ausdrucken</span></div>
+    <div class="check-item"><div class="check-box">☐</div> <span>Jahres-Reinigungsplan (1.5) bereit haben</span></div>
+    <div class="check-item"><div class="check-box">☐</div> <span>Bei Abweichungen: Notizen und Maßnahmen im System öffnen</span></div>
+    <div class="check-item"><div class="check-box">☐</div> <span>Revisionslog für Nachweis der lückenlosen Dokumentation</span></div>
+  </div>
+
+  <!-- D4: Monatsabschluss -->
+  <div class="sub-banner"><span>✅</span> D4 &nbsp; Checkliste Monatsabschluss</div>
+  <p>Am Ende jedes Monats kurz diese Punkte durchgehen:</p>
+  <div class="checklist" style="margin-top:10px">
+    <div class="check-item"><div class="check-box">☐</div> <span>Alle Liefertage haben einen Eintrag (keine roten Tage in der Übersicht)</span></div>
+    <div class="check-item"><div class="check-box">☐</div> <span>Alle Abweichungen haben eine dokumentierte Maßnahme</span></div>
+    <div class="check-item"><div class="check-box">☐</div> <span>Monatsbericht generiert und per E-Mail versendet</span></div>
+    <div class="check-item"><div class="check-box">☐</div> <span>Schulungen des Monats eingetragen</span></div>
+    <div class="check-item"><div class="check-box">☐</div> <span>Jahres-Reinigungsplan auf Vollständigkeit geprüft</span></div>
+  </div>
+
+  <div class="box tip" style="margin-top:20px">
+    <div class="box-head">✅ Gut zu wissen</div>
+    <p>Die Checkliste oben kann ausgedruckt werden – einfach ans schwarze Brett hängen! Die Kästchen können abgehakt werden.</p>
+  </div>
+
+  <div class="doc-footer">
+    MiKa – Digitale HACCP-Dokumentation &nbsp;·&nbsp; EDEKA DALLMANN &nbsp;·&nbsp; Stand: April 2025<br>
+    Bei technischen Fragen: IT-Support &nbsp;·&nbsp; Bei inhaltlichen Fragen: Verwaltung EDEKA DALLMANN
+  </div>
+</div>
+
+</body>
+</html>
