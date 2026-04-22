@@ -95,13 +95,13 @@ interface JahresItem {
 }
 const QUARTALE = [
   { label:"Q1", firstMonth:1,  monate:[1,2,3],   color:"bg-sky-50 text-sky-700 border-sky-200" },
-  { label:"Q2", firstMonth:4,  monate:[4,5,6],   color:"bg-emerald-50 text-emerald-700 border-emerald-200" },
-  { label:"Q3", firstMonth:7,  monate:[7,8,9],   color:"bg-amber-50 text-amber-700 border-amber-200" },
-  { label:"Q4", firstMonth:10, monate:[10,11,12], color:"bg-rose-50 text-rose-700 border-rose-200" },
+  { label:"Q2", firstMonth:4,  monate:[4,5,6],   color:"bg-sky-50 text-sky-700 border-sky-200" },
+  { label:"Q3", firstMonth:7,  monate:[7,8,9],   color:"bg-sky-50 text-sky-700 border-sky-200" },
+  { label:"Q4", firstMonth:10, monate:[10,11,12], color:"bg-sky-50 text-sky-700 border-sky-200" },
 ];
 const HALBJAHRE = [
-  { label:"H1", short:"1. Halbjahr", firstMonth:1,  monate:[1,2,3,4,5,6],   color:"bg-indigo-50 text-indigo-700 border-indigo-200" },
-  { label:"H2", short:"2. Halbjahr", firstMonth:7,  monate:[7,8,9,10,11,12], color:"bg-purple-50 text-purple-700 border-purple-200" },
+  { label:"H1", short:"1. Halbjahr", firstMonth:1,  monate:[1,2,3,4,5,6],   color:"bg-sky-50 text-sky-700 border-sky-200" },
+  { label:"H2", short:"2. Halbjahr", firstMonth:7,  monate:[7,8,9,10,11,12], color:"bg-sky-50 text-sky-700 border-sky-200" },
 ];
 const JAHRES_ITEMS: JahresItem[] = [
   // ── Allgemeiner Bereich ────────────────────────────────────────────────────
