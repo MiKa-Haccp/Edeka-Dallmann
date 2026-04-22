@@ -108,6 +108,10 @@ import PlanEditor from "./pages/PlanEditor";
 import Jahresarchiv from "./pages/Jahresarchiv";
 import Revisionslog from "./pages/Revisionslog";
 import Dokumente from "./pages/Dokumente";
+import ManagementHub from "./pages/ManagementHub";
+import ManagementTaskBoard from "./pages/ManagementTaskBoard";
+import ManagementRecruiting from "./pages/ManagementRecruiting";
+import ApplicantDetail from "./pages/ApplicantDetail";
 import { useAutoLogout } from "./hooks/useAutoLogout";
 
 const queryClient = new QueryClient({
@@ -196,6 +200,10 @@ function Router() {
       <Route path="/verwaltung/jahresarchiv" component={Jahresarchiv} />
       <Route path="/verwaltung/revisionslog" component={Revisionslog} />
       <Route path="/dokumente" component={Dokumente} />
+      <Route path="/management" component={ManagementHub} />
+      <Route path="/management/tasks" component={ManagementTaskBoard} />
+      <Route path="/management/recruiting" component={ManagementRecruiting} />
+      <Route path="/management/bewerber/:id" component={ApplicantDetail} />
       <Route path="/todo" component={TodoHub} />
       <Route path="/todo-tagesliste" component={TodoTagesliste} />
       <Route path="/todo-rundgang" component={TodoTagesliste} />

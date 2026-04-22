@@ -2,7 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
 import { Link, useLocation } from "wouter";
-import { Users, KeyRound, ArrowRight, UserCog, ChevronLeft, GraduationCap, Archive, FileSearch, BookOpen } from "lucide-react";
+import { Users, KeyRound, ArrowRight, UserCog, ChevronLeft, GraduationCap, Archive, FileSearch, BookOpen, Briefcase } from "lucide-react";
 import { useEffect } from "react";
 
 const ALLOWED_ROLES = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER"];
@@ -146,6 +146,26 @@ export default function VerwaltungHub() {
             </div>
           </Link>
 
+          {/* Management Hub – nur für SUPERADMIN und ADMIN */}
+          {adminSession && ["SUPERADMIN", "ADMIN"].includes(adminSession.role) && (
+            <Link href="/management">
+              <div className="group bg-white rounded-2xl border border-border/60 shadow-sm hover:shadow-md hover:border-[#1a3a6b]/30 transition-all duration-200 p-6 cursor-pointer">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-[#1a3a6b]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Briefcase className="w-6 h-6 text-[#1a3a6b]" />
+                  </div>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#1a3a6b]/10 text-[#1a3a6b]">Backoffice</span>
+                </div>
+                <h3 className="text-lg font-bold text-foreground mb-1">Management Hub</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                  Task-Board (Kanban) für Kai, Michi und Sonja sowie das Recruiting-Center für Bewerbungsmanagement.
+                </p>
+                <div className="flex items-center gap-1.5 text-sm font-bold text-[#1a3a6b] group-hover:gap-3 transition-all duration-200">
+                  Öffnen <ArrowRight className="w-4 h-4" />
+                </div>
+              </div>
+            </Link>
+          )}
         </div>
       </div>
     </AppLayout>

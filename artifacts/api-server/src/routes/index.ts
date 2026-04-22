@@ -60,6 +60,7 @@ import rindfleischEtikettenRouter from "./rindfleischEtiketten";
 import sectionVisibilityRouter from "./sectionVisibility";
 import planEditorRouter from "./planEditor";
 import archivRouter from "./archiv";
+import managementRouter from "./management";
 
 const router: IRouter = Router();
 
@@ -124,5 +125,6 @@ router.use(rindfleischEtikettenRouter);
 router.use(sectionVisibilityRouter);
 router.use(planEditorRouter);
 router.use(archivRouter);
+router.use(managementRouter);
 
 export default router;

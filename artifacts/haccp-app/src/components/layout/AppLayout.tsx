@@ -3,6 +3,7 @@ import { Header } from "./Header";
 import { Sidebar, MobileSidebar } from "./Sidebar";
 import { WareSidebar, WareMobileSidebar } from "./WareSidebar";
 import { TodoSidebar, TodoMobileSidebar, TODO_PATHS } from "./TodoSidebar";
+import { ManagementSidebar, ManagementMobileSidebar, MANAGEMENT_PATHS } from "./ManagementSidebar";
 import { motion } from "framer-motion";
 import { MarktwahlScreen } from "@/components/MarktwahlScreen";
 import { GeraetSperrScreen } from "@/components/GeraetSperrScreen";
@@ -31,8 +32,9 @@ function useActiveSidebar() {
   const [location] = useLocation();
   const isWare = location === "/ware" || location.startsWith("/ware-");
   const isTodo = TODO_PATHS.some(p => location === p);
-  const isHaccp = !isWare && !isTodo && HACCP_SIDEBAR_PATHS.some((p) => location.startsWith(p));
-  return { isWare, isHaccp, isTodo, hasSidebar: isWare || isHaccp || isTodo };
+  const isManagement = MANAGEMENT_PATHS.some(p => location === p || location.startsWith(p));
+  const isHaccp = !isWare && !isTodo && !isManagement && HACCP_SIDEBAR_PATHS.some((p) => location.startsWith(p));
+  return { isWare, isHaccp, isTodo, isManagement, hasSidebar: isWare || isHaccp || isTodo || isManagement };
 }
 
 export function AppLayout({ children }: { children: ReactNode }) {
@@ -51,7 +53,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     rawMarkets.forEach((m: any) => { map[m.id] = m.betriebsstart ?? null; });
     setBetriebsstartByMarket(map);
   }, [rawMarkets, setBetriebsstartByMarket]);
-  const { isWare, isHaccp, isTodo, hasSidebar } = useActiveSidebar();
+  const { isWare, isHaccp, isTodo, isManagement, hasSidebar } = useActiveSidebar();
 
   // Verifikations-State: "waiting" (auf Hydration warten), "verifying", "done"
   const [verifyState, setVerifyState] = useState<"waiting" | "verifying" | "done">("waiting");
@@ -172,10 +174,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
       {isHaccp && <MobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />}
       {isWare && <WareMobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />}
       {isTodo && <TodoMobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />}
+      {isManagement && <ManagementMobileSidebar isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />}
 
       <div className="flex flex-1 w-full min-h-0">
         {isHaccp && <Sidebar />}
         {isWare && <WareSidebar />}
+        {isManagement && <ManagementSidebar />}
         {isTodo && <TodoSidebar />}
         <main className="flex-1 min-w-0 relative">
           <motion.div
