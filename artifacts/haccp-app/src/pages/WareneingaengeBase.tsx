@@ -725,6 +725,17 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
                       {e?"Bearb.":"+ Eintrag"}
                     </button>
                   )}
+                  {!future&&ls==="kein_liefertag"&&(
+                    <button onClick={()=>onEditDay(day)}
+                      title="Kein regulärer Liefertag – Eintrag trotzdem möglich"
+                      className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors shrink-0 border ${
+                        e
+                          ? "bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200"
+                          : "bg-white text-gray-400 border-dashed border-gray-300 hover:text-gray-600 hover:border-gray-400"
+                      }`}>
+                      {e?"Bearb.":"+ Eintrag"}
+                    </button>
+                  )}
                 </div>
               </div>
             );
