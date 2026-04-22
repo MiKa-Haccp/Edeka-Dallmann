@@ -325,7 +325,7 @@ function DayDetailModal({ day, year, month, type, entry, onClose, onEdit }: {
           {tempCrit.length>0&&(
             <div className="space-y-2">
               <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Temperatur</p>
-              {tempCrit.map(c=>{const val=v[c.key];const ok=!val||isTempOk(c,val);return(
+              {tempCrit.map(c=>{const val=v[c.key];if(val==="entfällt")return(<div key={c.key} className="flex items-center gap-2"><Thermometer className="w-4 h-4 shrink-0 text-gray-300"/><span className="text-xs flex-1 text-muted-foreground">{c.label}</span><span className="font-mono text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">entf.</span></div>);const ok=!val||isTempOk(c,val);return(
                 <div key={c.key} className="flex items-center gap-2">
                   <Thermometer className={`w-4 h-4 shrink-0 ${ok?"text-green-500":"text-red-500"}`}/>
                   <span className="text-xs flex-1">{c.label}</span>
@@ -421,7 +421,7 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
   const setVal=(k:string,v:string)=>setVals(p=>({...p,[k]:v}));
   const hasAbw=!ausgefallen&&enabled.some(c=>vals[c.key]==="abweichung");
   const badTemp=!ausgefallen&&enabled.filter(c=>c.type==="temp").some(c=>vals[c.key]&&!isTempOk(c,vals[c.key]));
-  const missingTemps=ausgefallen?[]:enabled.filter(c=>c.type==="temp").filter(c=>!vals[c.key]);
+  const missingTemps=ausgefallen?[]:enabled.filter(c=>c.type==="temp").filter(c=>!vals[c.key]&&vals[c.key]!=="entfällt");
   const hasMissingTemps=missingTemps.length>0;
   const grouped=critGroups.map(g=>({group:g,items:enabled.filter(c=>c.group===g)})).filter(g=>g.items.length>0);
 
@@ -495,30 +495,47 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
                     <div className="flex items-center gap-2">
                       <p className="flex-1 text-sm">
                         {c.label}
-                        <span className="text-red-500 ml-0.5 font-bold">*</span>
+                        {vals[c.key]!=="entfällt"&&<span className="text-red-500 ml-0.5 font-bold">*</span>}
                       </p>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <input type="number" step="0.1"
-                          className={`w-20 border-2 rounded-lg px-2 py-1.5 text-sm font-mono text-center focus:outline-none transition-colors ${
-                            vals[c.key]&&!isTempOk(c,vals[c.key])
-                              ? "border-red-400 bg-red-50 focus:border-red-400"
-                              : showValidation&&!vals[c.key]
-                                ? "border-red-400 bg-red-50 focus:border-red-400"
-                                : "border-border focus:border-primary/50"
-                          }`}
-                          placeholder="°C" value={vals[c.key]??""} onChange={e=>setVal(c.key,e.target.value)}/>
-                        <span className="text-xs text-muted-foreground">°C</span>
-                        {vals[c.key]&&<span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isTempOk(c,vals[c.key])?"bg-green-100 text-green-700":"bg-red-100 text-red-700"}`}>{isTempOk(c,vals[c.key])?"i.O.":"!"}</span>}
+                        {vals[c.key]!=="entfällt"&&(
+                          <>
+                            <input type="number" step="0.1"
+                              className={`w-20 border-2 rounded-lg px-2 py-1.5 text-sm font-mono text-center focus:outline-none transition-colors ${
+                                vals[c.key]&&!isTempOk(c,vals[c.key])
+                                  ? "border-red-400 bg-red-50 focus:border-red-400"
+                                  : showValidation&&!vals[c.key]
+                                    ? "border-red-400 bg-red-50 focus:border-red-400"
+                                    : "border-border focus:border-primary/50"
+                              }`}
+                              placeholder="°C" value={vals[c.key]??""} onChange={e=>setVal(c.key,e.target.value)}/>
+                            <span className="text-xs text-muted-foreground">°C</span>
+                            {vals[c.key]&&<span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isTempOk(c,vals[c.key])?"bg-green-100 text-green-700":"bg-red-100 text-red-700"}`}>{isTempOk(c,vals[c.key])?"i.O.":"!"}</span>}
+                          </>
+                        )}
+                        <button
+                          onClick={()=>setVal(c.key,vals[c.key]==="entfällt"?"":"entfällt")}
+                          title="Nicht relevant / heute nicht geliefert"
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border-2 transition-all ${
+                            vals[c.key]==="entfällt"
+                              ? "bg-gray-200 text-gray-600 border-gray-300 scale-105"
+                              : "bg-white border-border text-muted-foreground hover:border-gray-400"
+                          }`}>
+                          entf.
+                        </button>
                       </div>
                     </div>
-                    {vals[c.key]&&!isTempOk(c,vals[c.key])&&(
+                    {vals[c.key]&&vals[c.key]!=="entfällt"&&!isTempOk(c,vals[c.key])&&(
                       <div className="flex items-center gap-1.5 text-[11px] text-red-600 font-semibold bg-red-50 border border-red-200 rounded-lg px-2.5 py-1.5">
                         <TriangleAlert className="w-3.5 h-3.5 shrink-0"/>
                         Temperaturgrenzwert überschritten!{c.maxVal!==undefined&&c.minVal===undefined?` Erlaubt: max. ${c.maxVal} °C`:c.minVal!==undefined&&c.maxVal!==undefined?` Erlaubt: ${c.minVal}–${c.maxVal} °C`:""} – Maßnahme erforderlich.
                       </div>
                     )}
                     {showValidation&&!vals[c.key]&&(
-                      <p className="text-[11px] text-red-500 font-semibold pl-0.5">Pflichtfeld – bitte Temperatur eintragen.</p>
+                      <p className="text-[11px] text-red-500 font-semibold pl-0.5">Pflichtfeld – bitte Temperatur eintragen oder auf entf. klicken.</p>
+                    )}
+                    {vals[c.key]==="entfällt"&&(
+                      <p className="text-[11px] text-gray-500 pl-0.5">Heute nicht geliefert / nicht relevant</p>
                     )}
                   </div>
                 )}
@@ -676,7 +693,7 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
                   {statusLabel(e,tc,ls,future)}
                   {e&&tempCrit.length>0&&(
                     <div className="flex gap-1.5 mt-1 flex-wrap">
-                      {tempCrit.map(c=>{const val=v[c.key];if(!val)return null;const ok=isTempOk(c,val);return(
+                      {tempCrit.map(c=>{const val=v[c.key];if(!val)return null;if(val==="entfällt")return(<span key={c.key} title={c.label} className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">{c.short}: entf.</span>);const ok=isTempOk(c,val);return(
                         <span key={c.key} title={c.label}
                           className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-full ${ok?"bg-green-100 text-green-800":"bg-red-100 text-red-700"}`}>
                           {c.short}: {parseFloat(val).toFixed(1)}°C
