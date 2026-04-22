@@ -419,7 +419,7 @@ export default function OeffnungSalate() {
 
   return (
     <AppLayout>
-      <div className="max-w-5xl mx-auto space-y-4 pb-10">
+      <div className="max-w-7xl mx-auto space-y-4 pb-10">
 
         {/* HEADER */}
         <PageHeader>
@@ -515,8 +515,13 @@ export default function OeffnungSalate() {
                 <thead>
                   <tr className="bg-gradient-to-br from-[#1a3a6b] to-[#2d5aa0] text-white">
                     <th className="px-3 py-3 text-left font-semibold text-xs w-14 sticky left-0 z-10 bg-[#1a3a6b]">Tag</th>
-                    <th className="px-3 py-3 text-left font-semibold text-xs">Einträge (Artikel / MHD / Kürzel)</th>
-                    <th className="px-3 py-3 text-center font-semibold text-xs w-20">Aktion</th>
+                    <th className="px-3 py-3 text-left font-semibold text-xs w-1/2 border-l border-white/20">
+                      <span className="flex items-center gap-1.5"><FlaskConical className="w-3.5 h-3.5 text-green-300"/>Eigenherstellung</span>
+                    </th>
+                    <th className="px-3 py-3 text-left font-semibold text-xs w-1/2 border-l border-white/20">
+                      <span className="flex items-center gap-1.5"><Package className="w-3.5 h-3.5 text-amber-300"/>Öffnung Gastopack</span>
+                    </th>
+                    <th className="px-3 py-3 text-center font-semibold text-xs w-16 border-l border-white/20">Aktion</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -553,26 +558,42 @@ export default function OeffnungSalate() {
                             <span className={`text-[10px] font-medium mt-0.5 ${isClosed?"text-slate-400":holidayName?"text-red-400":isSaturday?"text-blue-400":"text-muted-foreground"}`}>{wd}</span>
                           </div>
                         </td>
-                        <td className="px-3 py-2 min-w-[260px]">
-                          {isClosed ? (
+                        {/* ── Eigenherstellung ── */}
+                        {isClosed ? (
+                          <td colSpan={2} className="px-3 py-2 border-l border-border/30">
                             <span className="text-xs text-slate-400 italic">{holidayName||"Sonntag"}</span>
-                          ) : (
-                            <div className="flex flex-wrap gap-1.5 py-0.5">
-                              {de.length===0&&(
-                                <span className="text-xs text-muted-foreground/40 italic">
-                                  {isFuture?"–":"Kein Eintrag"}
-                                </span>
-                              )}
-                              {de.map(entry=>(
-                                <EntryChip key={entry.id} entry={entry} isAdmin={canDelete}
-                                  deletingId={deletingId} markingId={markingId}
-                                  onDelete={handleDelete}
-                                  onAufgebraucht={handleAufgebrauchtPin}
-                                  onRueckgaengig={handleRueckgaengig}/>
-                              ))}
-                            </div>
-                          )}
-                        </td>
+                          </td>
+                        ) : (
+                          <>
+                            <td className="px-3 py-2 border-l border-border/30 align-top">
+                              <div className="flex flex-wrap gap-1.5 py-0.5 min-h-[28px]">
+                                {de.filter(e=>e.eigenherstellung).length===0 ? (
+                                  <span className="text-xs text-muted-foreground/30 italic">{isFuture?"–":"–"}</span>
+                                ) : de.filter(e=>e.eigenherstellung).map(entry=>(
+                                  <EntryChip key={entry.id} entry={entry} isAdmin={canDelete}
+                                    deletingId={deletingId} markingId={markingId}
+                                    onDelete={handleDelete}
+                                    onAufgebraucht={handleAufgebrauchtPin}
+                                    onRueckgaengig={handleRueckgaengig}/>
+                                ))}
+                              </div>
+                            </td>
+                            {/* ── Öffnung Gastopack ── */}
+                            <td className="px-3 py-2 border-l border-border/30 align-top">
+                              <div className="flex flex-wrap gap-1.5 py-0.5 min-h-[28px]">
+                                {de.filter(e=>!e.eigenherstellung).length===0 ? (
+                                  <span className="text-xs text-muted-foreground/30 italic">{isFuture?"–":"–"}</span>
+                                ) : de.filter(e=>!e.eigenherstellung).map(entry=>(
+                                  <EntryChip key={entry.id} entry={entry} isAdmin={canDelete}
+                                    deletingId={deletingId} markingId={markingId}
+                                    onDelete={handleDelete}
+                                    onAufgebraucht={handleAufgebrauchtPin}
+                                    onRueckgaengig={handleRueckgaengig}/>
+                                ))}
+                              </div>
+                            </td>
+                          </>
+                        )}
                         <td className="px-3 py-2 text-center">
                           {!isClosed&&!isFuture&&(
                             <button
