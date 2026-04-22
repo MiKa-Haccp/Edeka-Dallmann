@@ -1,4 +1,3 @@
-import { useListCategories, useListSections } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import * as Accordion from "@radix-ui/react-accordion";
 import { ChevronDown, Folder, FileText, ClipboardList, GripVertical, X, Home, ShieldCheck, ShoppingCart, Beef } from "lucide-react";
@@ -8,12 +7,9 @@ import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 
 import { useWarenzustandOGStatus, useReinigungTaeglichStatus, useWareneingaengeStatus, useMetzgereiWareneingaengeStatus, useMetzgereiReinigungStatus, useKaesethekeStatus, useOeffnungSalateStatus, useGQBegehungStatus, useSchulungsnachweiseStatus, useResponsibilitiesStatus, useAnnualCleaningPlanStatus, useBetriebsbegehungStatus, useTempLagerStatus, useBescheinigungenStatus, useTuevAktionsplanStatus, type TrafficLight } from "@/hooks/useWarenzustandStatus";
 import { useAppStore } from "@/store/use-app-store";
+import { SIDEBAR_CONFIG, MARKET_TITLE_OVERRIDES, type SectionConfig } from "@/config/sidebarConfig";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
-
-const MARKET_SECTION_TITLE_OVERRIDES: Record<number, Record<string, string>> = {
-  3: { "2.4": "Zugangsdaten Hauser-Portal" },
-};
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -33,11 +29,21 @@ const MAX_WIDTH = 500;
 const DEFAULT_WIDTH = 288;
 const STORAGE_KEY = "haccp-sidebar-width";
 
-
-function CategorySections({ categoryId, onNavigate, visibility }: { categoryId: number; onNavigate?: () => void; visibility: Record<number, boolean> }) {
-  const { data: sections, isLoading } = useListSections(categoryId);
+function CategorySections({
+  categoryId,
+  sections,
+  onNavigate,
+  visibility,
+  selectedMarketId,
+}: {
+  categoryId: number;
+  sections: SectionConfig[];
+  onNavigate?: () => void;
+  visibility: Record<number, boolean>;
+  selectedMarketId: number | null;
+}) {
   const [location] = useLocation();
-  const selectedMarketId = useAppStore(s => s.selectedMarketId);
+
   const ogStatus               = useWarenzustandOGStatus();
   const reinigungStatus        = useReinigungTaeglichStatus();
   const wareneingaengeStatus   = useWareneingaengeStatus();
@@ -54,55 +60,51 @@ function CategorySections({ categoryId, onNavigate, visibility }: { categoryId: 
   const bescheinigungenStatus    = useBescheinigungenStatus();
   const tuevAktionsplanStatus    = useTuevAktionsplanStatus();
 
-  const SECTION_HREF: Record<string, string> = {
-    "1.1": "/responsibilities", "1.2": "/mitarbeiter-liste", "1.3": "/info-documentation",
-    "1.4": "/training-records", "1.5": "/annual-cleaning-plan", "1.6": "/betriebsbegehung",
-    "1.7": "/hinweisschild-gesperrte-ware", "1.8": "/produktfehlermeldung", "1.9": "/probeentnahme",
-    "1.10": "/anti-vektor-zugang", "1.11": "/bescheinigungen", "1.12": "/kontrollberichte",
-    "1.13": "/temp-lager-kontrolle",
-    "2.1": "/wareneingaenge", "2.2": "/warencheck-og", "2.3": "/reinigung-taeglich", "2.4": "/carrier-portal",
-    "3.1": "/metzgerei-wareneingaenge", "3.2": "/reinigungsplan-metzgerei", "3.3": "/oeffnung-salate",
-    "3.4": "/kaesetheke-kontrolle", "3.5": "/semmelliste", "3.6": "/eingefrorenes-fleisch",
-    "3.7": "/rezepturen", "3.8": "/gq-begehung", "3.9": "/abteilungsfremde-personen",
-    "3.10": "/rindfleisch-etikettierung",
-    "3.11": "/metz-bestellungen",
-  };
-
-  if (isLoading) return <div className="p-4 text-xs text-muted-foreground">Lade Bereiche...</div>;
-  if (!sections?.length) return <div className="p-4 text-xs text-muted-foreground">Keine Bereiche gefunden.</div>;
-
-  const SIDEBAR_TITLE_OVERRIDE: Record<string, string> = {
-    "3.11": "Bestellungen",
+  const trafficFor = (num: string): TrafficLight => {
+    switch (num) {
+      case "1.1":  return responsibilitiesStatus;
+      case "1.4":  return schulungsnachweiseStatus;
+      case "1.5":  return cleaningPlanStatus;
+      case "1.6":  return betriebsbegehungStatus;
+      case "1.11": return bescheinigungenStatus;
+      case "1.12": return tuevAktionsplanStatus;
+      case "1.13": return tempLagerStatus;
+      case "2.1":  return wareneingaengeStatus;
+      case "2.2":  return ogStatus;
+      case "2.3":  return reinigungStatus;
+      case "3.1":  return metzgereiStatus;
+      case "3.2":  return metzReinigungStatus;
+      case "3.3":  return oeffnungSalateStatus;
+      case "3.4":  return kaesethekeStatus;
+      case "3.8":  return gqBegehungStatus;
+      default:     return "none";
+    }
   };
 
   const visibleSections = sections.filter((s) => {
-    if (s.number.includes("_") || s.number.startsWith("hidden")) return false;
-    if (!(s.id in visibility ? visibility[s.id] : true)) return false;
-    const m = s.number.match(/^(\d+)\.(\d+)$/);
-    if (m && parseInt(m[2]) >= 12) return false;
+    if (s.dbId in visibility && visibility[s.dbId] === false) return false;
     return true;
   });
 
   return (
     <div className="flex flex-col gap-0.5 py-1">
       {visibleSections.map((section, idx) => {
-        const href = SECTION_HREF[section.number] ?? `/section/${section.id}`;
-        const displayNum = `${categoryId}.${idx + 1}`;
-        const isActive = location === href;
-        const trafficStatus: TrafficLight = section.number === "1.1" ? responsibilitiesStatus : section.number === "1.4" ? schulungsnachweiseStatus : section.number === "1.5" ? cleaningPlanStatus : section.number === "1.6" ? betriebsbegehungStatus : section.number === "1.11" ? bescheinigungenStatus : section.number === "1.12" ? tuevAktionsplanStatus : section.number === "1.13" ? tempLagerStatus : section.number === "2.1" ? wareneingaengeStatus : section.number === "2.2" ? ogStatus : section.number === "2.3" ? reinigungStatus : section.number === "3.1" ? metzgereiStatus : section.number === "3.2" ? metzReinigungStatus : section.number === "3.3" ? oeffnungSalateStatus : section.number === "3.4" ? kaesethekeStatus : section.number === "3.8" ? gqBegehungStatus : "none";
-        const iconColor = trafficStatus === "green"
-          ? "text-green-500"
-          : trafficStatus === "yellow"
-          ? "text-amber-400"
-          : trafficStatus === "red"
-          ? "text-red-500"
-          : isActive
-          ? "text-primary"
-          : "text-muted-foreground/50 group-hover:text-muted-foreground";
+        const displayNum  = `${categoryId}.${idx + 1}`;
+        const isActive    = location === section.href;
+        const traffic     = trafficFor(section.number);
+        const title       = (selectedMarketId && MARKET_TITLE_OVERRIDES[selectedMarketId]?.[section.number]) || section.title;
+
+        const iconColor =
+          traffic === "green"  ? "text-green-500" :
+          traffic === "yellow" ? "text-amber-400" :
+          traffic === "red"    ? "text-red-500"   :
+          isActive             ? "text-primary"   :
+          "text-muted-foreground/50 group-hover:text-muted-foreground";
+
         return (
           <Link
-            key={section.id}
-            href={href}
+            key={section.number}
+            href={section.href}
             onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 px-4 py-2 text-sm rounded-lg transition-all duration-200 group",
@@ -112,7 +114,7 @@ function CategorySections({ categoryId, onNavigate, visibility }: { categoryId: 
             )}
           >
             <FileText className={cn("h-4 w-4 flex-shrink-0", iconColor)} />
-            <span className="truncate">{displayNum} {SIDEBAR_TITLE_OVERRIDE[section.number] || (selectedMarketId && MARKET_SECTION_TITLE_OVERRIDES[selectedMarketId]?.[section.number]) || section.title}</span>
+            <span className="truncate">{displayNum} {title}</span>
           </Link>
         );
       })}
@@ -128,7 +130,9 @@ const SIDEBAR_OPEN_PATHS = [
   "/hinweisschild-gesperrte-ware", "/produktfehlermeldung", "/probeentnahme",
   "/anti-vektor-zugang", "/bescheinigungen", "/kontrollberichte",
   "/warencheck-og", "/reinigung-taeglich", "/carrier-portal",
-  "/haccp", "/wareneingaenge", "/metzgerei-wareneingaenge", "/reinigungsplan-metzgerei", "/oeffnung-salate", "/kaesetheke-kontrolle", "/semmelliste", "/eingefrorenes-fleisch", "/rezepturen", "/gq-begehung", "/abteilungsfremde-personen",
+  "/haccp", "/wareneingaenge", "/metzgerei-wareneingaenge", "/reinigungsplan-metzgerei",
+  "/oeffnung-salate", "/kaesetheke-kontrolle", "/semmelliste", "/eingefrorenes-fleisch",
+  "/rezepturen", "/gq-begehung", "/abteilungsfremde-personen",
   "/section/", "/category/", "/we-", "/besprechungsprotokoll",
   "/gesundheitszeugnisse", "/mitarbeiterverwaltung", "/admin/",
   "/projekt-hub", "/temp-lager-kontrolle", "/rindfleisch-etikettierung",
@@ -136,7 +140,6 @@ const SIDEBAR_OPEN_PATHS = [
 ];
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { data: categories, isLoading } = useListCategories();
   const [location, navigate] = useLocation();
   const selectedMarketId = useAppStore(s => s.selectedMarketId);
   const [sectionVisibility, setSectionVisibility] = useState<Record<number, boolean>>({});
@@ -165,12 +168,12 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   });
 
   useEffect(() => {
-    if (!isLoading && categories?.length && openCategories.length === 0) {
-      const allIds = categories.map((c) => c.id.toString());
+    if (openCategories.length === 0) {
+      const allIds = SIDEBAR_CONFIG.map((c) => c.id.toString());
       setOpenCategories(allIds);
       localStorage.setItem(ACCORDION_STORAGE_KEY, JSON.stringify(allIds));
     }
-  }, [isLoading, categories]);
+  }, []);
 
   const handleValueChange = (values: string[]) => {
     setOpenCategories(values);
@@ -196,28 +199,18 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 px-2 mt-1">
           HACCP Handbuch
         </div>
-        
-        {isLoading ? (
-          <div className="px-2 space-y-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="animate-pulse flex gap-3 items-center">
-                <div className="w-5 h-5 bg-muted rounded"></div>
-                <div className="h-4 bg-muted rounded flex-1"></div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <Accordion.Root
-            type="multiple"
-            value={isHaccpPage ? openCategories : []}
-            onValueChange={handleValueChange}
-            className="space-y-2"
-          >
-            {categories?.map((category) => {
-              const { Icon, bg, text, hoverBg } = getCategoryIcon(category.id);
-              return (
-              <Accordion.Item 
-                key={category.id} 
+
+        <Accordion.Root
+          type="multiple"
+          value={isHaccpPage ? openCategories : []}
+          onValueChange={handleValueChange}
+          className="space-y-2"
+        >
+          {SIDEBAR_CONFIG.map((category) => {
+            const { Icon, bg, text, hoverBg } = getCategoryIcon(category.id);
+            return (
+              <Accordion.Item
+                key={category.id}
                 value={category.id.toString()}
                 className="border border-transparent focus-within:border-border rounded-xl overflow-hidden"
               >
@@ -241,16 +234,20 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 </Accordion.Header>
                 <Accordion.Content className="overflow-hidden text-sm data-[state=closed]:animate-slideUp data-[state=open]:animate-slideDown pl-3">
                   <div className="ml-4 border-l border-border/60 pl-2 my-1">
-                    <CategorySections categoryId={category.id} onNavigate={onNavigate} visibility={sectionVisibility} />
+                    <CategorySections
+                      categoryId={category.id}
+                      sections={category.sections}
+                      onNavigate={onNavigate}
+                      visibility={sectionVisibility}
+                      selectedMarketId={selectedMarketId}
+                    />
                   </div>
                 </Accordion.Content>
               </Accordion.Item>
             );
-            })}
-          </Accordion.Root>
-        )}
+          })}
+        </Accordion.Root>
       </div>
-
 
       <div className="mt-auto p-4 border-t border-border/60 space-y-1">
         <Link
@@ -303,17 +300,15 @@ export function Sidebar() {
     return saved ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Number(saved))) : DEFAULT_WIDTH;
   });
   const [isDragging, setIsDragging] = useState(false);
-  const sidebarRef = useRef<HTMLDivElement>(null);
+  const sidebarRef  = useRef<HTMLDivElement>(null);
   const scrollRef   = useRef<HTMLDivElement>(null);
   const savedScroll = useRef(0);
   const [location]  = useLocation();
 
-  // Vor jedem Klick im Scroll-Bereich Position merken
   const handleClickCapture = useCallback(() => {
     savedScroll.current = scrollRef.current?.scrollTop ?? 0;
   }, []);
 
-  // Nach Routen-Wechsel Position wiederherstellen
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
