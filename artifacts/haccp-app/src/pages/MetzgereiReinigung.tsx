@@ -619,7 +619,7 @@ export default function MetzgereiReinigung() {
             </div>
 
             {/* Legende */}
-            <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-xs text-amber-800">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-600">
               <strong>T</strong> = täglich &nbsp;·&nbsp; <strong>W</strong> = wöchentlich &nbsp;·&nbsp;
               <strong>R</strong> = Reinigung &nbsp;·&nbsp; <strong>D</strong> = Desinfektion &nbsp;·&nbsp;
               <strong>R+D</strong> = Reinigung + Desinfektion
