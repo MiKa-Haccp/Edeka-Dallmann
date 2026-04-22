@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, Fragment } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
@@ -85,28 +85,39 @@ const SECTIONS: Section[] = [
 ];
 
 // ─── Jahresplan-Aufgaben ───────────────────────────────────────────────────────
-interface JahresItem { key: string; label: string; monate: number[]; typ: string; quartal?: boolean; halbjahr?: boolean; }
+interface JahresItem {
+  key: string;
+  label: string;
+  sublabel?: string;
+  typ: string;
+  freq: "quartal" | "halbjahr" | "monatlich" | "jaehrlich" | "bedarf";
+  section?: string;
+}
 const QUARTALE = [
-  { label:"Q1", monate:[1,2,3],   color:"bg-sky-50 text-sky-700 border-sky-200" },
-  { label:"Q2", monate:[4,5,6],   color:"bg-emerald-50 text-emerald-700 border-emerald-200" },
-  { label:"Q3", monate:[7,8,9],   color:"bg-amber-50 text-amber-700 border-amber-200" },
-  { label:"Q4", monate:[10,11,12],color:"bg-rose-50 text-rose-700 border-rose-200" },
+  { label:"Q1", firstMonth:1,  monate:[1,2,3],   color:"bg-sky-50 text-sky-700 border-sky-200" },
+  { label:"Q2", firstMonth:4,  monate:[4,5,6],   color:"bg-emerald-50 text-emerald-700 border-emerald-200" },
+  { label:"Q3", firstMonth:7,  monate:[7,8,9],   color:"bg-amber-50 text-amber-700 border-amber-200" },
+  { label:"Q4", firstMonth:10, monate:[10,11,12], color:"bg-rose-50 text-rose-700 border-rose-200" },
 ];
 const HALBJAHRE = [
-  { label:"H1", short:"1. Halbjahr", monate:[1,2,3,4,5,6],   color:"bg-indigo-50 text-indigo-700 border-indigo-200" },
-  { label:"H2", short:"2. Halbjahr", monate:[7,8,9,10,11,12], color:"bg-purple-50 text-purple-700 border-purple-200" },
+  { label:"H1", short:"1. Halbjahr", firstMonth:1,  monate:[1,2,3,4,5,6],   color:"bg-indigo-50 text-indigo-700 border-indigo-200" },
+  { label:"H2", short:"2. Halbjahr", firstMonth:7,  monate:[7,8,9,10,11,12], color:"bg-purple-50 text-purple-700 border-purple-200" },
 ];
 const JAHRES_ITEMS: JahresItem[] = [
-  { key:"j_grundrein_kuehl",    label:"Grundreinigung Kühlräume (komplett)",         monate:[3,9],    typ:"R+D", halbjahr:true },
-  { key:"j_grundrein_prod",     label:"Grundreinigung Produktionsraum (komplett)",   monate:[3,6,9,12], typ:"R+D", quartal:true },
-  { key:"j_grundrein_theke",    label:"Grundreinigung Theke / Thekenbereich",        monate:[3,6,9,12], typ:"R+D", quartal:true },
-  { key:"j_schaedling",         label:"Schädlingsbekämpfung / Insektenschutz prüfen",monate:[1,4,7,10], typ:"Kontrolle", quartal:true },
-  { key:"j_fettabscheider",     label:"Fettabscheider reinigen / entleeren",         monate:[1,4,7,10], typ:"R", quartal:true },
-  { key:"j_kanalisation",       label:"Kanalisation / Abflüsse Hochdruckreinigung",  monate:[4,10],     typ:"R", halbjahr:true },
-  { key:"j_maschinen_wartung",  label:"Maschinenwartung / Sicherheitsprüfung",       monate:[1,7],      typ:"Wartung", halbjahr:true },
-  { key:"j_kuehl_wartung",      label:"Kühlaggregate prüfen / warten lassen",        monate:[5,11],     typ:"Wartung", halbjahr:true },
-  { key:"j_desinfmittel",       label:"Desinfektionsmittel-Konzentration prüfen",    monate:[1,2,3,4,5,6,7,8,9,10,11,12], typ:"Kontrolle" },
-  { key:"j_abluft",             label:"Abluftanlage / Filter reinigen",               monate:[1,7],      typ:"R", halbjahr:true },
+  // ── Allgemeiner Bereich ────────────────────────────────────────────────────
+  { key:"j_schraenke",      label:"Schränke innen",                                             typ:"R",         freq:"quartal"   },
+  { key:"j_lueftung_prod",  label:"Lüftungsgitter, Verdampfer",                                 typ:"R",         freq:"quartal"   },
+  { key:"j_decken_prod",    label:"Decken, Lampen",                                             typ:"R",         freq:"halbjahr"  },
+  { key:"j_fettabscheider", label:"Fettabscheider",                                             typ:"Kontrolle", freq:"quartal"   },
+  // ── Bereich: Theke ────────────────────────────────────────────────────────
+  { key:"j_theke_grund",    label:"Verkaufstheke: Grundreinigung",   sublabel:"Abdeckbleche 14-tägig hochnehmen (+Desinfektion)", typ:"R+D", freq:"monatlich", section:"Bereich: Theke" },
+  { key:"j_lueftung_theke", label:"Lüftungsgitter",                                             typ:"R",         freq:"quartal"   },
+  { key:"j_decken_theke",   label:"Decken, Lampen, Glasschürzen",                               typ:"R",         freq:"halbjahr"  },
+  // ── Bereich: Warenannahme / Lager / Kühleinrichtungen ─────────────────────
+  { key:"j_kuehl_frische",  label:"Kühleinrichtungen: Frische",                                 typ:"R",         freq:"monatlich", section:"Warenannahme · Betriebsgänge · Lager, Kühl- & Tiefkühleinrichtungen" },
+  { key:"j_tiefkuehl",      label:"Tiefkühleinrichtungen",            sublabel:"nasse Reinigung nach Abtauen", typ:"R", freq:"jaehrlich" },
+  { key:"j_decken_lager",   label:"Decken, Lampen",                                             typ:"R",         freq:"halbjahr"  },
+  { key:"j_aussenrampe",    label:"Außenrampe",                                                  typ:"R",         freq:"bedarf"    },
 ];
 const MONATE = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 
@@ -675,140 +686,146 @@ export default function MetzgereiReinigung() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/40">
-                    {JAHRES_ITEMS.map(item=>(
-                      <tr key={item.key} className="hover:bg-secondary/20 group">
-                        <td className="px-4 py-2.5">
-                          <p className="font-semibold text-xs leading-tight">{item.label}</p>
-                        </td>
-                        <td className="px-2 py-2.5 text-center">
-                          <Badge typ={item.typ} prefix=""/>
-                        </td>
+                    {JAHRES_ITEMS.map((item, idx)=>{
+                      const prevSection = idx > 0 ? JAHRES_ITEMS[idx-1].section : undefined;
+                      const showSection = !!item.section && item.section !== prevSection;
+                      return (
+                        <Fragment key={item.key}>
+                          {showSection && (
+                            <tr>
+                              <td colSpan={14} className="px-4 py-1.5 bg-[#1a3a6b]/5 border-t border-b border-[#1a3a6b]/15">
+                                <p className="text-[11px] font-bold text-[#1a3a6b] uppercase tracking-wide">{item.section}</p>
+                              </td>
+                            </tr>
+                          )}
+                          <tr className="hover:bg-secondary/20 group">
+                            <td className="px-4 py-2.5">
+                              <p className="font-semibold text-xs leading-tight">{item.label}</p>
+                              {item.sublabel && <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">{item.sublabel}</p>}
+                            </td>
+                            <td className="px-2 py-2.5 text-center">
+                              <Badge typ={item.typ} prefix=""/>
+                            </td>
 
-                        {/* ── Quartal-Rendering (4 × colspan=3) ── */}
-                        {item.quartal ? QUARTALE.map((q,qi)=>{
-                          const reqMonth = item.monate.find(m=>q.monate.includes(m));
-                          if(!reqMonth) return (
-                            <td key={qi} colSpan={3} className={`px-2 py-1.5 text-center ${qi>0?"border-l border-border/20":""}`}>
-                              <span className="text-border text-xs">—</span>
-                            </td>
-                          );
-                          const monthKey = `${jwYear}-${String(reqMonth).padStart(2,"0")}`;
-                          const entry = jEntryMap.get(`${item.key}__${monthKey}`);
-                          const isFut = jwYear > now.getFullYear() || (jwYear===now.getFullYear()&&reqMonth>now.getMonth()+1);
-                          const reqLabel = `${MONATE[reqMonth-1]} ${jwYear}`;
-                          return (
-                            <td key={qi} colSpan={3}
-                              className={`px-2 py-1.5 ${qi>0?"border-l border-border/20":""}`}>
-                              <button
-                                disabled={isFut}
-                                onClick={()=>!isFut&&!entry&&setSigning({itemKey:item.key,datum:`${jwYear}-${String(reqMonth).padStart(2,"0")}-01`,label:`${item.label} — ${q.label} (${reqLabel})`})}
-                                className={`w-full h-10 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 border
-                                  ${entry
-                                    ?"bg-green-100 border-green-300 cursor-default"
-                                    :isFut
-                                      ?"bg-gray-50 border-dashed border-gray-200 opacity-40 cursor-not-allowed"
-                                      :"bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer active:scale-[0.98]"}`}>
-                                {entry ? (
-                                  <>
-                                    <Check className="w-3.5 h-3.5 text-green-600"/>
-                                    <span className="text-[9px] text-green-700 font-mono">{entry.kuerzel}</span>
-                                    {canDelete&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}}
-                                      className="text-[8px] text-red-400 hover:text-red-600 cursor-pointer leading-none">✕</span>}
-                                  </>
-                                ) : isFut ? (
-                                  <span className="text-[9px] text-gray-400">{q.label}</span>
-                                ) : (
-                                  <>
-                                    <span className="text-red-500 font-black text-sm">!</span>
-                                    <span className="text-[9px] text-red-400">{reqLabel}</span>
-                                  </>
-                                )}
-                              </button>
-                            </td>
-                          );
-                        })
+                            {/* ── Quartal (4 × colspan=3) ── */}
+                            {item.freq==="quartal" && QUARTALE.map((q,qi)=>{
+                              const reqMonth = q.firstMonth;
+                              const monthKey = `${jwYear}-${String(reqMonth).padStart(2,"0")}`;
+                              const entry    = jEntryMap.get(`${item.key}__${monthKey}`);
+                              const isFut    = jwYear>now.getFullYear()||(jwYear===now.getFullYear()&&reqMonth>now.getMonth()+1);
+                              const reqLabel = `${MONATE[reqMonth-1]} ${jwYear}`;
+                              return (
+                                <td key={qi} colSpan={3} className={`px-2 py-1.5 ${qi>0?"border-l border-border/20":""}`}>
+                                  <button disabled={isFut}
+                                    onClick={()=>!isFut&&!entry&&setSigning({itemKey:item.key,datum:`${jwYear}-${String(reqMonth).padStart(2,"0")}-01`,label:`${item.label} — ${q.label} (${reqLabel})`})}
+                                    className={`w-full h-10 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 border
+                                      ${entry?"bg-green-100 border-green-300 cursor-default":isFut?"bg-gray-50 border-dashed border-gray-200 opacity-40 cursor-not-allowed":"bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer active:scale-[0.98]"}`}>
+                                    {entry ? (<>
+                                      <Check className="w-3.5 h-3.5 text-green-600"/>
+                                      <span className="text-[9px] text-green-700 font-mono">{entry.kuerzel}</span>
+                                      {canDelete&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}} className="text-[8px] text-red-400 hover:text-red-600 cursor-pointer leading-none">✕</span>}
+                                    </>) : isFut ? (
+                                      <span className="text-[9px] text-gray-400">{q.label}</span>
+                                    ) : (<>
+                                      <span className="text-red-500 font-black text-sm">!</span>
+                                      <span className="text-[9px] text-red-400">{reqLabel}</span>
+                                    </>)}
+                                  </button>
+                                </td>
+                              );
+                            })}
 
-                        /* ── Halbjahr-Rendering (2 × colspan=6) ── */
-                        : item.halbjahr ? HALBJAHRE.map((h,hi)=>{
-                          const reqMonth = item.monate.find(m=>h.monate.includes(m));
-                          if(!reqMonth) return (
-                            <td key={hi} colSpan={6} className={`px-2 py-1.5 text-center ${hi>0?"border-l border-border/20":""}`}>
-                              <span className="text-border text-xs">—</span>
-                            </td>
-                          );
-                          const monthKey = `${jwYear}-${String(reqMonth).padStart(2,"0")}`;
-                          const entry = jEntryMap.get(`${item.key}__${monthKey}`);
-                          const isFut = jwYear>now.getFullYear()||(jwYear===now.getFullYear()&&reqMonth>now.getMonth()+1);
-                          const reqLabel = `${MONATE[reqMonth-1]} ${jwYear}`;
-                          return (
-                            <td key={hi} colSpan={6}
-                              className={`px-2 py-1.5 ${hi>0?"border-l border-border/20":""}`}>
-                              <button
-                                disabled={isFut}
-                                onClick={()=>!isFut&&!entry&&setSigning({itemKey:item.key,datum:`${jwYear}-${String(reqMonth).padStart(2,"0")}-01`,label:`${item.label} — ${h.short} (${reqLabel})`})}
-                                className={`w-full h-10 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 border
-                                  ${entry
-                                    ?"bg-green-100 border-green-300 cursor-default"
-                                    :isFut
-                                      ?"bg-gray-50 border-dashed border-gray-200 opacity-40 cursor-not-allowed"
-                                      :"bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer active:scale-[0.98]"}`}>
-                                {entry ? (
-                                  <>
-                                    <Check className="w-3.5 h-3.5 text-green-600"/>
-                                    <span className="text-[9px] text-green-700 font-mono">{entry.kuerzel}</span>
-                                    <span className="text-[8px] text-green-600">{h.label}</span>
-                                    {canDelete&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}}
-                                      className="text-[8px] text-red-400 hover:text-red-600 cursor-pointer leading-none">✕</span>}
-                                  </>
-                                ) : isFut ? (
-                                  <span className="text-[10px] text-gray-400 font-semibold">{h.label}</span>
-                                ) : (
-                                  <>
-                                    <span className="text-red-500 font-black text-sm">!</span>
-                                    <span className="text-[9px] text-red-400">{reqLabel}</span>
-                                  </>
-                                )}
-                              </button>
-                            </td>
-                          );
-                        })
+                            {/* ── Halbjahr (2 × colspan=6) ── */}
+                            {item.freq==="halbjahr" && HALBJAHRE.map((h,hi)=>{
+                              const reqMonth = h.firstMonth;
+                              const monthKey = `${jwYear}-${String(reqMonth).padStart(2,"0")}`;
+                              const entry    = jEntryMap.get(`${item.key}__${monthKey}`);
+                              const isFut    = jwYear>now.getFullYear()||(jwYear===now.getFullYear()&&reqMonth>now.getMonth()+1);
+                              const reqLabel = `${MONATE[reqMonth-1]} ${jwYear}`;
+                              return (
+                                <td key={hi} colSpan={6} className={`px-2 py-1.5 ${hi>0?"border-l border-border/20":""}`}>
+                                  <button disabled={isFut}
+                                    onClick={()=>!isFut&&!entry&&setSigning({itemKey:item.key,datum:`${jwYear}-${String(reqMonth).padStart(2,"0")}-01`,label:`${item.label} — ${h.short} (${reqLabel})`})}
+                                    className={`w-full h-10 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 border
+                                      ${entry?"bg-green-100 border-green-300 cursor-default":isFut?"bg-gray-50 border-dashed border-gray-200 opacity-40 cursor-not-allowed":"bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer active:scale-[0.98]"}`}>
+                                    {entry ? (<>
+                                      <Check className="w-3.5 h-3.5 text-green-600"/>
+                                      <span className="text-[9px] text-green-700 font-mono">{entry.kuerzel}</span>
+                                      <span className="text-[8px] text-green-600">{h.label}</span>
+                                      {canDelete&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}} className="text-[8px] text-red-400 hover:text-red-600 cursor-pointer leading-none">✕</span>}
+                                    </>) : isFut ? (
+                                      <span className="text-[10px] text-gray-400 font-semibold">{h.label}</span>
+                                    ) : (<>
+                                      <span className="text-red-500 font-black text-sm">!</span>
+                                      <span className="text-[9px] text-red-400">{reqLabel}</span>
+                                    </>)}
+                                  </button>
+                                </td>
+                              );
+                            })}
 
-                        /* ── Monats-Rendering (12 × Einzelzellen) ── */
-                        : MONATE.map((m,mi)=>{
-                          const monthNum  = mi+1;
-                          const isReq     = item.monate.includes(monthNum);
-                          const monthKey  = `${jwYear}-${String(monthNum).padStart(2,"0")}`;
-                          const entry     = jEntryMap.get(`${item.key}__${monthKey}`);
-                          const isFut     = jwYear>now.getFullYear()||(jwYear===now.getFullYear()&&monthNum>now.getMonth()+1);
-                          return (
-                            <td key={mi} className={`px-0.5 py-1.5 text-center ${mi%3===0&&mi>0?"border-l border-border/20":""}`}>
-                              {isReq ? (
-                                <button
-                                  disabled={isFut}
-                                  onClick={()=>!isFut&&!entry&&setSigning({itemKey:item.key,datum:`${jwYear}-${String(monthNum).padStart(2,"0")}-01`,label:`${item.label} — ${m} ${jwYear}`})}
-                                  className={`w-11 h-8 rounded-lg text-xs font-bold transition-all mx-auto flex flex-col items-center justify-center border group/cell
-                                    ${entry?"bg-green-100 border-green-300 cursor-default":
-                                      isFut?"bg-gray-50 border-dashed border-gray-200 opacity-40 cursor-not-allowed":
-                                      "bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer active:scale-95"}`}>
-                                  {entry ? (
-                                    <>
+                            {/* ── Monatlich (12 × Einzelzellen) ── */}
+                            {item.freq==="monatlich" && MONATE.map((m,mi)=>{
+                              const monthNum = mi+1;
+                              const monthKey = `${jwYear}-${String(monthNum).padStart(2,"0")}`;
+                              const entry    = jEntryMap.get(`${item.key}__${monthKey}`);
+                              const isFut    = jwYear>now.getFullYear()||(jwYear===now.getFullYear()&&monthNum>now.getMonth()+1);
+                              return (
+                                <td key={mi} className={`px-0.5 py-1.5 text-center ${mi%3===0&&mi>0?"border-l border-border/20":""}`}>
+                                  <button disabled={isFut}
+                                    onClick={()=>!isFut&&!entry&&setSigning({itemKey:item.key,datum:`${jwYear}-${String(monthNum).padStart(2,"0")}-01`,label:`${item.label} — ${m} ${jwYear}`})}
+                                    className={`w-11 h-8 rounded-lg text-xs font-bold transition-all mx-auto flex flex-col items-center justify-center border group/cell
+                                      ${entry?"bg-green-100 border-green-300 cursor-default":isFut?"bg-gray-50 border-dashed border-gray-200 opacity-40 cursor-not-allowed":"bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer active:scale-95"}`}>
+                                    {entry ? (<>
                                       <Check className="w-3 h-3 text-green-600"/>
                                       <span className="text-[8px] text-green-700 font-mono">{entry.kuerzel}</span>
-                                      {canDelete&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}}
-                                        className="text-[7px] text-red-400 hover:text-red-600 cursor-pointer leading-none hidden group-hover/cell:block">✕</span>}
-                                    </>
-                                  ) : isFut ? null : (
-                                    <span className="text-red-400">!</span>
-                                  )}
-                                </button>
-                              ) : (
-                                <span className="text-border/60 text-xs">·</span>
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
+                                      {canDelete&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}} className="text-[7px] text-red-400 hover:text-red-600 cursor-pointer leading-none hidden group-hover/cell:block">✕</span>}
+                                    </>) : isFut ? null : (
+                                      <span className="text-red-400">!</span>
+                                    )}
+                                  </button>
+                                </td>
+                              );
+                            })}
+
+                            {/* ── Jährlich (1 × colspan=12) ── */}
+                            {item.freq==="jaehrlich" && (()=>{
+                              const monthKey = `${jwYear}-01`;
+                              const entry    = jEntryMap.get(`${item.key}__${monthKey}`);
+                              const isFut    = jwYear>now.getFullYear();
+                              return (
+                                <td colSpan={12} className="px-2 py-1.5">
+                                  <button disabled={isFut}
+                                    onClick={()=>!isFut&&!entry&&setSigning({itemKey:item.key,datum:`${jwYear}-01-01`,label:`${item.label} — Jahr ${jwYear}`})}
+                                    className={`w-full h-10 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center gap-0.5 border
+                                      ${entry?"bg-green-100 border-green-300 cursor-default":isFut?"bg-gray-50 border-dashed border-gray-200 opacity-40 cursor-not-allowed":"bg-red-50 border-red-200 hover:bg-red-100 cursor-pointer active:scale-[0.98]"}`}>
+                                    {entry ? (<>
+                                      <Check className="w-3.5 h-3.5 text-green-600"/>
+                                      <span className="text-[9px] text-green-700 font-mono">{entry.kuerzel}</span>
+                                      {canDelete&&<span role="button" onPointerDown={e=>{e.stopPropagation();setDelId(entry.id);}} className="text-[8px] text-red-400 hover:text-red-600 cursor-pointer leading-none">✕</span>}
+                                    </>) : isFut ? (
+                                      <span className="text-[9px] text-gray-400">jährlich</span>
+                                    ) : (<>
+                                      <span className="text-red-500 font-black text-sm">!</span>
+                                      <span className="text-[9px] text-red-400">Jahr {jwYear}</span>
+                                    </>)}
+                                  </button>
+                                </td>
+                              );
+                            })()}
+
+                            {/* ── Nach Bedarf (info-Zeile) ── */}
+                            {item.freq==="bedarf" && (
+                              <td colSpan={12} className="px-4 py-1.5">
+                                <div className="w-full h-10 rounded-xl flex items-center justify-center bg-slate-50 border border-slate-200 text-slate-500 text-xs font-medium">
+                                  nach Bedarf — kein fester Termin
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        </Fragment>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
