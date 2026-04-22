@@ -30,7 +30,7 @@ interface Entry { id: number; itemKey: string; datum: string; kuerzel: string; }
 // ─── Reinigungsplan-Daten (aus Formblatt 3.6-1) ───────────────────────────────
 const SECTIONS: Section[] = [
   {
-    id: "vorb", label: "Vorbereitungsräume / Produktionsräume", short: "Vorber.",
+    id: "vorb", label: "Vorbereitungsräume / Produktionsräume", short: "Vorbereitung",
     items: [
       { key:"vorb_fussboden",   label:"Fußboden, Abflüsse (Gullys)", sublabel:"täglich reinigen",          tTyp:"R", bemerkung:"Pfützenbildung vermeiden!" },
       { key:"vorb_fussboden_w", label:"Fußboden, Abflüsse (Gullys)", sublabel:"wöchentlich desinfizieren", wTyp:"D" },
