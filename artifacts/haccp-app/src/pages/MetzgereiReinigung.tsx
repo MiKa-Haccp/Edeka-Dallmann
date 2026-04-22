@@ -37,7 +37,7 @@ const SECTIONS: Section[] = [
       { key:"vorb_waende",     label:"Wände (Fliesen), Türen",                     wTyp:"R+D" },
       { key:"vorb_tuergriffe", label:"Türgriffe, Lichtschalter",                   tTyp:"R+D" },
       { key:"vorb_arbeits",
-        label:"Arbeitstische, Schneidebretter, Schränke außen, Wannen, Mulden, Behälter (direkter LM-Kontakt), Waschbecken",
+        label:"Arbeitstische, Schneidebretter, Schränke außen, Wannen, Mulden, Behälter (direkter LM-Kontakt), Waschbecken, Ausgüsse",
         tTyp:"R+D",
         bemerkung:"Alle Flächen regelmäßig zwischenreinigen, Bretter regelmäßig abschleifen" },
       { key:"vorb_messer",     label:"Messer",                                     tTyp:"R+D", bemerkung:"Mehrmals täglich zwischenreinigen" },
