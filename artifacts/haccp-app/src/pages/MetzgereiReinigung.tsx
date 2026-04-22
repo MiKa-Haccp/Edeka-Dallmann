@@ -155,17 +155,16 @@ function PinModal({onConfirm,onClose,label}:{
   onClose:()=>void;
   label:string;
 }) {
-  const [pin,setPin]     = useState("");
-  const [loading,setL]   = useState(false);
-  const [error,setErr]   = useState("");
-  const [user,setUser]   = useState<{name:string;userId:number;kuerzel:string}|null>(null);
+  const [pin,setPin]   = useState("");
+  const [loading,setL] = useState(false);
+  const [error,setErr] = useState("");
 
   const verify = async() => {
     setErr(""); setL(true);
     try {
       const r = await fetch(`${BASE}/users/verify-pin`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin,tenantId:1})});
       const d = await r.json();
-      if(d.valid) setUser({name:d.userName,userId:d.userId,kuerzel:d.initials});
+      if(d.valid) onConfirm(d.initials, d.userId);
       else setErr("PIN ungültig.");
     } catch { setErr("Verbindungsfehler."); } finally { setL(false); }
   };
@@ -180,39 +179,19 @@ function PinModal({onConfirm,onClose,label}:{
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-muted"><X className="w-4 h-4"/></button>
         </div>
-        {!user ? (
-          <>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">PIN eingeben</label>
-              <input type="password" inputMode="numeric"
-                className="w-full border border-border rounded-lg px-3 py-3 text-center text-lg tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/30"
-                placeholder="••••" value={pin} maxLength={6} autoFocus
-                onChange={e=>setPin(e.target.value.replace(/\D/g,""))}
-                onKeyDown={e=>e.key==="Enter"&&pin.length>=4&&verify()}/>
-            </div>
-            {error&&<p className="text-xs text-red-500 flex items-center gap-1"><X className="w-3 h-3"/>{error}</p>}
-            <button onClick={verify} disabled={loading||pin.length<4}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50">
-              {loading?<Loader2 className="w-4 h-4 animate-spin"/>:<Lock className="w-4 h-4"/>} PIN prüfen
-            </button>
-          </>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl border border-green-200">
-              <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center shrink-0">
-                <Check className="w-5 h-5 text-white"/>
-              </div>
-              <div>
-                <p className="text-sm font-bold text-green-800">{user.name}</p>
-                <p className="text-xs text-green-600">Kürzel: <span className="font-mono font-bold">{user.kuerzel}</span></p>
-              </div>
-            </div>
-            <button onClick={()=>onConfirm(user.kuerzel,user.userId)}
-              className="w-full py-2.5 rounded-xl bg-green-600 text-white text-sm font-bold flex items-center justify-center gap-2">
-              <Check className="w-4 h-4"/> Abzeichnen
-            </button>
-          </div>
-        )}
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">PIN eingeben</label>
+          <input type="password" inputMode="numeric"
+            className="w-full border border-border rounded-lg px-3 py-3 text-center text-lg tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/30"
+            placeholder="••••" value={pin} maxLength={6} autoFocus
+            onChange={e=>setPin(e.target.value.replace(/\D/g,""))}
+            onKeyDown={e=>e.key==="Enter"&&pin.length>=4&&verify()}/>
+        </div>
+        {error&&<p className="text-xs text-red-500 flex items-center gap-1"><X className="w-3 h-3"/>{error}</p>}
+        <button onClick={verify} disabled={loading||pin.length<4}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50">
+          {loading?<Loader2 className="w-4 h-4 animate-spin"/>:<Lock className="w-4 h-4"/>} PIN prüfen
+        </button>
       </div>
     </div>
   );
