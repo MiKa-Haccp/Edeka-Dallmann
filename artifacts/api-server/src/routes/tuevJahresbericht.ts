@@ -3,6 +3,28 @@ import { pool } from "@workspace/db";
 
 const router = Router();
 
+function rowToCamel(row: any) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    tenantId: row.tenant_id,
+    marketId: row.market_id,
+    year: row.year,
+    zertifikateDokument: row.zertifikate_dokument,
+    zertifikateNotizen: row.zertifikate_notizen,
+    pruefungenDokument: row.pruefungen_dokument,
+    pruefungenNotizen: row.pruefungen_notizen,
+    aktionsplanFoto: row.aktionsplan_foto,
+    aktionsplanMassnahmen: row.aktionsplan_massnahmen,
+    aktionsplanDatum: row.aktionsplan_datum,
+    nachbesserungName: row.nachbesserung_name,
+    nachbesserungDatum: row.nachbesserung_datum,
+    nachbesserungUnterschrift: row.nachbesserung_unterschrift,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 router.get("/tuev-jahresbericht", async (req, res) => {
   const tenantId = Number(req.query.tenantId) || 1;
   const year = Number(req.query.year) || new Date().getFullYear();
@@ -21,7 +43,7 @@ router.get("/tuev-jahresbericht", async (req, res) => {
         [tenantId, year]
       );
     }
-    res.json(result.rows[0] || null);
+    res.json(rowToCamel(result.rows[0] || null));
   } catch (err: any) {
     console.error("[tuev GET]", err.message);
     res.status(500).json({ error: err.message });
@@ -82,7 +104,7 @@ router.put("/tuev-jahresbericht", async (req, res) => {
         nachbesserungName ?? null, nachbesserungDatum ?? null, nachbesserungUnterschrift ?? null,
       ]
     );
-    res.json(result.rows[0]);
+    res.json(rowToCamel(result.rows[0]));
   } catch (err: any) {
     console.error("[tuev PUT]", err.message);
     res.status(500).json({ error: err.message });
