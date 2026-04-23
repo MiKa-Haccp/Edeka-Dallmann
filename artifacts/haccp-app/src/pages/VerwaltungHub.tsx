@@ -8,7 +8,7 @@ import { useEffect } from "react";
 const ALLOWED_ROLES = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER"];
 
 export default function VerwaltungHub() {
-  const { adminSession } = useAppStore();
+  const { adminSession, hasPermission } = useAppStore();
   const [, navigate] = useLocation();
 
   useEffect(() => {
@@ -146,8 +146,8 @@ export default function VerwaltungHub() {
             </div>
           </Link>
 
-          {/* Management Hub – nur für SUPERADMIN und ADMIN */}
-          {adminSession && ["SUPERADMIN", "ADMIN"].includes(adminSession.role) && (
+          {/* Management Hub – SUPERADMIN/ADMIN oder management.hub Permission */}
+          {adminSession && (["SUPERADMIN", "ADMIN"].includes(adminSession.role) || hasPermission("management.hub")) && (
             <Link href="/management">
               <div className="group bg-white rounded-2xl border border-border/60 shadow-sm hover:shadow-md hover:border-[#1a3a6b]/30 transition-all duration-200 p-6 cursor-pointer">
                 <div className="flex items-start justify-between mb-4">

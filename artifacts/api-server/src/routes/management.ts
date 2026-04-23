@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { db } from "@workspace/db";
+import { db, pool } from "@workspace/db";
 import {
   managementTasksTable,
   managementTaskCommentsTable,
@@ -21,11 +21,30 @@ async function requireManagementRole(req: Request, res: Response, next: NextFunc
   }
   try {
     const users = await db.select().from(usersTable).where(eq(usersTable.email, adminEmail));
-    if (users.length === 0 || !MANAGEMENT_ROLES.includes(users[0].role)) {
-      res.status(403).json({ error: "Zugriff verweigert. Nur für SUPERADMIN und ADMIN." });
+    if (users.length === 0) {
+      res.status(403).json({ error: "Zugriff verweigert." });
       return;
     }
-    next();
+    const user = users[0];
+    // SUPERADMIN/ADMIN haben immer Zugriff
+    if (MANAGEMENT_ROLES.includes(user.role)) {
+      next();
+      return;
+    }
+    // Andere Rollen: prüfen ob management.hub Permission vergeben wurde
+    const permRow = await pool.query(
+      `SELECT permissions FROM role_permission_defaults WHERE role = $1 AND tenant_id = 1 LIMIT 1`,
+      [user.role]
+    );
+    if (
+      permRow.rows.length > 0 &&
+      Array.isArray(permRow.rows[0].permissions) &&
+      permRow.rows[0].permissions.includes("management.hub")
+    ) {
+      next();
+      return;
+    }
+    res.status(403).json({ error: "Zugriff verweigert. Keine Berechtigung für den Management Hub." });
   } catch {
     res.status(503).json({ error: "DB error" });
   }

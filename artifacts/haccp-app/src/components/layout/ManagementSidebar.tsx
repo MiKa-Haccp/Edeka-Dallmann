@@ -6,6 +6,7 @@ import { twMerge } from "tailwind-merge";
 import { useAppStore } from "@/store/use-app-store";
 
 const MANAGEMENT_ALLOWED_ROLES = ["SUPERADMIN", "ADMIN"];
+// kept for reference; actual check uses hasPermission("management.hub") or SUPERADMIN/ADMIN role fallback
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -73,14 +74,18 @@ function ManagementSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function ManagementMobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { adminSession } = useAppStore();
+  const { adminSession, hasPermission } = useAppStore();
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
+  const canAccess = !!adminSession && (
+    MANAGEMENT_ALLOWED_ROLES.includes(adminSession.role) || hasPermission("management.hub")
+  );
+
   if (!isOpen) return null;
-  if (!adminSession || !MANAGEMENT_ALLOWED_ROLES.includes(adminSession.role)) return null;
+  if (!canAccess) return null;
 
   return (
     <div className="fixed inset-0 z-50 xl:hidden">
@@ -99,7 +104,7 @@ export function ManagementMobileSidebar({ isOpen, onClose }: { isOpen: boolean; 
 }
 
 export function ManagementSidebar() {
-  const { adminSession } = useAppStore();
+  const { adminSession, hasPermission } = useAppStore();
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Number(saved))) : DEFAULT_WIDTH;
@@ -124,7 +129,10 @@ export function ManagementSidebar() {
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, String(width)); }, [width]);
 
-  if (!adminSession || !MANAGEMENT_ALLOWED_ROLES.includes(adminSession.role)) return null;
+  const canAccess = !!adminSession && (
+    MANAGEMENT_ALLOWED_ROLES.includes(adminSession.role) || hasPermission("management.hub")
+  );
+  if (!canAccess) return null;
 
   return (
     <aside

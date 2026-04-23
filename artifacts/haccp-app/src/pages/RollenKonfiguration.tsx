@@ -58,6 +58,8 @@ const PERMISSION_AREAS = [
   // Metzgerei
   { key: "metzgerei.access",        label: "Metzgerei-Bereiche aufrufen",          group: "Metzgerei" },
   { key: "metzgerei.gq_begehung",   label: "GQ-Begehung durchführen",             group: "Metzgerei" },
+  // Management
+  { key: "management.hub",          label: "Management Hub aufrufen",              group: "Management" },
   // Projekt
   { key: "projekt.access",          label: "Projekt-Hub aufrufen",                 group: "Projekt" },
   // System
