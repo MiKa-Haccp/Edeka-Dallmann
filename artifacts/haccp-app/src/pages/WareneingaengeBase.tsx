@@ -673,8 +673,8 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
 }
 
 // ── MONTHLY VIEW ───────────────────────────────────────────────
-function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTodayEntry, onFischAufgebraucht }: {
-  type:WEType; year:number; month:number; entries:WEEntry[]; loading:boolean;
+function MonthlyTableView({ type, year, month, marketId, entries, loading, onEditDay, onTodayEntry, onFischAufgebraucht }: {
+  type:WEType; year:number; month:number; marketId:number; entries:WEEntry[]; loading:boolean;
   onEditDay:(day:number)=>void; onTodayEntry:()=>void;
   onFischAufgebraucht?: (entryId:number, fishIndex:number) => Promise<void>;
 }) {
@@ -691,15 +691,34 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
   const [pinFisch,setPinFisch] = useState<{entryId:number;fishIndex:number;art:string;key:string}|null>(null);
   const todayRef = useRef<HTMLDivElement>(null);
 
+  // Vormonat-Einträge für Fisch-Übernahme
+  const prevY = month===1?year-1:year;
+  const prevM = month===1?12:month-1;
+  const [prevEntries,setPrevEntries]=useState<WEEntry[]>([]);
+  const fetchPrevEntries=useCallback(async()=>{
+    if(!fischCritKey||!marketId)return;
+    try{const res=await fetch(`${BASE}/wareneingang-entries?marketId=${marketId}&typeId=${type.id}&year=${prevY}&month=${prevM}`);
+    const data=await res.json();setPrevEntries(Array.isArray(data)?data:[]);}
+    catch{setPrevEntries([]);}
+  },[marketId,type.id,prevY,prevM,fischCritKey]);
+  useEffect(()=>{fetchPrevEntries();},[fetchPrevEntries]);
+
+  type FischItem={entryId:number;fishIndex:number;art:string;mhd:string;deliveryYear:number;deliveryMonth:number;deliveryDay:number};
   const allActiveFisch = useMemo(()=>{
-    if(!fischCritKey)return[];
-    const result:Array<{entryId:number;fishIndex:number;art:string;mhd:string;deliveryDay:number}>=[];
+    if(!fischCritKey)return[] as FischItem[];
+    const result:FischItem[]=[];
+    // Vormonat
+    prevEntries.forEach(e=>{
+      const rows=parseFischMhd(e.criteriaValues[fischCritKey]);
+      rows.forEach((r,i)=>{if(!r.aufgebraucht&&r.art)result.push({entryId:e.id,fishIndex:i,art:r.art,mhd:r.mhd,deliveryYear:prevY,deliveryMonth:prevM,deliveryDay:e.day});});
+    });
+    // Aktueller Monat
     entries.forEach(e=>{
       const rows=parseFischMhd(e.criteriaValues[fischCritKey]);
-      rows.forEach((r,i)=>{if(!r.aufgebraucht&&r.art)result.push({entryId:e.id,fishIndex:i,art:r.art,mhd:r.mhd,deliveryDay:e.day});});
+      rows.forEach((r,i)=>{if(!r.aufgebraucht&&r.art)result.push({entryId:e.id,fishIndex:i,art:r.art,mhd:r.mhd,deliveryYear:year,deliveryMonth:month,deliveryDay:e.day});});
     });
     return result.sort((a,b)=>a.mhd.localeCompare(b.mhd));
-  },[entries,fischCritKey]);
+  },[entries,prevEntries,fischCritKey,year,month,prevY,prevM]);
 
   const handleAufgebraucht=(entryId:number,fishIndex:number,art:string,key:string)=>{
     if(!onFischAufgebraucht)return;
@@ -710,7 +729,7 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
     const {entryId,fishIndex,key}=pinFisch;
     setPinFisch(null);
     setAufgebrauchtLoading(key);
-    try{await onFischAufgebraucht(entryId,fishIndex);}finally{setAufgebrauchtLoading(null);}
+    try{await onFischAufgebraucht(entryId,fishIndex);await fetchPrevEntries();}finally{setAufgebrauchtLoading(null);}
   };
 
   const now    = new Date();
@@ -770,7 +789,7 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
                   <Fish className={`w-3.5 h-3.5 shrink-0 ${urg==="abgelaufen"?"text-red-500":urg==="bald"?"text-amber-500":"text-blue-500"}`}/>
                   <div className="flex-1 min-w-0">
                     <span className="text-sm font-semibold">{f.art}</span>
-                    <span className="text-xs text-muted-foreground ml-2">· angeliefert Tag {f.deliveryDay}</span>
+                    <span className="text-xs text-muted-foreground ml-2">· angeliefert {String(f.deliveryDay).padStart(2,"0")}.{String(f.deliveryMonth).padStart(2,"0")}.{f.deliveryYear}</span>
                   </div>
                   {f.mhd&&(
                     <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full shrink-0 ${urg==="abgelaufen"?"bg-red-100 text-red-700":urg==="bald"?"bg-amber-100 text-amber-700":"bg-green-100 text-green-700"}`}>
@@ -1325,6 +1344,7 @@ function WareneingaengeContent() {
                   onMonthView={()=>setViewMode("month")}/>
               ):(
                 <MonthlyTableView type={activeType} year={year} month={month}
+                  marketId={selectedMarketId??0}
                   entries={entries} loading={loadingEntries}
                   onEditDay={day=>{setSelectedDay(day);setViewMode("form");}}
                   onTodayEntry={()=>{setSelectedDay(now.getDate());setViewMode("form");}}
