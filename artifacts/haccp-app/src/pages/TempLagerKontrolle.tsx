@@ -6,7 +6,7 @@ import { useListMarkets } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import { getBavarianHolidays } from "@/utils/holidays";
 import {
-  ChevronLeft, ChevronRight, Loader2, Check, X, Lock, Thermometer,
+  ChevronLeft, ChevronRight, Loader2, Check, X, Lock, Thermometer, Trash2,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -84,6 +84,8 @@ export default function TempLagerKontrolle() {
   const [modal,setModal]     = useState<ModalState|null>(null);
   const [modalStep,setModalStep] = useState<"form"|"pin">("form");
   const [saving,setSaving]   = useState(false);
+  const [deleting,setDeleting] = useState(false);
+  const [confirmDelete,setConfirmDelete] = useState(false);
   const todayRef = useRef<HTMLTableRowElement>(null);
   const hasLoaded = useRef(false);
 
@@ -154,6 +156,7 @@ export default function TempLagerKontrolle() {
       includeRef: e ? (e.referenz_ok === true) : !refDoneThisMonth,
     });
     setModalStep("form");
+    setConfirmDelete(false);
   }
 
   async function saveEntry(kuerzel:string,userId:number){
@@ -173,6 +176,20 @@ export default function TempLagerKontrolle() {
       setModal(null);
     } catch(e){console.error(e);}
     finally{setSaving(false);}
+  }
+
+  async function deleteEntry(){
+    if(!modal||!selectedMarketId) return;
+    const entry = entries[modal.day];
+    if(!entry) return;
+    setDeleting(true);
+    try {
+      await fetch(`${BASE}/temp-lager-kontrolle/${entry.id}`,{method:"DELETE"});
+      await load();
+      setModal(null);
+      setConfirmDelete(false);
+    } catch(e){console.error(e);}
+    finally{setDeleting(false);}
   }
 
   // Ampel-Berechnung
@@ -370,8 +387,34 @@ export default function TempLagerKontrolle() {
                       </div>
                     )}
 
+                    {/* Admin-Löschen */}
+                    {canEdit && entries[modal.day] && (
+                      <div className="border-t pt-4">
+                        {!confirmDelete ? (
+                          <button
+                            onClick={()=>setConfirmDelete(true)}
+                            className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-red-200 text-red-600 text-sm hover:bg-red-50 transition-colors">
+                            <Trash2 className="w-4 h-4"/>Eintrag löschen
+                          </button>
+                        ) : (
+                          <div className="rounded-xl bg-red-50 border border-red-200 p-3 space-y-2">
+                            <p className="text-sm font-semibold text-red-800 text-center">Eintrag wirklich löschen?</p>
+                            <div className="flex gap-2">
+                              <button onClick={()=>setConfirmDelete(false)} className="flex-1 border rounded-lg px-3 py-2 text-sm hover:bg-secondary">Abbrechen</button>
+                              <button
+                                onClick={deleteEntry}
+                                disabled={deleting}
+                                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg px-3 py-2 text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
+                                {deleting?<Loader2 className="w-4 h-4 animate-spin"/>:<Trash2 className="w-4 h-4"/>}Löschen
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex gap-2">
-                      <button onClick={()=>setModal(null)} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Abbrechen</button>
+                      <button onClick={()=>{setModal(null);setConfirmDelete(false);}} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Abbrechen</button>
                       <button
                         disabled={modal.tempOk===null}
                         onClick={()=>setModalStep("pin")}
