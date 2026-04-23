@@ -23,9 +23,18 @@ type CrType = "check" | "temp" | "fisch_mhd_list" | "nemat_list";
 export interface CritDef { key: string; label: string; short: string; type: CrType; note?: string; group: string; maxVal?: number; minVal?: number; options?: string[]; }
 
 // ── FISCH-MHD LISTE ───────────────────────────────────────────
-type FischMhdRow = { art: string; mhd: string };
+type FischMhdRow = { art: string; mhd: string; aufgebraucht?: boolean };
 function parseFischMhd(val: string | undefined): FischMhdRow[] {
   try { return val ? JSON.parse(val) : []; } catch { return []; }
+}
+function getMhdUrgency(mhd: string): "abgelaufen" | "bald" | "ok" | "unbekannt" {
+  if (!mhd) return "unbekannt";
+  const d = new Date(mhd + "T00:00:00");
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.floor((d.getTime() - today.getTime()) / 86400000);
+  if (diff < 0) return "abgelaufen";
+  if (diff <= 2) return "bald";
+  return "ok";
 }
 function FischMhdList({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const rows = parseFischMhd(value);
@@ -280,8 +289,9 @@ function PinModal({ onConfirm, onCancel }: { onConfirm:(id:{name:string;userId:n
 }
 
 // ── DAY DETAIL MODAL ──────────────────────────────────────────
-function DayDetailModal({ day, year, month, type, entry, onClose, onEdit }: {
+function DayDetailModal({ day, year, month, type, entry, onClose, onEdit, onFischAufgebraucht }: {
   day:number; year:number; month:number; type:WEType; entry:WEEntry; onClose:()=>void; onEdit:()=>void;
+  onFischAufgebraucht?: (fishIndex:number) => Promise<void>;
 }) {
   const { allCrit } = useWEConfig();
   const enabled=getEnabled(type,allCrit);
@@ -342,13 +352,27 @@ function DayDetailModal({ day, year, month, type, entry, onClose, onEdit }: {
             return(
               <div key={c.key} className="space-y-2">
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1"><Fish className="w-3 h-3"/>Fisch / MHD</p>
-                {rows.map((r,i)=>(
-                  <div key={i} className="flex items-center gap-2 text-xs bg-blue-50 rounded-lg px-3 py-2 border border-blue-100">
-                    <Fish className="w-3 h-3 text-blue-400 shrink-0"/>
-                    <span className="flex-1 font-medium">{r.art||"(kein Name)"}</span>
-                    {r.mhd&&<span className="font-mono text-blue-700 shrink-0">MHD: {new Date(r.mhd+"T00:00:00").toLocaleDateString("de-DE")}</span>}
-                  </div>
-                ))}
+                {rows.map((r,i)=>{
+                  const urg=getMhdUrgency(r.mhd);
+                  const urgCls=r.aufgebraucht?"bg-gray-50 border-gray-100":urg==="abgelaufen"?"bg-red-50 border-red-200":urg==="bald"?"bg-amber-50 border-amber-200":"bg-blue-50 border-blue-100";
+                  return(
+                    <div key={i} className={`flex items-center gap-2 text-xs rounded-lg px-3 py-2 border ${urgCls}`}>
+                      <Fish className={`w-3 h-3 shrink-0 ${r.aufgebraucht?"text-gray-300":urg==="abgelaufen"?"text-red-400":urg==="bald"?"text-amber-500":"text-blue-400"}`}/>
+                      <span className={`flex-1 font-medium ${r.aufgebraucht?"line-through text-gray-400":""}`}>{r.art||"(kein Name)"}</span>
+                      {r.mhd&&<span className={`font-mono shrink-0 ${r.aufgebraucht?"text-gray-400":urg==="abgelaufen"?"text-red-700":urg==="bald"?"text-amber-700":"text-blue-700"}`}>
+                        MHD: {new Date(r.mhd+"T00:00:00").toLocaleDateString("de-DE")}
+                      </span>}
+                      {r.aufgebraucht?(
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 shrink-0">aufgbr.</span>
+                      ):onFischAufgebraucht&&(
+                        <button onClick={()=>onFischAufgebraucht(i)}
+                          className="text-[10px] font-bold px-2 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700 shrink-0 transition-colors">
+                          Aufgebraucht
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             );
           })}
@@ -599,19 +623,38 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
 }
 
 // ── MONTHLY VIEW ───────────────────────────────────────────────
-function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTodayEntry }: {
+function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTodayEntry, onFischAufgebraucht }: {
   type:WEType; year:number; month:number; entries:WEEntry[]; loading:boolean;
   onEditDay:(day:number)=>void; onTodayEntry:()=>void;
+  onFischAufgebraucht?: (entryId:number, fishIndex:number) => Promise<void>;
 }) {
   const { allCrit } = useWEConfig();
   const holidays   = useMemo(()=>getBavarianHolidays(year),[year]);
   const enabled    = useMemo(()=>getEnabled(type,allCrit),[type,allCrit]);
   const tempCrit   = enabled.filter(c=>c.type==="temp");
   const checkCrit  = enabled.filter(c=>c.type==="check");
+  const fischCritKey = useMemo(()=>enabled.find(c=>c.type==="fisch_mhd_list")?.key,[enabled]);
   const days       = daysInMonth(year,month);
   const byDay      = useMemo(()=>new Map(entries.map(e=>[e.day,e])),[entries]);
   const [detailDay,setDetailDay] = useState<number|null>(null);
+  const [aufgebrauchtLoading,setAufgebrauchtLoading] = useState<string|null>(null);
   const todayRef = useRef<HTMLDivElement>(null);
+
+  const allActiveFisch = useMemo(()=>{
+    if(!fischCritKey)return[];
+    const result:Array<{entryId:number;fishIndex:number;art:string;mhd:string;deliveryDay:number}>=[];
+    entries.forEach(e=>{
+      const rows=parseFischMhd(e.criteriaValues[fischCritKey]);
+      rows.forEach((r,i)=>{if(!r.aufgebraucht&&r.art)result.push({entryId:e.id,fishIndex:i,art:r.art,mhd:r.mhd,deliveryDay:e.day});});
+    });
+    return result.sort((a,b)=>a.mhd.localeCompare(b.mhd));
+  },[entries,fischCritKey]);
+
+  const handleAufgebraucht=async(entryId:number,fishIndex:number,key:string)=>{
+    if(!onFischAufgebraucht)return;
+    setAufgebrauchtLoading(key);
+    try{await onFischAufgebraucht(entryId,fishIndex);}finally{setAufgebrauchtLoading(null);}
+  };
 
   const now    = new Date();
   const todayDay=now.getDate(), todayMonth=now.getMonth()+1, todayYear=now.getFullYear();
@@ -652,6 +695,43 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
 
   return(
     <div className="space-y-3">
+      {!loading&&fischCritKey&&allActiveFisch.length>0&&(
+        <div className="bg-white border border-blue-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 border-b border-blue-100">
+            <Fish className="w-4 h-4 text-blue-600"/>
+            <p className="text-sm font-bold text-blue-800">Aktiver Fischbestand – nicht aufgebraucht</p>
+            <span className="ml-auto text-xs font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{allActiveFisch.length} Fisch{allActiveFisch.length!==1?"arten":""}</span>
+          </div>
+          <div className="divide-y divide-blue-50">
+            {allActiveFisch.map((f,idx)=>{
+              const urg=getMhdUrgency(f.mhd);
+              const key=`${f.entryId}-${f.fishIndex}`;
+              const isLoading=aufgebrauchtLoading===key;
+              return(
+                <div key={idx} className="flex items-center gap-3 px-4 py-2.5">
+                  <Fish className={`w-3.5 h-3.5 shrink-0 ${urg==="abgelaufen"?"text-red-500":urg==="bald"?"text-amber-500":"text-blue-500"}`}/>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-semibold">{f.art}</span>
+                    <span className="text-xs text-muted-foreground ml-2">· angeliefert Tag {f.deliveryDay}</span>
+                  </div>
+                  {f.mhd&&(
+                    <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full shrink-0 ${urg==="abgelaufen"?"bg-red-100 text-red-700":urg==="bald"?"bg-amber-100 text-amber-700":"bg-green-100 text-green-700"}`}>
+                      {urg==="abgelaufen"?"⚠ ":""}MHD {new Date(f.mhd+"T00:00:00").toLocaleDateString("de-DE")}
+                    </span>
+                  )}
+                  {onFischAufgebraucht&&(
+                    <button disabled={isLoading} onClick={()=>handleAufgebraucht(f.entryId,f.fishIndex,key)}
+                      className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 shrink-0 transition-colors flex items-center gap-1">
+                      {isLoading?<Loader2 className="w-3 h-3 animate-spin"/>:<Check className="w-3 h-3"/>}
+                      Aufgebraucht
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {loading?(
         <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground"/></div>
       ):(
@@ -701,6 +781,24 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
                       );})}
                     </div>
                   )}
+                  {e&&fischCritKey&&(()=>{
+                    const fischRows=parseFischMhd(v[fischCritKey]).filter(r=>!r.aufgebraucht&&r.art);
+                    if(fischRows.length===0)return null;
+                    return(
+                      <div className="flex gap-1 mt-1 flex-wrap">
+                        {fischRows.map((r,i)=>{
+                          const urg=getMhdUrgency(r.mhd);
+                          return(
+                            <span key={i} className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${urg==="abgelaufen"?"bg-red-100 text-red-700 border-red-200":urg==="bald"?"bg-amber-100 text-amber-700 border-amber-200":"bg-blue-100 text-blue-700 border-blue-200"}`}>
+                              <Fish className="w-2.5 h-2.5 shrink-0"/>
+                              {r.art.length>12?r.art.slice(0,12)+"…":r.art}
+                              {r.mhd&&<span className="opacity-75">·{new Date(r.mhd+"T00:00:00").toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</span>}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
                 {e&&(
                   <div className="px-2 shrink-0">
@@ -745,7 +843,8 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
 
       {detailDay!==null&&detailEntry&&(
         <DayDetailModal day={detailDay} year={year} month={month} type={type} entry={detailEntry}
-          onClose={()=>setDetailDay(null)} onEdit={()=>{onEditDay(detailDay);setDetailDay(null);}}/>
+          onClose={()=>setDetailDay(null)} onEdit={()=>{onEditDay(detailDay);setDetailDay(null);}}
+          onFischAufgebraucht={onFischAufgebraucht?async(fi)=>{await onFischAufgebraucht(detailEntry.id,fi);}:undefined}/>
       )}
       <p className="text-[10px] text-muted-foreground/50 px-1">Bei Abweichungen (A) sind Maßnahmen, Termin und Umsetzung zu dokumentieren.</p>
     </div>
@@ -1095,6 +1194,10 @@ function WareneingaengeContent() {
     await loadEntries(activeTypeId as number,year,month);
     setViewMode("month");
   };
+  const handleFischAufgebraucht=async(entryId:number,fishIndex:number)=>{
+    await fetch(`${BASE}/wareneingang-entries/${entryId}/fisch`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({fishIndex,aufgebraucht:true})});
+    if(typeof activeTypeId==="number")await loadEntries(activeTypeId,year,month);
+  };
 
   const prevMonth=()=>{if(month===1){setYear(y=>y-1);setMonth(12);}else setMonth(m=>m-1);};
   const nextMonth=()=>{if(month===12){setYear(y=>y+1);setMonth(1);}else setMonth(m=>m+1);};
@@ -1166,7 +1269,8 @@ function WareneingaengeContent() {
                 <MonthlyTableView type={activeType} year={year} month={month}
                   entries={entries} loading={loadingEntries}
                   onEditDay={day=>{setSelectedDay(day);setViewMode("form");}}
-                  onTodayEntry={()=>{setSelectedDay(now.getDate());setViewMode("form");}}/>
+                  onTodayEntry={()=>{setSelectedDay(now.getDate());setViewMode("form");}}
+                  onFischAufgebraucht={handleFischAufgebraucht}/>
               )
             ):(
               <div className="text-center py-12 text-muted-foreground text-sm">Kein Lieferant ausgewaehlt.</div>

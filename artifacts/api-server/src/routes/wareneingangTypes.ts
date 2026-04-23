@@ -135,6 +135,25 @@ router.post("/wareneingang-entries", async (req, res) => {
   res.json(row);
 });
 
+router.patch("/wareneingang-entries/:id/fisch", async (req, res) => {
+  const id = Number(req.params.id);
+  const { fishIndex, aufgebraucht } = req.body;
+  if (typeof fishIndex !== "number") { res.status(400).json({ error: "fishIndex erforderlich" }); return; }
+  const rows = await db.select().from(wareneingangEntriesTable).where(eq(wareneingangEntriesTable.id, id));
+  if (!rows[0]) { res.status(404).json({ error: "Eintrag nicht gefunden" }); return; }
+  const cv = (rows[0].criteriaValues ?? {}) as Record<string, string>;
+  let fish: Array<{ art: string; mhd: string; aufgebraucht?: boolean }> = [];
+  try { fish = cv.fisch_arten_json ? JSON.parse(cv.fisch_arten_json as string) : []; } catch { fish = []; }
+  if (fishIndex < 0 || fishIndex >= fish.length) { res.status(400).json({ error: "Ungültiger Index" }); return; }
+  fish[fishIndex] = { ...fish[fishIndex], aufgebraucht: !!aufgebraucht };
+  const newCv = { ...cv, fisch_arten_json: JSON.stringify(fish) };
+  const [updated] = await db.update(wareneingangEntriesTable)
+    .set({ criteriaValues: newCv })
+    .where(eq(wareneingangEntriesTable.id, id))
+    .returning();
+  res.json(updated);
+});
+
 router.delete("/wareneingang-entries/:id", async (req, res) => {
   const id = Number(req.params.id);
   await db.delete(wareneingangEntriesTable).where(eq(wareneingangEntriesTable.id, id));
