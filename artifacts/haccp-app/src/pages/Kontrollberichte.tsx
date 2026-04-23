@@ -651,7 +651,18 @@ function TuevPanel({ year }: { year: number }) {
       }
       const saved = await res.json();
       console.log("[TÜV] PUT gespeichert:", saved);
-      await loadData();
+      // Direkt aus der Speichelantwort laden – kein separater GET nötig
+      setDaten(saved);
+      setZertDok(saved.zertifikateDokument || "");
+      setZertNotizen(saved.zertifikateNotizen || "");
+      setPruefDok(saved.pruefungenDokument || "");
+      setPruefNotizen(saved.pruefungenNotizen || "");
+      setAktFoto(saved.aktionsplanFoto || "");
+      setAktionsplanDatum(saved.aktionsplanDatum ? new Date(saved.aktionsplanDatum).toISOString().slice(0, 10) : "");
+      setNachbesserungName(saved.nachbesserungName || "");
+      setNachbesserungDatum(saved.nachbesserungDatum || "");
+      setNachbesserungUnterschrift(saved.nachbesserungUnterschrift || "");
+      try { setMassnahmen(saved.aktionsplanMassnahmen ? JSON.parse(saved.aktionsplanMassnahmen) : []); } catch { setMassnahmen([]); }
       setEditMode(false);
       toast({ title: "TÜV-Bericht gespeichert", description: "Alle Änderungen wurden erfolgreich gespeichert." });
     } catch (err: any) {
