@@ -288,6 +288,54 @@ function PinModal({ onConfirm, onCancel }: { onConfirm:(id:{name:string;userId:n
   );
 }
 
+// ── FISCH AUFGEBRAUCHT PIN MODAL ──────────────────────────────
+function FischAufgebrauchtPinModal({ fishArt, onConfirm, onCancel }: {
+  fishArt: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const [pin, setPin] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const verify = async () => {
+    setError(""); setLoading(true);
+    try {
+      const r = await fetch(`${BASE}/users/verify-pin`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({pin,tenantId:1}) });
+      const d = await r.json();
+      if (d.valid) onConfirm();
+      else setError("PIN ungültig.");
+    } catch { setError("Verbindungsfehler."); }
+    finally { setLoading(false); }
+  };
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[60] p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xs p-6 space-y-4">
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+            <Check className="w-6 h-6 text-green-600" />
+          </div>
+          <p className="font-bold text-base">Fisch aufgebraucht?</p>
+          <p className="text-sm font-semibold text-muted-foreground mt-1">{fishArt}</p>
+          <p className="text-xs text-muted-foreground mt-1">PIN eingeben zur Bestätigung</p>
+        </div>
+        <input type="password" inputMode="numeric"
+          className="w-full border-2 border-border rounded-xl px-3 py-3 text-center text-2xl tracking-[0.8em] focus:outline-none focus:border-green-500"
+          placeholder="&#9679;&#9679;&#9679;&#9679;" value={pin} maxLength={6} autoFocus
+          onChange={e => setPin(e.target.value.replace(/\D/g, ""))}
+          onKeyDown={e => e.key==="Enter" && pin.length>=3 && verify()} />
+        {error && <p className="text-xs text-red-500 text-center">{error}</p>}
+        <div className="flex gap-2">
+          <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl border border-border text-sm hover:bg-muted">Abbrechen</button>
+          <button onClick={verify} disabled={loading||pin.length<3}
+            className="flex-1 py-2.5 rounded-xl bg-green-600 text-white text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-1.5">
+            {loading?<Loader2 className="w-4 h-4 animate-spin"/>:<Check className="w-4 h-4"/>} Bestätigen
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── DAY DETAIL MODAL ──────────────────────────────────────────
 function DayDetailModal({ day, year, month, type, entry, onClose, onEdit, onFischAufgebraucht }: {
   day:number; year:number; month:number; type:WEType; entry:WEEntry; onClose:()=>void; onEdit:()=>void;
@@ -300,8 +348,10 @@ function DayDetailModal({ day, year, month, type, entry, onClose, onEdit, onFisc
   const tempCrit=enabled.filter(c=>c.type==="temp");
   const st=entryStatus(entry,enabled);
   const wd=getWd(year,month,day);
+  const [pinFish,setPinFish]=useState<{idx:number;art:string}|null>(null);
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      {pinFish&&<FischAufgebrauchtPinModal fishArt={pinFish.art} onCancel={()=>setPinFish(null)} onConfirm={async()=>{setPinFish(null);if(onFischAufgebraucht)await onFischAufgebraucht(pinFish.idx);}}/>}
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
         <div className="sticky top-0 bg-white border-b border-border/60 px-5 py-4 rounded-t-2xl flex items-start justify-between">
           <div>
@@ -365,7 +415,7 @@ function DayDetailModal({ day, year, month, type, entry, onClose, onEdit, onFisc
                       {r.aufgebraucht?(
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 shrink-0">aufgbr.</span>
                       ):onFischAufgebraucht&&(
-                        <button onClick={()=>onFischAufgebraucht(i)}
+                        <button onClick={()=>setPinFish({idx:i,art:r.art||"Fisch"})}
                           className="text-[10px] font-bold px-2 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700 shrink-0 transition-colors">
                           Aufgebraucht
                         </button>
@@ -638,6 +688,7 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
   const byDay      = useMemo(()=>new Map(entries.map(e=>[e.day,e])),[entries]);
   const [detailDay,setDetailDay] = useState<number|null>(null);
   const [aufgebrauchtLoading,setAufgebrauchtLoading] = useState<string|null>(null);
+  const [pinFisch,setPinFisch] = useState<{entryId:number;fishIndex:number;art:string;key:string}|null>(null);
   const todayRef = useRef<HTMLDivElement>(null);
 
   const allActiveFisch = useMemo(()=>{
@@ -650,8 +701,14 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
     return result.sort((a,b)=>a.mhd.localeCompare(b.mhd));
   },[entries,fischCritKey]);
 
-  const handleAufgebraucht=async(entryId:number,fishIndex:number,key:string)=>{
+  const handleAufgebraucht=(entryId:number,fishIndex:number,art:string,key:string)=>{
     if(!onFischAufgebraucht)return;
+    setPinFisch({entryId,fishIndex,art,key});
+  };
+  const confirmAufgebraucht=async()=>{
+    if(!pinFisch||!onFischAufgebraucht)return;
+    const {entryId,fishIndex,key}=pinFisch;
+    setPinFisch(null);
     setAufgebrauchtLoading(key);
     try{await onFischAufgebraucht(entryId,fishIndex);}finally{setAufgebrauchtLoading(null);}
   };
@@ -695,6 +752,7 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
 
   return(
     <div className="space-y-3">
+      {pinFisch&&<FischAufgebrauchtPinModal fishArt={pinFisch.art} onCancel={()=>setPinFisch(null)} onConfirm={confirmAufgebraucht}/>}
       {!loading&&fischCritKey&&allActiveFisch.length>0&&(
         <div className="bg-white border border-blue-200 rounded-xl overflow-hidden shadow-sm">
           <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 border-b border-blue-100">
@@ -720,7 +778,7 @@ function MonthlyTableView({ type, year, month, entries, loading, onEditDay, onTo
                     </span>
                   )}
                   {onFischAufgebraucht&&(
-                    <button disabled={isLoading} onClick={()=>handleAufgebraucht(f.entryId,f.fishIndex,key)}
+                    <button disabled={isLoading} onClick={()=>handleAufgebraucht(f.entryId,f.fishIndex,f.art,key)}
                       className="text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 shrink-0 transition-colors flex items-center gap-1">
                       {isLoading?<Loader2 className="w-3 h-3 animate-spin"/>:<Check className="w-3 h-3"/>}
                       Aufgebraucht
