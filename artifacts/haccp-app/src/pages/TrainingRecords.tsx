@@ -355,12 +355,26 @@ function NewSimpleSessionDialog({
   );
 }
 
+const BASE = import.meta.env.VITE_API_URL || "/api";
+const ADMIN_BYPASS_ROLES = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG"] as const;
+
 function AttendanceDialog({ isOpen, onClose, sessionId, marketId }: { isOpen: boolean; onClose: () => void; sessionId: number; marketId?: number }) {
   const addAttendance = useAddTrainingAttendance();
   const queryClient = useQueryClient();
+  const adminSession = useAppStore((s) => s.adminSession);
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [showPin, setShowPin] = useState(false);
+  const [adminMode, setAdminMode] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<number | "">("");
+  const [adminLoading, setAdminLoading] = useState(false);
+
+  const canBypassPin = !!adminSession && ADMIN_BYPASS_ROLES.includes(adminSession.role as typeof ADMIN_BYPASS_ROLES[number]);
+  const { data: allUsers } = useListUsers(
+    { tenantId: adminSession?.tenantId },
+    { query: { enabled: canBypassPin && adminMode } }
+  );
+  const activeUsers = (allUsers || []).filter((u: any) => u.status === "aktiv").sort((a: any, b: any) => (a.name || "").localeCompare(b.name || "", "de"));
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: [`/api/training-sessions/${sessionId}`] });
@@ -368,7 +382,12 @@ function AttendanceDialog({ isOpen, onClose, sessionId, marketId }: { isOpen: bo
     queryClient.invalidateQueries({ predicate: (q) => typeof q.queryKey[0] === "string" && (q.queryKey[0] as string).includes("training-sessions") });
   };
 
-  const handleSubmit = async () => {
+  const handleClose = () => {
+    setPin(""); setError(""); setSelectedUserId(""); setAdminMode(false);
+    onClose();
+  };
+
+  const handleSubmitPin = async () => {
     if (!pin || pin.length < 4) return;
     setError("");
     try {
@@ -381,49 +400,125 @@ function AttendanceDialog({ isOpen, onClose, sessionId, marketId }: { isOpen: bo
     }
   };
 
+  const handleSubmitAdmin = async () => {
+    if (!selectedUserId) return;
+    setError(""); setAdminLoading(true);
+    try {
+      const resp = await fetch(`${BASE}/training-sessions/${sessionId}/attendance/admin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(adminSession?.email ? { "x-admin-email": adminSession.email } : {}),
+        },
+        body: JSON.stringify({ userId: selectedUserId }),
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(data?.error || "Fehler beim Eintragen.");
+      }
+      invalidateAll();
+      setSelectedUserId("");
+      onClose();
+    } catch (err: any) {
+      setError(err?.message || "Fehler beim Eintragen.");
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(o) => !o && onClose()}>
+    <Dialog.Root open={isOpen} onOpenChange={(o) => !o && handleClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
         <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl p-6 w-[95vw] max-w-md z-50 shadow-xl">
-          <Dialog.Title className="text-xl font-bold text-foreground flex items-center gap-2 mb-6">
+          <Dialog.Title className="text-xl font-bold text-foreground flex items-center gap-2 mb-4">
             <UserPlus className="w-5 h-5 text-primary" />
             Teilnahme bestätigen
           </Dialog.Title>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Geben Sie Ihre 4-stellige PIN ein. Ihr Kürzel wird automatisch erkannt.
-            </p>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">PIN (4 Ziffern) *</label>
-              <div className="relative">
-                <input type={showPin ? "text" : "password"} value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                  placeholder="****" maxLength={4} autoFocus
-                  className="w-full border border-border rounded-lg px-3 py-2 text-sm font-mono tracking-widest text-center text-lg" />
-                <button type="button" onClick={() => setShowPin(!showPin)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  <KeyRound className="w-4 h-4" />
-                </button>
-              </div>
+
+          {canBypassPin && (
+            <div className="flex rounded-xl border border-border overflow-hidden mb-5 text-sm">
+              <button onClick={() => { setAdminMode(false); setError(""); }}
+                className={cn("flex-1 px-3 py-2 font-medium flex items-center justify-center gap-1.5 transition-colors",
+                  !adminMode ? "bg-[#1a3a6b] text-white" : "bg-white text-muted-foreground hover:bg-secondary")}>
+                <KeyRound className="w-3.5 h-3.5" /> Per PIN
+              </button>
+              <button onClick={() => { setAdminMode(true); setError(""); }}
+                className={cn("flex-1 px-3 py-2 font-medium flex items-center justify-center gap-1.5 transition-colors",
+                  adminMode ? "bg-[#1a3a6b] text-white" : "bg-white text-muted-foreground hover:bg-secondary")}>
+                <Users className="w-3.5 h-3.5" /> Mitarbeiter wählen
+              </button>
             </div>
-            {error && (
-              <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 px-3 py-2 rounded-lg">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                {error}
+          )}
+
+          {!adminMode ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Geben Sie Ihre 4-stellige PIN ein. Ihr Kürzel wird automatisch erkannt.
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">PIN (4 Ziffern) *</label>
+                <div className="relative">
+                  <input type={showPin ? "text" : "password"} value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                    placeholder="****" maxLength={4} autoFocus
+                    className="w-full border border-border rounded-lg px-3 py-2 text-sm font-mono tracking-widest text-center text-lg" />
+                  <button type="button" onClick={() => setShowPin(!showPin)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <KeyRound className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            )}
-          </div>
+              {error && (
+                <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 px-3 py-2 rounded-lg">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Mitarbeiter aus der Liste auswählen – keine PIN erforderlich.
+              </p>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">Mitarbeiter *</label>
+                <select value={selectedUserId}
+                  onChange={(e) => setSelectedUserId(e.target.value ? Number(e.target.value) : "")}
+                  className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20">
+                  <option value="">– Mitarbeiter wählen –</option>
+                  {activeUsers.map((u: any) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name} {u.initials ? `(${u.initials.toUpperCase()})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {error && (
+                <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 px-3 py-2 rounded-lg">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />{error}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-3 mt-6">
-            <button onClick={() => { setPin(""); setError(""); onClose(); }}
+            <button onClick={handleClose}
               className="flex-1 px-4 py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-secondary">
               Abbrechen
             </button>
-            <button onClick={handleSubmit} disabled={addAttendance.isPending || pin.length < 4}
-              className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
-              {addAttendance.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-              Bestätigen
-            </button>
+            {!adminMode ? (
+              <button onClick={handleSubmitPin} disabled={addAttendance.isPending || pin.length < 4}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
+                {addAttendance.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Bestätigen
+              </button>
+            ) : (
+              <button onClick={handleSubmitAdmin} disabled={adminLoading || !selectedUserId}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
+                {adminLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                Eintragen
+              </button>
+            )}
           </div>
         </Dialog.Content>
       </Dialog.Portal>

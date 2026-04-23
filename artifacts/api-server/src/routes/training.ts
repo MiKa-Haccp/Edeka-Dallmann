@@ -340,6 +340,82 @@ router.post("/training-sessions/:sessionId/attendance", async (req, res) => {
   });
 });
 
+router.post("/training-sessions/:sessionId/attendance/admin", async (req, res) => {
+  const sessionId = parseInt(req.params.sessionId);
+  const { userId } = req.body;
+  const adminEmail = req.headers["x-admin-email"] as string;
+
+  if (!adminEmail) {
+    res.status(401).json({ error: "Nicht autorisiert." });
+    return;
+  }
+
+  const [adminUser] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.email, adminEmail.toLowerCase()));
+
+  const ALLOWED_ROLES = ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG"];
+  if (!adminUser || !ALLOWED_ROLES.includes(adminUser.role)) {
+    res.status(403).json({ error: "Nur Admins und Bereichsleitung dürfen Teilnahmen ohne PIN eintragen." });
+    return;
+  }
+
+  const [session] = await db
+    .select()
+    .from(trainingSessionsTable)
+    .where(eq(trainingSessionsTable.id, sessionId));
+
+  if (!session) {
+    res.status(404).json({ error: "Schulung nicht gefunden." });
+    return;
+  }
+
+  const [targetUser] = await db
+    .select()
+    .from(usersTable)
+    .where(
+      and(
+        eq(usersTable.id, userId),
+        eq(usersTable.tenantId, session.tenantId)
+      )
+    );
+
+  if (!targetUser) {
+    res.status(404).json({ error: "Mitarbeiter nicht gefunden." });
+    return;
+  }
+
+  const existing = await db
+    .select()
+    .from(trainingAttendancesTable)
+    .where(
+      and(
+        eq(trainingAttendancesTable.sessionId, sessionId),
+        eq(trainingAttendancesTable.userId, targetUser.id)
+      )
+    );
+
+  if (existing.length > 0) {
+    res.status(409).json({ error: "Teilnahme bereits bestätigt." });
+    return;
+  }
+
+  const [attendance] = await db
+    .insert(trainingAttendancesTable)
+    .values({
+      sessionId,
+      userId: targetUser.id,
+      initials: targetUser.initials?.toUpperCase() || "",
+    })
+    .returning();
+
+  res.status(201).json({
+    ...attendance,
+    userName: targetUser.name,
+  });
+});
+
 router.delete("/training-sessions/:sessionId/attendance/:attendanceId", async (req, res) => {
   const sessionId = parseInt(req.params.sessionId);
   const attendanceId = parseInt(req.params.attendanceId);
