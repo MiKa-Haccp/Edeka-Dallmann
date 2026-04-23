@@ -56,6 +56,8 @@ export default function ApplicantDetail() {
   const [loading, setLoading] = useState(true);
   const [dirty, setDirty] = useState(false);
   const photoRef = useRef<HTMLInputElement>(null);
+  const adminEmail = adminSession?.email || "";
+  const authHeaders = { "x-admin-email": adminEmail };
 
   useEffect(() => {
     if (!adminSession || !ALLOWED_ROLES.includes(adminSession.role)) {
@@ -69,8 +71,8 @@ export default function ApplicantDetail() {
     setLoading(true);
     try {
       const [appRes, commRes] = await Promise.all([
-        fetch(`${BASE}/management/applicants?tenantId=1`),
-        fetch(`${BASE}/management/applicants/${id}/comments`),
+        fetch(`${BASE}/management/applicants?tenantId=1`, { headers: authHeaders }),
+        fetch(`${BASE}/management/applicants/${id}/comments`, { headers: authHeaders }),
       ]);
       const apps: Applicant[] = await appRes.json();
       const found = apps.find(a => a.id === id);
@@ -105,7 +107,7 @@ export default function ApplicantDetail() {
     try {
       const r = await fetch(`${BASE}/management/applicants/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify(form),
       });
       const updated = await r.json();
@@ -119,7 +121,7 @@ export default function ApplicantDetail() {
 
   const deleteApplicant = async () => {
     if (!confirm(`Bewerber "${app?.name}" wirklich löschen? Alle Einträge und Notizen werden entfernt.`)) return;
-    await fetch(`${BASE}/management/applicants/${id}`, { method: "DELETE" });
+    await fetch(`${BASE}/management/applicants/${id}`, { method: "DELETE", headers: authHeaders });
     navigate("/management/recruiting");
   };
 
@@ -128,7 +130,7 @@ export default function ApplicantDetail() {
     const authorName = adminSession?.name || "Unbekannt";
     const r = await fetch(`${BASE}/management/applicants/${id}/comments`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders },
       body: JSON.stringify({ author: authorName, content: newComment.trim() }),
     });
     const c = await r.json();
@@ -137,7 +139,7 @@ export default function ApplicantDetail() {
   };
 
   const deleteComment = async (commentId: number) => {
-    await fetch(`${BASE}/management/applicants/comments/${commentId}`, { method: "DELETE" });
+    await fetch(`${BASE}/management/applicants/comments/${commentId}`, { method: "DELETE", headers: authHeaders });
     setComments(prev => prev.filter(c => c.id !== commentId));
   };
 

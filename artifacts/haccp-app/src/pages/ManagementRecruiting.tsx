@@ -174,10 +174,12 @@ function StageColumn({
 // ─── Quick-Add Modal ────────────────────────────────────────
 function QuickAddModal({
   initialStatus,
+  adminEmail,
   onClose,
   onCreated,
 }: {
   initialStatus: string;
+  adminEmail: string;
   onClose: () => void;
   onCreated: (app: Applicant) => void;
 }) {
@@ -192,7 +194,7 @@ function QuickAddModal({
     try {
       const r = await fetch(`${BASE}/management/applicants`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-admin-email": adminEmail },
         body: JSON.stringify({ name: name.trim(), source, phone, status: initialStatus, tenantId: 1 }),
       });
       const app = await r.json();
@@ -246,6 +248,8 @@ export default function ManagementRecruiting() {
   const [dragApp, setDragApp] = useState<Applicant | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [quickAdd, setQuickAdd] = useState<string | null>(null);
+  const adminEmail = adminSession?.email || "";
+  const authHeaders = { "x-admin-email": adminEmail };
 
   useEffect(() => {
     if (!adminSession || !ALLOWED_ROLES.includes(adminSession.role)) {
@@ -258,7 +262,7 @@ export default function ManagementRecruiting() {
   const loadApplicants = async () => {
     setLoading(true);
     try {
-      const r = await fetch(`${BASE}/management/applicants?tenantId=1`);
+      const r = await fetch(`${BASE}/management/applicants?tenantId=1`, { headers: authHeaders });
       const data = await r.json();
       setApplicants(Array.isArray(data) ? data : []);
     } catch {
@@ -281,7 +285,7 @@ export default function ManagementRecruiting() {
     setApplicants(prev => prev.map(a => a.id === dragApp.id ? updated : a));
     await fetch(`${BASE}/management/applicants/${dragApp.id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders },
       body: JSON.stringify({ status: stageKey }),
     });
     setDragApp(null);
@@ -347,6 +351,7 @@ export default function ManagementRecruiting() {
       {quickAdd !== null && (
         <QuickAddModal
           initialStatus={quickAdd}
+          adminEmail={adminEmail}
           onClose={() => setQuickAdd(null)}
           onCreated={app => setApplicants(prev => [...prev, app])}
         />

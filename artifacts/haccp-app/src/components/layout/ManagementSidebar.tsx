@@ -3,6 +3,9 @@ import { Link, useLocation } from "wouter";
 import { Home, KanbanSquare, Users, X, GripVertical, Briefcase } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { useAppStore } from "@/store/use-app-store";
+
+const MANAGEMENT_ALLOWED_ROLES = ["SUPERADMIN", "ADMIN"];
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -70,12 +73,14 @@ function ManagementSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function ManagementMobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { adminSession } = useAppStore();
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [isOpen]);
 
   if (!isOpen) return null;
+  if (!adminSession || !MANAGEMENT_ALLOWED_ROLES.includes(adminSession.role)) return null;
 
   return (
     <div className="fixed inset-0 z-50 xl:hidden">
@@ -94,6 +99,7 @@ export function ManagementMobileSidebar({ isOpen, onClose }: { isOpen: boolean; 
 }
 
 export function ManagementSidebar() {
+  const { adminSession } = useAppStore();
   const [width, setWidth] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Number(saved))) : DEFAULT_WIDTH;
@@ -117,6 +123,8 @@ export function ManagementSidebar() {
   }, [isDragging, width]);
 
   useEffect(() => { localStorage.setItem(STORAGE_KEY, String(width)); }, [width]);
+
+  if (!adminSession || !MANAGEMENT_ALLOWED_ROLES.includes(adminSession.role)) return null;
 
   return (
     <aside

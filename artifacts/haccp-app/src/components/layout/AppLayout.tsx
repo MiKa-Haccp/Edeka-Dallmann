@@ -28,11 +28,15 @@ const HACCP_SIDEBAR_PATHS = [
   "/metz-bestellungen",
 ];
 
+const MANAGEMENT_ALLOWED_ROLES = ["SUPERADMIN", "ADMIN"];
+
 function useActiveSidebar() {
   const [location] = useLocation();
+  const { adminSession } = useAppStore();
   const isWare = location === "/ware" || location.startsWith("/ware-");
   const isTodo = TODO_PATHS.some(p => location === p);
-  const isManagement = MANAGEMENT_PATHS.some(p => location === p || location.startsWith(p));
+  const hasManagementRole = !!adminSession && MANAGEMENT_ALLOWED_ROLES.includes(adminSession.role);
+  const isManagement = hasManagementRole && MANAGEMENT_PATHS.some(p => location === p || location.startsWith(p));
   const isHaccp = !isWare && !isTodo && !isManagement && HACCP_SIDEBAR_PATHS.some((p) => location.startsWith(p));
   return { isWare, isHaccp, isTodo, isManagement, hasSidebar: isWare || isHaccp || isTodo || isManagement };
 }

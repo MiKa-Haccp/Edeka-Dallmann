@@ -126,11 +126,13 @@ function TaskCard({
 function TaskModal({
   task,
   authorName,
+  adminEmail,
   onClose,
   onSave,
 }: {
   task: Task | null;
   authorName: string;
+  adminEmail: string;
   onClose: () => void;
   onSave: (updated: Partial<Task> & { id?: number }) => void;
 }) {
@@ -148,9 +150,11 @@ function TaskModal({
   const [loading, setLoading] = useState(false);
   const isEdit = !!task?.id;
 
+  const authHeaders = { "x-admin-email": adminEmail };
+
   useEffect(() => {
     if (!task?.id) return;
-    fetch(`${BASE}/management/tasks/${task.id}/comments`)
+    fetch(`${BASE}/management/tasks/${task.id}/comments`, { headers: authHeaders })
       .then(r => r.json())
       .then(setComments)
       .catch(() => {});
@@ -162,7 +166,7 @@ function TaskModal({
     try {
       const r = await fetch(`${BASE}/management/tasks/${task.id}/comments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ author: authorName || "Unbekannt", content: newComment.trim() }),
       });
       const c = await r.json();
@@ -174,7 +178,7 @@ function TaskModal({
   };
 
   const deleteComment = async (commentId: number) => {
-    await fetch(`${BASE}/management/tasks/comments/${commentId}`, { method: "DELETE" });
+    await fetch(`${BASE}/management/tasks/comments/${commentId}`, { method: "DELETE", headers: authHeaders });
     setComments(prev => prev.filter(c => c.id !== commentId));
   };
 
@@ -411,6 +415,8 @@ export default function ManagementTaskBoard() {
   const [dragTask, setDragTask] = useState<Task | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const authorName = adminSession?.name || "Unbekannt";
+  const adminEmail = adminSession?.email || "";
+  const authHeaders = { "x-admin-email": adminEmail };
 
   useEffect(() => {
     if (!adminSession || !ALLOWED_ROLES.includes(adminSession.role)) {
@@ -423,7 +429,7 @@ export default function ManagementTaskBoard() {
   const loadTasks = async () => {
     setLoading(true);
     try {
-      const r = await fetch(`${BASE}/management/tasks?tenantId=1`);
+      const r = await fetch(`${BASE}/management/tasks?tenantId=1`, { headers: authHeaders });
       const data = await r.json();
       setTasks(Array.isArray(data) ? data : []);
     } catch {
@@ -438,7 +444,7 @@ export default function ManagementTaskBoard() {
     if (id) {
       const r = await fetch(`${BASE}/management/tasks/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify(fields),
       });
       const updated = await r.json();
@@ -446,7 +452,7 @@ export default function ManagementTaskBoard() {
     } else {
       const r = await fetch(`${BASE}/management/tasks`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ ...fields, tenantId: 1, column: fields.column || newCol }),
       });
       const created = await r.json();
@@ -457,7 +463,7 @@ export default function ManagementTaskBoard() {
 
   const handleDelete = async (id: number) => {
     if (!confirm("Aufgabe löschen?")) return;
-    await fetch(`${BASE}/management/tasks/${id}`, { method: "DELETE" });
+    await fetch(`${BASE}/management/tasks/${id}`, { method: "DELETE", headers: authHeaders });
     setTasks(prev => prev.filter(t => t.id !== id));
   };
 
@@ -474,7 +480,7 @@ export default function ManagementTaskBoard() {
     setTasks(prev => prev.map(t => t.id === dragTask.id ? updated : t));
     await fetch(`${BASE}/management/tasks/${dragTask.id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...authHeaders },
       body: JSON.stringify({ column: colKey }),
     });
     setDragTask(null);
@@ -542,6 +548,7 @@ export default function ManagementTaskBoard() {
         <TaskModal
           task={editTask === "new" ? { column: newCol } as Task : editTask}
           authorName={authorName}
+          adminEmail={adminEmail}
           onClose={() => setEditTask(null)}
           onSave={handleSave}
         />

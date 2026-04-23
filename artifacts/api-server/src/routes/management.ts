@@ -1,15 +1,38 @@
-import { Router } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { db } from "@workspace/db";
 import {
   managementTasksTable,
   managementTaskCommentsTable,
   applicantsTable,
   applicantCommentsTable,
+  usersTable,
 } from "@workspace/db/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { upload, attachFileAsBase64 } from "./uploadMiddleware";
 
 const router = Router();
+const MANAGEMENT_ROLES = ["SUPERADMIN", "ADMIN"];
+
+async function requireManagementRole(req: Request, res: Response, next: NextFunction) {
+  const adminEmail = (req.headers["x-admin-email"] as string | undefined)?.toLowerCase();
+  if (!adminEmail) {
+    res.status(401).json({ error: "Nicht authentifiziert." });
+    return;
+  }
+  try {
+    const users = await db.select().from(usersTable).where(eq(usersTable.email, adminEmail));
+    if (users.length === 0 || !MANAGEMENT_ROLES.includes(users[0].role)) {
+      res.status(403).json({ error: "Zugriff verweigert. Nur für SUPERADMIN und ADMIN." });
+      return;
+    }
+    next();
+  } catch {
+    res.status(503).json({ error: "DB error" });
+  }
+}
+
+// Alle /management/* Routen benötigen SUPERADMIN oder ADMIN
+router.use("/management", requireManagementRole);
 
 // ─── MANAGEMENT TASKS ─────────────────────────────────────
 
