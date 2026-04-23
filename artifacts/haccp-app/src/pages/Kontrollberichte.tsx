@@ -38,6 +38,8 @@ interface Massnahme {
   nr: string;
   massnahme: string;
   durchgefuehrtVon: string;
+  datum?: string;
+  pinBestaetigtVon?: string;
 }
 
 interface TuevJahresbericht {
@@ -327,12 +329,17 @@ function AktionsplanCard({
     if (file) await processFile(file);
   };
 
+  const [pinRowIdx, setPinRowIdx] = useState<number | null>(null);
+  const [pinVal, setPinVal] = useState("");
+  const [pinRowLoading, setPinRowLoading] = useState(false);
+  const [pinRowError, setPinRowError] = useState("");
+
   const addRow = () => {
     const last = massnahmen[massnahmen.length - 1];
     const lastNr = last ? last.nr : "1.0";
     const parts = lastNr.split(".");
     const next = `${parts[0]}.${Number(parts[1] || 0) + 1}`;
-    onMassnahmen([...massnahmen, { nr: next, massnahme: "", durchgefuehrtVon: "" }]);
+    onMassnahmen([...massnahmen, { nr: next, massnahme: "", durchgefuehrtVon: "", datum: "", pinBestaetigtVon: "" }]);
   };
 
   const updateRow = (i: number, field: keyof Massnahme, value: string) => {
@@ -342,6 +349,27 @@ function AktionsplanCard({
 
   const removeRow = (i: number) => {
     onMassnahmen(massnahmen.filter((_, idx) => idx !== i));
+  };
+
+  const handlePinRowConfirm = async () => {
+    if (pinVal.length !== 4 || pinRowIdx === null) return;
+    setPinRowLoading(true); setPinRowError("");
+    try {
+      const res = await fetch(`${BASE}/users/verify-pin`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pin: pinVal, tenantId: 1 }),
+      });
+      if (res.status === 409) { setPinRowError("PIN mehrfach vergeben."); return; }
+      const data = await res.json();
+      if (!data.valid) { setPinRowError("Ungültige PIN – kein Mitarbeiter gefunden."); return; }
+      const updated = massnahmen.map((m, idx) =>
+        idx === pinRowIdx
+          ? { ...m, durchgefuehrtVon: data.userName || m.durchgefuehrtVon, pinBestaetigtVon: data.userName || "" }
+          : m
+      );
+      onMassnahmen(updated);
+      setPinRowIdx(null); setPinVal(""); setPinRowError("");
+    } finally { setPinRowLoading(false); }
   };
 
   return (
@@ -397,42 +425,81 @@ function AktionsplanCard({
             <p className="text-xs text-muted-foreground mb-2">Noch keine Maßnahmen eingetragen.</p>
           )}
           {massnahmen.length > 0 && (
-            <div className="space-y-2 mb-3">
-              {/* Header */}
-              <div className="grid grid-cols-[3rem_1fr_1fr_2rem] gap-2 px-1">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Nr.</span>
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Maßnahme</span>
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Durchgeführt von</span>
-                <span />
-              </div>
+            <div className="space-y-3 mb-3">
               {massnahmen.map((m, i) => (
-                <div key={i} className="grid grid-cols-[3rem_1fr_1fr_2rem] gap-2 items-center bg-muted/20 rounded-xl px-2 py-2">
-                  <input
-                    value={m.nr}
-                    onChange={(e) => updateRow(i, "nr", e.target.value)}
-                    disabled={disabled}
-                    className="text-xs font-bold text-center border border-border/60 rounded-lg px-1 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1a3a6b]/20 disabled:bg-transparent disabled:border-transparent"
-                    placeholder="1.1"
-                  />
-                  <input
-                    value={m.massnahme}
-                    onChange={(e) => updateRow(i, "massnahme", e.target.value)}
-                    disabled={disabled}
-                    className="text-sm border border-border/60 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1a3a6b]/20 w-full disabled:bg-transparent disabled:border-transparent"
-                    placeholder="Beschreibung der Maßnahme"
-                  />
-                  <input
-                    value={m.durchgefuehrtVon}
-                    onChange={(e) => updateRow(i, "durchgefuehrtVon", e.target.value)}
-                    disabled={disabled}
-                    className="text-sm border border-border/60 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1a3a6b]/20 w-full disabled:bg-transparent disabled:border-transparent"
-                    placeholder="Name"
-                  />
-                  {!disabled && (
-                    <button onClick={() => removeRow(i)} className="w-7 h-7 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                      <Trash className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                <div key={i} className="bg-muted/20 rounded-xl p-3 space-y-2">
+                  {/* Zeile 1: Nr + Maßnahme + Löschen */}
+                  <div className="flex gap-2 items-center">
+                    <input
+                      value={m.nr}
+                      onChange={(e) => updateRow(i, "nr", e.target.value)}
+                      disabled={disabled}
+                      className="w-12 text-xs font-bold text-center border border-border/60 rounded-lg px-1 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1a3a6b]/20 disabled:bg-transparent disabled:border-transparent shrink-0"
+                      placeholder="1.1"
+                    />
+                    <input
+                      value={m.massnahme}
+                      onChange={(e) => updateRow(i, "massnahme", e.target.value)}
+                      disabled={disabled}
+                      className="flex-1 text-sm border border-border/60 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1a3a6b]/20 disabled:bg-transparent disabled:border-transparent"
+                      placeholder="Beschreibung der Maßnahme"
+                    />
+                    {!disabled && (
+                      <button onClick={() => removeRow(i)} className="w-7 h-7 flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0">
+                        <Trash className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  {/* Zeile 2: Datum + Durchgeführt von (mit PIN) */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Datum</label>
+                      <input
+                        type="date"
+                        value={m.datum || ""}
+                        onChange={(e) => updateRow(i, "datum", e.target.value)}
+                        disabled={disabled}
+                        className="w-full text-xs border border-border/60 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1a3a6b]/20 disabled:bg-transparent disabled:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Durchgeführt von</label>
+                      {m.pinBestaetigtVon && !disabled ? (
+                        <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5 flex-1 bg-green-50 border border-green-200 text-green-700 rounded-lg px-2 py-1.5 text-xs font-medium">
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">{m.pinBestaetigtVon}</span>
+                          </div>
+                          <button onClick={() => updateRow(i, "pinBestaetigtVon", "")}
+                            className="w-6 h-6 flex items-center justify-center text-muted-foreground hover:text-destructive rounded transition-colors shrink-0" title="Zurücksetzen">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : disabled && m.pinBestaetigtVon ? (
+                        <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 rounded-lg px-2 py-1.5 text-xs font-medium">
+                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{m.pinBestaetigtVon}</span>
+                        </div>
+                      ) : disabled && m.durchgefuehrtVon ? (
+                        <p className="text-sm px-2 py-1.5">{m.durchgefuehrtVon}</p>
+                      ) : disabled ? (
+                        <p className="text-xs text-muted-foreground italic px-2 py-1.5">–</p>
+                      ) : (
+                        <div className="flex gap-1">
+                          <input
+                            value={m.durchgefuehrtVon}
+                            onChange={(e) => updateRow(i, "durchgefuehrtVon", e.target.value)}
+                            className="flex-1 min-w-0 text-xs border border-border/60 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1a3a6b]/20"
+                            placeholder="Name"
+                          />
+                          <button onClick={() => { setPinRowIdx(i); setPinVal(""); setPinRowError(""); }}
+                            className="w-7 h-7 flex items-center justify-center border border-[#1a3a6b]/30 text-[#1a3a6b] hover:bg-[#1a3a6b]/10 rounded-lg transition-colors shrink-0" title="Per PIN bestätigen">
+                            <KeyRound className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -444,6 +511,43 @@ function AktionsplanCard({
             </button>
           )}
         </div>
+
+        {/* PIN-Dialog für Maßnahmen-Bestätigung */}
+        {pinRowIdx !== null && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xs mx-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-[#1a3a6b]/10 rounded-xl flex items-center justify-center">
+                  <KeyRound className="w-5 h-5 text-[#1a3a6b]" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-foreground text-sm">Maßnahme bestätigen</h3>
+                  <p className="text-xs text-muted-foreground">4-stellige PIN eingeben</p>
+                </div>
+              </div>
+              <input type="password" inputMode="numeric" maxLength={4} autoFocus value={pinVal}
+                onChange={(e) => { setPinVal(e.target.value.replace(/\D/g, "").slice(0, 4)); setPinRowError(""); }}
+                onKeyDown={(e) => { if (e.key === "Enter") handlePinRowConfirm(); }}
+                placeholder="• • • •"
+                className="w-full border border-border rounded-xl px-4 py-3 text-center text-2xl tracking-[0.5em] font-bold focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/30 focus:border-[#1a3a6b] mb-3" />
+              {pinRowError && (
+                <p className="text-xs text-red-600 text-center mb-3 flex items-center justify-center gap-1">
+                  <X className="w-3.5 h-3.5" /> {pinRowError}
+                </p>
+              )}
+              <div className="flex gap-2">
+                <button type="button" onClick={() => { setPinRowIdx(null); setPinVal(""); setPinRowError(""); }}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors">
+                  Abbrechen
+                </button>
+                <button type="button" onClick={handlePinRowConfirm} disabled={pinVal.length !== 4 || pinRowLoading}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                  {pinRowLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Bestätigen
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Fristdatum */}
         <div>
