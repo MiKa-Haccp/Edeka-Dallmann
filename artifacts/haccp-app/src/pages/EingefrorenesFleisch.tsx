@@ -75,7 +75,6 @@ function NeuerArtikelModal({year,onConfirm,onClose}:{
 }){
   const [step,setStep]=useState<"form"|"pin">("form");
   const [artikel,setArtikel]=useState("");
-  const [vkp,setVkp]=useState("");
   const [mengeKg,setMengeKg]=useState("");
   const [eingefrorenAm,setEingefrorenAm]=useState(()=>{
     const n=new Date();return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`;
@@ -84,7 +83,7 @@ function NeuerArtikelModal({year,onConfirm,onClose}:{
   const [loading,setLoading]=useState(false);
 
   const handleVerified=(_name:string,userId:number,kuerzel:string)=>{
-    onConfirm({artikel,vkp,mengeKg,eingefrorenAm,eingefrorenDurch:eingefrorenDurch||_name,kuerzel,userId});
+    onConfirm({artikel,vkp:"",mengeKg,eingefrorenAm,eingefrorenDurch:eingefrorenDurch||_name,kuerzel,userId});
   };
 
   return(
@@ -102,19 +101,11 @@ function NeuerArtikelModal({year,onConfirm,onClose}:{
               <input type="text" placeholder="z.B. Rindergulasch" value={artikel} onChange={e=>setArtikel(e.target.value)} autoFocus
                 className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">VKP (EUR)</label>
-                <input type="text" inputMode="decimal" placeholder="z.B. 12,99" value={vkp}
-                  onChange={e=>setVkp(e.target.value.replace(/[^0-9.,]/g,""))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">Menge (kg)</label>
-                <input type="text" inputMode="decimal" placeholder="z.B. 2,5" value={mengeKg}
-                  onChange={e=>setMengeKg(e.target.value.replace(/[^0-9.,]/g,""))}
-                  className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>
-              </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground block mb-1">Menge (kg)</label>
+              <input type="text" inputMode="decimal" placeholder="z.B. 2,5" value={mengeKg}
+                onChange={e=>setMengeKg(e.target.value.replace(/[^0-9.,]/g,""))}
+                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"/>
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground block mb-1">Eingefroren am *</label>
@@ -142,10 +133,18 @@ function NeuerArtikelModal({year,onConfirm,onClose}:{
   );
 }
 
-// ─── Hilfsfunktion: deutsche Dezimalzahl parsen ───────────────────────────────
+// ─── Hilfsfunktionen ─────────────────────────────────────────────────────────
 function parseKg(s: string | null): number {
   if (!s) return 0;
   return parseFloat(s.replace(",", ".")) || 0;
+}
+
+// Robustes Datum-Formatieren: behandelt "YYYY-MM-DD", "YYYY-MM-DDT..." und "YYYY-MM-DD ..."
+function formatDateStr(s: string | null): string {
+  if (!s) return "";
+  const clean = s.substring(0, 10); // Immer nur die ersten 10 Zeichen: YYYY-MM-DD
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(clean)) return s;
+  return `${clean.substring(8, 10)}.${clean.substring(5, 7)}.${clean.substring(0, 4)}`;
 }
 
 // ─── Entnahme / Aufgebraucht Modal ────────────────────────────────────────────
@@ -178,7 +177,6 @@ function EntnahmeModal({entry,onSaved,onClose}:{
     onSaved();
   };
 
-  const formatDate=(s:string|null)=>s?s.split("-").reverse().join("."):"";
   const fmtKg=(n:number)=>n.toLocaleString("de-DE",{minimumFractionDigits:0,maximumFractionDigits:3});
 
   const canProceed = nextSlot==="full" ? aufgebraucht : (aufgebraucht || (menge.trim()!==""&&!ueberschritten));
@@ -195,7 +193,7 @@ function EntnahmeModal({entry,onSaved,onClose}:{
           <div className="space-y-4">
             {/* Info-Box mit Restmenge */}
             <div className="bg-muted/30 rounded-lg p-3 text-sm space-y-1.5">
-              <p><span className="text-muted-foreground">Eingefroren:</span> {formatDate(entry.eingefroren_am)}{entry.eingefroren_durch&&<span className="text-muted-foreground"> · {entry.eingefroren_durch}</span>}</p>
+              <p><span className="text-muted-foreground">Eingefroren:</span> {formatDateStr(entry.eingefroren_am)}{entry.eingefroren_durch&&<span className="text-muted-foreground"> · {entry.eingefroren_durch}</span>}</p>
               {gesamtKg > 0 && (
                 <div className="grid grid-cols-3 gap-1 pt-1">
                   <div className="bg-white border rounded-lg px-2 py-1.5 text-center">
@@ -276,7 +274,6 @@ function FleischKarte({entry,onEntnahme,onDelete,canDelete}:{
   entry:FleischEntry; onEntnahme:()=>void; onDelete:()=>void; canDelete:boolean;
 }){
   const aufgebraucht=!!entry.aufgebraucht_am;
-  const formatDate=(s:string|null)=>s?s.split("T")[0].split("-").reverse().join("."):"";
   const entnahmen=[entry.entnahme_1_kg,entry.entnahme_2_kg,entry.entnahme_3_kg,entry.entnahme_4_kg].filter(Boolean);
   const voll=entnahmen.length>=4;
 
@@ -306,23 +303,17 @@ function FleischKarte({entry,onEntnahme,onDelete,canDelete}:{
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
         {entry.eingefroren_am&&(
           <div className="bg-muted/40 rounded-lg px-2 py-1.5">
             <div className="text-muted-foreground mb-0.5">Eingefroren am</div>
-            <div className="font-semibold">{formatDate(entry.eingefroren_am)}</div>
+            <div className="font-semibold">{formatDateStr(entry.eingefroren_am)}</div>
           </div>
         )}
         {entry.menge_kg&&(
           <div className="bg-muted/40 rounded-lg px-2 py-1.5">
             <div className="text-muted-foreground mb-0.5">Menge</div>
             <div className="font-semibold">{entry.menge_kg} kg</div>
-          </div>
-        )}
-        {entry.vkp&&(
-          <div className="bg-muted/40 rounded-lg px-2 py-1.5">
-            <div className="text-muted-foreground mb-0.5">VKP</div>
-            <div className="font-semibold">{entry.vkp} EUR</div>
           </div>
         )}
         {entry.eingefroren_durch&&(
@@ -342,7 +333,7 @@ function FleischKarte({entry,onEntnahme,onDelete,canDelete}:{
           ))}
           {entry.aufgebraucht_am&&(
             <span className="bg-green-100 text-green-700 text-xs font-medium px-2 py-0.5 rounded-full">
-              Aufgebraucht: {formatDate(entry.aufgebraucht_am)}
+              Aufgebraucht: {formatDateStr(entry.aufgebraucht_am)}
             </span>
           )}
         </div>
