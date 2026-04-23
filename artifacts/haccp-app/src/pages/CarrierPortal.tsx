@@ -29,16 +29,16 @@ const PORTAL_CONFIGS: Record<number, { name: string; url: string; urlDisplay: st
   // Leeder
   1: {
     name: "Carrier-Portal",
-    url: "https://new.carrier-e-service.com",
-    urlDisplay: "new.carrier-e-service.com",
+    url: "https://eservices.ccr.com",
+    urlDisplay: "eservices.ccr.com",
     benutzername: "ESBDallmannM",
     passwort: "Dallmann111",
   },
   // Buching
   2: {
     name: "Carrier-Portal",
-    url: "https://new.carrier-e-service.com",
-    urlDisplay: "new.carrier-e-service.com",
+    url: "https://eservices.ccr.com",
+    urlDisplay: "eservices.ccr.com",
     benutzername: "ESBDallmannM",
     passwort: "Dallmann111",
   },
