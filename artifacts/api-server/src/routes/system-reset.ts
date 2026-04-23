@@ -128,6 +128,13 @@ router.post("/system-reset", async (req, res) => {
             [marketId, cutoffDate]
           );
 
+          // temp_lager_kontrolle (1.13): year/month/day → make_date()
+          const tlk = await pool.query(
+            `DELETE FROM temp_lager_kontrolle
+             WHERE market_id=$1 AND make_date(year, month, day) <= $2::date`,
+            [marketId, cutoffDate]
+          );
+
           deletedCounts.hygiene =
             (fe.rowCount || 0) +
             (fi.rowCount || 0) +
@@ -139,7 +146,8 @@ router.post("/system-reset", async (req, res) => {
             (gq.rowCount || 0) +
             (pe.rowCount || 0) +
             (kb.rowCount || 0) +
-            (ef.rowCount || 0);
+            (ef.rowCount || 0) +
+            (tlk.rowCount || 0);
           break;
         }
 
