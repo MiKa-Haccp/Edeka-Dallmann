@@ -7,6 +7,7 @@ import { ClickableImage } from "@/lib/lightbox";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
+import { useToast } from "@/hooks/use-toast";
 import {
   ClipboardCheck, ShieldCheck, Leaf, FileText,
   Plus, Loader2, Save, X, Camera, ChevronDown, ChevronUp,
@@ -568,9 +569,11 @@ function AktionsplanCard({
 // ===== TÜV PANEL =====
 function TuevPanel({ year }: { year: number }) {
   const { selectedMarketId } = useAppStore();
+  const { toast } = useToast();
   const [daten, setDaten] = useState<TuevJahresbericht | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [editMode, setEditMode] = useState(false);
   const [zertDok, setZertDok] = useState("");
   const [zertNotizen, setZertNotizen] = useState("");
@@ -618,8 +621,9 @@ function TuevPanel({ year }: { year: number }) {
 
   const handleSave = async () => {
     setSaving(true);
+    setSaveError("");
     try {
-      await fetch(`${BASE}/tuev-jahresbericht`, {
+      const res = await fetch(`${BASE}/tuev-jahresbericht`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -631,8 +635,20 @@ function TuevPanel({ year }: { year: number }) {
           nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift,
         }),
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const msg = errData?.error || `Fehler ${res.status}: Speichern fehlgeschlagen.`;
+        setSaveError(msg);
+        toast({ title: "Speichern fehlgeschlagen", description: msg, variant: "destructive" });
+        return;
+      }
       await loadData();
       setEditMode(false);
+      toast({ title: "TÜV-Bericht gespeichert", description: "Alle Änderungen wurden erfolgreich gespeichert." });
+    } catch (err: any) {
+      const msg = err?.message || "Netzwerkfehler beim Speichern.";
+      setSaveError(msg);
+      toast({ title: "Speichern fehlgeschlagen", description: msg, variant: "destructive" });
     } finally { setSaving(false); }
   };
 
@@ -670,7 +686,13 @@ function TuevPanel({ year }: { year: number }) {
             </button>
           ) : (
             <>
-              <button onClick={() => { loadData(); setEditMode(false); }}
+              {saveError && (
+                <div className="flex items-center gap-2 text-destructive text-xs bg-destructive/10 border border-destructive/20 px-3 py-1.5 rounded-xl">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span className="line-clamp-1">{saveError}</span>
+                </div>
+              )}
+              <button onClick={() => { setSaveError(""); loadData(); setEditMode(false); }}
                 className="px-4 py-2 bg-white border border-border/60 rounded-xl text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors">
                 Abbrechen
               </button>

@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, integer, text, timestamp, unique } from "drizzle-orm/pg-core";
 
 export const tuevJahresberichtTable = pgTable("tuev_jahresbericht", {
   id: serial("id").primaryKey(),
@@ -17,6 +17,8 @@ export const tuevJahresberichtTable = pgTable("tuev_jahresbericht", {
   nachbesserungUnterschrift: text("nachbesserung_unterschrift"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => ({
+  uqTenantMarketYear: unique("uq_tuev_tenant_market_year").on(t.tenantId, t.marketId, t.year),
+}));
 
 export type TuevJahresbericht = typeof tuevJahresberichtTable.$inferSelect;

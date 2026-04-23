@@ -1,7 +1,5 @@
 import { Router } from "express";
-import { db } from "@workspace/db";
-import { tuevJahresberichtTable } from "@workspace/db/schema";
-import { eq, and } from "drizzle-orm";
+import { pool } from "@workspace/db";
 
 const router = Router();
 
@@ -10,55 +8,84 @@ router.get("/tuev-jahresbericht", async (req, res) => {
   const year = Number(req.query.year) || new Date().getFullYear();
   const marketId = req.query.marketId ? Number(req.query.marketId) : null;
 
-  const where = marketId
-    ? and(eq(tuevJahresberichtTable.tenantId, tenantId), eq(tuevJahresberichtTable.year, year), eq(tuevJahresberichtTable.marketId, marketId))
-    : and(eq(tuevJahresberichtTable.tenantId, tenantId), eq(tuevJahresberichtTable.year, year));
-
-  const rows = await db.select().from(tuevJahresberichtTable).where(where);
-  res.json(rows[0] || null);
+  try {
+    let result;
+    if (marketId) {
+      result = await pool.query(
+        `SELECT * FROM tuev_jahresbericht WHERE tenant_id=$1 AND year=$2 AND market_id=$3 LIMIT 1`,
+        [tenantId, year, marketId]
+      );
+    } else {
+      result = await pool.query(
+        `SELECT * FROM tuev_jahresbericht WHERE tenant_id=$1 AND year=$2 LIMIT 1`,
+        [tenantId, year]
+      );
+    }
+    res.json(result.rows[0] || null);
+  } catch (err: any) {
+    console.error("[tuev GET]", err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.put("/tuev-jahresbericht", async (req, res) => {
-  const { tenantId = 1, marketId = 1, year, ...fields } = req.body;
+  const {
+    tenantId = 1,
+    marketId = 1,
+    year,
+    zertifikateDokument,
+    zertifikateNotizen,
+    pruefungenDokument,
+    pruefungenNotizen,
+    aktionsplanFoto,
+    aktionsplanMassnahmen,
+    aktionsplanDatum,
+    nachbesserungName,
+    nachbesserungDatum,
+    nachbesserungUnterschrift,
+  } = req.body;
 
-  const existing = await db
-    .select()
-    .from(tuevJahresberichtTable)
-    .where(
-      and(
-        eq(tuevJahresberichtTable.tenantId, tenantId),
-        eq(tuevJahresberichtTable.marketId, marketId),
-        eq(tuevJahresberichtTable.year, year)
-      )
+  if (!year) {
+    return res.status(400).json({ error: "Jahr fehlt." });
+  }
+
+  const datumVal = aktionsplanDatum ? new Date(aktionsplanDatum) : null;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO tuev_jahresbericht
+         (tenant_id, market_id, year,
+          zertifikate_dokument, zertifikate_notizen,
+          pruefungen_dokument, pruefungen_notizen,
+          aktionsplan_foto, aktionsplan_massnahmen, aktionsplan_datum,
+          nachbesserung_name, nachbesserung_datum, nachbesserung_unterschrift,
+          created_at, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW(),NOW())
+       ON CONFLICT (tenant_id, market_id, year) DO UPDATE SET
+         zertifikate_dokument      = EXCLUDED.zertifikate_dokument,
+         zertifikate_notizen       = EXCLUDED.zertifikate_notizen,
+         pruefungen_dokument       = EXCLUDED.pruefungen_dokument,
+         pruefungen_notizen        = EXCLUDED.pruefungen_notizen,
+         aktionsplan_foto          = EXCLUDED.aktionsplan_foto,
+         aktionsplan_massnahmen    = EXCLUDED.aktionsplan_massnahmen,
+         aktionsplan_datum         = EXCLUDED.aktionsplan_datum,
+         nachbesserung_name        = EXCLUDED.nachbesserung_name,
+         nachbesserung_datum       = EXCLUDED.nachbesserung_datum,
+         nachbesserung_unterschrift = EXCLUDED.nachbesserung_unterschrift,
+         updated_at                = NOW()
+       RETURNING *`,
+      [
+        tenantId, marketId, year,
+        zertifikateDokument ?? null, zertifikateNotizen ?? null,
+        pruefungenDokument ?? null, pruefungenNotizen ?? null,
+        aktionsplanFoto ?? null, aktionsplanMassnahmen ?? null, datumVal,
+        nachbesserungName ?? null, nachbesserungDatum ?? null, nachbesserungUnterschrift ?? null,
+      ]
     );
-
-  if (existing.length > 0) {
-    const updateFields: Record<string, unknown> = { ...fields, updatedAt: new Date() };
-    if (fields.aktionsplanDatum !== undefined) {
-      updateFields.aktionsplanDatum = fields.aktionsplanDatum ? new Date(fields.aktionsplanDatum) : null;
-    }
-    const row = await db
-      .update(tuevJahresberichtTable)
-      .set(updateFields)
-      .where(
-        and(
-          eq(tuevJahresberichtTable.tenantId, tenantId),
-          eq(tuevJahresberichtTable.marketId, marketId),
-          eq(tuevJahresberichtTable.year, year)
-        )
-      )
-      .returning();
-    res.json(row[0]);
-  } else {
-    const insertFields = { tenantId, marketId, year, ...fields } as typeof tuevJahresberichtTable.$inferInsert;
-    if (fields.aktionsplanDatum !== undefined) {
-      (insertFields as Record<string, unknown>).aktionsplanDatum = fields.aktionsplanDatum ? new Date(fields.aktionsplanDatum) : null;
-    }
-    const row = await db
-      .insert(tuevJahresberichtTable)
-      .values(insertFields)
-      .returning();
-    res.json(row[0]);
+    res.json(result.rows[0]);
+  } catch (err: any) {
+    console.error("[tuev PUT]", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
