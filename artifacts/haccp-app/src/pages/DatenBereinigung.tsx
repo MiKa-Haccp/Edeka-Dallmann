@@ -142,11 +142,19 @@ export default function DatenBereinigung() {
         body: JSON.stringify({ betriebsstart: val === "" ? null : val }),
       });
       if (r.ok) {
-        setBetriebsstartByMarket({ ...useAppStore.getState().betriebsstartByMarket, [id]: val === "" ? null : val });
-        toast({ title: "Gespeichert", description: `Betriebsstartdatum für Filiale ${id} aktualisiert.` });
+        const marketName = MARKETS.find((m) => m.id === id)?.name ?? `Filiale ${id}`;
+        const saved = await r.json() as { betriebsstart?: string | null };
+        const confirmedVal = saved.betriebsstart ?? null;
+        setBetriebsstartValues((prev) => ({ ...prev, [id]: confirmedVal ?? "" }));
+        setBetriebsstartByMarket({ ...useAppStore.getState().betriebsstartByMarket, [id]: confirmedVal });
+        toast({ title: "Gespeichert", description: `Betriebsstartdatum für ${marketName} aktualisiert.` });
       } else {
-        toast({ title: "Fehler", description: "Speichern fehlgeschlagen.", variant: "destructive" });
+        const errText = await r.text().catch(() => "");
+        toast({ title: "Fehler", description: errText || "Speichern fehlgeschlagen.", variant: "destructive" });
       }
+    } catch (err) {
+      console.error("saveBetriebsstart error:", err);
+      toast({ title: "Netzwerkfehler", description: "Verbindung zum Server fehlgeschlagen.", variant: "destructive" });
     } finally {
       setBetriebsstartSaving(null);
     }
