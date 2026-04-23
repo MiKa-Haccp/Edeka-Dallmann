@@ -594,8 +594,11 @@ function TuevPanel({ year }: { year: number }) {
     setLoading(true);
     try {
       const mktParam = selectedMarketId ? `&marketId=${selectedMarketId}` : "";
-      const res = await fetch(`${BASE}/tuev-jahresbericht?tenantId=1&year=${year}${mktParam}`);
+      const url = `${BASE}/tuev-jahresbericht?tenantId=1&year=${year}${mktParam}`;
+      console.log("[TÜV] loadData – GET:", url);
+      const res = await fetch(url);
       const data = await res.json();
+      console.log("[TÜV] loadData – Antwort:", data);
       setDaten(data);
       if (data) {
         setZertDok(data.zertifikateDokument || "");
@@ -622,31 +625,38 @@ function TuevPanel({ year }: { year: number }) {
   const handleSave = async () => {
     setSaving(true);
     setSaveError("");
+    const payload = {
+      tenantId: 1, marketId: selectedMarketId || 1, year,
+      zertifikateDokument: zertDok, zertifikateNotizen: zertNotizen,
+      pruefungenDokument: pruefDok, pruefungenNotizen: pruefNotizen,
+      aktionsplanFoto: aktFoto, aktionsplanMassnahmen: JSON.stringify(massnahmen),
+      aktionsplanDatum: aktionsplanDatum || null,
+      nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift,
+    };
+    console.log("[TÜV] handleSave – Sende PUT an:", `${BASE}/tuev-jahresbericht`, payload);
     try {
       const res = await fetch(`${BASE}/tuev-jahresbericht`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tenantId: 1, marketId: selectedMarketId || 1, year,
-          zertifikateDokument: zertDok, zertifikateNotizen: zertNotizen,
-          pruefungenDokument: pruefDok, pruefungenNotizen: pruefNotizen,
-          aktionsplanFoto: aktFoto, aktionsplanMassnahmen: JSON.stringify(massnahmen),
-          aktionsplanDatum: aktionsplanDatum || null,
-          nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift,
-        }),
+        body: JSON.stringify(payload),
       });
+      console.log("[TÜV] PUT Antwort – Status:", res.status, res.ok);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         const msg = errData?.error || `Fehler ${res.status}: Speichern fehlgeschlagen.`;
+        console.error("[TÜV] PUT Fehler:", errData);
         setSaveError(msg);
         toast({ title: "Speichern fehlgeschlagen", description: msg, variant: "destructive" });
         return;
       }
+      const saved = await res.json();
+      console.log("[TÜV] PUT gespeichert:", saved);
       await loadData();
       setEditMode(false);
       toast({ title: "TÜV-Bericht gespeichert", description: "Alle Änderungen wurden erfolgreich gespeichert." });
     } catch (err: any) {
       const msg = err?.message || "Netzwerkfehler beim Speichern.";
+      console.error("[TÜV] handleSave Exception:", err);
       setSaveError(msg);
       toast({ title: "Speichern fehlgeschlagen", description: msg, variant: "destructive" });
     } finally { setSaving(false); }
