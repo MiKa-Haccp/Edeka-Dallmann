@@ -182,7 +182,7 @@ function CheckRow({ item, value, onChange, readOnly }: {
     <div className={`border rounded-xl p-3 transition-colors ${bg}`}>
       <div className="flex items-start gap-2.5">
         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-white/80 border flex items-center justify-center text-xs font-bold text-gray-500 mt-0.5 shadow-sm">{item.id}</span>
-        <p className="flex-1 text-sm text-gray-800 leading-snug min-w-0">{item.text}</p>
+        <p className={`flex-1 text-sm leading-snug min-w-0 ${isNR ? "line-through text-gray-400" : "text-gray-800"}`}>{item.text}</p>
         {!readOnly ? (
           <div className="flex gap-1.5 flex-shrink-0 flex-wrap justify-end">
             <button onClick={() => toggle("io")}
@@ -206,7 +206,7 @@ function CheckRow({ item, value, onChange, readOnly }: {
         )}
       </div>
 
-      {hasStatus && (
+      {hasStatus && !isNR && (
         <div className="mt-2.5 ml-8">
           {readOnly ? (
             massnahme ? (
@@ -238,6 +238,7 @@ function ReadOnlyView({
   onDelete: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const cd = existing.checkData ? migrate(existing.checkData as Record<string,unknown>) : null;
 
   const countIo  = cd ? CHECK_ITEMS.filter(i => cd[i.id]?.status === "io").length : 0;
@@ -293,13 +294,21 @@ function ReadOnlyView({
 
       {expanded && (
         <>
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-end items-center">
             <button onClick={onEdit} className="text-xs bg-white border rounded-lg px-3 py-1.5 hover:bg-gray-50 font-medium">
               Bearbeiten
             </button>
-            <button onClick={onDelete} className="text-xs bg-red-50 border border-red-200 text-red-600 rounded-lg px-3 py-1.5 hover:bg-red-100 font-medium">
-              Löschen
-            </button>
+            {!confirmDelete ? (
+              <button onClick={() => setConfirmDelete(true)} className="text-xs bg-red-50 border border-red-200 text-red-600 rounded-lg px-3 py-1.5 hover:bg-red-100 font-medium">
+                Löschen
+              </button>
+            ) : (
+              <div className="flex gap-1.5 items-center">
+                <span className="text-xs text-red-700 font-medium">Wirklich löschen?</span>
+                <button onClick={() => { setConfirmDelete(false); onDelete(); }} className="text-xs bg-red-500 text-white border border-red-500 rounded-lg px-2.5 py-1.5 hover:bg-red-600 font-medium">Ja</button>
+                <button onClick={() => setConfirmDelete(false)} className="text-xs bg-white border rounded-lg px-2.5 py-1.5 hover:bg-gray-50 font-medium">Nein</button>
+              </div>
+            )}
           </div>
 
           {cd && (
@@ -390,7 +399,7 @@ export default function GQBegehung() {
   };
 
   const handleDelete = async () => {
-    if (!existing || !window.confirm("Eintrag wirklich löschen?")) return;
+    if (!existing) return;
     await fetch(`${BASE}/gq-begehung/${existing.id}`, { method: "DELETE" });
     window.dispatchEvent(new Event("gq-begehung-updated"));
     setCheckData(emptyCheckData());
@@ -481,15 +490,11 @@ export default function GQBegehung() {
               </button>
             </div>
 
-            {existing ? (
+            {existing && (
               <span className="text-xs bg-green-500/20 text-green-200 border border-green-400/30 px-3 py-1.5 rounded-lg font-medium">
                 ✓ Gespeichert
               </span>
-            ) : !isFuture ? (
-              <span className="text-xs bg-white/10 text-blue-200 border border-white/20 px-3 py-1.5 rounded-lg">
-                Neuer Bericht
-              </span>
-            ) : null}
+            )}
           </div>
         </PageHeader>
 

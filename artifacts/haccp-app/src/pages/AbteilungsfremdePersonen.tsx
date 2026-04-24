@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
@@ -247,6 +248,7 @@ export default function AbteilungsfremdePersonen() {
   const [year, setYear] = useState(now.getFullYear());
   const [showAdd, setShowAdd] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   const { data: eintraege = [], isLoading } = useQuery<Eintrag[]>({
     queryKey: ["hygienebelehrung-abt", selectedMarketId, year],
@@ -260,11 +262,11 @@ export default function AbteilungsfremdePersonen() {
   });
 
   const deleteEintrag = async (id: number) => {
-    if (!confirm("Eintrag löschen?")) return;
     setDeleting(id);
     await fetch(`${BASE}/hygienebelehrung-abt/${id}`, { method: "DELETE" });
     qc.invalidateQueries({ queryKey: ["hygienebelehrung-abt"] });
     setDeleting(null);
+    setConfirmDeleteId(null);
   };
 
   return (
@@ -272,10 +274,12 @@ export default function AbteilungsfremdePersonen() {
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         <PageHeader>
           <div className="flex items-center gap-3">
+            <Link href="/category/3" className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
+              <ChevronLeft className="h-5 w-5" />
+            </Link>
             <div className="bg-white/15 rounded-xl p-2.5 shrink-0"><Users className="h-6 w-6 text-white" /></div>
             <div>
               <h1 className="text-xl font-bold text-white">Abteilungsfremde Personen</h1>
-              <p className="text-sm text-white/70">{market?.name ?? "Kein Markt gewählt"}</p>
             </div>
           </div>
         </PageHeader>
@@ -323,10 +327,22 @@ export default function AbteilungsfremdePersonen() {
                       <td className="px-4 py-3"><UnterschriftCell value={e.unterschrift} /></td>
                       <td className="px-4 py-3 text-gray-500 text-xs">{e.eingetragen_von || "—"}</td>
                       <td className="px-4 py-3 text-right">
-                        <button onClick={() => deleteEintrag(e.id)} disabled={deleting === e.id}
-                          className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors">
-                          {deleting === e.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                        </button>
+                        {confirmDeleteId === e.id ? (
+                          <div className="flex gap-1.5 items-center justify-end">
+                            <span className="text-xs text-red-700 font-medium whitespace-nowrap">Löschen?</span>
+                            <button onClick={() => deleteEintrag(e.id)} disabled={deleting === e.id}
+                              className="text-xs bg-red-500 text-white rounded-lg px-2 py-1 hover:bg-red-600 font-medium flex items-center gap-1">
+                              {deleting === e.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Ja"}
+                            </button>
+                            <button onClick={() => setConfirmDeleteId(null)}
+                              className="text-xs border rounded-lg px-2 py-1 hover:bg-gray-50 font-medium">Nein</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setConfirmDeleteId(e.id)}
+                            className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

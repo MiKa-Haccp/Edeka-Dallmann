@@ -19,7 +19,8 @@ function todayStr() {
 }
 function formatDate(s: string) {
   if (!s) return "—";
-  const [y,m,d] = s.split("-");
+  const dateStr = s.includes("T") ? s.split("T")[0] : s;
+  const [y,m,d] = dateStr.split("-");
   return `${d}.${m}.${y}`;
 }
 
@@ -87,6 +88,7 @@ export default function RindfleischEtikettierung() {
   const [showCreate, setShowCreate] = useState(false);
   const [viewEntry, setViewEntry]   = useState<FullEintrag|null>(null);
   const [loadingView, setLoadingView] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   // Form state
   const [datum, setDatum]         = useState(todayStr);
@@ -151,8 +153,8 @@ export default function RindfleischEtikettierung() {
   }
 
   async function deleteEintrag(id: number) {
-    if (!confirm("Eintrag wirklich löschen?")) return;
     await fetch(`${BASE}/rindfleisch-etiketten/${id}`, { method: "DELETE" });
+    setDeleteConfirmId(null);
     load();
   }
 
@@ -198,7 +200,7 @@ export default function RindfleischEtikettierung() {
             <button onClick={prevMonth} className="p-2 rounded-lg hover:bg-secondary"><ChevronLeft className="w-5 h-5"/></button>
             <div className="text-center">
               <div className="font-semibold">{MONTH_NAMES[month-1]} {year}</div>
-              <div className="text-xs text-muted-foreground">{eintraege.length} Eintrag{eintraege.length !== 1 ? "e" : ""}</div>
+              <div className="text-xs text-muted-foreground">{eintraege.length} {eintraege.length !== 1 ? "Einträge" : "Eintrag"}</div>
             </div>
             <button onClick={nextMonth} className="p-2 rounded-lg hover:bg-secondary"><ChevronRight className="w-5 h-5"/></button>
           </div>
@@ -239,15 +241,23 @@ export default function RindfleischEtikettierung() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-1 shrink-0">
+                    <div className="flex gap-1 shrink-0 items-center">
                       <button onClick={() => loadView(e.id)}
                         className="px-3 py-1.5 rounded-lg hover:bg-blue-50 text-blue-600 text-xs border border-blue-200 font-medium">
                         Ansicht
                       </button>
-                      <button onClick={() => deleteEintrag(e.id)}
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-red-500">
-                        <Trash2 className="w-4 h-4"/>
-                      </button>
+                      {deleteConfirmId === e.id ? (
+                        <div className="flex gap-1 items-center">
+                          <span className="text-xs text-red-700 font-medium whitespace-nowrap">Löschen?</span>
+                          <button onClick={() => deleteEintrag(e.id)} className="text-xs bg-red-500 text-white rounded-lg px-2 py-1 hover:bg-red-600 font-medium">Ja</button>
+                          <button onClick={() => setDeleteConfirmId(null)} className="text-xs border rounded-lg px-2 py-1 hover:bg-gray-50 font-medium">Nein</button>
+                        </div>
+                      ) : (
+                        <button onClick={() => setDeleteConfirmId(e.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-red-500">
+                          <Trash2 className="w-4 h-4"/>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -294,7 +304,9 @@ export default function RindfleischEtikettierung() {
 
         {/* Erstell-Modal */}
         {showCreate && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4"
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => e.preventDefault()}>
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-auto">
               <div className="p-4 border-b flex items-center justify-between">
                 <div className="font-semibold">Neuer Etikett-Eintrag</div>
