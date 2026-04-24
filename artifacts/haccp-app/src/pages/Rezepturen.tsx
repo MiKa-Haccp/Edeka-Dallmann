@@ -120,7 +120,7 @@ function DetailModal({ r, onClose, onDelete }: {
 
         <div className="flex border-b border-gray-100 px-5 flex-shrink-0">
           {(["zutaten","naehrwerte","herstellung"] as const).map(t => {
-            const labels = { zutaten: "Zutaten", naehrwerte: "Naehrwerte", herstellung: "Herstellung" };
+            const labels = { zutaten: "Zutaten", naehrwerte: "Nährwerte", herstellung: "Herstellung" };
             return (
               <button
                 key={t}
@@ -167,7 +167,7 @@ function DetailModal({ r, onClose, onDelete }: {
           {tab === "naehrwerte" && (
             r.naehrwerte
               ? <div className="whitespace-pre-wrap">{r.naehrwerte}</div>
-              : <p className="text-gray-400 italic">Keine Naehrwerte hinterlegt.</p>
+              : <p className="text-gray-400 italic">Keine Nährwerte hinterlegt.</p>
           )}
           {tab === "herstellung" && (
             r.herstellungsablauf
@@ -185,11 +185,11 @@ function DetailModal({ r, onClose, onDelete }: {
             </div>
           ) : (
             <button onClick={() => setDelConfirm(true)} className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-50">
-              <Trash2 className="w-4 h-4" /> Loeschen
+              <Trash2 className="w-4 h-4" /> Löschen
             </button>
           )}
           <button onClick={onClose} className="px-4 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg font-medium hover:bg-gray-200">
-            Schliessen
+            Schließen
           </button>
         </div>
       </div>
@@ -282,7 +282,8 @@ function NeuAnlegenModal({ kategorien, onClose, onSaved, defaultKategorieId }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4"
+      onDragOver={e => e.preventDefault()} onDrop={e => e.preventDefault()}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
           <h2 className="text-lg font-bold text-gray-900">Neue Rezeptur anlegen</h2>
@@ -341,7 +342,7 @@ function NeuAnlegenModal({ kategorien, onClose, onSaved, defaultKategorieId }: {
                 <>
                   <Upload className="w-8 h-8 text-gray-300" />
                   <span className="text-sm text-gray-400 text-center">
-                    Foto hierher ziehen oder tippen zum Auswaehlen
+                    Foto hierher ziehen oder tippen zum Auswählen
                   </span>
                   <span className="text-xs text-gray-300">JPG, PNG, WEBP bis 20 MB</span>
                   <span className="text-[10px] text-gray-300">oder Strg+V zum Einfügen</span>
@@ -362,7 +363,7 @@ function NeuAnlegenModal({ kategorien, onClose, onSaved, defaultKategorieId }: {
             className="flex items-center gap-2 text-sm text-[#1a3a6b] font-medium hover:text-[#1a3a6b]"
           >
             {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            {showDetails ? "Weitere Details ausblenden" : "Weitere Details hinzufuegen (optional)"}
+            {showDetails ? "Weitere Details ausblenden" : "Weitere Details hinzufügen (optional)"}
           </button>
 
           {showDetails && (
@@ -393,7 +394,7 @@ function NeuAnlegenModal({ kategorien, onClose, onSaved, defaultKategorieId }: {
                   className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40 resize-none" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Naehrwerte</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nährwerte</label>
                 <textarea value={form.naehrwerte} onChange={set("naehrwerte")} rows={4}
                   placeholder="Energie: ..., Fett: ..., Kohlenhydrate: ..." className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/40 resize-none" />
               </div>
@@ -521,7 +522,7 @@ export default function Rezepturen() {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/category/3")}
               className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0"
               title="Zurück"
             >

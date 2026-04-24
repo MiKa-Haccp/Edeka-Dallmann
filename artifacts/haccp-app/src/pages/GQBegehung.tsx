@@ -418,6 +418,13 @@ export default function GQBegehung() {
   const mainItems = CHECK_ITEMS.filter(i => !i.rindfleisch);
   const rindfleischItems = CHECK_ITEMS.filter(i => i.rindfleisch);
 
+  // Stat-Counts aus vorhandenem Eintrag (für Ampel-Grid)
+  const existingCd = existing?.checkData as Record<string, { status?: string }> | undefined;
+  const statIo  = existingCd ? CHECK_ITEMS.filter(i => existingCd[i.id]?.status === "io").length : 0;
+  const statNio = existingCd ? CHECK_ITEMS.filter(i => existingCd[i.id]?.status === "nichtIo").length : 0;
+  const statNR  = existingCd ? CHECK_ITEMS.filter(i => existingCd[i.id]?.status === "nichtRelevant").length : 0;
+  const statTotal = CHECK_ITEMS.length;
+
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto space-y-4 pb-8">
@@ -485,6 +492,23 @@ export default function GQBegehung() {
             ) : null}
           </div>
         </PageHeader>
+
+        {existing && !isFuture && (
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white rounded-xl border border-border/60 p-4 text-center">
+              <div className="text-2xl font-bold text-foreground">{statIo}<span className="text-muted-foreground text-base font-normal">/{statTotal}</span></div>
+              <div className="text-xs text-muted-foreground mt-1">i.O.</div>
+            </div>
+            <div className={`bg-white rounded-xl border p-4 text-center ${statNio > 0 ? "border-red-200" : "border-border/60"}`}>
+              <div className={`text-2xl font-bold ${statNio > 0 ? "text-red-600" : "text-foreground"}`}>{statNio}</div>
+              <div className="text-xs text-muted-foreground mt-1">Mängel</div>
+            </div>
+            <div className="bg-white rounded-xl border border-border/60 p-4 text-center">
+              <div className="text-2xl font-bold text-foreground">{statNR}</div>
+              <div className="text-xs text-muted-foreground mt-1">Nicht anwendbar</div>
+            </div>
+          </div>
+        )}
 
         {isFuture ? (
           <div className="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-5 flex items-center gap-4">

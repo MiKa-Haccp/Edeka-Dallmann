@@ -68,7 +68,7 @@ function FischMhdList({ value, onChange }: { value: string; onChange: (v: string
         </div>
       ))}
       <button onClick={add} className="flex items-center gap-1.5 text-xs text-primary font-semibold px-2.5 py-1.5 rounded-lg border border-dashed border-primary/40 hover:bg-primary/5 transition-colors">
-        <Plus className="w-3 h-3" /> Fisch hinzufuegen
+        <Plus className="w-3 h-3" /> Fisch hinzufügen
       </button>
     </div>
   );
@@ -122,7 +122,7 @@ function NematList({ value, onChange }: { value: string; onChange: (v: string) =
         </div>
       ))}
       <button onClick={add} className="flex items-center gap-1.5 text-xs text-blue-600 font-semibold px-2.5 py-1.5 rounded-lg border border-dashed border-blue-300 hover:bg-blue-50 transition-colors">
-        <Plus className="w-3 h-3" /> Nematodenkontrolle hinzufuegen
+        <Plus className="w-3 h-3" /> Nematodenkontrolle hinzufügen
       </button>
     </div>
   );

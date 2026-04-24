@@ -389,7 +389,7 @@ export default function SemmelListe() {
 
         <PageHeader className="mb-3 shrink-0">
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/kaesetheke-kontrolle")}
+            <button onClick={() => navigate("/category/3")}
               className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0">
               <ArrowLeft className="w-4 h-4" />
             </button>
