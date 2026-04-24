@@ -135,6 +135,28 @@ router.post("/wareneingang-entries", async (req, res) => {
   res.json(row);
 });
 
+router.patch("/wareneingang-entries/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const { criteriaValues, kuerzel, userId, notizen, aenderungsgrund, editedBy } = req.body;
+  if (!kuerzel) { res.status(400).json({ error: "kuerzel erforderlich" }); return; }
+  if (!aenderungsgrund?.trim()) { res.status(400).json({ error: "Änderungsgrund ist Pflichtfeld" }); return; }
+  const patch: Record<string, unknown> = {
+    criteriaValues,
+    kuerzel,
+    userId,
+    notizen,
+    editedBy: editedBy || kuerzel,
+    editedAt: new Date(),
+    aenderungsgrund: aenderungsgrund.trim(),
+  };
+  const [updated] = await db.update(wareneingangEntriesTable)
+    .set(patch as any)
+    .where(eq(wareneingangEntriesTable.id, id))
+    .returning();
+  if (!updated) { res.status(404).json({ error: "Eintrag nicht gefunden" }); return; }
+  res.json(updated);
+});
+
 router.patch("/wareneingang-entries/:id/fisch", async (req, res) => {
   const id = Number(req.params.id);
   const { fishIndex, aufgebraucht } = req.body;

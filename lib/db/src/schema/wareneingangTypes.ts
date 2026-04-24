@@ -29,6 +29,9 @@ export const wareneingangEntriesTable = pgTable("wareneingang_entries", {
   userId: integer("user_id"),
   notizen: text("notizen"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  editedBy: varchar("edited_by", { length: 100 }),
+  editedAt: timestamp("edited_at"),
+  aenderungsgrund: text("aenderungsgrund"),
 });
 
 export const wareneingangJahresarchivTable = pgTable("wareneingang_jahresarchiv", {

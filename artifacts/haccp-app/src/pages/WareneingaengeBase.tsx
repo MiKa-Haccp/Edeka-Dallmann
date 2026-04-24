@@ -8,7 +8,7 @@ import {
   Lock, Thermometer, AlertTriangle, Trash2, Plus, Settings2,
   ChevronDown, ChevronUp, Printer, Package, Snowflake,
   PenLine, CalendarDays, Archive, CircleCheck, CircleX,
-  CircleMinus, Circle, Info, TriangleAlert, Fish,
+  CircleMinus, Circle, Info, TriangleAlert, Fish, History,
 } from "lucide-react";
 import { getBavarianHolidays, getHolidayName } from "@/utils/holidays";
 
@@ -143,7 +143,7 @@ const useWEConfig = () => useContext(WEConfigContext);
 
 // ── TYPES ─────────────────────────────────────────────────────
 interface WEType { id:number; name:string; beschreibung:string|null; wareArt:string; criteriaConfig:Record<string,boolean>; sortOrder:number; liefertage:number[]; liefertageAusnahmen:Record<string,string>; section:string; }
-interface WEEntry { id:number; day:number; criteriaValues:Record<string,string>; kuerzel:string; notizen:string|null; }
+interface WEEntry { id:number; day:number; criteriaValues:Record<string,string>; kuerzel:string; notizen:string|null; editedBy:string|null; editedAt:string|null; aenderungsgrund:string|null; }
 
 // ── HELPERS ───────────────────────────────────────────────────
 function daysInMonth(y:number,m:number){return new Date(y,m,0).getDate();}
@@ -161,6 +161,11 @@ function wareIcon(a:string,cls="w-3 h-3"){
   return<Package className={cls}/>;
 }
 function dateStr(y:number,m:number,d:number){return`${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;}
+function formatEditedAt(ts:string|null):string{
+  if(!ts)return"";
+  const d=new Date(ts);
+  return d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})+" "+d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})+" Uhr";
+}
 
 function buildDefaultVals(type:WEType,allCrit:CritDef[]):Record<string,string>{
   const v:Record<string,string>={};
@@ -453,9 +458,18 @@ function DayDetailModal({ day, year, month, type, entry, onClose, onEdit, onFisc
               <p className="text-xs text-amber-900">{entry.notizen}</p>
             </div>
           )}
+          {entry.editedBy&&(
+            <div className="flex items-start gap-2 bg-orange-50 border border-orange-100 rounded-xl p-3">
+              <History className="w-3.5 h-3.5 shrink-0 mt-0.5 text-orange-400"/>
+              <div className="text-xs text-orange-800 space-y-0.5">
+                <p><span className="font-semibold">Geändert von {entry.editedBy}</span>{entry.editedAt&&<span className="text-orange-600/70"> · {formatEditedAt(entry.editedAt)}</span>}</p>
+                {entry.aenderungsgrund&&<p className="text-orange-700">Grund: {entry.aenderungsgrund}</p>}
+              </div>
+            </div>
+          )}
         </div>
         <div className="sticky bottom-0 bg-white border-t border-border/60 px-5 py-3 flex gap-2">
-          <button onClick={onClose} className="flex-1 py-2 rounded-xl border border-border text-sm hover:bg-muted">Schliessen</button>
+          <button onClick={onClose} className="flex-1 py-2 rounded-xl border border-border text-sm hover:bg-muted">Schließen</button>
           <button onClick={onEdit} className="flex-1 py-2 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold flex items-center justify-center gap-1.5">
             <PenLine className="w-3.5 h-3.5"/> Bearbeiten
           </button>
@@ -481,6 +495,8 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
   const [saving, setSaving]     = useState(false);
   const [confirmDel, setConfirmDel] = useState(false);
   const [showPin, setShowPin]   = useState(false);
+  const [aenderungsgrund, setAenderungsgrund] = useState("");
+  const isEdit = !!existingEntry;
 
   useEffect(()=>{
     const isAusf = existingEntry?.criteriaValues?._ausgefallen==="ja";
@@ -504,7 +520,11 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
     setSaving(true); setShowPin(false);
     const finalVals = ausgefallen ? {_ausgefallen:"ja"} : vals;
     try {
-      await fetch(`${BASE}/wareneingang-entries`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marketId:selectedMarketId,typeId:type.id,year,month,day,criteriaValues:finalVals,kuerzel:id.kuerzel,userId:id.userId,notizen:ausgefallen?"":notizen})});
+      if(isEdit && existingEntry) {
+        await fetch(`${BASE}/wareneingang-entries/${existingEntry.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({criteriaValues:finalVals,kuerzel:id.kuerzel,userId:id.userId,notizen:ausgefallen?"":notizen,aenderungsgrund,editedBy:id.name||id.kuerzel})});
+      } else {
+        await fetch(`${BASE}/wareneingang-entries`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marketId:selectedMarketId,typeId:type.id,year,month,day,criteriaValues:finalVals,kuerzel:id.kuerzel,userId:id.userId,notizen:ausgefallen?"":notizen})});
+      }
       window.dispatchEvent(new Event(updateEvent));
       onSaved();
     } finally{setSaving(false);}
@@ -517,7 +537,10 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
       {showPin&&<PinModal onConfirm={doSave} onCancel={()=>setShowPin(false)}/>}
       <div className="flex items-center justify-between bg-white rounded-xl border border-border/60 px-4 py-3">
         <div>
-          <p className="text-base font-bold">{wd}, {String(day).padStart(2,"0")}.{String(month).padStart(2,"0")}.{year}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-base font-bold">{wd}, {String(day).padStart(2,"0")}.{String(month).padStart(2,"0")}.{year}</p>
+            {isEdit&&<span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">BEARBEITEN</span>}
+          </div>
           <p className="text-xs text-muted-foreground">{type.name} &mdash; Wareneingang</p>
         </div>
         <button onClick={onMonthView} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-muted text-muted-foreground">
@@ -629,6 +652,18 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
         )}
       </div>
 
+      {isEdit&&(
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2">
+          <label className="text-xs font-semibold text-amber-700 block flex items-center gap-1.5">
+            <History className="w-3.5 h-3.5"/>Grund der Änderung <span className="text-red-500">* Pflicht</span>
+          </label>
+          <textarea rows={2} placeholder="Warum wird dieser Eintrag geändert? (z.B. Tippfehler korrigiert, Temperatur nachgetragen...)"
+            value={aenderungsgrund} onChange={e=>setAenderungsgrund(e.target.value)}
+            className="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none bg-white"/>
+          {!aenderungsgrund.trim()&&<p className="text-[11px] text-amber-700 font-medium">Bitte den Änderungsgrund angeben, bevor gespeichert werden kann.</p>}
+        </div>
+      )}
+
       <div
         onClick={()=>setAusgefallen(a=>!a)}
         className={`cursor-pointer rounded-xl border-2 px-4 py-3.5 flex items-center gap-3 transition-all select-none ${ausgefallen?"bg-gray-100 border-gray-400":"bg-white border-dashed border-gray-300 hover:border-gray-400"}`}>
@@ -662,10 +697,11 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
             Alle Temperaturfelder sind Pflichtfelder. Bitte alle Temperaturen eintragen.
           </div>
         )}
-        <button onClick={()=>{if(hasMissingTemps&&!ausgefallen){setShowValidation(true);}else{setShowPin(true);}}} disabled={saving}
+        <button onClick={()=>{if(hasMissingTemps&&!ausgefallen){setShowValidation(true);}else{setShowPin(true);}}}
+          disabled={saving||(isEdit&&!aenderungsgrund.trim())}
           className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1a3a6b] text-white text-sm font-bold disabled:opacity-50 hover:bg-[#1a3a6b]">
           {saving?<Loader2 className="w-4 h-4 animate-spin"/>:<Check className="w-4 h-4"/>}
-          {existingEntry?"Aktualisieren":"Eintrag speichern"}
+          {isEdit?"Änderung speichern":"Eintrag speichern"}
         </button>
       </div>
     </div>
@@ -878,8 +914,9 @@ function MonthlyTableView({ type, year, month, marketId, entries, loading, onEdi
                   })()}
                 </div>
                 {e&&(
-                  <div className="px-2 shrink-0">
+                  <div className="px-2 shrink-0 flex flex-col items-end gap-1">
                     <span className="text-[11px] font-mono font-bold text-muted-foreground bg-muted/60 px-2 py-1 rounded-lg">{e.kuerzel}</span>
+                    {e.editedBy&&<span className="text-[9px] font-bold text-orange-500 bg-orange-50 px-1.5 py-0.5 rounded-full flex items-center gap-0.5"><History className="w-2.5 h-2.5"/>geändert</span>}
                   </div>
                 )}
                 <div className="flex items-center gap-1 pr-2 shrink-0">
