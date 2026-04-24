@@ -49,7 +49,7 @@ function PinStep({onVerified,onBack,loading,setLoading}:{
     <div className="space-y-4">
       <div className="text-center">
         <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2"><Lock className="w-6 h-6 text-primary"/></div>
-        <p className="text-sm text-muted-foreground">PIN eingeben zur Bestaetigung</p>
+        <p className="text-sm text-muted-foreground">PIN eingeben zur Bestätigung</p>
       </div>
       <input type="password" inputMode="numeric" maxLength={6} placeholder="PIN" value={pin}
         onChange={e=>setPin(e.target.value.replace(/\D/g,""))}
@@ -57,10 +57,10 @@ function PinStep({onVerified,onBack,loading,setLoading}:{
         className="w-full border rounded-lg px-3 py-2 text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-primary" autoFocus/>
       {error&&<p className="text-red-500 text-sm text-center">{error}</p>}
       <div className="flex gap-2">
-        <button onClick={onBack} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurueck</button>
+        <button onClick={onBack} className="flex-1 border rounded-lg px-4 py-2 text-sm hover:bg-secondary">Zurück</button>
         <button onClick={verify} disabled={pin.length<3||loading}
           className="flex-1 bg-primary text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
-          {loading?<Loader2 className="w-4 h-4 animate-spin"/>:<Check className="w-4 h-4"/>}Bestaetigen
+          {loading?<Loader2 className="w-4 h-4 animate-spin"/>:<Check className="w-4 h-4"/>}Bestätigen
         </button>
       </div>
     </div>
@@ -398,7 +398,7 @@ export default function EingefrorenesFleisch() {
         <PageHeader>
           <div className="flex items-center gap-3">
             <button onClick={()=>navigate("/semmelliste")}
-              className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0" title="Zurueck">
+              className="p-2 rounded-xl hover:bg-white/15 text-white/75 hover:text-white transition-colors shrink-0" title="Zurück">
               <ArrowLeft className="w-4 h-4"/>
             </button>
             <div className="bg-white/15 rounded-xl p-2.5 shrink-0">
@@ -431,7 +431,7 @@ export default function EingefrorenesFleisch() {
         {loading?(
           <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-primary"/></div>
         ):!marketId?(
-          <div className="text-center py-16 text-muted-foreground">Bitte einen Markt auswaehlen.</div>
+          <div className="text-center py-16 text-muted-foreground">Bitte einen Markt auswählen.</div>
         ):(
           <div className="space-y-4">
             {/* Aktive Artikel */}

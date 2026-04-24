@@ -148,7 +148,7 @@ function EintragModal({
               {verbrauch&&<p><span className="font-medium">MHD:</span> {new Date(verbrauch+"T00:00:00").toLocaleDateString("de-DE")}</p>}
               <p><span className="font-medium">Eigenherst.:</span> {eigenherstellung?"Ja":"Nein"}</p>
             </div>
-            <button onClick={()=>setStep("form")} className="text-xs text-primary hover:underline">Zurueck zur Eingabe</button>
+            <button onClick={()=>setStep("form")} className="text-xs text-primary hover:underline">Zurück zur Eingabe</button>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">PIN eingeben</label>
               <input type="password" inputMode="numeric" autoFocus maxLength={6}
