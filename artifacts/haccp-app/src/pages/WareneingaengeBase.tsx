@@ -46,25 +46,30 @@ function FischMhdList({ value, onChange }: { value: string; onChange: (v: string
     update(next);
   };
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {rows.map((row, i) => (
-        <div key={i} className="flex gap-2 items-center">
-          <input
-            type="text"
-            placeholder="Fischart / Artikel"
-            value={row.art}
-            onChange={e => set(i, "art", e.target.value)}
-            className="flex-1 border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/30"
-          />
-          <input
-            type="date"
-            value={row.mhd}
-            onChange={e => set(i, "mhd", e.target.value)}
-            className="border border-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/30 w-36"
-          />
-          <button onClick={() => remove(i)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors">
-            <X className="w-3.5 h-3.5" />
-          </button>
+        <div key={i} className="bg-blue-50/50 border border-blue-100 rounded-xl p-3 space-y-2">
+          <div className="flex gap-2 items-center">
+            <input
+              type="text"
+              placeholder="Fischart / Artikel"
+              value={row.art}
+              onChange={e => set(i, "art", e.target.value)}
+              className="flex-1 border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/30 bg-white"
+            />
+            <button onClick={() => remove(i)} className="p-1.5 rounded-lg text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors shrink-0">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-muted-foreground font-medium whitespace-nowrap">Verbrauchsdatum / MHD:</label>
+            <input
+              type="date"
+              value={row.mhd}
+              onChange={e => set(i, "mhd", e.target.value)}
+              className="flex-1 border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary/30 bg-white cursor-pointer"
+            />
+          </div>
         </div>
       ))}
       <button onClick={add} className="flex items-center gap-1.5 text-xs text-primary font-semibold px-2.5 py-1.5 rounded-lg border border-dashed border-primary/40 hover:bg-primary/5 transition-colors">
