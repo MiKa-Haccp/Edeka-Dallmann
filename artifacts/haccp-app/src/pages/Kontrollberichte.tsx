@@ -138,7 +138,11 @@ function readFileAsDataURL(file: File): Promise<string> {
   });
 }
 
-function compressImage(file: File, maxPx = 1400, quality = 0.8): Promise<string> {
+const MAX_PDF_BYTES = 3 * 1024 * 1024;
+const MAX_IMG_BYTES = 5 * 1024 * 1024;
+const MAX_PAYLOAD_BYTES = 8 * 1024 * 1024;
+
+function compressImage(file: File, maxPx = 1000, quality = 0.72): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -212,9 +216,14 @@ function DokumentCard({
   const isAttachment = dokument.startsWith("data:application/pdf") || dokument.startsWith("[");
 
   const processFile = async (file: File) => {
+    const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const maxBytes = isPdfFile ? MAX_PDF_BYTES : MAX_IMG_BYTES;
+    if (file.size > maxBytes) {
+      alert(`Die Datei ist zu groß (${(file.size/1024/1024).toFixed(1)} MB). Maximal erlaubt: ${(maxBytes/1024/1024).toFixed(0)} MB.`);
+      return;
+    }
     setProcessing(true);
     try {
-      const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
       onDokument(isPdfFile ? await readFileAsDataURL(file) : await compressImage(file));
     } catch { /* ignore */ } finally { setProcessing(false); }
   };
@@ -310,9 +319,14 @@ function AktionsplanCard({
   const isFotoAttachment = foto.startsWith("data:application/pdf") || foto.startsWith("[");
 
   const processFile = async (file: File) => {
+    const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const maxBytes = isPdfFile ? MAX_PDF_BYTES : MAX_IMG_BYTES;
+    if (file.size > maxBytes) {
+      alert(`Die Datei ist zu groß (${(file.size/1024/1024).toFixed(1)} MB). Maximal erlaubt: ${(maxBytes/1024/1024).toFixed(0)} MB.`);
+      return;
+    }
     setProcessing(true);
     try {
-      const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
       onFoto(isPdfFile ? await readFileAsDataURL(file) : await compressImage(file));
     } finally { setProcessing(false); }
   };
@@ -633,18 +647,30 @@ function TuevPanel({ year }: { year: number }) {
       aktionsplanDatum: aktionsplanDatum || null,
       nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift,
     };
-    console.log("[TÜV] handleSave – Sende PUT an:", `${BASE}/tuev-jahresbericht`, payload);
+    const payloadStr = JSON.stringify(payload);
+    if (payloadStr.length > MAX_PAYLOAD_BYTES) {
+      const mb = (payloadStr.length / 1024 / 1024).toFixed(1);
+      const msg = `Die Gesamtdatenmenge ist zu groß (${mb} MB). Bitte kleinere Dateien verwenden oder bereits hochgeladene Dokumente entfernen.`;
+      setSaveError(msg);
+      toast({ title: "Zu viele/große Anhänge", description: msg, variant: "destructive" });
+      setSaving(false);
+      return;
+    }
+    console.log("[TÜV] handleSave – Sende PUT an:", `${BASE}/tuev-jahresbericht`, `(${(payloadStr.length/1024).toFixed(0)} KB)`);
     try {
       const res = await fetch(`${BASE}/tuev-jahresbericht`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: payloadStr,
       });
       console.log("[TÜV] PUT Antwort – Status:", res.status, res.ok);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        const msg = errData?.error || `Fehler ${res.status}: Speichern fehlgeschlagen.`;
-        console.error("[TÜV] PUT Fehler:", errData);
+        let msg = errData?.error || `Fehler ${res.status}: Speichern fehlgeschlagen.`;
+        if (res.status === 413) {
+          msg = "Fehler 413: Die Dateien sind zu groß für den Server. Bitte verwenden Sie kleinere Dokumente oder komprimieren Sie die PDFs. (Nginx: client_max_body_size erhöhen)";
+        }
+        console.error("[TÜV] PUT Fehler:", res.status, errData);
         setSaveError(msg);
         toast({ title: "Speichern fehlgeschlagen", description: msg, variant: "destructive" });
         return;
@@ -895,9 +921,14 @@ function KontrollberichtForm({ kategorie, year, onSave, onCancel }: {
   const dragCounter = useRef(0);
 
   const processFile = async (file: File) => {
+    const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const maxBytes = isPdfFile ? MAX_PDF_BYTES : MAX_IMG_BYTES;
+    if (file.size > maxBytes) {
+      alert(`Die Datei ist zu groß (${(file.size/1024/1024).toFixed(1)} MB). Maximal erlaubt: ${(maxBytes/1024/1024).toFixed(0)} MB. Bitte Datei verkleinern oder komprimieren.`);
+      return;
+    }
     setProcessing(true);
     try {
-      const isPdfFile = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
       if (isPdfFile) {
         setDokFileName(file.name);
         setDokument(await readFileAsDataURL(file));
