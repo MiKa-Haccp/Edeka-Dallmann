@@ -96,6 +96,14 @@
   }
 }
 
+/* Kalender-Icon für native date-Inputs immer sichtbar und klickbar halten */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 1;
+  filter: none;
+}
+
 /* Custom Scrollbar for the data tables */
 .haccp-table-container::-webkit-scrollbar {
   width: 8px;

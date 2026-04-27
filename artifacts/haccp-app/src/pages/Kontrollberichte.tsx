@@ -594,6 +594,10 @@ function TuevPanel({ year }: { year: number }) {
   const [pruefDok, setPruefDok] = useState("");
   const [pruefNotizen, setPruefNotizen] = useState("");
   const [aktFoto, setAktFoto] = useState("");
+  // Refs: gespeicherte Ursprungswerte vom Server – damit beim Speichern nur NEUE/geänderte Dokumente mitgeschickt werden
+  const zertDokOrigRef = useRef<string>("");
+  const pruefDokOrigRef = useRef<string>("");
+  const aktFotoOrigRef = useRef<string>("");
   const [aktionsplanDatum, setAktionsplanDatum] = useState<string>("");
   const [massnahmen, setMassnahmen] = useState<Massnahme[]>([]);
   const [nachbesserungName, setNachbesserungName] = useState("");
@@ -615,11 +619,14 @@ function TuevPanel({ year }: { year: number }) {
       console.log("[TÜV] loadData – Antwort:", data);
       setDaten(data);
       if (data) {
-        setZertDok(data.zertifikateDokument || "");
+        const z = data.zertifikateDokument || "";
+        const p = data.pruefungenDokument || "";
+        const f = data.aktionsplanFoto || "";
+        setZertDok(z); zertDokOrigRef.current = z;
         setZertNotizen(data.zertifikateNotizen || "");
-        setPruefDok(data.pruefungenDokument || "");
+        setPruefDok(p); pruefDokOrigRef.current = p;
         setPruefNotizen(data.pruefungenNotizen || "");
-        setAktFoto(data.aktionsplanFoto || "");
+        setAktFoto(f); aktFotoOrigRef.current = f;
         setAktionsplanDatum(data.aktionsplanDatum ? new Date(data.aktionsplanDatum).toISOString().slice(0, 10) : "");
         setNachbesserungName(data.nachbesserungName || "");
         setNachbesserungDatum(data.nachbesserungDatum || "");
@@ -627,8 +634,10 @@ function TuevPanel({ year }: { year: number }) {
         try { setMassnahmen(data.aktionsplanMassnahmen ? JSON.parse(data.aktionsplanMassnahmen) : []); }
         catch { setMassnahmen([]); }
       } else {
-        setZertDok(""); setZertNotizen(""); setPruefDok(""); setPruefNotizen("");
-        setAktFoto(""); setAktionsplanDatum(""); setMassnahmen([]);
+        setZertDok(""); zertDokOrigRef.current = "";
+        setZertNotizen(""); setPruefDok(""); pruefDokOrigRef.current = "";
+        setPruefNotizen(""); setAktFoto(""); aktFotoOrigRef.current = "";
+        setAktionsplanDatum(""); setMassnahmen([]);
         setNachbesserungName(""); setNachbesserungDatum(""); setNachbesserungUnterschrift("");
       }
     } finally { setLoading(false); }
@@ -639,24 +648,24 @@ function TuevPanel({ year }: { year: number }) {
   const handleSave = async () => {
     setSaving(true);
     setSaveError("");
+    // Nur geänderte Dokumente senden – null = Server behält bestehenden Wert
+    // "" = Dokument löschen, base64-String = neues Dokument speichern
+    const zertDokPayload = zertDok === zertDokOrigRef.current ? null : (zertDok || "");
+    const pruefDokPayload = pruefDok === pruefDokOrigRef.current ? null : (pruefDok || "");
+    const aktFotoPayload = aktFoto === aktFotoOrigRef.current ? null : (aktFoto || "");
     const payload = {
       tenantId: 1, marketId: selectedMarketId || 1, year,
-      zertifikateDokument: zertDok, zertifikateNotizen: zertNotizen,
-      pruefungenDokument: pruefDok, pruefungenNotizen: pruefNotizen,
-      aktionsplanFoto: aktFoto, aktionsplanMassnahmen: JSON.stringify(massnahmen),
+      zertifikateDokument: zertDokPayload,
+      zertifikateNotizen: zertNotizen,
+      pruefungenDokument: pruefDokPayload,
+      pruefungenNotizen: pruefNotizen,
+      aktionsplanFoto: aktFotoPayload,
+      aktionsplanMassnahmen: JSON.stringify(massnahmen),
       aktionsplanDatum: aktionsplanDatum || null,
       nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift,
     };
     const payloadStr = JSON.stringify(payload);
-    if (payloadStr.length > MAX_PAYLOAD_BYTES) {
-      const mb = (payloadStr.length / 1024 / 1024).toFixed(1);
-      const msg = `Die Gesamtdatenmenge ist zu groß (${mb} MB). Bitte kleinere Dateien verwenden oder bereits hochgeladene Dokumente entfernen.`;
-      setSaveError(msg);
-      toast({ title: "Zu viele/große Anhänge", description: msg, variant: "destructive" });
-      setSaving(false);
-      return;
-    }
-    console.log("[TÜV] handleSave – Sende PUT an:", `${BASE}/tuev-jahresbericht`, `(${(payloadStr.length/1024).toFixed(0)} KB)`);
+    console.log(`[TÜV] handleSave – Payload: ${(payloadStr.length/1024).toFixed(0)} KB (Docs geändert: zert=${zertDok !== zertDokOrigRef.current}, pruef=${pruefDok !== pruefDokOrigRef.current}, foto=${aktFoto !== aktFotoOrigRef.current})`);
     try {
       const res = await fetch(`${BASE}/tuev-jahresbericht`, {
         method: "PUT",
@@ -679,11 +688,14 @@ function TuevPanel({ year }: { year: number }) {
       console.log("[TÜV] PUT gespeichert:", saved);
       // Direkt aus der Speichelantwort laden – kein separater GET nötig
       setDaten(saved);
-      setZertDok(saved.zertifikateDokument || "");
+      const savedZ = saved.zertifikateDokument || "";
+      const savedP = saved.pruefungenDokument || "";
+      const savedF = saved.aktionsplanFoto || "";
+      setZertDok(savedZ); zertDokOrigRef.current = savedZ;
       setZertNotizen(saved.zertifikateNotizen || "");
-      setPruefDok(saved.pruefungenDokument || "");
+      setPruefDok(savedP); pruefDokOrigRef.current = savedP;
       setPruefNotizen(saved.pruefungenNotizen || "");
-      setAktFoto(saved.aktionsplanFoto || "");
+      setAktFoto(savedF); aktFotoOrigRef.current = savedF;
       setAktionsplanDatum(saved.aktionsplanDatum ? new Date(saved.aktionsplanDatum).toISOString().slice(0, 10) : "");
       setNachbesserungName(saved.nachbesserungName || "");
       setNachbesserungDatum(saved.nachbesserungDatum || "");

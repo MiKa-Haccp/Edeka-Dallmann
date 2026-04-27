@@ -3,6 +3,16 @@ import { pool } from "@workspace/db";
 
 const router = Router();
 
+// Fallback-Migration: fehlende Spalten ergänzen (sicher bei mehrfachem Ausführen)
+pool.query(`
+  ALTER TABLE tuev_jahresbericht
+    ADD COLUMN IF NOT EXISTS aktionsplan_datum TIMESTAMP,
+    ADD COLUMN IF NOT EXISTS aktionsplan_massnahmen TEXT,
+    ADD COLUMN IF NOT EXISTS nachbesserung_name TEXT,
+    ADD COLUMN IF NOT EXISTS nachbesserung_datum TEXT,
+    ADD COLUMN IF NOT EXISTS nachbesserung_unterschrift TEXT
+`).catch((err: any) => console.warn("[tuev] Migration-Hinweis:", err.message));
+
 function rowToCamel(row: any) {
   if (!row) return null;
   return {
@@ -84,11 +94,11 @@ router.put("/tuev-jahresbericht", async (req, res) => {
           created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW(),NOW())
        ON CONFLICT (tenant_id, market_id, year) DO UPDATE SET
-         zertifikate_dokument      = EXCLUDED.zertifikate_dokument,
+         zertifikate_dokument      = CASE WHEN EXCLUDED.zertifikate_dokument IS NULL THEN tuev_jahresbericht.zertifikate_dokument ELSE EXCLUDED.zertifikate_dokument END,
          zertifikate_notizen       = EXCLUDED.zertifikate_notizen,
-         pruefungen_dokument       = EXCLUDED.pruefungen_dokument,
+         pruefungen_dokument       = CASE WHEN EXCLUDED.pruefungen_dokument IS NULL THEN tuev_jahresbericht.pruefungen_dokument ELSE EXCLUDED.pruefungen_dokument END,
          pruefungen_notizen        = EXCLUDED.pruefungen_notizen,
-         aktionsplan_foto          = EXCLUDED.aktionsplan_foto,
+         aktionsplan_foto          = CASE WHEN EXCLUDED.aktionsplan_foto IS NULL THEN tuev_jahresbericht.aktionsplan_foto ELSE EXCLUDED.aktionsplan_foto END,
          aktionsplan_massnahmen    = EXCLUDED.aktionsplan_massnahmen,
          aktionsplan_datum         = EXCLUDED.aktionsplan_datum,
          nachbesserung_name        = EXCLUDED.nachbesserung_name,
