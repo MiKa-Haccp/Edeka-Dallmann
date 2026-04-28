@@ -648,59 +648,98 @@ function TuevPanel({ year }: { year: number }) {
   const handleSave = async () => {
     setSaving(true);
     setSaveError("");
-    // Nur geänderte Dokumente senden – null = Server behält bestehenden Wert
-    // "" = Dokument löschen, base64-String = neues Dokument speichern
-    const zertDokPayload = zertDok === zertDokOrigRef.current ? null : (zertDok || "");
-    const pruefDokPayload = pruefDok === pruefDokOrigRef.current ? null : (pruefDok || "");
-    const aktFotoPayload = aktFoto === aktFotoOrigRef.current ? null : (aktFoto || "");
-    const payload = {
-      tenantId: 1, marketId: selectedMarketId || 1, year,
-      zertifikateDokument: zertDokPayload,
-      zertifikateNotizen: zertNotizen,
-      pruefungenDokument: pruefDokPayload,
-      pruefungenNotizen: pruefNotizen,
-      aktionsplanFoto: aktFotoPayload,
-      aktionsplanMassnahmen: JSON.stringify(massnahmen),
-      aktionsplanDatum: aktionsplanDatum || null,
-      nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift,
-    };
-    const payloadStr = JSON.stringify(payload);
-    console.log(`[TÜV] handleSave – Payload: ${(payloadStr.length/1024).toFixed(0)} KB (Docs geändert: zert=${zertDok !== zertDokOrigRef.current}, pruef=${pruefDok !== pruefDokOrigRef.current}, foto=${aktFoto !== aktFotoOrigRef.current})`);
-    try {
+
+    // Hilfsfunktion: einzelnen PUT-Request senden
+    const putRequest = async (body: object): Promise<{ ok: boolean; data: any; msg: string }> => {
+      const bodyStr = JSON.stringify(body);
+      console.log(`[TÜV] PUT – Payload: ${(bodyStr.length / 1024).toFixed(0)} KB`);
       const res = await fetch(`${BASE}/tuev-jahresbericht`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: payloadStr,
+        body: bodyStr,
       });
       console.log("[TÜV] PUT Antwort – Status:", res.status, res.ok);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         let msg = errData?.error || `Fehler ${res.status}: Speichern fehlgeschlagen.`;
         if (res.status === 413) {
-          msg = "Fehler 413: Die Dateien sind zu groß für den Server. Bitte verwenden Sie kleinere Dokumente oder komprimieren Sie die PDFs. (Nginx: client_max_body_size erhöhen)";
+          msg = "Fehler 413: Dokument zu groß für den Server. Bitte kleinere Dateien oder PDFs komprimieren.";
         }
-        console.error("[TÜV] PUT Fehler:", res.status, errData);
-        setSaveError(msg);
-        toast({ title: "Speichern fehlgeschlagen", description: msg, variant: "destructive" });
-        return;
+        return { ok: false, data: null, msg };
       }
-      const saved = await res.json();
-      console.log("[TÜV] PUT gespeichert:", saved);
-      // Direkt aus der Speichelantwort laden – kein separater GET nötig
-      setDaten(saved);
-      const savedZ = saved.zertifikateDokument || "";
-      const savedP = saved.pruefungenDokument || "";
-      const savedF = saved.aktionsplanFoto || "";
+      const data = await res.json();
+      return { ok: true, data, msg: "" };
+    };
+
+    // Basis-Textfelder (immer mitschicken, keine Dokumente)
+    const textBase = {
+      tenantId: 1, marketId: selectedMarketId || 1, year,
+      zertifikateNotizen: zertNotizen,
+      pruefungenNotizen: pruefNotizen,
+      aktionsplanMassnahmen: JSON.stringify(massnahmen),
+      aktionsplanDatum: aktionsplanDatum || null,
+      nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift,
+    };
+
+    // Geänderte Dokumente einzeln speichern (je 1 Dokument pro Request – kein Größenproblem)
+    const changedDocs: Array<{ field: string; value: string; ref: React.MutableRefObject<string> }> = [];
+    if (zertDok !== zertDokOrigRef.current) changedDocs.push({ field: "zertifikateDokument", value: zertDok || "", ref: zertDokOrigRef });
+    if (pruefDok !== pruefDokOrigRef.current) changedDocs.push({ field: "pruefungenDokument", value: pruefDok || "", ref: pruefDokOrigRef });
+    if (aktFoto !== aktFotoOrigRef.current) changedDocs.push({ field: "aktionsplanFoto", value: aktFoto || "", ref: aktFotoOrigRef });
+
+    console.log(`[TÜV] handleSave – ${changedDocs.length} Dokument(e) geändert, werden einzeln gespeichert`);
+
+    try {
+      let lastSaved: any = null;
+
+      for (const doc of changedDocs) {
+        const result = await putRequest({
+          ...textBase,
+          // Nur dieses eine Dokument senden; alle anderen null = Server behält vorhandene
+          zertifikateDokument: doc.field === "zertifikateDokument" ? doc.value : null,
+          pruefungenDokument:  doc.field === "pruefungenDokument"  ? doc.value : null,
+          aktionsplanFoto:     doc.field === "aktionsplanFoto"     ? doc.value : null,
+        });
+        if (!result.ok) {
+          setSaveError(result.msg);
+          toast({ title: "Speichern fehlgeschlagen", description: result.msg, variant: "destructive" });
+          return;
+        }
+        doc.ref.current = doc.value;
+        lastSaved = result.data;
+      }
+
+      // Wenn keine Dokumente geändert – oder abschließender Text-Save
+      if (changedDocs.length === 0 || lastSaved === null) {
+        const result = await putRequest({
+          ...textBase,
+          zertifikateDokument: null,
+          pruefungenDokument: null,
+          aktionsplanFoto: null,
+        });
+        if (!result.ok) {
+          setSaveError(result.msg);
+          toast({ title: "Speichern fehlgeschlagen", description: result.msg, variant: "destructive" });
+          return;
+        }
+        lastSaved = result.data;
+      }
+
+      // UI aus letzter Server-Antwort aktualisieren
+      const savedZ = lastSaved.zertifikateDokument || "";
+      const savedP = lastSaved.pruefungenDokument || "";
+      const savedF = lastSaved.aktionsplanFoto || "";
+      setDaten(lastSaved);
       setZertDok(savedZ); zertDokOrigRef.current = savedZ;
-      setZertNotizen(saved.zertifikateNotizen || "");
+      setZertNotizen(lastSaved.zertifikateNotizen || "");
       setPruefDok(savedP); pruefDokOrigRef.current = savedP;
-      setPruefNotizen(saved.pruefungenNotizen || "");
+      setPruefNotizen(lastSaved.pruefungenNotizen || "");
       setAktFoto(savedF); aktFotoOrigRef.current = savedF;
-      setAktionsplanDatum(saved.aktionsplanDatum ? new Date(saved.aktionsplanDatum).toISOString().slice(0, 10) : "");
-      setNachbesserungName(saved.nachbesserungName || "");
-      setNachbesserungDatum(saved.nachbesserungDatum || "");
-      setNachbesserungUnterschrift(saved.nachbesserungUnterschrift || "");
-      try { setMassnahmen(saved.aktionsplanMassnahmen ? JSON.parse(saved.aktionsplanMassnahmen) : []); } catch { setMassnahmen([]); }
+      setAktionsplanDatum(lastSaved.aktionsplanDatum ? new Date(lastSaved.aktionsplanDatum).toISOString().slice(0, 10) : "");
+      setNachbesserungName(lastSaved.nachbesserungName || "");
+      setNachbesserungDatum(lastSaved.nachbesserungDatum || "");
+      setNachbesserungUnterschrift(lastSaved.nachbesserungUnterschrift || "");
+      try { setMassnahmen(lastSaved.aktionsplanMassnahmen ? JSON.parse(lastSaved.aktionsplanMassnahmen) : []); } catch { setMassnahmen([]); }
       setEditMode(false);
       toast({ title: "TÜV-Bericht gespeichert", description: "Alle Änderungen wurden erfolgreich gespeichert." });
     } catch (err: any) {
