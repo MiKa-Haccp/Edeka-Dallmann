@@ -132,7 +132,7 @@ export function MarktwahlScreen() {
         setOutsideAllMarkets(true);
       }
       setGpsInitialized(true);
-    } else if (geoStatus === "denied" || geoStatus === "unavailable" || geoStatus === "error") {
+    } else if (geoStatus === "denied" || geoStatus === "unavailable" || geoStatus === "error" || geoStatus === "insecure") {
       setGpsInitialized(true);
     }
   }, [position, markets, geoStatus, adminSession, canAccessMarket, setSelectedMarketId, setMarketSelectionMode]);
@@ -159,7 +159,7 @@ export function MarktwahlScreen() {
     if (!canAccessMarket(marketId)) return false;
     if (gpsLocked) {
       if (gpsConfigMissing) return true;
-      if (geoStatus === "denied" || geoStatus === "unavailable" || geoStatus === "error") return false;
+      if (geoStatus === "denied" || geoStatus === "unavailable" || geoStatus === "error" || geoStatus === "insecure") return false;
       if (geoStatus === "requesting" || !gpsInitialized) return false;
       return marketId === detectedMarketId;
     }
@@ -205,11 +205,19 @@ export function MarktwahlScreen() {
         </div>
       );
     }
+    if (geoStatus === "insecure") {
+      return (
+        <div className="flex items-center gap-2 bg-amber-500/20 border border-amber-400/30 rounded-xl px-4 py-2.5 text-amber-200 text-sm">
+          <AlertCircle className="w-4 h-4 text-amber-300 shrink-0" />
+          <span>GPS benötigt HTTPS – bitte den Server mit SSL-Zertifikat einrichten</span>
+        </div>
+      );
+    }
     if (geoStatus === "denied") {
       return (
         <div className="flex items-center gap-2 bg-red-500/20 border border-red-400/30 rounded-xl px-4 py-2.5 text-red-200 text-sm">
           <AlertCircle className="w-4 h-4 text-red-300 shrink-0" />
-          <span>GPS-Zugriff verweigert – bitte in den Browser-Einstellungen aktivieren</span>
+          <span>GPS-Zugriff verweigert – bitte in den Einstellungen aktivieren</span>
         </div>
       );
     }
@@ -228,7 +236,7 @@ export function MarktwahlScreen() {
     gpsLocked &&
     !gpsConfigMissing &&
     gpsInitialized &&
-    (geoStatus === "denied" || geoStatus === "unavailable" || geoStatus === "error" || outsideAllMarkets);
+    (geoStatus === "denied" || geoStatus === "unavailable" || geoStatus === "error" || geoStatus === "insecure" || outsideAllMarkets);
 
   return (
     <AnimatePresence>
@@ -288,23 +296,34 @@ export function MarktwahlScreen() {
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="w-full max-w-2xl mb-6 bg-red-500/20 border border-red-400/30 rounded-2xl p-5 text-center"
+              className={`w-full max-w-2xl mb-6 rounded-2xl p-5 text-center border ${geoStatus === "insecure" ? "bg-amber-500/20 border-amber-400/30" : "bg-red-500/20 border-red-400/30"}`}
             >
-              <AlertCircle className="w-8 h-8 text-red-300 mx-auto mb-2" />
-              <p className="text-red-100 font-semibold mb-1">
-                {outsideAllMarkets ? "Nicht in Reichweite" : "Standortzugriff erforderlich"}
+              <AlertCircle className={`w-8 h-8 mx-auto mb-2 ${geoStatus === "insecure" ? "text-amber-300" : "text-red-300"}`} />
+              <p className={`font-semibold mb-1 ${geoStatus === "insecure" ? "text-amber-100" : "text-red-100"}`}>
+                {outsideAllMarkets ? "Nicht in Reichweite" : geoStatus === "insecure" ? "HTTPS erforderlich für GPS" : "Standortzugriff erforderlich"}
               </p>
               {outsideAllMarkets ? (
                 <p className="text-red-200 text-sm">
                   Sie befinden sich nicht in der Nähe einer EDEKA DALLMANN Filiale (10 km Radius).
                 </p>
+              ) : geoStatus === "insecure" ? (
+                <div className="text-amber-200 text-sm space-y-2">
+                  <p>GPS-Ortung funktioniert nur über eine sichere <strong>HTTPS</strong>-Verbindung.</p>
+                  <p className="text-amber-300/80 text-xs bg-black/20 rounded-lg px-3 py-2">
+                    Ihr Server läuft aktuell über HTTP. Bitte richten Sie ein SSL-Zertifikat ein (z.B. Let's Encrypt / Certbot),
+                    damit GPS auf iPhone, iPad und allen modernen Browsern funktioniert.
+                  </p>
+                </div>
               ) : geoStatus === "denied" ? (
                 <div className="text-red-200 text-sm space-y-1">
-                  <p>Der Standortzugriff wurde vom Browser blockiert.</p>
-                  <p className="text-red-300/80 text-xs mt-1">
-                    <strong>iPhone/iPad:</strong> Einstellungen → Safari → Datenschutz & Sicherheit → Standort → „Fragen"<br />
-                    <strong>Android:</strong> Browser-Einstellungen → Website-Einstellungen → Standort → erlauben
-                  </p>
+                  <p>Der Standortzugriff wurde blockiert oder wurde einmal verweigert.</p>
+                  <div className="text-red-300/80 text-xs mt-2 bg-black/20 rounded-lg px-3 py-2 text-left space-y-1">
+                    <p><strong>iPhone/iPad (Safari):</strong></p>
+                    <p className="pl-2">Einstellungen → Datenschutz → Ortungsdienste → Safari Websites → „Beim Verwenden der App"</p>
+                    <p className="pl-2">Oder: Einstellungen → Safari → diese Website → Ortung → „Fragen"</p>
+                    <p className="mt-1"><strong>Android (Chrome):</strong></p>
+                    <p className="pl-2">Adresszeile → Schloss-Symbol → Berechtigungen → Standort → Erlauben</p>
+                  </div>
                 </div>
               ) : (
                 <p className="text-red-200 text-sm">

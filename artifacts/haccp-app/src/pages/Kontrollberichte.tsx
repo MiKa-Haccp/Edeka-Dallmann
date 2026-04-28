@@ -388,8 +388,8 @@ function AktionsplanCard({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
-      <div className="bg-[#1a3a6b]/5 border-b border-border/40 px-5 py-3">
+    <div className="bg-white rounded-2xl border border-border/60 shadow-sm">
+      <div className="bg-[#1a3a6b]/5 border-b border-border/40 px-5 py-3 rounded-t-2xl">
         <h3 className="font-semibold text-sm text-[#1a3a6b]">Aktionsplan</h3>
       </div>
       <div className="p-5 space-y-4">
@@ -809,8 +809,8 @@ function TuevPanel({ year }: { year: number }) {
           })()}
 
           {(massnahmen.length > 0 || aktFoto) && (
-            <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
-              <div className="bg-[#1a3a6b] text-white px-5 py-3">
+            <div className="bg-white rounded-2xl border border-border/60 shadow-sm">
+              <div className="bg-[#1a3a6b] text-white px-5 py-3 rounded-t-2xl">
                 <h3 className="font-bold text-sm">Bestätigung der Maßnahmenumsetzung – Betriebsleitung</h3>
               </div>
               <div className="p-5">
@@ -1182,7 +1182,7 @@ function BerichtKarte({ b, tab, onDelete, isAdmin, onUpdate }: {
   const ergebnisConfig = b.ergebnis ? ERGEBNIS_CONFIG[b.ergebnis] : null;
 
   return (
-    <div className={`bg-white rounded-2xl border-2 overflow-hidden ${
+    <div className={`bg-white rounded-2xl border-2 ${
       b.ergebnis === "nicht_bestanden" ? "border-red-300" :
       b.ergebnis === "bestanden_mit_auflagen" ? "border-amber-300" :
       status === "abgelaufen" ? "border-red-200" :
@@ -1190,7 +1190,7 @@ function BerichtKarte({ b, tab, onDelete, isAdmin, onUpdate }: {
       "border-border/40"
     }`}>
       <button onClick={() => setOpen((p) => !p)}
-        className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-muted/20 transition-colors">
+        className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-muted/20 transition-colors rounded-t-2xl">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${tab.bgColor}`}>
           <span className={tab.color}>{tab.icon}</span>
         </div>

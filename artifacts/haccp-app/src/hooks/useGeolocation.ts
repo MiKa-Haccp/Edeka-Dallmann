@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 
 export interface GeoPosition {
   lat: number;
@@ -12,7 +12,8 @@ export type GeoStatus =
   | "granted"
   | "denied"
   | "unavailable"
-  | "error";
+  | "error"
+  | "insecure";
 
 export function getDistanceKm(
   lat1: number, lon1: number,
@@ -70,6 +71,14 @@ export function useGeolocation() {
   const [error, setError] = useState<string | null>(null);
 
   const request = useCallback(() => {
+    // Prüfen ob HTTPS-Kontext vorliegt (iOS Safari und Chrome blockieren GPS auf HTTP)
+    const isSecure = typeof window !== "undefined" && window.isSecureContext;
+    if (!isSecure) {
+      setStatus("insecure");
+      setError("HTTPS erforderlich. GPS-Ortung funktioniert nur über eine sichere HTTPS-Verbindung.");
+      return;
+    }
+
     if (!navigator.geolocation) {
       setStatus("unavailable");
       setError("GPS wird von diesem Browser nicht unterstützt.");
@@ -91,18 +100,18 @@ export function useGeolocation() {
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {
           setStatus("denied");
-          setError("GPS-Zugriff wurde verweigert. Bitte erlauben Sie den Standortzugriff in Ihrem Browser.");
+          setError("GPS-Zugriff wurde verweigert.");
         } else if (err.code === err.POSITION_UNAVAILABLE) {
           setStatus("unavailable");
-          setError("Standort nicht verfügbar. Bitte überprüfen Sie die GPS-Einstellungen.");
+          setError("Standort nicht verfügbar.");
         } else {
           setStatus("error");
-          setError("Standortermittlung fehlgeschlagen. Bitte versuchen Sie es erneut.");
+          setError("Standortermittlung fehlgeschlagen.");
         }
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 15000,
         maximumAge: 60000,
       }
     );

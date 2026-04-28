@@ -104,6 +104,20 @@ input[type="datetime-local"]::-webkit-calendar-picker-indicator {
   filter: none;
 }
 
+/* Native OS-Dropdown-Rendering für alle Selects erzwingen (Kompatibilität mit Opera, Chrome, Firefox) */
+select {
+  appearance: auto;
+  -webkit-appearance: auto;
+  -moz-appearance: auto;
+}
+
+/* Ausnahme: Header-Marktauswahl mit eigenem Styling */
+select.appearance-none {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
 /* Custom Scrollbar for the data tables */
 .haccp-table-container::-webkit-scrollbar {
   width: 8px;
