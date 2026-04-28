@@ -327,13 +327,17 @@ export function PdfMultiEmbed({
 
 // ─── Fullscreen (all pages, used in lightbox) ─────────────────────────────────
 export function PdfFullscreen({ dataUrl }: { dataUrl: string }) {
+  // Breite: auf Handy Bildschirmbreite nutzen, auf Desktop max. 900px
+  const maxWidth = typeof window !== "undefined"
+    ? Math.min(900, window.innerWidth - 16)
+    : 900;
+
   return (
     <div
-      className="w-full overflow-auto bg-transparent rounded-xl"
-      style={{ maxHeight: "88vh" }}
+      className="w-full bg-transparent"
       onClick={(e) => e.stopPropagation()}
     >
-      <PdfAllPages dataUrl={dataUrl} maxWidth={900} />
+      <PdfAllPages dataUrl={dataUrl} maxWidth={maxWidth} />
     </div>
   );
 }

@@ -38,6 +38,41 @@ function LightboxOverlay({ src, type, onClose }: LightboxState & { onClose: () =
     };
   }, []);
 
+  // PDF-Lightbox: voller Bildschirm, von oben nach unten scrollbar (funktioniert auf iPhone)
+  if (type === "pdf") {
+    return (
+      <div
+        className="fixed inset-0 z-[9999] bg-black/95"
+        style={{ overflowY: "auto", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+      >
+        {/* Sticky-Header mit Schließen-Button oben rechts */}
+        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur-sm border-b border-white/10">
+          <span className="text-white/50 text-sm font-medium">PDF-Dokument</span>
+          <button
+            onClick={onClose}
+            className="w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Alle Seiten scrollbar */}
+        <div className="p-2 pb-10">
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="w-8 h-8 animate-spin text-white/40" />
+              </div>
+            }
+          >
+            <PdfFullscreenLazy dataUrl={src} />
+          </Suspense>
+        </div>
+      </div>
+    );
+  }
+
+  // Bild-Lightbox (unverändertes Verhalten)
   return (
     <div
       className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4"
@@ -53,24 +88,12 @@ function LightboxOverlay({ src, type, onClose }: LightboxState & { onClose: () =
         className="relative w-full max-w-5xl flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
-        {type === "image" ? (
-          <img
-            src={src}
-            alt="Vollbild"
-            className="max-w-full object-contain rounded-xl shadow-2xl"
-            style={{ maxHeight: "88vh" }}
-          />
-        ) : (
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center h-64">
-                <Loader2 className="w-8 h-8 animate-spin text-white/40" />
-              </div>
-            }
-          >
-            <PdfFullscreenLazy dataUrl={src} />
-          </Suspense>
-        )}
+        <img
+          src={src}
+          alt="Vollbild"
+          className="max-w-full object-contain rounded-xl shadow-2xl"
+          style={{ maxHeight: "88vh" }}
+        />
       </div>
       <p className="absolute bottom-3 left-0 right-0 text-center text-white/30 text-xs">
         ESC oder außerhalb klicken zum Schließen
