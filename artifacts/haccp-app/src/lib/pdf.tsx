@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { X, FileText, Maximize2, Loader2, Plus, ExternalLink } from "lucide-react";
 import { useLightboxContext } from "./lightbox";
+import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
 // ─── PDF.js lazy loader ───────────────────────────────────────────────────────
+// Worker wird direkt aus node_modules gebündelt (kein externes CDN nötig → funktioniert auf Android)
 let pdfjsReady: Promise<typeof import("pdfjs-dist")> | null = null;
 function getPdfjs() {
   if (!pdfjsReady) {
     pdfjsReady = import("pdfjs-dist").then((lib) => {
-      lib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${lib.version}/build/pdf.worker.min.mjs`;
+      lib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
       return lib;
     });
   }
