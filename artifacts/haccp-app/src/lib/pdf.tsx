@@ -1,16 +1,17 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { X, FileText, Maximize2, Loader2, Plus, ExternalLink } from "lucide-react";
 import { useLightboxContext } from "./lightbox";
-import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-
 // ─── PDF.js lazy loader ───────────────────────────────────────────────────────
-// Worker wird direkt aus node_modules gebündelt (kein externes CDN nötig → funktioniert auf Android)
+// Worker als statische Datei aus public/ → kein Bundling, kein CDN, funktioniert überall
 let pdfjsReady: Promise<typeof import("pdfjs-dist")> | null = null;
 function getPdfjs() {
   if (!pdfjsReady) {
     pdfjsReady = import("pdfjs-dist").then((lib) => {
-      lib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+      lib.GlobalWorkerOptions.workerSrc = import.meta.env.BASE_URL + "pdf.worker.min.mjs";
       return lib;
+    }).catch((err) => {
+      pdfjsReady = null; // Bei Fehler Cache löschen → nächster Versuch klappt
+      throw err;
     });
   }
   return pdfjsReady;
@@ -106,9 +107,16 @@ function PdfPageCanvas({ dataUrl, maxWidth, page: pageNum = 1, onRendered }: {
         </div>
       )}
       {error && (
-        <div className="flex flex-col items-center justify-center py-8 gap-2">
-          <FileText className="w-5 h-5 text-red-400" />
-          <span className="text-xs text-red-500">PDF konnte nicht geladen werden</span>
+        <div className="flex flex-col items-center justify-center py-6 gap-3 px-4">
+          <FileText className="w-8 h-8 text-slate-400" />
+          <span className="text-xs text-slate-500 text-center">PDF kann hier nicht angezeigt werden</span>
+          <button
+            onClick={() => openPdfNewTab(dataUrl)}
+            className="flex items-center gap-2 px-4 py-2 bg-[#1a3a6b] text-white text-sm font-medium rounded-xl hover:bg-[#2d5aa0] transition-colors"
+          >
+            <ExternalLink className="w-4 h-4" />
+            PDF öffnen
+          </button>
         </div>
       )}
       <canvas ref={canvasRef} className="w-full" style={{ display: loading || error ? "none" : "block" }} />
@@ -141,9 +149,16 @@ export function PdfAllPages({ dataUrl, maxWidth }: { dataUrl: string; maxWidth?:
     </div>
   );
   if (error || !numPages) return (
-    <div className="flex flex-col items-center py-20 gap-2 text-white/50">
-      <FileText className="w-8 h-8" />
-      <span className="text-sm">PDF konnte nicht geladen werden</span>
+    <div className="flex flex-col items-center py-16 gap-4 text-white/60">
+      <FileText className="w-10 h-10" />
+      <span className="text-sm">PDF kann hier nicht angezeigt werden</span>
+      <button
+        onClick={() => openPdfNewTab(dataUrl)}
+        className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white text-sm font-medium rounded-xl transition-colors border border-white/20"
+      >
+        <ExternalLink className="w-4 h-4" />
+        PDF im Browser öffnen
+      </button>
     </div>
   );
 
