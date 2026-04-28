@@ -138,7 +138,7 @@ function readFileAsDataURL(file: File): Promise<string> {
   });
 }
 
-const MAX_PDF_BYTES = 3 * 1024 * 1024;
+const MAX_PDF_BYTES = 10 * 1024 * 1024;
 const MAX_IMG_BYTES = 5 * 1024 * 1024;
 const MAX_PAYLOAD_BYTES = 8 * 1024 * 1024;
 
@@ -264,7 +264,13 @@ function DokumentCard({
           </div>
         ) : isAttachment ? (
           <>
-            <PdfMultiEmbed raw={dokument} onChange={onDokument} editable={!disabled} />
+            <PdfMultiEmbed raw={dokument} onChange={(v) => {
+              if (v && v.length > MAX_PDF_BYTES * 1.4) {
+                alert(`Gesamtgröße aller Dokumente zu groß (${(v.length/1024/1024).toFixed(1)} MB). Bitte nutzen Sie "Dokument ersetzen" statt mehrere PDFs hinzuzufügen.`);
+                return;
+              }
+              onDokument(v);
+            }} editable={!disabled} />
             {!disabled && (
               <button
                 onClick={() => replaceRef.current?.click()}
@@ -425,7 +431,13 @@ function AktionsplanCard({
               )}
             </div>
           ) : isFotoAttachment ? (
-            <PdfMultiEmbed raw={foto} onChange={onFoto} editable={!disabled} />
+            <PdfMultiEmbed raw={foto} onChange={(v) => {
+              if (v && v.length > MAX_PDF_BYTES * 1.4) {
+                alert(`Gesamtgröße zu groß (${(v.length/1024/1024).toFixed(1)} MB). Bitte nutzen Sie "Löschen" und laden Sie ein neues Dokument hoch.`);
+                return;
+              }
+              onFoto(v);
+            }} editable={!disabled} />
           ) : (
             <div
               className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}

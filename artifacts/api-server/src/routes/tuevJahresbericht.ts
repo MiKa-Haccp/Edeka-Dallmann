@@ -3,7 +3,7 @@ import { pool } from "@workspace/db";
 
 const router = Router();
 
-// Fallback-Migration: fehlende Spalten ergänzen (sicher bei mehrfachem Ausführen)
+// Fallback-Migration: fehlende Spalten + Unique-Constraint sicherstellen
 pool.query(`
   ALTER TABLE tuev_jahresbericht
     ADD COLUMN IF NOT EXISTS aktionsplan_datum TIMESTAMP,
@@ -11,7 +11,19 @@ pool.query(`
     ADD COLUMN IF NOT EXISTS nachbesserung_name TEXT,
     ADD COLUMN IF NOT EXISTS nachbesserung_datum TEXT,
     ADD COLUMN IF NOT EXISTS nachbesserung_unterschrift TEXT
-`).catch((err: any) => console.warn("[tuev] Migration-Hinweis:", err.message));
+`).catch((err: any) => console.warn("[tuev] Spalten-Migration:", err.message));
+
+pool.query(`
+  DO $$ BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_constraint
+      WHERE conname = 'uq_tuev_tenant_market_year' AND conrelid = 'tuev_jahresbericht'::regclass
+    ) THEN
+      ALTER TABLE tuev_jahresbericht
+        ADD CONSTRAINT uq_tuev_tenant_market_year UNIQUE (tenant_id, market_id, year);
+    END IF;
+  END $$
+`).catch((err: any) => console.warn("[tuev] Constraint-Migration:", err.message));
 
 function rowToCamel(row: any) {
   if (!row) return null;
