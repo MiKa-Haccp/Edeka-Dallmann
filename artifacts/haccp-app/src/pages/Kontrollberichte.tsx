@@ -199,6 +199,7 @@ function JahrWahl({ year, onChange }: { year: number; onChange: (y: number) => v
 // ===== DOKUMENT UPLOAD CARD =====
 function DokumentCard({
   label, dokument, notizen, onDokument, onNotizen, onClear, notizenPlaceholder, disabled,
+  autoSaving, autoSaveError,
 }: {
   label: string;
   dokument: string;
@@ -208,11 +209,14 @@ function DokumentCard({
   onClear: () => void;
   notizenPlaceholder: string;
   disabled?: boolean;
+  autoSaving?: boolean;
+  autoSaveError?: string;
 }) {
   const [processing, setProcessing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fotoRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const replaceRef = useRef<HTMLInputElement>(null);
   const isAttachment = dokument.startsWith("data:application/pdf") || dokument.startsWith("[");
 
   const processFile = async (file: File) => {
@@ -242,9 +246,11 @@ function DokumentCard({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-border/60 shadow-sm overflow-hidden">
-      <div className="bg-[#1a3a6b]/5 border-b border-border/40 px-5 py-3">
+    <div className="bg-white rounded-2xl border border-border/60 shadow-sm">
+      <div className="bg-[#1a3a6b]/5 border-b border-border/40 px-5 py-3 rounded-t-2xl flex items-center justify-between">
         <h3 className="font-semibold text-sm text-[#1a3a6b]">{label}</h3>
+        {autoSaving && <span className="flex items-center gap-1.5 text-xs text-[#1a3a6b]/70"><Loader2 className="w-3 h-3 animate-spin" />Wird gespeichert…</span>}
+        {!autoSaving && autoSaveError && <span className="text-xs text-destructive font-medium">{autoSaveError}</span>}
       </div>
       <div className="p-5 space-y-4">
         {dokument && !isAttachment ? (
@@ -257,7 +263,19 @@ function DokumentCard({
             )}
           </div>
         ) : isAttachment ? (
-          <PdfMultiEmbed raw={dokument} onChange={onDokument} editable={!disabled} />
+          <>
+            <PdfMultiEmbed raw={dokument} onChange={onDokument} editable={!disabled} />
+            {!disabled && (
+              <button
+                onClick={() => replaceRef.current?.click()}
+                disabled={processing || autoSaving}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-dashed border-[#1a3a6b]/30 rounded-xl text-xs font-semibold text-[#1a3a6b] hover:bg-[#1a3a6b]/5 transition-colors disabled:opacity-40"
+              >
+                {processing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                Dokument ersetzen (alles löschen und neu hochladen)
+              </button>
+            )}
+          </>
         ) : (
           <div
             className={`grid grid-cols-2 gap-2 p-1 rounded-xl transition-colors ${dragOver ? "bg-[#1a3a6b]/10 ring-2 ring-[#1a3a6b]/30" : ""}`}
@@ -265,12 +283,12 @@ function DokumentCard({
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
           >
-            <button onClick={() => fotoRef.current?.click()} disabled={processing}
+            <button onClick={() => fotoRef.current?.click()} disabled={processing || autoSaving}
               className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50">
               {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
               <span className="text-xs font-semibold text-center leading-tight">Foto /<br />Screenshot</span>
             </button>
-            <button onClick={() => fileRef.current?.click()} disabled={processing}
+            <button onClick={() => fileRef.current?.click()} disabled={processing || autoSaving}
               className="flex flex-col items-center gap-2 px-4 py-4 border-2 border-dashed border-[#1a3a6b]/25 rounded-xl text-[#1a3a6b] hover:bg-[#1a3a6b]/5 hover:border-[#1a3a6b]/40 transition-colors disabled:opacity-50">
               <Upload className="w-5 h-5" />
               <span className="text-xs font-semibold text-center leading-tight">PDF-<br />Datei</span>
@@ -282,6 +300,7 @@ function DokumentCard({
         )}
         <input ref={fotoRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
         <input ref={fileRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={handleFile} />
+        <input ref={replaceRef} type="file" accept="application/pdf,image/*" className="hidden" onChange={handleFile} />
 
         <div>
           <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Notizen</label>
@@ -594,10 +613,13 @@ function TuevPanel({ year }: { year: number }) {
   const [pruefDok, setPruefDok] = useState("");
   const [pruefNotizen, setPruefNotizen] = useState("");
   const [aktFoto, setAktFoto] = useState("");
-  // Refs: gespeicherte Ursprungswerte vom Server – damit beim Speichern nur NEUE/geänderte Dokumente mitgeschickt werden
+  // Refs: gespeicherte Ursprungswerte vom Server
   const zertDokOrigRef = useRef<string>("");
   const pruefDokOrigRef = useRef<string>("");
   const aktFotoOrigRef = useRef<string>("");
+  // Auto-Save Status pro Dokument-Slot
+  const [docSaving, setDocSaving] = useState<Record<string, boolean>>({});
+  const [docSaveError, setDocSaveError] = useState<Record<string, string>>({});
   const [aktionsplanDatum, setAktionsplanDatum] = useState<string>("");
   const [massnahmen, setMassnahmen] = useState<Massnahme[]>([]);
   const [nachbesserungName, setNachbesserungName] = useState("");
@@ -645,106 +667,111 @@ function TuevPanel({ year }: { year: number }) {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const handleSave = async () => {
-    setSaving(true);
-    setSaveError("");
-
-    // Hilfsfunktion: einzelnen PUT-Request senden
-    const putRequest = async (body: object): Promise<{ ok: boolean; data: any; msg: string }> => {
-      const bodyStr = JSON.stringify(body);
-      console.log(`[TÜV] PUT – Payload: ${(bodyStr.length / 1024).toFixed(0)} KB`);
+  // Dokument sofort beim Hochladen einzeln speichern (kein großer kombinierter Payload)
+  const autoSaveDoc = async (
+    field: "zertifikateDokument" | "pruefungenDokument" | "aktionsplanFoto",
+    value: string,
+    currentTextState: {
+      zertNotizen: string; pruefNotizen: string;
+      massnahmen: Massnahme[]; aktionsplanDatum: string;
+      nachbesserungName: string; nachbesserungDatum: string; nachbesserungUnterschrift: string;
+    }
+  ) => {
+    setDocSaving(prev => ({ ...prev, [field]: true }));
+    setDocSaveError(prev => ({ ...prev, [field]: "" }));
+    const body = {
+      tenantId: 1, marketId: selectedMarketId || 1, year,
+      zertifikateDokument: field === "zertifikateDokument" ? value : null,
+      pruefungenDokument:  field === "pruefungenDokument"  ? value : null,
+      aktionsplanFoto:     field === "aktionsplanFoto"     ? value : null,
+      zertifikateNotizen: currentTextState.zertNotizen,
+      pruefungenNotizen: currentTextState.pruefNotizen,
+      aktionsplanMassnahmen: JSON.stringify(currentTextState.massnahmen),
+      aktionsplanDatum: currentTextState.aktionsplanDatum || null,
+      nachbesserungName: currentTextState.nachbesserungName,
+      nachbesserungDatum: currentTextState.nachbesserungDatum,
+      nachbesserungUnterschrift: currentTextState.nachbesserungUnterschrift,
+    };
+    const bodyStr = JSON.stringify(body);
+    console.log(`[TÜV] autoSaveDoc ${field} – ${(bodyStr.length / 1024).toFixed(0)} KB`);
+    try {
       const res = await fetch(`${BASE}/tuev-jahresbericht`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: bodyStr,
       });
-      console.log("[TÜV] PUT Antwort – Status:", res.status, res.ok);
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        let msg = errData?.error || `Fehler ${res.status}: Speichern fehlgeschlagen.`;
-        if (res.status === 413) {
-          msg = "Fehler 413: Dokument zu groß für den Server. Bitte kleinere Dateien oder PDFs komprimieren.";
-        }
-        return { ok: false, data: null, msg };
+        let msg = errData?.error || `Fehler ${res.status}`;
+        if (res.status === 413) msg = "Dokument zu groß. Bitte kleinere Datei oder PDF komprimieren.";
+        setDocSaveError(prev => ({ ...prev, [field]: msg }));
+        toast({ title: "Dokument konnte nicht gespeichert werden", description: msg, variant: "destructive" });
+        return;
       }
-      const data = await res.json();
-      return { ok: true, data, msg: "" };
-    };
+      const saved = await res.json();
+      // Ref aktualisieren (damit Speichern-Button dieses Dokument nicht nochmals sendet)
+      if (field === "zertifikateDokument") { zertDokOrigRef.current = saved.zertifikateDokument || ""; }
+      if (field === "pruefungenDokument")  { pruefDokOrigRef.current = saved.pruefungenDokument || ""; }
+      if (field === "aktionsplanFoto")     { aktFotoOrigRef.current = saved.aktionsplanFoto || ""; }
+      setDaten(saved);
+      console.log(`[TÜV] autoSaveDoc ${field} – OK`);
+    } catch (err: any) {
+      const msg = err?.message || "Netzwerkfehler";
+      setDocSaveError(prev => ({ ...prev, [field]: msg }));
+    } finally {
+      setDocSaving(prev => ({ ...prev, [field]: false }));
+    }
+  };
 
-    // Basis-Textfelder (immer mitschicken, keine Dokumente)
-    const textBase = {
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError("");
+    // Textfelder speichern – Dokumente wurden bereits per autoSaveDoc gespeichert
+    // Alle Dokument-Felder = null → Server behält bestehende Werte (CASE WHEN IS NULL)
+    const body = {
       tenantId: 1, marketId: selectedMarketId || 1, year,
+      zertifikateDokument: null,
+      pruefungenDokument: null,
+      aktionsplanFoto: null,
       zertifikateNotizen: zertNotizen,
       pruefungenNotizen: pruefNotizen,
       aktionsplanMassnahmen: JSON.stringify(massnahmen),
       aktionsplanDatum: aktionsplanDatum || null,
       nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift,
     };
-
-    // Geänderte Dokumente einzeln speichern (je 1 Dokument pro Request – kein Größenproblem)
-    const changedDocs: Array<{ field: string; value: string; ref: React.MutableRefObject<string> }> = [];
-    if (zertDok !== zertDokOrigRef.current) changedDocs.push({ field: "zertifikateDokument", value: zertDok || "", ref: zertDokOrigRef });
-    if (pruefDok !== pruefDokOrigRef.current) changedDocs.push({ field: "pruefungenDokument", value: pruefDok || "", ref: pruefDokOrigRef });
-    if (aktFoto !== aktFotoOrigRef.current) changedDocs.push({ field: "aktionsplanFoto", value: aktFoto || "", ref: aktFotoOrigRef });
-
-    console.log(`[TÜV] handleSave – ${changedDocs.length} Dokument(e) geändert, werden einzeln gespeichert`);
-
+    console.log(`[TÜV] handleSave (nur Textfelder) – ${(JSON.stringify(body).length / 1024).toFixed(0)} KB`);
     try {
-      let lastSaved: any = null;
-
-      for (const doc of changedDocs) {
-        const result = await putRequest({
-          ...textBase,
-          // Nur dieses eine Dokument senden; alle anderen null = Server behält vorhandene
-          zertifikateDokument: doc.field === "zertifikateDokument" ? doc.value : null,
-          pruefungenDokument:  doc.field === "pruefungenDokument"  ? doc.value : null,
-          aktionsplanFoto:     doc.field === "aktionsplanFoto"     ? doc.value : null,
-        });
-        if (!result.ok) {
-          setSaveError(result.msg);
-          toast({ title: "Speichern fehlgeschlagen", description: result.msg, variant: "destructive" });
-          return;
-        }
-        doc.ref.current = doc.value;
-        lastSaved = result.data;
+      const res = await fetch(`${BASE}/tuev-jahresbericht`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const msg = errData?.error || `Fehler ${res.status}: Speichern fehlgeschlagen.`;
+        setSaveError(msg);
+        toast({ title: "Speichern fehlgeschlagen", description: msg, variant: "destructive" });
+        return;
       }
-
-      // Wenn keine Dokumente geändert – oder abschließender Text-Save
-      if (changedDocs.length === 0 || lastSaved === null) {
-        const result = await putRequest({
-          ...textBase,
-          zertifikateDokument: null,
-          pruefungenDokument: null,
-          aktionsplanFoto: null,
-        });
-        if (!result.ok) {
-          setSaveError(result.msg);
-          toast({ title: "Speichern fehlgeschlagen", description: result.msg, variant: "destructive" });
-          return;
-        }
-        lastSaved = result.data;
-      }
-
-      // UI aus letzter Server-Antwort aktualisieren
-      const savedZ = lastSaved.zertifikateDokument || "";
-      const savedP = lastSaved.pruefungenDokument || "";
-      const savedF = lastSaved.aktionsplanFoto || "";
-      setDaten(lastSaved);
+      const saved = await res.json();
+      const savedZ = saved.zertifikateDokument || "";
+      const savedP = saved.pruefungenDokument || "";
+      const savedF = saved.aktionsplanFoto || "";
+      setDaten(saved);
       setZertDok(savedZ); zertDokOrigRef.current = savedZ;
-      setZertNotizen(lastSaved.zertifikateNotizen || "");
+      setZertNotizen(saved.zertifikateNotizen || "");
       setPruefDok(savedP); pruefDokOrigRef.current = savedP;
-      setPruefNotizen(lastSaved.pruefungenNotizen || "");
+      setPruefNotizen(saved.pruefungenNotizen || "");
       setAktFoto(savedF); aktFotoOrigRef.current = savedF;
-      setAktionsplanDatum(lastSaved.aktionsplanDatum ? new Date(lastSaved.aktionsplanDatum).toISOString().slice(0, 10) : "");
-      setNachbesserungName(lastSaved.nachbesserungName || "");
-      setNachbesserungDatum(lastSaved.nachbesserungDatum || "");
-      setNachbesserungUnterschrift(lastSaved.nachbesserungUnterschrift || "");
-      try { setMassnahmen(lastSaved.aktionsplanMassnahmen ? JSON.parse(lastSaved.aktionsplanMassnahmen) : []); } catch { setMassnahmen([]); }
+      setAktionsplanDatum(saved.aktionsplanDatum ? new Date(saved.aktionsplanDatum).toISOString().slice(0, 10) : "");
+      setNachbesserungName(saved.nachbesserungName || "");
+      setNachbesserungDatum(saved.nachbesserungDatum || "");
+      setNachbesserungUnterschrift(saved.nachbesserungUnterschrift || "");
+      try { setMassnahmen(saved.aktionsplanMassnahmen ? JSON.parse(saved.aktionsplanMassnahmen) : []); } catch { setMassnahmen([]); }
       setEditMode(false);
       toast({ title: "TÜV-Bericht gespeichert", description: "Alle Änderungen wurden erfolgreich gespeichert." });
     } catch (err: any) {
       const msg = err?.message || "Netzwerkfehler beim Speichern.";
-      console.error("[TÜV] handleSave Exception:", err);
       setSaveError(msg);
       toast({ title: "Speichern fehlgeschlagen", description: msg, variant: "destructive" });
     } finally { setSaving(false); }
@@ -806,13 +833,43 @@ function TuevPanel({ year }: { year: number }) {
       {(daten || editMode) ? (
         <div className="space-y-4">
           <DokumentCard label="TÜV Zertifikate" dokument={zertDok} notizen={zertNotizen}
-            onDokument={(v) => { setZertDok(v); setEditMode(true); }} onNotizen={(v) => { setZertNotizen(v); setEditMode(true); }} onClear={() => { setZertDok(""); setEditMode(true); }}
-            notizenPlaceholder="Zertifikat-Nummer, Gültigkeitsdatum, Ausstellungsorganisation..." disabled={!editMode} />
+            onDokument={(v) => {
+              setZertDok(v); setEditMode(true);
+              autoSaveDoc("zertifikateDokument", v, { zertNotizen, pruefNotizen, massnahmen, aktionsplanDatum, nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift });
+            }}
+            onNotizen={(v) => { setZertNotizen(v); setEditMode(true); }}
+            onClear={() => {
+              setZertDok(""); setEditMode(true);
+              autoSaveDoc("zertifikateDokument", "", { zertNotizen, pruefNotizen, massnahmen, aktionsplanDatum, nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift });
+            }}
+            notizenPlaceholder="Zertifikat-Nummer, Gültigkeitsdatum, Ausstellungsorganisation..."
+            disabled={!editMode}
+            autoSaving={docSaving["zertifikateDokument"]}
+            autoSaveError={docSaveError["zertifikateDokument"]} />
           <DokumentCard label="TÜV Prüfberichte" dokument={pruefDok} notizen={pruefNotizen}
-            onDokument={(v) => { setPruefDok(v); setEditMode(true); }} onNotizen={(v) => { setPruefNotizen(v); setEditMode(true); }} onClear={() => { setPruefDok(""); setEditMode(true); }}
-            notizenPlaceholder="Prüfbereich, Ergebnis, Prüfer, Datum der nächsten Prüfung..." disabled={!editMode} />
+            onDokument={(v) => {
+              setPruefDok(v); setEditMode(true);
+              autoSaveDoc("pruefungenDokument", v, { zertNotizen, pruefNotizen, massnahmen, aktionsplanDatum, nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift });
+            }}
+            onNotizen={(v) => { setPruefNotizen(v); setEditMode(true); }}
+            onClear={() => {
+              setPruefDok(""); setEditMode(true);
+              autoSaveDoc("pruefungenDokument", "", { zertNotizen, pruefNotizen, massnahmen, aktionsplanDatum, nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift });
+            }}
+            notizenPlaceholder="Prüfbereich, Ergebnis, Prüfer, Datum der nächsten Prüfung..."
+            disabled={!editMode}
+            autoSaving={docSaving["pruefungenDokument"]}
+            autoSaveError={docSaveError["pruefungenDokument"]} />
           <AktionsplanCard foto={aktFoto} massnahmen={massnahmen} datum={aktionsplanDatum}
-            onFoto={(v) => { setAktFoto(v); setEditMode(true); }} onMassnahmen={(v) => { setMassnahmen(v); setEditMode(true); }} onFotoClear={() => { setAktFoto(""); setEditMode(true); }}
+            onFoto={(v) => {
+              setAktFoto(v); setEditMode(true);
+              autoSaveDoc("aktionsplanFoto", v, { zertNotizen, pruefNotizen, massnahmen, aktionsplanDatum, nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift });
+            }}
+            onMassnahmen={(v) => { setMassnahmen(v); setEditMode(true); }}
+            onFotoClear={() => {
+              setAktFoto(""); setEditMode(true);
+              autoSaveDoc("aktionsplanFoto", "", { zertNotizen, pruefNotizen, massnahmen, aktionsplanDatum, nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift });
+            }}
             onDatum={(v) => { setAktionsplanDatum(v); setEditMode(true); }}
             disabled={!editMode} />
 
