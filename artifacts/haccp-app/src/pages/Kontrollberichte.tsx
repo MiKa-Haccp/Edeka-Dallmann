@@ -613,7 +613,11 @@ function AktionsplanCard({
 
 // ===== TÜV PANEL =====
 function TuevPanel({ year }: { year: number }) {
-  const { selectedMarketId } = useAppStore();
+  const { selectedMarketId, adminSession } = useAppStore();
+  // Nur Rollen mit Leitungsfunktion dürfen den TÜV-Bereich bearbeiten
+  const canEditTuev = adminSession
+    ? ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER"].includes(adminSession.role)
+    : false;
   const { toast } = useToast();
   const [daten, setDaten] = useState<TuevJahresbericht | null>(null);
   const [loading, setLoading] = useState(false);
@@ -817,10 +821,12 @@ function TuevPanel({ year }: { year: number }) {
         </p>
         <div className="flex gap-2">
           {!editMode ? (
-            <button onClick={() => setEditMode(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors">
-              <Pencil className="w-4 h-4" /> {daten ? "Bearbeiten" : "Eintragen"}
-            </button>
+            canEditTuev && (
+              <button onClick={() => setEditMode(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors">
+                <Pencil className="w-4 h-4" /> {daten ? "Bearbeiten" : "Eintragen"}
+              </button>
+            )
           ) : (
             <>
               {saveError && (
