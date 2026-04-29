@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
+import { TempScrollPicker } from "@/components/TempScrollPicker";
 import {
   ClipboardList, ChevronLeft, ChevronRight, Loader2, Check, X,
   Lock, Thermometer, AlertTriangle, Trash2, Plus, Settings2,
@@ -622,17 +623,15 @@ function DayFormView({ day, year, month, type, existingEntry, onSaved, onDelete,
                       <div className="flex items-center gap-1.5 shrink-0">
                         {vals[c.key]!=="entfällt"&&(
                           <>
-                            <input type="number" step="0.1"
-                              className={`w-20 border-2 rounded-lg px-2 py-1.5 text-sm font-mono text-center focus:outline-none transition-colors ${
-                                vals[c.key]&&!isTempOk(c,vals[c.key])
-                                  ? "border-red-400 bg-red-50 focus:border-red-400"
-                                  : showValidation&&!vals[c.key]
-                                    ? "border-red-400 bg-red-50 focus:border-red-400"
-                                    : "border-border focus:border-primary/50"
-                              }`}
-                              placeholder="°C" value={vals[c.key]??""} onChange={e=>setVal(c.key,e.target.value)}/>
-                            <span className="text-xs text-muted-foreground">°C</span>
-                            {vals[c.key]&&<span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isTempOk(c,vals[c.key])?"bg-green-100 text-green-700":"bg-red-100 text-red-700"}`}>{isTempOk(c,vals[c.key])?"i.O.":"!"}</span>}
+                            <TempScrollPicker
+                              value={vals[c.key]??""}
+                              onChange={v=>setVal(c.key,v)}
+                              maxVal={c.maxVal}
+                              minVal={c.minVal}
+                              status={vals[c.key] ? (isTempOk(c,vals[c.key])?"ok":"warn") : showValidation ? "warn" : "none"}
+                              className="w-32"
+                            />
+                            {vals[c.key]&&<span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${isTempOk(c,vals[c.key])?"bg-green-100 text-green-700":"bg-red-100 text-red-700"}`}>{isTempOk(c,vals[c.key])?"i.O.":"!"}</span>}
                           </>
                         )}
                         <button

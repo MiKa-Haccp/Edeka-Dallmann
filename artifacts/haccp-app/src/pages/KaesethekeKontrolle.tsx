@@ -7,6 +7,7 @@ import { useLocation } from "wouter";
 import { getBavarianHolidays } from "@/utils/holidays";
 import { useArchivLock } from "@/hooks/useArchivLock";
 import { ArchivBanner } from "@/components/ArchivBanner";
+import { TempScrollPicker } from "@/components/TempScrollPicker";
 import {
   Thermometer, ChevronLeft, ChevronRight, Loader2, Check,
   X, Printer, Lock, Plus, Trash2, Wind, Flame, Snowflake,
@@ -228,19 +229,32 @@ function TempModal({art,day,year,month,editEntry,onConfirm,onClose}:{
           <div className="space-y-3">
             <div>
               <label className="text-xs font-medium text-muted-foreground block mb-1">Temperatur (°C) <span className="text-muted-foreground/60">{tempSpec}</span></label>
-              <div className="relative">
-                <input type="text" inputMode="decimal" placeholder="z.B. 2,1" value={temp} onChange={e=>setTemp(e.target.value)}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${tStatus==="warn"?"border-red-400 bg-red-50":tStatus==="ok"?"border-green-400 bg-green-50":""}`} autoFocus/>
-                {tStatus!=="none"&&<span className={`absolute right-2 top-2 text-xs font-semibold ${tStatus==="ok"?"text-green-600":"text-red-600"}`}>{tStatus==="ok"?"i.O.":"ABWEICHUNG"}</span>}
+              <div className="flex items-center gap-2">
+                <TempScrollPicker
+                  value={temp}
+                  onChange={setTemp}
+                  maxVal={art==="reifeschrank" ? 3 : 7}
+                  minVal={art==="reifeschrank" ? 1 : undefined}
+                  status={tStatus}
+                  className="flex-1"
+                />
+                {tStatus!=="none"&&<span className={`text-xs font-semibold shrink-0 ${tStatus==="ok"?"text-green-600":"text-red-600"}`}>{tStatus==="ok"?"i.O.":"ABWEICHUNG"}</span>}
               </div>
             </div>
             {art==="reifeschrank"&&(
               <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">Luftfeuchtigkeit (% rH) <span className="text-muted-foreground/60">Soll: 75–85%</span> <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <input type="text" inputMode="decimal" placeholder="z.B. 80,0" value={feuchte} onChange={e=>setFeuchte(e.target.value)}
-                    className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${hStatus==="warn"?"border-red-400 bg-red-50":hStatus==="ok"?"border-green-400 bg-green-50":""}`}/>
-                  {hStatus!=="none"&&<span className={`absolute right-2 top-2 text-xs font-semibold ${hStatus==="ok"?"text-green-600":"text-red-600"}`}>{hStatus==="ok"?"i.O.":"ABWEICHUNG"}</span>}
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Luftfeuchtigkeit <span className="text-muted-foreground/60">Soll: 75–85% rH</span> <span className="text-red-500">*</span></label>
+                <div className="flex items-center gap-2">
+                  <TempScrollPicker
+                    value={feuchte}
+                    onChange={setFeuchte}
+                    maxVal={85}
+                    minVal={75}
+                    unit="% rH"
+                    status={hStatus}
+                    className="flex-1"
+                  />
+                  {hStatus!=="none"&&<span className={`text-xs font-semibold shrink-0 ${hStatus==="ok"?"text-green-600":"text-red-600"}`}>{hStatus==="ok"?"i.O.":"ABWEICHUNG"}</span>}
                 </div>
               </div>
             )}

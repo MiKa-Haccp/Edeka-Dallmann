@@ -5,6 +5,7 @@ import {
   ChevronLeft, ChevronRight, Loader2, Check, X, Lock,
   Thermometer, ClipboardList, Printer, Trash2, AlertTriangle,
 } from "lucide-react";
+import { TempScrollPicker } from "@/components/TempScrollPicker";
 import { getBavarianHolidays, getHolidayName } from "@/utils/holidays";
 import { useArchivLock } from "@/hooks/useArchivLock";
 import { ArchivBanner } from "@/components/ArchivBanner";
@@ -229,16 +230,13 @@ function EntryModal({
                   Temperatur Obst/Gemüse (max. +7 °C)
                 </label>
                 <div className="flex items-center gap-2">
-                  <input
-                    type="number" step="0.1"
-                    className={`w-28 border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 ${
-                      !tempOk ? "border-red-400 focus:ring-red-300 bg-red-50" : "border-border focus:ring-primary/30"
-                    }`}
-                    placeholder="z.B. 4.5"
+                  <TempScrollPicker
                     value={form.tempCelsius}
-                    onChange={e => set("tempCelsius", e.target.value)}
+                    onChange={v => set("tempCelsius", v)}
+                    maxVal={7}
+                    status={!isNaN(tempNum) ? (tempOk ? "ok" : "warn") : "none"}
+                    className="w-36"
                   />
-                  <span className="text-sm text-muted-foreground">°C</span>
                   {!isNaN(tempNum) && (
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${tempOk ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
                       {tempOk ? "i.O." : "ZU WARM!"}
