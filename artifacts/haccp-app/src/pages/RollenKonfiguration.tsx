@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import {
   ChevronLeft, Shield, ShieldCheck, Users, Store, Lock,
   Check, X, Plus, Trash2, AlertTriangle, RefreshCw, Settings2,
-  LayoutGrid, UserCog, Star,
+  LayoutGrid, UserCog, Star, ClipboardList, ListChecks, Package,
+  Building2, TrendingUp, FolderOpen, Cpu, ChevronDown, ChevronRight,
 } from "lucide-react";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -28,49 +29,62 @@ interface RoleConfig {
   sort_order: number;
 }
 
-const PERMISSION_AREAS = [
-  // Benutzerverwaltung
-  { key: "users.view",              label: "Mitarbeiterliste einsehen",            group: "Benutzerverwaltung" },
-  { key: "users.manage",            label: "Mitarbeiter verwalten (Kürzel/PIN)",   group: "Benutzerverwaltung" },
-  { key: "users.invite_admin",      label: "Admins einladen",                      group: "Benutzerverwaltung" },
-  { key: "verwaltung.access",       label: "Verwaltungsbereich aufrufen",          group: "Benutzerverwaltung" },
-  // HACCP Einträge
-  { key: "entries.create",          label: "HACCP-Einträge erstellen",             group: "HACCP Einträge" },
-  { key: "entries.view_all",        label: "Alle Einträge einsehen",               group: "HACCP Einträge" },
-  { key: "entries.edit",            label: "Einträge bearbeiten",                  group: "HACCP Einträge" },
-  { key: "entries.delete",          label: "Einträge löschen",                     group: "HACCP Einträge" },
-  { key: "responsibilities.edit",   label: "Verantwortlichkeiten bearbeiten (1.1)", group: "HACCP Einträge" },
-  // Berichte & Dokumente
-  { key: "reports.view",            label: "Berichte einsehen",                    group: "Berichte & Dokumente" },
-  { key: "reports.export",          label: "Berichte exportieren",                 group: "Berichte & Dokumente" },
-  { key: "reports.monatsbericht",   label: "Monatsbericht einsehen",               group: "Berichte & Dokumente" },
-  // Schulungen & Verwaltung
-  { key: "schulungen.manage",       label: "Schulungsanforderungen verwalten",     group: "Schulungen & Verwaltung" },
-  { key: "notifications.manage",    label: "Benachrichtigungsregeln verwalten",    group: "Schulungen & Verwaltung" },
-  // Todo & Aufgaben
-  { key: "todo.access",             label: "Todo-Listen aufrufen",                 group: "Todo & Aufgaben" },
-  { key: "todo.manage",             label: "Todos und Rundgänge verwalten",        group: "Todo & Aufgaben" },
-  { key: "todo.kassen",             label: "Kassenkontrolle aufrufen",             group: "Todo & Aufgaben" },
-  // Warenwirtschaft
-  { key: "ware.access",             label: "Waren-Bereich aufrufen",               group: "Warenwirtschaft" },
-  { key: "ware.bestellungen",       label: "Bestellungen verwalten",               group: "Warenwirtschaft" },
-  { key: "ware.mhd",                label: "MHD-Kontrolle durchführen",            group: "Warenwirtschaft" },
-  // Metzgerei
-  { key: "metzgerei.access",        label: "Metzgerei-Bereiche aufrufen",          group: "Metzgerei" },
-  { key: "metzgerei.gq_begehung",   label: "GQ-Begehung durchführen",             group: "Metzgerei" },
-  // Management
-  { key: "management.hub",          label: "Management Hub aufrufen",              group: "Management" },
-  // Projekt
-  { key: "projekt.access",          label: "Projekt-Hub aufrufen",                 group: "Projekt" },
-  // System
-  { key: "devices.manage",          label: "Geräteverwaltung aufrufen",            group: "System" },
-  { key: "settings.manage",         label: "Systemeinstellungen verwalten",        group: "System" },
-  { key: "modules.manage",          label: "Modul-Sichtbarkeit verwalten",         group: "System" },
-  { key: "sections.manage",         label: "Bereichs-Sichtbarkeit verwalten",      group: "System" },
-  { key: "feedback.manage",         label: "Feedback & Bereinigung verwalten",     group: "System" },
+// Berechtigungen mit 2-Ebenen-Gliederung: group = Hauptbereich, section = Unterbereich
+const PERMISSION_AREAS: { key: string; label: string; group: string; section: string }[] = [
+  // ── HACCP ────────────────────────────────────────────────────────────────────
+  { key: "entries.create",         label: "Einträge erstellen",                   group: "HACCP", section: "HACCP Einträge" },
+  { key: "entries.view_all",       label: "Alle Einträge einsehen",               group: "HACCP", section: "HACCP Einträge" },
+  { key: "entries.edit",           label: "Einträge bearbeiten",                  group: "HACCP", section: "HACCP Einträge" },
+  { key: "entries.delete",         label: "Einträge löschen",                     group: "HACCP", section: "HACCP Einträge" },
+  { key: "responsibilities.edit",  label: "Verantwortlichkeiten (1.1) bearbeiten",group: "HACCP", section: "HACCP Einträge" },
+  { key: "reports.view",           label: "Berichte einsehen",                    group: "HACCP", section: "Berichte & Dokumente" },
+  { key: "reports.export",         label: "Berichte exportieren",                 group: "HACCP", section: "Berichte & Dokumente" },
+  { key: "reports.monatsbericht",  label: "Monatsbericht einsehen",               group: "HACCP", section: "Berichte & Dokumente" },
+  { key: "reports.tuev",           label: "TÜV-Jahresbericht bearbeiten",         group: "HACCP", section: "Berichte & Dokumente" },
+  { key: "schulungen.manage",      label: "Schulungsanforderungen verwalten",     group: "HACCP", section: "Schulungen" },
+  { key: "metzgerei.access",       label: "Metzgerei-Bereiche aufrufen",          group: "HACCP", section: "Metzgerei" },
+  { key: "metzgerei.gq_begehung",  label: "GQ-Begehung durchführen",             group: "HACCP", section: "Metzgerei" },
+  // ── TODO & AUFGABEN ──────────────────────────────────────────────────────────
+  { key: "todo.access",            label: "Todo-Listen aufrufen",                 group: "Todo & Aufgaben", section: "" },
+  { key: "todo.manage",            label: "Todos und Rundgänge verwalten",        group: "Todo & Aufgaben", section: "" },
+  { key: "todo.kassen",            label: "Kassenkontrolle aufrufen",             group: "Todo & Aufgaben", section: "" },
+  // ── WARENWIRTSCHAFT ──────────────────────────────────────────────────────────
+  { key: "ware.access",            label: "Waren-Bereich aufrufen",               group: "Warenwirtschaft", section: "" },
+  { key: "ware.bestellungen",      label: "Bestellungen verwalten",               group: "Warenwirtschaft", section: "" },
+  { key: "ware.mhd",               label: "MHD-Kontrolle durchführen",            group: "Warenwirtschaft", section: "" },
+  // ── VERWALTUNG ───────────────────────────────────────────────────────────────
+  { key: "verwaltung.access",      label: "Verwaltungsbereich aufrufen",          group: "Verwaltung", section: "Benutzerverwaltung" },
+  { key: "users.view",             label: "Mitarbeiterliste einsehen",            group: "Verwaltung", section: "Benutzerverwaltung" },
+  { key: "users.manage",           label: "Mitarbeiter verwalten (Kürzel/PIN)",   group: "Verwaltung", section: "Benutzerverwaltung" },
+  { key: "users.invite_admin",     label: "Admins einladen",                      group: "Verwaltung", section: "Benutzerverwaltung" },
+  { key: "devices.manage",         label: "Geräteverwaltung aufrufen",            group: "Verwaltung", section: "Geräte & Benachrichtigungen" },
+  { key: "notifications.manage",   label: "Benachrichtigungsregeln verwalten",    group: "Verwaltung", section: "Geräte & Benachrichtigungen" },
+  // ── MANAGEMENT ───────────────────────────────────────────────────────────────
+  { key: "management.hub",         label: "Management Hub aufrufen",              group: "Management", section: "" },
+  // ── PROJEKT ──────────────────────────────────────────────────────────────────
+  { key: "projekt.access",         label: "Projekt-Hub aufrufen",                 group: "Projekt", section: "" },
+  // ── SYSTEM ───────────────────────────────────────────────────────────────────
+  { key: "settings.manage",        label: "Systemeinstellungen verwalten",        group: "System", section: "" },
+  { key: "modules.manage",         label: "Modul-Sichtbarkeit verwalten",         group: "System", section: "" },
+  { key: "sections.manage",        label: "Bereichs-Sichtbarkeit verwalten",      group: "System", section: "" },
+  { key: "feedback.manage",        label: "Feedback & Bereinigung verwalten",     group: "System", section: "" },
 ];
 
-const PERMISSION_GROUPS = [...new Set(PERMISSION_AREAS.map(a => a.group))];
+// Alle Hauptbereiche in der richtigen Reihenfolge
+const PERMISSION_GROUPS = [
+  "HACCP", "Todo & Aufgaben", "Warenwirtschaft", "Verwaltung", "Management", "Projekt", "System"
+];
+
+// Icon und Farbe pro Hauptbereich
+const GROUP_META: Record<string, { icon: typeof ClipboardList; color: string; bg: string; border: string }> = {
+  "HACCP":           { icon: ClipboardList, color: "text-[#1a3a6b]", bg: "bg-[#1a3a6b]/8",  border: "border-[#1a3a6b]/20" },
+  "Todo & Aufgaben": { icon: ListChecks,    color: "text-emerald-700", bg: "bg-emerald-50",   border: "border-emerald-200" },
+  "Warenwirtschaft": { icon: Package,       color: "text-orange-700",  bg: "bg-orange-50",    border: "border-orange-200" },
+  "Verwaltung":      { icon: Building2,     color: "text-slate-700",   bg: "bg-slate-50",     border: "border-slate-200" },
+  "Management":      { icon: TrendingUp,    color: "text-purple-700",  bg: "bg-purple-50",    border: "border-purple-200" },
+  "Projekt":         { icon: FolderOpen,    color: "text-teal-700",    bg: "bg-teal-50",      border: "border-teal-200" },
+  "System":          { icon: Cpu,           color: "text-red-700",     bg: "bg-red-50",       border: "border-red-200" },
+};
 
 const COLOR_OPTIONS = [
   { key: "purple",  label: "Lila",   cls: "bg-purple-500" },
@@ -290,6 +304,146 @@ function RollenUebersicht({ roles }: { roles: RoleConfig[] }) {
   );
 }
 
+// ─── Einzelner Berechtigungs-Toggle ──────────────────────────────────────────
+function PermToggle({
+  area,
+  active,
+  cc,
+  onToggle,
+}: {
+  area: { key: string; label: string };
+  active: boolean;
+  cc: { bg: string; text: string; border: string };
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className={cn(
+        "flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 text-left transition-all w-full",
+        active
+          ? cn(cc.bg, cc.text, cc.border)
+          : "bg-white border-gray-200 text-muted-foreground hover:border-gray-300"
+      )}
+    >
+      <div className={cn(
+        "w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border",
+        active ? cn(cc.text, "border-current") : "border-gray-300"
+      )}>
+        {active && <Check className="h-2.5 w-2.5" />}
+      </div>
+      <span className="text-xs leading-tight">{area.label}</span>
+    </button>
+  );
+}
+
+// ─── 2-Ebenen Berechtigungsgruppe ────────────────────────────────────────────
+function PermissionGroupList({
+  perms,
+  roleKey,
+  cc,
+  onToggle,
+}: {
+  perms: string[];
+  roleKey: string;
+  cc: { bg: string; text: string; border: string };
+  onToggle: (role: string, perm: string) => void;
+}) {
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+
+  return (
+    <div className="divide-y divide-gray-100">
+      {PERMISSION_GROUPS.map(group => {
+        const groupAreas = PERMISSION_AREAS.filter(a => a.group === group);
+        if (groupAreas.length === 0) return null;
+
+        const meta = GROUP_META[group];
+        const GroupIcon = meta.icon;
+        const isCollapsed = collapsed[group];
+
+        // Unterabschnitte ermitteln
+        const sections = [...new Set(groupAreas.map(a => a.section))].filter(Boolean);
+        const hasSubsections = sections.length > 0;
+        const unsectionedAreas = groupAreas.filter(a => !a.section);
+
+        const activeCount = groupAreas.filter(a => perms.includes(a.key)).length;
+
+        return (
+          <div key={group}>
+            {/* Hauptbereich-Header */}
+            <button
+              className={cn(
+                "w-full flex items-center gap-3 px-5 py-3 text-left transition-colors hover:brightness-95",
+                meta.bg
+              )}
+              onClick={() => setCollapsed(prev => ({ ...prev, [group]: !prev[group] }))}
+            >
+              <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center bg-white/70 shadow-sm shrink-0", meta.border, "border")}>
+                <GroupIcon className={cn("h-4 w-4", meta.color)} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className={cn("font-bold text-sm", meta.color)}>{group}</span>
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {activeCount} / {groupAreas.length} aktiv
+                </span>
+              </div>
+              {isCollapsed
+                ? <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
+            </button>
+
+            {/* Inhalte (ein-/ausklappbar) */}
+            {!isCollapsed && (
+              <div className="px-5 py-4 space-y-4 bg-white">
+                {/* Berechtigungen ohne Unterabschnitt */}
+                {unsectionedAreas.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {unsectionedAreas.map(area => (
+                      <PermToggle
+                        key={area.key}
+                        area={area}
+                        active={perms.includes(area.key)}
+                        cc={cc}
+                        onToggle={() => onToggle(roleKey, area.key)}
+                      />
+                    ))}
+                  </div>
+                )}
+                {/* Unterabschnitte */}
+                {hasSubsections && sections.map(section => {
+                  const sectionAreas = groupAreas.filter(a => a.section === section);
+                  return (
+                    <div key={section}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className={cn("h-px flex-1 bg-gray-100")} />
+                        <span className={cn("text-xs font-semibold uppercase tracking-wide px-2", meta.color, "opacity-70")}>
+                          {section}
+                        </span>
+                        <div className={cn("h-px flex-1 bg-gray-100")} />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {sectionAreas.map(area => (
+                          <PermToggle
+                            key={area.key}
+                            area={area}
+                            active={perms.includes(area.key)}
+                            cc={cc}
+                            onToggle={() => onToggle(roleKey, area.key)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function BerechtigungsMatrix({ roles, onSaved }: { roles: RoleConfig[]; onSaved: () => void }) {
   const [localPerms, setLocalPerms] = useState<Record<string, string[]>>({});
   const [savingRole, setSavingRole] = useState<string | null>(null);
@@ -426,43 +580,12 @@ function BerechtigungsMatrix({ roles, onSaved }: { roles: RoleConfig[]; onSaved:
               </div>
             </div>
 
-            <div className="p-5 space-y-4">
-              {PERMISSION_GROUPS.map(group => {
-                const groupAreas = PERMISSION_AREAS.filter(a => a.group === group);
-                return (
-                  <div key={group}>
-                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2.5">
-                      {group}
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                      {groupAreas.map(area => {
-                        const active = perms.includes(area.key);
-                        return (
-                          <button
-                            key={area.key}
-                            onClick={() => toggle(roleConfig.role, area.key)}
-                            className={cn(
-                              "flex items-center gap-2.5 px-3 py-2.5 rounded-xl border-2 text-left text-sm font-medium transition-all",
-                              active
-                                ? cn("border-current", cc.bg, cc.text, cc.border)
-                                : "bg-white border-gray-200 text-muted-foreground hover:border-gray-300"
-                            )}
-                          >
-                            <div className={cn(
-                              "w-4 h-4 rounded flex-shrink-0 flex items-center justify-center border",
-                              active ? cn("border-current", cc.text) : "border-gray-300"
-                            )}>
-                              {active && <Check className="h-2.5 w-2.5" />}
-                            </div>
-                            <span className="text-xs leading-tight">{area.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <PermissionGroupList
+              perms={perms}
+              roleKey={roleConfig.role}
+              cc={cc}
+              onToggle={toggle}
+            />
           </div>
         );
       })}
