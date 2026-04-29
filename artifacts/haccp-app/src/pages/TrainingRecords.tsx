@@ -430,7 +430,7 @@ function AttendanceDialog({ isOpen, onClose, sessionId, marketId }: { isOpen: bo
     <Dialog.Root open={isOpen} onOpenChange={(o) => !o && handleClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/50 z-50" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl p-6 w-[95vw] max-w-md z-50 shadow-xl">
+        <Dialog.Content className="fixed left-1/2 top-[5vh] sm:top-1/2 -translate-x-1/2 sm:-translate-y-1/2 bg-white rounded-2xl p-6 w-[95vw] max-w-md z-50 shadow-xl max-h-[90vh] overflow-y-auto">
           <Dialog.Title className="text-xl font-bold text-foreground flex items-center gap-2 mb-4">
             <UserPlus className="w-5 h-5 text-primary" />
             Teilnahme bestätigen
@@ -461,7 +461,8 @@ function AttendanceDialog({ isOpen, onClose, sessionId, marketId }: { isOpen: bo
                 <div className="relative">
                   <input type={showPin ? "text" : "password"} value={pin}
                     onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    placeholder="****" maxLength={4} autoFocus
+                    onKeyDown={(e) => { if (e.key === "Enter" && pin.length >= 4) handleSubmitPin(); }}
+                    placeholder="****" maxLength={4} autoFocus inputMode="numeric"
                     className="w-full border border-border rounded-lg px-3 py-2 text-sm font-mono tracking-widest text-center text-lg" />
                   <button type="button" onClick={() => setShowPin(!showPin)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
