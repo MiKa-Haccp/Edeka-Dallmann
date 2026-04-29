@@ -76,7 +76,10 @@ export const useAppStore = create<AppState>()(
         const s = get().adminSession;
         if (!s) return true;
         if (s.role === 'SUPERADMIN' || s.role === 'ADMIN' || s.role === 'BEREICHSLEITUNG') return true;
-        return s.assignedMarketIds?.includes(marketId) ?? false;
+        if (s.role === 'MARKTLEITER') {
+          return s.assignedMarketIds?.includes(marketId) ?? false;
+        }
+        return true;
       },
       isGpsLocked: () => {
         const s = get().adminSession;
