@@ -65,8 +65,7 @@ const PERMISSION_AREAS: { key: string; label: string; group: string; section: st
   { key: "projekt.access",         label: "Projekt-Hub aufrufen",                 group: "Projekt", section: "" },
   // ── SYSTEM ───────────────────────────────────────────────────────────────────
   { key: "settings.manage",        label: "Systemeinstellungen verwalten",        group: "System", section: "" },
-  { key: "modules.manage",         label: "Modul-Sichtbarkeit verwalten",         group: "System", section: "" },
-  { key: "sections.manage",        label: "Bereichs-Sichtbarkeit verwalten",      group: "System", section: "" },
+  { key: "visibility.manage",      label: "Modul- & Bereichs-Sichtbarkeit",       group: "System", section: "" },
   { key: "feedback.manage",        label: "Feedback & Bereinigung verwalten",     group: "System", section: "" },
 ];
 

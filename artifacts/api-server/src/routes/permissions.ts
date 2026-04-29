@@ -41,8 +41,7 @@ export const PERMISSION_AREAS = [
   // System
   { key: "devices.manage",          label: "Geräteverwaltung aufrufen",            group: "System" },
   { key: "settings.manage",         label: "Systemeinstellungen verwalten",        group: "System" },
-  { key: "modules.manage",          label: "Modul-Sichtbarkeit verwalten",         group: "System" },
-  { key: "sections.manage",         label: "Bereichs-Sichtbarkeit verwalten",      group: "System" },
+  { key: "visibility.manage",       label: "Modul- & Bereichs-Sichtbarkeit",       group: "System" },
   { key: "feedback.manage",         label: "Feedback & Bereinigung verwalten",     group: "System" },
 ] as const;
 
@@ -57,7 +56,7 @@ const ROLE_DEFAULT_PERMISSIONS: Record<string, string[]> = {
     "ware.access","ware.bestellungen","ware.mhd",
     "metzgerei.access","metzgerei.gq_begehung",
     "projekt.access",
-    "devices.manage","settings.manage","modules.manage","sections.manage","feedback.manage",
+    "devices.manage","settings.manage","visibility.manage","feedback.manage",
   ],
   BEREICHSLEITUNG: [
     "users.view","users.manage","verwaltung.access",
