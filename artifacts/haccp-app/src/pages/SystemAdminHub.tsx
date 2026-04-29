@@ -99,18 +99,31 @@ export default function SystemAdminHub() {
             title="Monatsbericht"
             description="HACCP-Daten aller Module als Monatsbericht zusammenfassen, als HTML ausgeben und per E-Mail versenden."
           />
-          <AdminCard
-            href="/admin/module-sichtbarkeit"
-            icon={<LayoutGrid className="w-6 h-6 text-purple-600" />}
-            title="Modul-Sichtbarkeit"
-            description="Module auf der Startseite ein- oder ausschalten. Schrittweise Freischaltung für alle Benutzer."
-          />
-          <AdminCard
-            href="/admin/section-sichtbarkeit"
-            icon={<LayoutList className="w-6 h-6 text-purple-600" />}
-            title="Abschnitt-Sichtbarkeit"
-            description="Einzelne Handbuch-Punkte aus der Sidebar ausblenden. Die Nummerierung passt sich automatisch an."
-          />
+          <div className="group h-full bg-white rounded-2xl border border-purple-200 shadow-sm hover:shadow-md hover:border-purple-400 transition-all duration-200 p-6 flex flex-col">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+                  <LayoutGrid className="w-6 h-6 text-purple-600" />
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+                  <LayoutList className="w-6 h-6 text-purple-600" />
+                </div>
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-purple-100 text-purple-700">System</span>
+            </div>
+            <h3 className="text-lg font-bold text-foreground mb-1">Sichtbarkeit</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4 flex-1">
+              Module auf der Startseite ein-/ausschalten und einzelne Handbuch-Punkte aus der Sidebar ausblenden.
+            </p>
+            <div className="flex gap-2 mt-auto">
+              <Link href="/admin/module-sichtbarkeit" className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-purple-50 border border-purple-200 text-xs font-bold text-purple-700 hover:bg-purple-100 transition-colors">
+                <LayoutGrid className="w-3.5 h-3.5" /> Module
+              </Link>
+              <Link href="/admin/section-sichtbarkeit" className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-purple-50 border border-purple-200 text-xs font-bold text-purple-700 hover:bg-purple-100 transition-colors">
+                <LayoutList className="w-3.5 h-3.5" /> Abschnitte
+              </Link>
+            </div>
+          </div>
           <AdminCard
             href="/admin/daten-bereinigung"
             icon={<Trash2 className="w-6 h-6 text-red-600" />}
