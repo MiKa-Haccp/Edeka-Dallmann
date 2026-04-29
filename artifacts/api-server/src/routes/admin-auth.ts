@@ -222,24 +222,22 @@ router.post("/admin/login", async (req, res) => {
         .where(eq(userMarketAssignmentsTable.userId, user.id))
     : [];
 
-  // Individuelle Benutzer-Berechtigungen laden (überschreiben Rollen-Standard)
+  // Berechtigungen immer aus aktuellen Rollen-Defaults laden, damit Änderungen
+  // an der Berechtigungsmatrix sofort beim nächsten Login greifen.
+  // Individuelle user_permissions werden als zusätzliche Grants obendrauf gemergt.
   const { pool } = await import("@workspace/db");
+  const rolePermResult = await pool.query(
+    `SELECT permissions FROM role_permission_defaults WHERE role = $1 AND tenant_id = $2 LIMIT 1`,
+    [user.role, user.tenantId]
+  );
+  const rolePermissions: string[] = rolePermResult.rows[0]?.permissions || [];
   const userPermResult = await pool.query(
     `SELECT permission_type FROM user_permissions WHERE user_id = $1 AND granted = true`,
     [user.id]
   );
-  let effectivePermissions: string[];
-  if (userPermResult.rows.length > 0) {
-    // Individuelle Overrides vorhanden → diese verwenden
-    effectivePermissions = userPermResult.rows.map((r: any) => r.permission_type);
-  } else {
-    // Fallback: Rollen-Standard aus role_permission_defaults
-    const rolePermResult = await pool.query(
-      `SELECT permissions FROM role_permission_defaults WHERE role = $1 AND tenant_id = $2 LIMIT 1`,
-      [user.role, user.tenantId]
-    );
-    effectivePermissions = rolePermResult.rows[0]?.permissions || [];
-  }
+  const individualPermissions: string[] = userPermResult.rows.map((r: any) => r.permission_type);
+  // Effektive Berechtigungen = Rollen-Defaults (Basis) + individuelle Extras (Union)
+  const effectivePermissions = [...new Set([...rolePermissions, ...individualPermissions])];
 
   res.json({
     success: true,
