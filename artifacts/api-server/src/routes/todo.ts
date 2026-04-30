@@ -63,8 +63,20 @@ router.delete("/todo/standard-tasks/:id", async (req, res) => {
 // ── Tageserledigungen ────────────────────────────────────────────────────────
 
 router.get("/todo/daily-completions", async (req, res) => {
-  const { marketId, date } = req.query as Record<string, string>;
-  if (!marketId || !date) return res.status(400).json({ error: "marketId and date required" });
+  const { marketId, date, weekStart } = req.query as Record<string, string>;
+  if (!marketId) return res.status(400).json({ error: "marketId required" });
+  if (weekStart) {
+    // Alle Erledigungen von Montag bis Samstag der Woche zurückgeben (für Wochenaufgaben-Check)
+    const { rows } = await pool.query(
+      `SELECT * FROM todo_daily_completions
+       WHERE market_id=$1
+         AND completed_date >= $2::date
+         AND completed_date < ($2::date + interval '6 days')`,
+      [marketId, weekStart]
+    );
+    return res.json(rows);
+  }
+  if (!date) return res.status(400).json({ error: "marketId and date required" });
   const { rows } = await pool.query(
     `SELECT * FROM todo_daily_completions WHERE market_id=$1 AND completed_date=$2`,
     [marketId, date]

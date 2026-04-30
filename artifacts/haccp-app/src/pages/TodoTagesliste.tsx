@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Link } from "wouter";
 import { useAppStore } from "@/store/use-app-store";
+import { getBavarianHolidays, getHolidayName } from "@/utils/holidays";
 import {
   CheckCircle2, Circle, Loader2, Info, ChevronLeft, ChevronRight,
   Flame, Minus, ArrowDown, X, Camera, ImagePlus, Trash2, ZoomIn,
@@ -32,6 +33,26 @@ const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 const WEEKDAY_NAMES = ["", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+
+function getMonday(d: Date): string {
+  const date = new Date(d);
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  date.setDate(date.getDate() + diff);
+  return date.toISOString().split("T")[0];
+}
+
+function skipClosedDays(d: Date): Date {
+  const result = new Date(d);
+  const year = result.getFullYear();
+  const holidays = getBavarianHolidays(year);
+  const dateStr = () => result.toISOString().split("T")[0];
+  let safety = 0;
+  while ((result.getDay() === 0 || holidays.has(dateStr())) && safety++ < 14) {
+    result.setDate(result.getDate() + 1);
+  }
+  return result;
+}
 
 const PRIORITY_CONFIG = {
   hoch:   { label: "Hoch",    icon: Flame,    color: "text-red-600",   bg: "bg-red-50",   border: "border-red-200",   badge: "bg-red-100 text-red-700"    },
@@ -312,11 +333,19 @@ export default function TodoTagesliste() {
 
   const [standardTasks, setStandardTasks] = useState<StandardTask[]>([]);
   const [completions, setCompletions] = useState<Completion[]>([]);
+  const [weeklyCompletions, setWeeklyCompletions] = useState<Completion[]>([]);
   const [adhocTasks, setAdhocTasks] = useState<AdhocTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
-    if (d.getDay() === 0) d.setDate(d.getDate() - 1); // Sonntag → zurück zu Samstag
+    if (d.getDay() === 0) d.setDate(d.getDate() - 1); // Sonntag → Samstag
+    // Feiertag? Zum letzten Werktag zurück
+    const yr = d.getFullYear();
+    const hols = getBavarianHolidays(yr);
+    let safety = 0;
+    while (hols.has(d.toISOString().split("T")[0]) && d.getDay() !== 0 && safety++ < 14) {
+      d.setDate(d.getDate() - 1);
+    }
     return d;
   });
 
@@ -331,30 +360,59 @@ export default function TodoTagesliste() {
   const dateStr = selectedDate.toISOString().split("T")[0];
   const weekday = selectedDate.getDay() === 0 ? 7 : selectedDate.getDay();
   const isToday = dateStr === new Date().toISOString().split("T")[0];
+  const weekStart = getMonday(selectedDate);
+
+  const year = selectedDate.getFullYear();
+  const holidays = getBavarianHolidays(year);
+  const isHoliday = holidays.has(dateStr);
+  const holidayName = isHoliday ? (getHolidayName(dateStr, year) ?? "Feiertag") : null;
 
   const load = useCallback(async () => {
     if (!selectedMarketId) return;
     setLoading(true);
     try {
-      const [tRes, cRes, aRes] = await Promise.all([
+      const [tRes, cRes, aRes, wRes] = await Promise.all([
         fetch(`${BASE}/todo/standard-tasks?marketId=${selectedMarketId}&weekday=${weekday}`),
         fetch(`${BASE}/todo/daily-completions?marketId=${selectedMarketId}&date=${dateStr}`),
         fetch(`${BASE}/todo/adhoc-tasks?marketId=${selectedMarketId}&includeCompleted=true`),
+        fetch(`${BASE}/todo/daily-completions?marketId=${selectedMarketId}&weekStart=${weekStart}`),
       ]);
       setStandardTasks(await tRes.json());
       setCompletions(await cRes.json());
       setAdhocTasks(await aRes.json());
+      setWeeklyCompletions(await wRes.json());
     } finally { setLoading(false); }
-  }, [selectedMarketId, weekday, dateStr]);
+  }, [selectedMarketId, weekday, dateStr, weekStart]);
 
   useEffect(() => { load(); }, [load]);
 
   const completionMap = new Map(completions.map(c => [c.task_id, c]));
+
+  // Wochenaufgaben: Map mit der aktuellsten Erledigung pro Aufgabe diese Woche
+  const weeklyCompletedMap = new Map<number, Completion>();
+  [...weeklyCompletions]
+    .sort((a, b) => new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime())
+    .forEach(c => weeklyCompletedMap.set(c.task_id, c));
+
+  const isTaskDone = (task: StandardTask) =>
+    task.category === "wochenaufgaben" ? weeklyCompletedMap.has(task.id) : completionMap.has(task.id);
+  const getTaskComp = (task: StandardTask): Completion | undefined =>
+    task.category === "wochenaufgaben" ? weeklyCompletedMap.get(task.id) : completionMap.get(task.id);
+  const isDoneEarlierThisWeek = (task: StandardTask) =>
+    task.category === "wochenaufgaben" && weeklyCompletedMap.has(task.id) && !completionMap.has(task.id);
   const moveDate = (days: number) => {
     setSelectedDate(d => {
       const n = new Date(d);
       n.setDate(n.getDate() + days);
-      if (n.getDay() === 0) n.setDate(n.getDate() + (days > 0 ? 1 : -1)); // Sonntag überspringen
+      // Sonntage und Feiertage überspringen
+      let safety = 0;
+      while (safety++ < 14) {
+        const ds = n.toISOString().split("T")[0];
+        const hols = getBavarianHolidays(n.getFullYear());
+        if (n.getDay() === 0 || hols.has(ds)) {
+          n.setDate(n.getDate() + (days > 0 ? 1 : -1));
+        } else break;
+      }
       return n;
     });
   };
@@ -443,16 +501,16 @@ export default function TodoTagesliste() {
     setAdhocTasks(prev => prev.filter(t => t.id !== id));
   };
 
-  const openStandard = standardTasks.filter(t => !completionMap.has(t.id));
-  const doneStandard = standardTasks.filter(t => completionMap.has(t.id));
+  const openStandard = standardTasks.filter(t => !isTaskDone(t));
+  const doneStandard = standardTasks.filter(t => isTaskDone(t));
   const openAdhoc = adhocTasks.filter(t => !t.is_completed);
   const doneAdhoc = adhocTasks.filter(t => t.is_completed);
   // "Lieferungen" are info cards — not counted in progress
   const completableTasks = standardTasks.filter(t => (t.category || "aufgaben") !== "lieferungen");
   const totalAll = completableTasks.length + adhocTasks.length;
-  const doneAll = completableTasks.filter(t => completionMap.has(t.id)).length + doneAdhoc.length;
+  const doneAll = completableTasks.filter(t => isTaskDone(t)).length + doneAdhoc.length;
   const pct = totalAll ? Math.round((doneAll / totalAll) * 100) : 0;
-  const totalOpen = completableTasks.filter(t => !completionMap.has(t.id)).length + openAdhoc.length;
+  const totalOpen = completableTasks.filter(t => !isTaskDone(t)).length + openAdhoc.length;
 
   const priorityOrder = ["hoch", "mittel", "niedrig"];
 
@@ -501,8 +559,17 @@ export default function TodoTagesliste() {
           </div>
         </PageHeader>
 
+        {/* Feiertags-Banner */}
+        {isHoliday && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+            <CalendarDays className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+            <p className="font-bold text-amber-700 text-lg">{holidayName}</p>
+            <p className="text-sm text-amber-600 mt-1">Heute ist ein gesetzlicher Feiertag – keine Aufgaben.</p>
+          </div>
+        )}
+
         {/* Gesamtfortschritt */}
-        {totalAll > 0 && (() => {
+        {!isHoliday && totalAll > 0 && (() => {
           const ampel = pct === 100
             ? { dot: "bg-green-500", bar: "bg-green-500", text: "text-green-600", bg: "bg-green-50", border: "border-green-200", label: "Alle erledigt" }
             : pct >= 33
@@ -524,9 +591,10 @@ export default function TodoTagesliste() {
           );
         })()}
 
-        {loading ? (
+        {!isHoliday && loading && (
           <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
-        ) : (
+        )}
+        {!isHoliday && !loading && (
           <>
             {/* ── STANDARD-AUFGABEN nach Kategorie gruppiert ── */}
             {CATEGORY_ORDER.map(cat => {
@@ -579,8 +647,9 @@ export default function TodoTagesliste() {
                     {priorityOrder.flatMap(p => catTasks.filter(t => t.priority === p)).map(task => {
                       const pconf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.mittel;
                       const PIcon = pconf.icon;
-                      const isDone = completionMap.has(task.id);
-                      const comp = isDone ? completionMap.get(task.id)! : null;
+                      const isDone = isTaskDone(task);
+                      const comp = isDone ? getTaskComp(task) ?? null : null;
+                      const doneEarlier = isDoneEarlierThisWeek(task);
 
                       // Vergangener Tag: erledigte Aufgaben inline durchgestrichen anzeigen
                       if (isDone && !isToday) {
@@ -723,23 +792,34 @@ export default function TodoTagesliste() {
                 {showDoneStandard && (
                   <div className="space-y-2">
                     {doneStandard.map(task => {
-                      const comp = completionMap.get(task.id)!;
+                      const comp = getTaskComp(task);
+                      const doneEarlier = isDoneEarlierThisWeek(task);
                       return (
                         <div key={task.id} className="bg-green-50/60 rounded-2xl border border-green-200 overflow-hidden border-l-4 border-l-green-400">
-                          {comp.photo_data && (
+                          {comp?.photo_data && (
                             <button onClick={() => setPhotoDialog({ taskId: task.id, taskTitle: task.title, currentPhoto: comp.photo_data })} className="w-full block">
                               <img src={comp.photo_data} alt="Foto" className="w-full h-24 object-cover hover:opacity-90" />
                             </button>
                           )}
                           <div className="p-4 flex items-start gap-3">
-                            <button onClick={() => handleStandardToggle(task)} className="shrink-0 mt-0.5">
-                              <CheckCircle2 className="w-5 h-5 text-green-500" />
-                            </button>
+                            {doneEarlier ? (
+                              <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0 mt-0.5" />
+                            ) : (
+                              <button onClick={() => handleStandardToggle(task)} className="shrink-0 mt-0.5">
+                                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                              </button>
+                            )}
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-sm line-through text-muted-foreground">{task.title}</p>
-                              <p className="text-xs text-green-600 mt-0.5 font-medium">
-                                ✓ {comp.completed_by_name} · {new Date(comp.completed_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr
-                              </p>
+                              {comp && (
+                                <p className="text-xs text-green-600 mt-0.5 font-medium">
+                                  ✓ {comp.completed_by_name}
+                                  {doneEarlier
+                                    ? ` · ${new Date(comp.completed_at).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })}`
+                                    : ` · ${new Date(comp.completed_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`}
+                                  {doneEarlier && <span className="ml-1 text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-semibold">Diese Woche</span>}
+                                </p>
+                              )}
                             </div>
                             <button
                               onClick={() => setPhotoDialog({ taskId: task.id, taskTitle: task.title, currentPhoto: comp?.photo_data ?? null })}
