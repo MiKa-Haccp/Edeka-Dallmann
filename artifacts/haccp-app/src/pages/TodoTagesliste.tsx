@@ -88,6 +88,7 @@ interface AdhocTask {
   completed_by_name: string | null;
   completed_at: string | null;
   task_type: string | null;
+  category: string | null;
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -227,8 +228,17 @@ const TASK_TYPES = [
   { value: "woche",  label: "Zusatz-Wochentodo",    color: "border-blue-300 bg-blue-50 text-blue-700",         activeColor: "border-blue-600 bg-blue-600 text-white",        desc: "Diese ganze Woche sichtbar" },
 ];
 
+const ADHOC_CATEGORIES = [
+  { value: "",             label: "— Separate Sektion (unten) —", icon: Zap },
+  { value: "tagesaufgaben", label: "Tagesaufgaben",  icon: CalendarDays  },
+  { value: "wochenaufgaben",label: "Wochenaufgaben", icon: CalendarRange  },
+  { value: "aufgaben",      label: "Aufgaben",        icon: ListChecks    },
+  { value: "bestellungen",  label: "Bestellungen",    icon: ShoppingCart  },
+  { value: "lieferungen",   label: "Lieferungen",     icon: Package       },
+];
+
 function NewAdhocDialog({ onSave, onClose }: {
-  onSave: (data: { title: string; description: string; priority: string; deadline: string; photoData: string; pin: string; taskType: string }) => Promise<string | null>;
+  onSave: (data: { title: string; description: string; priority: string; deadline: string; photoData: string; pin: string; taskType: string; category: string }) => Promise<string | null>;
   onClose: () => void;
 }) {
   const [title, setTitle] = useState("");
@@ -238,6 +248,7 @@ function NewAdhocDialog({ onSave, onClose }: {
   const [photoData, setPhotoData] = useState("");
   const [pin, setPin] = useState("");
   const [taskType, setTaskType] = useState("heute");
+  const [category, setCategory] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -260,7 +271,7 @@ function NewAdhocDialog({ onSave, onClose }: {
     if (!title.trim()) { setError("Titel erforderlich"); return; }
     if (pin.length !== 4) { setError("PIN muss 4-stellig sein"); return; }
     setSaving(true);
-    const err = await onSave({ title: title.trim(), description, priority, deadline, photoData, pin, taskType });
+    const err = await onSave({ title: title.trim(), description, priority, deadline, photoData, pin, taskType, category });
     setSaving(false);
     if (err) setError(err);
   };
@@ -289,6 +300,18 @@ function NewAdhocDialog({ onSave, onClose }: {
                 </button>
               ))}
             </div>
+          </div>
+          {/* Kategorie / Position in der Liste */}
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Wo soll die Aufgabe erscheinen?</label>
+            <select
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30"
+            >
+              {ADHOC_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+            </select>
+            <p className="text-[10px] text-muted-foreground mt-1">Kategorie wählen um direkt in der Kategorie-Sektion zu erscheinen.</p>
           </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Titel *</label>
@@ -494,11 +517,11 @@ export default function TodoTagesliste() {
   };
 
   // Ad-hoc handlers
-  const handleAdhocCreate = async (data: { title: string; description: string; priority: string; deadline: string; photoData: string; pin: string; taskType: string }) => {
+  const handleAdhocCreate = async (data: { title: string; description: string; priority: string; deadline: string; photoData: string; pin: string; taskType: string; category: string }) => {
     const res = await fetch(`${BASE}/todo/adhoc-tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ marketId: selectedMarketId, tenantId: "1", ...data, taskType: data.taskType }),
+      body: JSON.stringify({ marketId: selectedMarketId, tenantId: "1", ...data, taskType: data.taskType, category: data.category || null }),
     });
     if (!res.ok) { const d = await res.json(); return d.error || "Fehler"; }
     const created = await res.json();
@@ -533,10 +556,13 @@ export default function TodoTagesliste() {
   const doneStandard = standardTasks.filter(t => isTaskDone(t));
   const openAdhoc = adhocTasks.filter(t => !t.is_completed);
   const doneAdhoc = adhocTasks.filter(t => t.is_completed);
-  // Aufgaben nach Typ aufteilen
-  const openSofort = openAdhoc.filter(t => t.task_type === "sofort");
-  const openWoche  = openAdhoc.filter(t => t.task_type === "woche");
-  const openHeute  = openAdhoc.filter(t => !t.task_type || t.task_type === "heute");
+  // Aufgaben nach Typ aufteilen — nur die OHNE Kategorie kommen in die separaten Sektionen
+  const openSofort = openAdhoc.filter(t => t.task_type === "sofort" && !t.category);
+  const openWoche  = openAdhoc.filter(t => t.task_type === "woche"  && !t.category);
+  const openHeute  = openAdhoc.filter(t => (!t.task_type || t.task_type === "heute") && !t.category);
+  // Adhoc-Aufgaben MIT Kategorie — kommen in die jeweilige Kategorie-Sektion
+  const openAdhocCat = (cat: string) => openAdhoc.filter(t => t.category === cat);
+  const doneAdhocCat = (cat: string) => doneAdhoc.filter(t => t.category === cat);
   // "Lieferungen" are info cards — not counted in progress
   const completableTasks = standardTasks.filter(t => (t.category || "aufgaben") !== "lieferungen");
   const totalAll = completableTasks.length + adhocTasks.length;
@@ -636,7 +662,9 @@ export default function TodoTagesliste() {
               const catTasks = isToday
                 ? openStandard.filter(t => (t.category || "aufgaben") === cat)
                 : standardTasks.filter(t => (t.category || "aufgaben") === cat);
-              if (catTasks.length === 0) return null;
+              const catAdhocOpen = isToday ? openAdhocCat(cat) : [];
+              const catAdhocDone = doneAdhocCat(cat);
+              if (catTasks.length === 0 && catAdhocOpen.length === 0 && catAdhocDone.length === 0) return null;
 
               if (catConf.isInfo) {
                 return (
@@ -673,7 +701,7 @@ export default function TodoTagesliste() {
                   <div className="flex items-center gap-2 mb-3 px-1">
                     <CatIcon className={`w-4 h-4 ${catConf.headerColor}`} />
                     <span className={`text-xs font-bold uppercase tracking-wide ${catConf.headerColor}`}>{catConf.label}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${catConf.badge}`}>{catTasks.length}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${catConf.badge}`}>{catTasks.length + catAdhocOpen.length + catAdhocDone.length}</span>
                   </div>
                   <div className="space-y-2">
                     {priorityOrder.flatMap(p => catTasks.filter(t => t.priority === p)).map(task => {
@@ -681,9 +709,7 @@ export default function TodoTagesliste() {
                       const PIcon = pconf.icon;
                       const isDone = isTaskDone(task);
                       const comp = isDone ? getTaskComp(task) ?? null : null;
-                      const doneEarlier = isDoneEarlierThisWeek(task);
 
-                      // Vergangener Tag: erledigte Aufgaben inline durchgestrichen anzeigen
                       if (isDone && !isToday) {
                         return (
                           <div key={task.id} className={`bg-green-50/60 rounded-2xl border border-green-200/80 overflow-hidden border-l-4 ${catConf.doneBorderLeft} opacity-75`}>
@@ -732,6 +758,57 @@ export default function TodoTagesliste() {
                         </div>
                       );
                     })}
+                    {/* Adhoc-Aufgaben mit dieser Kategorie — direkt in der Sektion */}
+                    {catAdhocOpen.map(task => {
+                      const conf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.mittel;
+                      const PIcon = conf.icon;
+                      return (
+                        <div key={`adhoc-${task.id}`} className={`bg-white rounded-2xl border border-border/60 overflow-hidden border-l-4 ${catConf.borderLeft} border-dashed`}>
+                          {task.photo_data && (
+                            <button onClick={() => setEnlargedPhoto(task.photo_data)} className="w-full block">
+                              <img src={task.photo_data} alt="Foto" className="w-full h-28 object-cover hover:opacity-90 transition-opacity" />
+                            </button>
+                          )}
+                          <div className="p-4 flex items-start gap-3">
+                            <button onClick={() => setPinAdhocId(task.id)} className="shrink-0 mt-0.5">
+                              <Circle className="w-5 h-5 text-muted-foreground/40" />
+                            </button>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span className="text-[10px] font-semibold text-orange-600 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded-full">Zusatz</span>
+                                {task.task_type === "sofort" && <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">Sofort</span>}
+                                {task.task_type === "woche" && <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded-full">Woche</span>}
+                              </div>
+                              <p className="font-semibold text-sm text-foreground">{task.title}</p>
+                              {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                              <div className="flex items-center gap-1.5 mt-1.5">
+                                <PIcon className={`w-3 h-3 ${conf.color}`} />
+                                <span className={`text-[10px] font-semibold ${conf.color}`}>{conf.label}</span>
+                                {task.created_by_name && <span className="text-[10px] text-muted-foreground">· von {task.created_by_name}</span>}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {catAdhocDone.map(task => (
+                      <div key={`adhoc-done-${task.id}`} className={`bg-green-50/60 rounded-2xl border border-green-200/80 overflow-hidden border-l-4 ${catConf.doneBorderLeft} opacity-75`}>
+                        <div className="p-4 flex items-start gap-3">
+                          <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <span className="text-[10px] font-semibold text-orange-400 bg-orange-50 border border-orange-100 px-1.5 py-0.5 rounded-full">Zusatz</span>
+                            </div>
+                            <p className="font-semibold text-sm line-through text-muted-foreground">{task.title}</p>
+                            {task.completed_by_name && (
+                              <p className="text-xs text-green-600 font-medium mt-1">
+                                ✓ {task.completed_by_name} · {task.completed_at ? new Date(task.completed_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : ""} Uhr
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               );

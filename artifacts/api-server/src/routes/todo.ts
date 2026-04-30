@@ -185,15 +185,15 @@ router.get("/todo/adhoc-tasks", async (req, res) => {
 });
 
 router.post("/todo/adhoc-tasks", async (req, res) => {
-  const { marketId, tenantId = "1", title, description, priority = "mittel", deadline, photoData, pin, taskType = "heute" } = req.body;
+  const { marketId, tenantId = "1", title, description, priority = "mittel", deadline, photoData, pin, taskType = "heute", category } = req.body;
   if (!marketId || !title || !pin) return res.status(400).json({ error: "marketId, title, pin required" });
   const user = await validatePin(pin, tenantId);
   if (!user) return res.status(401).json({ error: "Ungültige PIN" });
   const notifyAt = deadline ? new Date(deadline) : null;
   const { rows } = await pool.query(
-    `INSERT INTO todo_adhoc_tasks (market_id, tenant_id, title, description, priority, deadline, photo_data, created_by_pin, created_by_name, notify_at, task_type)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-    [marketId, tenantId, title, description || null, priority, deadline || null, photoData || null, pin, user.name, notifyAt, taskType]
+    `INSERT INTO todo_adhoc_tasks (market_id, tenant_id, title, description, priority, deadline, photo_data, created_by_pin, created_by_name, notify_at, task_type, category)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+    [marketId, tenantId, title, description || null, priority, deadline || null, photoData || null, pin, user.name, notifyAt, taskType, category || null]
   );
   res.json(rows[0]);
 });
