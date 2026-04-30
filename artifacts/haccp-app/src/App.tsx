@@ -97,6 +97,7 @@ import TodoHub from "./pages/TodoHub";
 import TodoTagesliste from "./pages/TodoTagesliste";
 import TodoVerwaltung from "./pages/TodoVerwaltung";
 import TodoKassen from "./pages/TodoKassen";
+import TodoZusatzProtokoll from "./pages/TodoZusatzProtokoll";
 import FeedbackAdmin from "./pages/FeedbackAdmin";
 import DatenBereinigung from "./pages/DatenBereinigung";
 import ModuleVerwaltung from "./pages/ModuleVerwaltung";
@@ -209,6 +210,7 @@ function Router() {
       <Route path="/todo-rundgang" component={TodoTagesliste} />
       <Route path="/todo-verwaltung" component={TodoVerwaltung} />
       <Route path="/todo-kassen" component={TodoKassen} />
+      <Route path="/todo-zusatz-protokoll" component={TodoZusatzProtokoll} />
       <Route component={NotFound} />
     </Switch>
   );

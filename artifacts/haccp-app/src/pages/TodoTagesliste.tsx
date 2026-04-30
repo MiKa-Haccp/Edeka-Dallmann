@@ -17,13 +17,14 @@ const CATEGORY_CONFIG: Record<string, {
   headerColor: string;
   badge: string;
   borderLeft: string;
+  doneBorderLeft: string;
   isInfo: boolean;
 }> = {
-  tagesaufgaben: { label: "Tagesaufgaben",  icon: CalendarDays,  headerColor: "text-emerald-700",  badge: "bg-emerald-100 text-emerald-700",  borderLeft: "border-l-emerald-400", isInfo: false },
-  wochenaufgaben:{ label: "Wochenaufgaben", icon: CalendarRange, headerColor: "text-violet-700",   badge: "bg-violet-100 text-violet-700",    borderLeft: "border-l-violet-400",  isInfo: false },
-  aufgaben:      { label: "Aufgaben",        icon: ListChecks,   headerColor: "text-[#0f766e]",     badge: "bg-[#0f766e]/10 text-[#0f766e]",  borderLeft: "border-l-[#0f766e]/40",isInfo: false },
-  bestellungen:  { label: "Bestellungen",   icon: ShoppingCart, headerColor: "text-blue-700",      badge: "bg-blue-100 text-blue-700",        borderLeft: "border-l-blue-400",    isInfo: false },
-  lieferungen:   { label: "Lieferungen",    icon: Package,      headerColor: "text-amber-700",     badge: "bg-amber-100 text-amber-700",      borderLeft: "border-l-amber-400",   isInfo: true  },
+  tagesaufgaben: { label: "Tagesaufgaben",  icon: CalendarDays,  headerColor: "text-[#0f766e]", badge: "bg-[#0f766e]/10 text-[#0f766e]", borderLeft: "border-l-[#0f766e]/40", doneBorderLeft: "border-l-green-400", isInfo: false },
+  wochenaufgaben:{ label: "Wochenaufgaben", icon: CalendarRange, headerColor: "text-[#0f766e]", badge: "bg-[#0f766e]/10 text-[#0f766e]", borderLeft: "border-l-[#0f766e]/30", doneBorderLeft: "border-l-green-400", isInfo: false },
+  aufgaben:      { label: "Aufgaben",        icon: ListChecks,   headerColor: "text-[#0f766e]", badge: "bg-[#0f766e]/10 text-[#0f766e]", borderLeft: "border-l-[#0f766e]/40", doneBorderLeft: "border-l-green-400", isInfo: false },
+  bestellungen:  { label: "Bestellungen",   icon: ShoppingCart, headerColor: "text-[#0f766e]", badge: "bg-[#0f766e]/10 text-[#0f766e]", borderLeft: "border-l-[#0f766e]/30", doneBorderLeft: "border-l-green-400", isInfo: false },
+  lieferungen:   { label: "Lieferungen",    icon: Package,      headerColor: "text-[#0f766e]", badge: "bg-[#0f766e]/10 text-[#0f766e]", borderLeft: "border-l-amber-300",    doneBorderLeft: "border-l-amber-300", isInfo: true  },
 };
 const CATEGORY_ORDER = ["tagesaufgaben", "wochenaufgaben", "aufgaben", "bestellungen", "lieferungen"];
 
@@ -467,7 +468,7 @@ export default function TodoTagesliste() {
                 <CalendarDays className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Mein Weg</h1>
+                <h1 className="text-xl font-bold text-white">Meine Aufgaben</h1>
                 <p className="text-sm text-white/70">
                   {WEEKDAY_NAMES[weekday]}, {selectedDate.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}
                   {totalOpen > 0 && <span className="ml-2 font-semibold text-white">· {totalOpen} offen</span>}
@@ -522,7 +523,10 @@ export default function TodoTagesliste() {
             {CATEGORY_ORDER.map(cat => {
               const catConf = CATEGORY_CONFIG[cat] ?? CATEGORY_CONFIG.aufgaben;
               const CatIcon = catConf.icon;
-              const catTasks = openStandard.filter(t => (t.category || "aufgaben") === cat);
+              // Heute: nur offene Aufgaben; Vergangene Tage: alle Aufgaben (erledigt inline durchgestrichen)
+              const catTasks = isToday
+                ? openStandard.filter(t => (t.category || "aufgaben") === cat)
+                : standardTasks.filter(t => (t.category || "aufgaben") === cat);
               if (catTasks.length === 0) return null;
 
               if (catConf.isInfo) {
@@ -535,7 +539,7 @@ export default function TodoTagesliste() {
                     </div>
                     <div className="space-y-2">
                       {catTasks.map(task => (
-                        <div key={task.id} className="bg-amber-50 rounded-2xl border border-amber-200 border-l-4 border-l-amber-400 p-4">
+                        <div key={task.id} className="bg-[#0f766e]/5 rounded-2xl border border-[#0f766e]/20 border-l-4 border-l-amber-300 p-4">
                           {task.photo_data && (
                             <button onClick={() => setEnlargedPhoto(task.photo_data)} className="w-full block relative mb-3">
                               <img src={task.photo_data} alt="Referenz" className="w-full h-24 object-cover rounded-xl hover:opacity-90 transition-opacity" />
@@ -544,8 +548,8 @@ export default function TodoTagesliste() {
                           <div className="flex items-start gap-3">
                             <Package className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                             <div className="min-w-0">
-                              <p className="font-semibold text-sm text-amber-900">{task.title}</p>
-                              {task.description && <p className="text-xs text-amber-700 mt-0.5">{task.description}</p>}
+                              <p className="font-semibold text-sm text-foreground">{task.title}</p>
+                              {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
                             </div>
                           </div>
                         </div>
@@ -566,6 +570,34 @@ export default function TodoTagesliste() {
                     {priorityOrder.flatMap(p => catTasks.filter(t => t.priority === p)).map(task => {
                       const pconf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.mittel;
                       const PIcon = pconf.icon;
+                      const isDone = completionMap.has(task.id);
+                      const comp = isDone ? completionMap.get(task.id)! : null;
+
+                      // Vergangener Tag: erledigte Aufgaben inline durchgestrichen anzeigen
+                      if (isDone && !isToday) {
+                        return (
+                          <div key={task.id} className={`bg-green-50/60 rounded-2xl border border-green-200/80 overflow-hidden border-l-4 ${catConf.doneBorderLeft} opacity-75`}>
+                            {comp?.photo_data && (
+                              <button onClick={() => setEnlargedPhoto(comp.photo_data)} className="w-full block">
+                                <img src={comp.photo_data} alt="Foto" className="w-full h-20 object-cover hover:opacity-90" />
+                              </button>
+                            )}
+                            <div className="p-4 flex items-start gap-3">
+                              <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-sm line-through text-muted-foreground">{task.title}</p>
+                                {task.description && <p className="text-xs text-muted-foreground/70 line-through mt-0.5">{task.description}</p>}
+                                {comp && (
+                                  <p className="text-xs text-green-600 font-medium mt-1">
+                                    ✓ {comp.completed_by_name} · {new Date(comp.completed_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
                       return (
                         <div key={task.id} className={`bg-white rounded-2xl border border-border/60 overflow-hidden border-l-4 ${catConf.borderLeft}`}>
                           {task.photo_data && (
@@ -654,8 +686,8 @@ export default function TodoTagesliste() {
               </div>
             )}
 
-            {/* Leerer Zustand */}
-            {openStandard.length === 0 && openAdhoc.length === 0 && (
+            {/* Leerer Zustand – Alle erledigt (nur für heute) */}
+            {isToday && openStandard.length === 0 && openAdhoc.length === 0 && (standardTasks.length > 0 || doneAdhoc.length > 0) && (
               <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
                 <CheckCircle2 className="w-10 h-10 text-green-500 mx-auto mb-3" />
                 <p className="font-bold text-green-700">Alle Aufgaben erledigt!</p>
@@ -670,8 +702,8 @@ export default function TodoTagesliste() {
               </div>
             )}
 
-            {/* ── ERLEDIGTE STANDARD-AUFGABEN ── */}
-            {doneStandard.length > 0 && (
+            {/* ── ERLEDIGTE STANDARD-AUFGABEN (nur für heute) ── */}
+            {isToday && doneStandard.length > 0 && (
               <div>
                 <button onClick={() => setShowDoneStandard(s => !s)}
                   className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-wide hover:text-foreground mb-2">

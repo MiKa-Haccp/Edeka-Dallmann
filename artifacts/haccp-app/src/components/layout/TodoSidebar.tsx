@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import {
-  Home, CheckSquare, ClipboardList, TableProperties, X, GripVertical,
+  Home, CheckSquare, ClipboardList, TableProperties, X, GripVertical, History,
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -119,9 +119,12 @@ function TodoSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
 
         <NavLink href="/todo" label="Übersicht" icon={CheckSquare} onNavigate={onNavigate} />
-        <NavLink href="/todo-tagesliste" label="Mein Weg" icon={ClipboardList} onNavigate={onNavigate} ampel={ampel} />
+        <NavLink href="/todo-tagesliste" label="ToDo's" icon={ClipboardList} onNavigate={onNavigate} ampel={ampel} />
         {isAdmin && (
           <NavLink href="/todo-verwaltung" label="Aufgaben verwalten" icon={ClipboardList} onNavigate={onNavigate} />
+        )}
+        {isAdmin && (
+          <NavLink href="/todo-zusatz-protokoll" label="Zusatzaufgaben Protokoll" icon={History} onNavigate={onNavigate} />
         )}
         <NavLink href="/todo-kassen" label="Kasseneinteilung" icon={TableProperties} onNavigate={onNavigate} />
       </div>
@@ -204,4 +207,4 @@ export function TodoSidebar() {
   );
 }
 
-export const TODO_PATHS = ["/todo", "/todo-tagesliste", "/todo-verwaltung", "/todo-rundgang", "/todo-kassen"];
+export const TODO_PATHS = ["/todo", "/todo-tagesliste", "/todo-verwaltung", "/todo-rundgang", "/todo-kassen", "/todo-zusatz-protokoll"];

@@ -66,7 +66,7 @@ export default function TodoHub() {
                     <ClipboardList className="w-6 h-6 text-[#0f766e]" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-foreground">Mein Weg</h2>
+                    <h2 className="font-bold text-foreground">Meine Aufgaben</h2>
                     <p className="text-xs text-muted-foreground mt-0.5">Aufgaben, Bestellungen & Lieferungen für heute</p>
                   </div>
                 </div>
