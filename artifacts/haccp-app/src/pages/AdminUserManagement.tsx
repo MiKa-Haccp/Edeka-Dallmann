@@ -376,7 +376,7 @@ function UserRoleRow({
 
   const Icon = ROLE_ICONS[role] || Users;
   const isSuperAdmin = role === "SUPERADMIN";
-  const showMarkets = role === "MARKTLEITER";
+  const showMarkets = !isSuperAdmin && role !== "ADMIN";
   const isLocked = status === "inaktiv";
 
   return (
@@ -550,11 +550,11 @@ function UserRoleRow({
                 {saveMsg && <p className="mt-1 text-xs text-green-600 font-medium flex items-center gap-1"><Check className="h-3 w-3" />{saveMsg}</p>}
               </div>
 
-              {/* Märkte (nur Marktleiter) */}
+              {/* Märkte */}
               {showMarkets && (
                 <div>
                   <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                    <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-emerald-600" />Zugewiesene Märkte</span>
+                    <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-emerald-600" />Zugewiesener Markt</span>
                   </label>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {markets.map((market) => (

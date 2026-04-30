@@ -189,14 +189,42 @@ router.put("/todo/till-assignments", async (req, res) => {
 router.get("/todo/market-users", async (req, res) => {
   const { marketId, tenantId = "1" } = req.query as Record<string, string>;
   if (!marketId) return res.status(400).json({ error: "marketId required" });
-  const { rows } = await pool.query(
-    `SELECT u.id, u.name, u.first_name, u.last_name, u.initials, u.role
-     FROM users u
-     JOIN user_market_assignments uma ON uma.user_id=u.id AND uma.market_id=$1
-     WHERE u.tenant_id=$2 AND u.status='aktiv'
-     ORDER BY u.name`,
+  // Determine how many employees are explicitly assigned to this market.
+  // Fallback: if fewer than 3 are assigned (initial setup not done yet),
+  // show ALL active employees so the schedule is never empty.
+  const countRes = await pool.query(
+    `SELECT COUNT(*) AS cnt
+     FROM user_market_assignments uma
+     JOIN users u ON u.id = uma.user_id
+     WHERE uma.market_id = $1 AND u.tenant_id = $2
+       AND u.status = 'aktiv' AND u.role IN ('USER','MARKTLEITER')`,
     [marketId, tenantId]
   );
+  const assignedCount = parseInt(countRes.rows[0].cnt, 10);
+
+  let rows: any[];
+  if (assignedCount >= 3) {
+    // Proper assignments exist — show only assigned employees
+    const r = await pool.query(
+      `SELECT u.id, u.name, u.first_name, u.last_name, u.initials, u.role
+       FROM users u
+       JOIN user_market_assignments uma ON uma.user_id = u.id AND uma.market_id = $1
+       WHERE u.tenant_id = $2 AND u.status = 'aktiv' AND u.role IN ('USER','MARKTLEITER')
+       ORDER BY COALESCE(NULLIF(trim(u.name),''), trim(u.first_name||' '||u.last_name))`,
+      [marketId, tenantId]
+    );
+    rows = r.rows;
+  } else {
+    // No/few assignments yet — show all active employees as fallback
+    const r = await pool.query(
+      `SELECT u.id, u.name, u.first_name, u.last_name, u.initials, u.role
+       FROM users u
+       WHERE u.tenant_id = $1 AND u.status = 'aktiv' AND u.role IN ('USER','MARKTLEITER')
+       ORDER BY COALESCE(NULLIF(trim(u.name),''), trim(u.first_name||' '||u.last_name))`,
+      [tenantId]
+    );
+    rows = r.rows;
+  }
   res.json(rows);
 });
 
