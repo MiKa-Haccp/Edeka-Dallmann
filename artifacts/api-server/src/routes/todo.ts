@@ -23,32 +23,33 @@ router.get("/todo/standard-tasks", async (req, res) => {
   let q = `SELECT * FROM todo_standard_tasks WHERE market_id=$1 AND tenant_id=$2`;
   const params: unknown[] = [marketId, tenantId];
   if (weekday) {
-    q += ` AND weekday=$3 AND is_active=true`;
+    // weekday=0 means "täglich" (every day) — always include those alongside the requested weekday
+    q += ` AND (weekday=$3 OR weekday=0) AND is_active=true`;
     params.push(weekday);
   }
-  q += ` ORDER BY CASE priority WHEN 'hoch' THEN 1 WHEN 'mittel' THEN 2 ELSE 3 END, title`;
+  q += ` ORDER BY CASE category WHEN 'tagesaufgaben' THEN 1 WHEN 'wochenaufgaben' THEN 2 WHEN 'aufgaben' THEN 3 WHEN 'bestellungen' THEN 4 WHEN 'lieferungen' THEN 5 ELSE 6 END, CASE priority WHEN 'hoch' THEN 1 WHEN 'mittel' THEN 2 ELSE 3 END, title`;
   const { rows } = await pool.query(q, params);
   res.json(rows);
 });
 
 router.post("/todo/standard-tasks", async (req, res) => {
-  const { marketId, tenantId = 1, title, description, weekday, priority = "mittel", photoData } = req.body;
-  if (!marketId || !title || !weekday) return res.status(400).json({ error: "marketId, title, weekday required" });
+  const { marketId, tenantId = 1, title, description, weekday, priority = "mittel", photoData, category = "aufgaben" } = req.body;
+  if (!marketId || !title || weekday === undefined || weekday === null) return res.status(400).json({ error: "marketId, title, weekday required" });
   const { rows } = await pool.query(
-    `INSERT INTO todo_standard_tasks (market_id, tenant_id, title, description, weekday, priority, photo_data)
-     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-    [marketId, tenantId, title, description || null, weekday, priority, photoData || null]
+    `INSERT INTO todo_standard_tasks (market_id, tenant_id, title, description, weekday, priority, photo_data, category)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    [marketId, tenantId, title, description || null, weekday, priority, photoData || null, category]
   );
   res.json(rows[0]);
 });
 
 router.put("/todo/standard-tasks/:id", async (req, res) => {
   const { id } = req.params;
-  const { title, description, weekday, priority, is_active, photoData } = req.body;
+  const { title, description, weekday, priority, is_active, photoData, category = "aufgaben" } = req.body;
   const { rows } = await pool.query(
-    `UPDATE todo_standard_tasks SET title=$1, description=$2, weekday=$3, priority=$4, is_active=$5, photo_data=$6, updated_at=NOW()
-     WHERE id=$7 RETURNING *`,
-    [title, description || null, weekday, priority, is_active ?? true, photoData ?? null, id]
+    `UPDATE todo_standard_tasks SET title=$1, description=$2, weekday=$3, priority=$4, is_active=$5, photo_data=$6, category=$7, updated_at=NOW()
+     WHERE id=$8 RETURNING *`,
+    [title, description || null, weekday, priority, is_active ?? true, photoData ?? null, category, id]
   );
   if (!rows.length) return res.status(404).json({ error: "Not found" });
   res.json(rows[0]);

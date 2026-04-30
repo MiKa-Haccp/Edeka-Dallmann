@@ -75,9 +75,10 @@ function useAmpel(selectedMarketId: number | null): AmpelColor {
       const completions = await cRes.json();
       const adhoc = await aRes.json();
       const completedIds = new Set(completions.map((c: { task_id: number }) => c.task_id));
-      const doneStandard = tasks.filter((t: { id: number }) => completedIds.has(t.id)).length;
+      const completableTasks = tasks.filter((t: { id: number; category?: string }) => (t.category || "aufgaben") !== "lieferungen");
+      const doneStandard = completableTasks.filter((t: { id: number }) => completedIds.has(t.id)).length;
       const doneAdhoc = adhoc.filter((a: { is_completed: boolean }) => a.is_completed).length;
-      const totalAll = tasks.length + adhoc.length;
+      const totalAll = completableTasks.length + adhoc.length;
       const doneAll = doneStandard + doneAdhoc;
       if (totalAll === 0) { setAmpel(null); return; }
       const pct = Math.round((doneAll / totalAll) * 100);
@@ -118,7 +119,7 @@ function TodoSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
 
         <NavLink href="/todo" label="Übersicht" icon={CheckSquare} onNavigate={onNavigate} />
-        <NavLink href="/todo-tagesliste" label="Meine Aufgaben" icon={ClipboardList} onNavigate={onNavigate} ampel={ampel} />
+        <NavLink href="/todo-tagesliste" label="Mein Weg" icon={ClipboardList} onNavigate={onNavigate} ampel={ampel} />
         {isAdmin && (
           <NavLink href="/todo-verwaltung" label="Aufgaben verwalten" icon={ClipboardList} onNavigate={onNavigate} />
         )}

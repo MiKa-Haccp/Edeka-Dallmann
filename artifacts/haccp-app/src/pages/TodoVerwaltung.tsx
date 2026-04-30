@@ -16,12 +16,21 @@ const PRIORITIES = [
   { value: "niedrig", label: "Niedrig", icon: ArrowDown, color: "text-teal-600"  },
 ];
 
+const CATEGORIES = [
+  { value: "aufgaben",      label: "Aufgaben" },
+  { value: "bestellungen",  label: "Bestellungen" },
+  { value: "lieferungen",   label: "Lieferungen (Info)" },
+  { value: "tagesaufgaben", label: "Tagesaufgaben" },
+  { value: "wochenaufgaben",label: "Wochenaufgaben" },
+];
+
 interface Task {
   id: number;
   title: string;
   description: string | null;
   weekday: number;
   priority: string;
+  category: string;
   is_active: boolean;
   photo_data: string | null;
 }
@@ -48,6 +57,7 @@ function TaskForm({
   const [description, setDescription] = useState(initial?.description ?? "");
   const [weekday, setWeekday] = useState(initial?.weekday ?? 1);
   const [priority, setPriority] = useState(initial?.priority ?? "mittel");
+  const [category, setCategory] = useState(initial?.category ?? "aufgaben");
   const [photoData, setPhotoData] = useState<string | null>(initial?.photo_data ?? null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -73,6 +83,7 @@ function TaskForm({
         description: description.trim() || null,
         weekday,
         priority,
+        category,
         photo_data: photoData,
       } as Omit<Task, "id" | "is_active">);
     } catch { setError("Fehler beim Speichern"); }
@@ -112,6 +123,17 @@ function TaskForm({
           />
         </div>
 
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Kategorie</label>
+          <select
+            value={category}
+            onChange={e => setCategory(e.target.value)}
+            className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30"
+          >
+            {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+          </select>
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Wochentag *</label>
@@ -120,6 +142,7 @@ function TaskForm({
               onChange={e => setWeekday(Number(e.target.value))}
               className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30"
             >
+              <option value={0}>Täglich (jeden Tag)</option>
               {WEEKDAY_NAMES.slice(1).map((name, i) => (
                 <option key={i + 1} value={i + 1}>{name}</option>
               ))}
@@ -230,7 +253,7 @@ export default function TodoVerwaltung() {
     const res = await fetch(`${BASE}/todo/standard-tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ marketId: selectedMarketId, tenantId: 1, ...data, photoData: data.photo_data }),
+      body: JSON.stringify({ marketId: selectedMarketId, tenantId: 1, ...data, photoData: data.photo_data, category: data.category }),
     });
     const created = await res.json();
     setTasks(prev => [...prev, created]);
@@ -242,7 +265,7 @@ export default function TodoVerwaltung() {
     const res = await fetch(`${BASE}/todo/standard-tasks/${editTask.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, is_active: editTask.is_active, photoData: data.photo_data }),
+      body: JSON.stringify({ ...data, is_active: editTask.is_active, photoData: data.photo_data, category: data.category }),
     });
     const updated = await res.json();
     setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
@@ -269,8 +292,14 @@ export default function TodoVerwaltung() {
   };
 
   const filtered = filterDay !== null ? tasks.filter(t => t.weekday === filterDay) : tasks;
-  const byDay = WEEKDAY_NAMES.slice(1).reduce((acc, name, i) => {
-    acc[i + 1] = filtered.filter(t => t.weekday === i + 1);
+  const ALL_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6, 7];
+  const WEEKDAY_DISPLAY: Record<number, string> = {
+    0: "Täglich",
+    1: "Montag", 2: "Dienstag", 3: "Mittwoch", 4: "Donnerstag",
+    5: "Freitag", 6: "Samstag", 7: "Sonntag",
+  };
+  const byDay = ALL_WEEKDAYS.reduce((acc, d) => {
+    acc[d] = filtered.filter(t => t.weekday === d);
     return acc;
   }, {} as Record<number, Task[]>);
 
@@ -324,6 +353,12 @@ export default function TodoVerwaltung() {
             >
               Alle
             </button>
+            <button
+              onClick={() => setFilterDay(0)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${filterDay === 0 ? "bg-[#0f766e] text-white border-[#0f766e]" : "border-border/60 text-muted-foreground hover:border-[#0f766e]/40"}`}
+            >
+              Tägl.
+            </button>
             {WEEKDAY_NAMES.slice(1).map((name, i) => (
               <button
                 key={i + 1}
@@ -347,7 +382,7 @@ export default function TodoVerwaltung() {
               if (!dayTasks.length) return null;
               return (
                 <div key={day}>
-                  <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wide px-1 mb-2">{WEEKDAY_NAMES[day]} ({dayTasks.length})</h2>
+                  <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wide px-1 mb-2">{WEEKDAY_DISPLAY[day] ?? WEEKDAY_NAMES[day]} ({dayTasks.length})</h2>
                   <div className="space-y-2">
                     {dayTasks.map(task => {
                       if (editTask?.id === task.id) {
@@ -378,6 +413,9 @@ export default function TodoVerwaltung() {
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-sm text-foreground">{task.title}</p>
                               {task.description && <p className="text-xs text-muted-foreground">{task.description}</p>}
+                              <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium mt-1 inline-block">
+                                {CATEGORIES.find(c => c.value === (task.category || "aufgaben"))?.label ?? task.category}
+                              </span>
                             </div>
                             <div className="flex items-center gap-1 shrink-0">
                               <button onClick={() => setEditTask(task)} className="p-1.5 text-muted-foreground hover:text-[#0f766e] rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" /></button>

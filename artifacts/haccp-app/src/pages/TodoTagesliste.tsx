@@ -8,7 +8,24 @@ import {
   CheckCircle2, Circle, Loader2, Info, ChevronLeft, ChevronRight,
   Flame, Minus, ArrowDown, X, Camera, ImagePlus, Trash2, ZoomIn,
   Plus, Clock, Archive, ChevronDown, ChevronUp, RotateCcw, CalendarDays, Zap,
+  ShoppingCart, Package, ListChecks, CalendarRange,
 } from "lucide-react";
+
+const CATEGORY_CONFIG: Record<string, {
+  label: string;
+  icon: React.ElementType;
+  headerColor: string;
+  badge: string;
+  borderLeft: string;
+  isInfo: boolean;
+}> = {
+  tagesaufgaben: { label: "Tagesaufgaben",  icon: CalendarDays,  headerColor: "text-emerald-700",  badge: "bg-emerald-100 text-emerald-700",  borderLeft: "border-l-emerald-400", isInfo: false },
+  wochenaufgaben:{ label: "Wochenaufgaben", icon: CalendarRange, headerColor: "text-violet-700",   badge: "bg-violet-100 text-violet-700",    borderLeft: "border-l-violet-400",  isInfo: false },
+  aufgaben:      { label: "Aufgaben",        icon: ListChecks,   headerColor: "text-[#0f766e]",     badge: "bg-[#0f766e]/10 text-[#0f766e]",  borderLeft: "border-l-[#0f766e]/40",isInfo: false },
+  bestellungen:  { label: "Bestellungen",   icon: ShoppingCart, headerColor: "text-blue-700",      badge: "bg-blue-100 text-blue-700",        borderLeft: "border-l-blue-400",    isInfo: false },
+  lieferungen:   { label: "Lieferungen",    icon: Package,      headerColor: "text-amber-700",     badge: "bg-amber-100 text-amber-700",      borderLeft: "border-l-amber-400",   isInfo: true  },
+};
+const CATEGORY_ORDER = ["tagesaufgaben", "wochenaufgaben", "aufgaben", "bestellungen", "lieferungen"];
 
 const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
 const BASE = import.meta.env.VITE_API_URL || "/api";
@@ -27,6 +44,7 @@ interface StandardTask {
   description: string | null;
   priority: string;
   weekday: number;
+  category: string;
   photo_data: string | null;
 }
 interface Completion {
@@ -419,10 +437,12 @@ export default function TodoTagesliste() {
   const doneStandard = standardTasks.filter(t => completionMap.has(t.id));
   const openAdhoc = adhocTasks.filter(t => !t.is_completed);
   const doneAdhoc = adhocTasks.filter(t => t.is_completed);
-  const totalAll = standardTasks.length + adhocTasks.length;
-  const doneAll = doneStandard.length + doneAdhoc.length;
+  // "Lieferungen" are info cards — not counted in progress
+  const completableTasks = standardTasks.filter(t => (t.category || "aufgaben") !== "lieferungen");
+  const totalAll = completableTasks.length + adhocTasks.length;
+  const doneAll = completableTasks.filter(t => completionMap.has(t.id)).length + doneAdhoc.length;
   const pct = totalAll ? Math.round((doneAll / totalAll) * 100) : 0;
-  const totalOpen = openStandard.length + openAdhoc.length;
+  const totalOpen = completableTasks.filter(t => !completionMap.has(t.id)).length + openAdhoc.length;
 
   const priorityOrder = ["hoch", "mittel", "niedrig"];
 
@@ -447,7 +467,7 @@ export default function TodoTagesliste() {
                 <CalendarDays className="w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Meine Aufgaben</h1>
+                <h1 className="text-xl font-bold text-white">Mein Weg</h1>
                 <p className="text-sm text-white/70">
                   {WEEKDAY_NAMES[weekday]}, {selectedDate.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}
                   {totalOpen > 0 && <span className="ml-2 font-semibold text-white">· {totalOpen} offen</span>}
@@ -498,45 +518,82 @@ export default function TodoTagesliste() {
           <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
         ) : (
           <>
-            {/* ── STANDARD-AUFGABEN (offen) ── */}
-            {openStandard.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3 px-1">
-                  <CalendarDays className="w-4 h-4 text-[#0f766e]" />
-                  <span className="text-xs font-bold uppercase tracking-wide text-[#0f766e]">Standardaufgaben</span>
-                  <span className="text-xs bg-[#0f766e]/10 text-[#0f766e] px-2 py-0.5 rounded-full font-semibold">{openStandard.length}</span>
-                </div>
-                <div className="space-y-2">
-                  {priorityOrder.flatMap(p => openStandard.filter(t => t.priority === p)).map(task => {
-                    const conf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.mittel;
-                    const PIcon = conf.icon;
-                    return (
-                      <div key={task.id} className="bg-white rounded-2xl border border-border/60 overflow-hidden border-l-4 border-l-[#0f766e]/30">
-                        {task.photo_data && (
-                          <button onClick={() => setEnlargedPhoto(task.photo_data)} className="w-full block relative">
-                            <img src={task.photo_data} alt="Referenz" className="w-full h-28 object-cover hover:opacity-90 transition-opacity" />
-                            <span className="absolute top-2 left-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">Referenz</span>
-                          </button>
-                        )}
-                        <div className="p-4 flex items-start gap-3">
-                          <button onClick={() => handleStandardToggle(task)} className="shrink-0 mt-0.5">
-                            <Circle className="w-5 h-5 text-muted-foreground/40" />
-                          </button>
-                          <div className="min-w-0 flex-1" onClick={() => handleStandardToggle(task)}>
-                            <p className="font-semibold text-sm text-foreground cursor-pointer">{task.title}</p>
-                            {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
-                            <div className="flex items-center gap-1.5 mt-1.5">
-                              <PIcon className={`w-3 h-3 ${conf.color}`} />
-                              <span className={`text-[10px] font-semibold ${conf.color}`}>{conf.label}</span>
+            {/* ── STANDARD-AUFGABEN nach Kategorie gruppiert ── */}
+            {CATEGORY_ORDER.map(cat => {
+              const catConf = CATEGORY_CONFIG[cat] ?? CATEGORY_CONFIG.aufgaben;
+              const CatIcon = catConf.icon;
+              const catTasks = openStandard.filter(t => (t.category || "aufgaben") === cat);
+              if (catTasks.length === 0) return null;
+
+              if (catConf.isInfo) {
+                return (
+                  <div key={cat}>
+                    <div className="flex items-center gap-2 mb-3 px-1">
+                      <CatIcon className={`w-4 h-4 ${catConf.headerColor}`} />
+                      <span className={`text-xs font-bold uppercase tracking-wide ${catConf.headerColor}`}>{catConf.label}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${catConf.badge}`}>{catTasks.length}</span>
+                    </div>
+                    <div className="space-y-2">
+                      {catTasks.map(task => (
+                        <div key={task.id} className="bg-amber-50 rounded-2xl border border-amber-200 border-l-4 border-l-amber-400 p-4">
+                          {task.photo_data && (
+                            <button onClick={() => setEnlargedPhoto(task.photo_data)} className="w-full block relative mb-3">
+                              <img src={task.photo_data} alt="Referenz" className="w-full h-24 object-cover rounded-xl hover:opacity-90 transition-opacity" />
+                            </button>
+                          )}
+                          <div className="flex items-start gap-3">
+                            <Package className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                            <div className="min-w-0">
+                              <p className="font-semibold text-sm text-amber-900">{task.title}</p>
+                              {task.description && <p className="text-xs text-amber-700 mt-0.5">{task.description}</p>}
                             </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={cat}>
+                  <div className="flex items-center gap-2 mb-3 px-1">
+                    <CatIcon className={`w-4 h-4 ${catConf.headerColor}`} />
+                    <span className={`text-xs font-bold uppercase tracking-wide ${catConf.headerColor}`}>{catConf.label}</span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${catConf.badge}`}>{catTasks.length}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {priorityOrder.flatMap(p => catTasks.filter(t => t.priority === p)).map(task => {
+                      const pconf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.mittel;
+                      const PIcon = pconf.icon;
+                      return (
+                        <div key={task.id} className={`bg-white rounded-2xl border border-border/60 overflow-hidden border-l-4 ${catConf.borderLeft}`}>
+                          {task.photo_data && (
+                            <button onClick={() => setEnlargedPhoto(task.photo_data)} className="w-full block relative">
+                              <img src={task.photo_data} alt="Referenz" className="w-full h-28 object-cover hover:opacity-90 transition-opacity" />
+                              <span className="absolute top-2 left-2 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">Referenz</span>
+                            </button>
+                          )}
+                          <div className="p-4 flex items-start gap-3">
+                            <button onClick={() => handleStandardToggle(task)} className="shrink-0 mt-0.5">
+                              <Circle className="w-5 h-5 text-muted-foreground/40" />
+                            </button>
+                            <div className="min-w-0 flex-1" onClick={() => handleStandardToggle(task)}>
+                              <p className="font-semibold text-sm text-foreground cursor-pointer">{task.title}</p>
+                              {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                              <div className="flex items-center gap-1.5 mt-1.5">
+                                <PIcon className={`w-3 h-3 ${pconf.color}`} />
+                                <span className={`text-[10px] font-semibold ${pconf.color}`}>{pconf.label}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })}
 
             {/* ── AD-HOC-AUFGABEN (offen) ── */}
             {openAdhoc.length > 0 && (

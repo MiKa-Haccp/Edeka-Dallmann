@@ -30,7 +30,8 @@ export default function TodoHub() {
       const completions = await cRes.json();
       const adhoc = await aRes.json();
       const completedIds = new Set(completions.map((c: { task_id: number }) => c.task_id));
-      setPendingStandard(tasks.filter((t: { id: number }) => !completedIds.has(t.id)).length);
+      const completable = tasks.filter((t: { id: number; category?: string }) => (t.category || "aufgaben") !== "lieferungen");
+      setPendingStandard(completable.filter((t: { id: number }) => !completedIds.has(t.id)).length);
       setOpenAdhoc(adhoc.length);
     }).catch(() => {});
   }, [selectedMarketId, weekday, todayStr]);
@@ -65,8 +66,8 @@ export default function TodoHub() {
                     <ClipboardList className="w-6 h-6 text-[#0f766e]" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-foreground">Meine Aufgaben</h2>
-                    <p className="text-xs text-muted-foreground mt-0.5">Alle Aufgaben für heute im Überblick</p>
+                    <h2 className="font-bold text-foreground">Mein Weg</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">Aufgaben, Bestellungen & Lieferungen für heute</p>
                   </div>
                 </div>
                 {pendingStandard !== null && openAdhoc !== null && (
