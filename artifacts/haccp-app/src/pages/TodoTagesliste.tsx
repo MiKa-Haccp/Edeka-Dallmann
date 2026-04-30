@@ -87,6 +87,7 @@ interface AdhocTask {
   is_completed: boolean;
   completed_by_name: string | null;
   completed_at: string | null;
+  task_type: string | null;
 }
 
 function fileToBase64(file: File): Promise<string> {
@@ -220,8 +221,14 @@ function PhotoDialog({ taskTitle, currentPhoto, onSave, onDelete, onClose }: {
   );
 }
 
+const TASK_TYPES = [
+  { value: "heute",  label: "Heute erledigen",     color: "border-orange-300 bg-orange-50 text-orange-700",   activeColor: "border-orange-500 bg-orange-500 text-white",   desc: "Erscheint nur heute" },
+  { value: "sofort", label: "Sofort erledigen!",    color: "border-red-300 bg-red-50 text-red-700",            activeColor: "border-red-500 bg-red-500 text-white",         desc: "Dringend, sofort sichtbar" },
+  { value: "woche",  label: "Zusatz-Wochentodo",    color: "border-blue-300 bg-blue-50 text-blue-700",         activeColor: "border-blue-600 bg-blue-600 text-white",        desc: "Diese ganze Woche sichtbar" },
+];
+
 function NewAdhocDialog({ onSave, onClose }: {
-  onSave: (data: { title: string; description: string; priority: string; deadline: string; photoData: string; pin: string }) => Promise<string | null>;
+  onSave: (data: { title: string; description: string; priority: string; deadline: string; photoData: string; pin: string; taskType: string }) => Promise<string | null>;
   onClose: () => void;
 }) {
   const [title, setTitle] = useState("");
@@ -230,6 +237,7 @@ function NewAdhocDialog({ onSave, onClose }: {
   const [deadline, setDeadline] = useState("");
   const [photoData, setPhotoData] = useState("");
   const [pin, setPin] = useState("");
+  const [taskType, setTaskType] = useState("heute");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -252,7 +260,7 @@ function NewAdhocDialog({ onSave, onClose }: {
     if (!title.trim()) { setError("Titel erforderlich"); return; }
     if (pin.length !== 4) { setError("PIN muss 4-stellig sein"); return; }
     setSaving(true);
-    const err = await onSave({ title: title.trim(), description, priority, deadline, photoData, pin });
+    const err = await onSave({ title: title.trim(), description, priority, deadline, photoData, pin, taskType });
     setSaving(false);
     if (err) setError(err);
   };
@@ -265,6 +273,23 @@ function NewAdhocDialog({ onSave, onClose }: {
           <button onClick={onClose}><X className="w-5 h-5 text-muted-foreground" /></button>
         </div>
         <div className="p-5 space-y-4">
+          {/* Aufgaben-Typ */}
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Art der Aufgabe</label>
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              {TASK_TYPES.map(tt => (
+                <button
+                  key={tt.value}
+                  type="button"
+                  onClick={() => setTaskType(tt.value)}
+                  className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 text-center transition-colors ${taskType === tt.value ? tt.activeColor : tt.color}`}
+                >
+                  <span className="text-xs font-bold leading-tight">{tt.label}</span>
+                  <span className={`text-[10px] leading-tight ${taskType === tt.value ? "text-white/80" : "opacity-70"}`}>{tt.desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Titel *</label>
             <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Was muss erledigt werden?"
@@ -356,6 +381,7 @@ export default function TodoTagesliste() {
   const [showNewAdhoc, setShowNewAdhoc] = useState(false);
   const [showDoneStandard, setShowDoneStandard] = useState(false);
   const [showDoneAdhoc, setShowDoneAdhoc] = useState(false);
+  const [categoryOrder, setCategoryOrder] = useState<string[]>(["tagesaufgaben", "wochenaufgaben", "aufgaben", "bestellungen", "lieferungen"]);
 
   const dateStr = selectedDate.toISOString().split("T")[0];
   const weekday = selectedDate.getDay() === 0 ? 7 : selectedDate.getDay();
@@ -371,16 +397,18 @@ export default function TodoTagesliste() {
     if (!selectedMarketId) return;
     setLoading(true);
     try {
-      const [tRes, cRes, aRes, wRes] = await Promise.all([
+      const [tRes, cRes, aRes, wRes, catRes] = await Promise.all([
         fetch(`${BASE}/todo/standard-tasks?marketId=${selectedMarketId}&weekday=${weekday}`),
         fetch(`${BASE}/todo/daily-completions?marketId=${selectedMarketId}&date=${dateStr}`),
         fetch(`${BASE}/todo/adhoc-tasks?marketId=${selectedMarketId}&includeCompleted=true`),
         fetch(`${BASE}/todo/daily-completions?marketId=${selectedMarketId}&weekStart=${weekStart}`),
+        fetch(`${BASE}/todo/category-order?marketId=${selectedMarketId}`),
       ]);
       setStandardTasks(await tRes.json());
       setCompletions(await cRes.json());
       setAdhocTasks(await aRes.json());
       setWeeklyCompletions(await wRes.json());
+      if (catRes.ok) setCategoryOrder(await catRes.json());
     } finally { setLoading(false); }
   }, [selectedMarketId, weekday, dateStr, weekStart]);
 
@@ -466,11 +494,11 @@ export default function TodoTagesliste() {
   };
 
   // Ad-hoc handlers
-  const handleAdhocCreate = async (data: { title: string; description: string; priority: string; deadline: string; photoData: string; pin: string }) => {
+  const handleAdhocCreate = async (data: { title: string; description: string; priority: string; deadline: string; photoData: string; pin: string; taskType: string }) => {
     const res = await fetch(`${BASE}/todo/adhoc-tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ marketId: selectedMarketId, tenantId: "1", ...data }),
+      body: JSON.stringify({ marketId: selectedMarketId, tenantId: "1", ...data, taskType: data.taskType }),
     });
     if (!res.ok) { const d = await res.json(); return d.error || "Fehler"; }
     const created = await res.json();
@@ -505,6 +533,10 @@ export default function TodoTagesliste() {
   const doneStandard = standardTasks.filter(t => isTaskDone(t));
   const openAdhoc = adhocTasks.filter(t => !t.is_completed);
   const doneAdhoc = adhocTasks.filter(t => t.is_completed);
+  // Aufgaben nach Typ aufteilen
+  const openSofort = openAdhoc.filter(t => t.task_type === "sofort");
+  const openWoche  = openAdhoc.filter(t => t.task_type === "woche");
+  const openHeute  = openAdhoc.filter(t => !t.task_type || t.task_type === "heute");
   // "Lieferungen" are info cards — not counted in progress
   const completableTasks = standardTasks.filter(t => (t.category || "aufgaben") !== "lieferungen");
   const totalAll = completableTasks.length + adhocTasks.length;
@@ -597,7 +629,7 @@ export default function TodoTagesliste() {
         {!isHoliday && !loading && (
           <>
             {/* ── STANDARD-AUFGABEN nach Kategorie gruppiert ── */}
-            {CATEGORY_ORDER.map(cat => {
+            {categoryOrder.map(cat => {
               const catConf = CATEGORY_CONFIG[cat] ?? CATEGORY_CONFIG.aufgaben;
               const CatIcon = catConf.icon;
               // Heute: nur offene Aufgaben; Vergangene Tage: alle Aufgaben (erledigt inline durchgestrichen)
@@ -705,16 +737,113 @@ export default function TodoTagesliste() {
               );
             })}
 
-            {/* ── AD-HOC-AUFGABEN (offen) ── */}
-            {openAdhoc.length > 0 && (
+            {/* ── SOFORT-AUFGABEN (dringend) ── */}
+            {openSofort.length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Flame className="w-4 h-4 text-red-600 animate-pulse" />
+                  <span className="text-xs font-bold uppercase tracking-wide text-red-700">Sofort erledigen!</span>
+                  <span className="text-xs bg-red-200 text-red-800 px-2 py-0.5 rounded-full font-bold">{openSofort.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {openSofort.map(task => {
+                    const conf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.hoch;
+                    const PIcon = conf.icon;
+                    const isOverdue = task.deadline && new Date(task.deadline) < new Date();
+                    return (
+                      <div key={task.id} className={`bg-white rounded-xl border-2 border-red-300 overflow-hidden`}>
+                        {task.photo_data && (
+                          <button onClick={() => setEnlargedPhoto(task.photo_data)} className="w-full block">
+                            <img src={task.photo_data} alt="Foto" className="w-full h-28 object-cover hover:opacity-90 transition-opacity" />
+                          </button>
+                        )}
+                        <div className="p-3 flex items-start gap-3">
+                          <button onClick={() => setPinAdhocId(task.id)} className="shrink-0 mt-0.5"><Circle className="w-5 h-5 text-red-400/70" /></button>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-bold text-sm text-foreground">{task.title}</p>
+                            {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              {task.deadline && (
+                                <span className={`text-xs flex items-center gap-0.5 ${isOverdue ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
+                                  <Clock className="w-3 h-3" />
+                                  {new Date(task.deadline).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} Uhr
+                                </span>
+                              )}
+                              {task.created_by_name && <span className="text-[10px] text-muted-foreground">von {task.created_by_name}</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => setPinAdhocId(task.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg" title="Erledigt"><CheckCircle2 className="w-4 h-4" /></button>
+                            {isAdmin && <button onClick={() => handleAdhocDelete(task.id)} className="p-1.5 text-muted-foreground hover:text-red-500 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── ZUSATZ-WOCHENTODOS ── */}
+            {openWoche.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <CalendarRange className="w-4 h-4 text-blue-600" />
+                  <span className="text-xs font-bold uppercase tracking-wide text-blue-700">Zusatz-Wochentodos</span>
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">{openWoche.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {openWoche.map(task => {
+                    const conf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.mittel;
+                    const PIcon = conf.icon;
+                    const isOverdue = task.deadline && new Date(task.deadline) < new Date();
+                    return (
+                      <div key={task.id} className={`bg-white rounded-2xl border overflow-hidden border-l-4 border-l-blue-400 ${isOverdue ? "border-red-200" : "border-border/60"}`}>
+                        {task.photo_data && (
+                          <button onClick={() => setEnlargedPhoto(task.photo_data)} className="w-full block">
+                            <img src={task.photo_data} alt="Foto" className="w-full h-28 object-cover hover:opacity-90 transition-opacity" />
+                          </button>
+                        )}
+                        <div className="p-4 flex items-start gap-3">
+                          <button onClick={() => setPinAdhocId(task.id)} className="shrink-0 mt-0.5"><Circle className="w-5 h-5 text-blue-400/60" /></button>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-sm text-foreground">{task.title}</p>
+                            {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              <PIcon className={`w-3 h-3 ${conf.color}`} />
+                              <span className={`text-[10px] font-semibold ${conf.color}`}>{conf.label}</span>
+                              <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">Diese Woche</span>
+                              {task.deadline && (
+                                <span className={`text-xs flex items-center gap-0.5 ${isOverdue ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
+                                  <Clock className="w-3 h-3" />
+                                  {new Date(task.deadline).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} Uhr
+                                </span>
+                              )}
+                              {task.created_by_name && <span className="text-[10px] text-muted-foreground">von {task.created_by_name}</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => setPinAdhocId(task.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg" title="Erledigt"><CheckCircle2 className="w-4 h-4" /></button>
+                            {isAdmin && <button onClick={() => handleAdhocDelete(task.id)} className="p-1.5 text-muted-foreground hover:text-red-500 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── HEUTE-AUFGABEN (standard adhoc) ── */}
+            {openHeute.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-3 px-1">
                   <Zap className="w-4 h-4 text-orange-500" />
                   <span className="text-xs font-bold uppercase tracking-wide text-orange-600">Zusätzliche Aufgaben</span>
-                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">{openAdhoc.length}</span>
+                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">{openHeute.length}</span>
                 </div>
                 <div className="space-y-2">
-                  {openAdhoc.map(task => {
+                  {openHeute.map(task => {
                     const conf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.mittel;
                     const PIcon = conf.icon;
                     const isOverdue = task.deadline && new Date(task.deadline) < new Date();
@@ -726,9 +855,7 @@ export default function TodoTagesliste() {
                           </button>
                         )}
                         <div className="p-4 flex items-start gap-3">
-                          <button onClick={() => setPinAdhocId(task.id)} className="shrink-0 mt-0.5" title="Als erledigt markieren">
-                            <Circle className="w-5 h-5 text-orange-400/60" />
-                          </button>
+                          <button onClick={() => setPinAdhocId(task.id)} className="shrink-0 mt-0.5"><Circle className="w-5 h-5 text-orange-400/60" /></button>
                           <div className="min-w-0 flex-1">
                             <p className="font-semibold text-sm text-foreground">{task.title}</p>
                             {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
@@ -741,20 +868,12 @@ export default function TodoTagesliste() {
                                   {new Date(task.deadline).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} Uhr
                                 </span>
                               )}
-                              {task.created_by_name && (
-                                <span className="text-[10px] text-muted-foreground">von {task.created_by_name}</span>
-                              )}
+                              {task.created_by_name && <span className="text-[10px] text-muted-foreground">von {task.created_by_name}</span>}
                             </div>
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
-                            <button onClick={() => setPinAdhocId(task.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Erledigt">
-                              <CheckCircle2 className="w-4 h-4" />
-                            </button>
-                            {isAdmin && (
-                              <button onClick={() => handleAdhocDelete(task.id)} className="p-1.5 text-muted-foreground hover:text-red-500 rounded-lg">
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            )}
+                            <button onClick={() => setPinAdhocId(task.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg" title="Erledigt"><CheckCircle2 className="w-4 h-4" /></button>
+                            {isAdmin && <button onClick={() => handleAdhocDelete(task.id)} className="p-1.5 text-muted-foreground hover:text-red-500 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>}
                           </div>
                         </div>
                       </div>

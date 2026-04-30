@@ -23,11 +23,13 @@ router.get("/todo/standard-tasks", async (req, res) => {
   let q = `SELECT * FROM todo_standard_tasks WHERE market_id=$1 AND tenant_id=$2`;
   const params: unknown[] = [marketId, tenantId];
   if (weekday) {
-    // weekday=0 means "täglich" (every day) — always include those alongside the requested weekday
     q += ` AND (weekday=$3 OR weekday=0) AND is_active=true`;
     params.push(weekday);
   }
-  q += ` ORDER BY CASE category WHEN 'tagesaufgaben' THEN 1 WHEN 'wochenaufgaben' THEN 2 WHEN 'aufgaben' THEN 3 WHEN 'bestellungen' THEN 4 WHEN 'lieferungen' THEN 5 ELSE 6 END, CASE priority WHEN 'hoch' THEN 1 WHEN 'mittel' THEN 2 ELSE 3 END, title`;
+  // sort_order first (manual ordering), then fallback category+priority+title
+  q += ` ORDER BY COALESCE(sort_order, 9999),
+    CASE category WHEN 'tagesaufgaben' THEN 1 WHEN 'wochenaufgaben' THEN 2 WHEN 'aufgaben' THEN 3 WHEN 'bestellungen' THEN 4 WHEN 'lieferungen' THEN 5 ELSE 6 END,
+    CASE priority WHEN 'hoch' THEN 1 WHEN 'mittel' THEN 2 ELSE 3 END, title`;
   const { rows } = await pool.query(q, params);
   res.json(rows);
 });
@@ -35,10 +37,16 @@ router.get("/todo/standard-tasks", async (req, res) => {
 router.post("/todo/standard-tasks", async (req, res) => {
   const { marketId, tenantId = 1, title, description, weekday, priority = "mittel", photoData, category = "aufgaben" } = req.body;
   if (!marketId || !title || weekday === undefined || weekday === null) return res.status(400).json({ error: "marketId, title, weekday required" });
+  // assign sort_order = max existing + 1 within same market
+  const maxRes = await pool.query(
+    `SELECT COALESCE(MAX(sort_order), -1) AS mx FROM todo_standard_tasks WHERE market_id=$1 AND tenant_id=$2`,
+    [marketId, tenantId]
+  );
+  const nextOrder = (maxRes.rows[0].mx as number) + 1;
   const { rows } = await pool.query(
-    `INSERT INTO todo_standard_tasks (market_id, tenant_id, title, description, weekday, priority, photo_data, category)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-    [marketId, tenantId, title, description || null, weekday, priority, photoData || null, category]
+    `INSERT INTO todo_standard_tasks (market_id, tenant_id, title, description, weekday, priority, photo_data, category, sort_order)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+    [marketId, tenantId, title, description || null, weekday, priority, photoData || null, category, nextOrder]
   );
   res.json(rows[0]);
 });
@@ -55,8 +63,56 @@ router.put("/todo/standard-tasks/:id", async (req, res) => {
   res.json(rows[0]);
 });
 
+// Reihenfolge einzelner Aufgaben ändern (swap sort_order)
+router.patch("/todo/standard-tasks/reorder", async (req, res) => {
+  // ids: array of task IDs in the new desired order
+  const { ids } = req.body as { ids: number[] };
+  if (!Array.isArray(ids) || ids.length === 0) return res.status(400).json({ error: "ids required" });
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    for (let i = 0; i < ids.length; i++) {
+      await client.query(`UPDATE todo_standard_tasks SET sort_order=$1, updated_at=NOW() WHERE id=$2`, [i, ids[i]]);
+    }
+    await client.query("COMMIT");
+    res.json({ ok: true });
+  } catch (e) {
+    await client.query("ROLLBACK");
+    res.status(500).json({ error: "Reorder failed" });
+  } finally {
+    client.release();
+  }
+});
+
 router.delete("/todo/standard-tasks/:id", async (req, res) => {
   await pool.query("DELETE FROM todo_standard_tasks WHERE id=$1", [req.params.id]);
+  res.json({ ok: true });
+});
+
+// ── Kategorien-Reihenfolge ───────────────────────────────────────────────────
+
+router.get("/todo/category-order", async (req, res) => {
+  const { marketId, tenantId = "1" } = req.query as Record<string, string>;
+  if (!marketId) return res.status(400).json({ error: "marketId required" });
+  const { rows } = await pool.query(
+    `SELECT category_order FROM todo_category_order WHERE market_id=$1 AND tenant_id=$2`,
+    [marketId, tenantId]
+  );
+  if (!rows.length) {
+    return res.json(["tagesaufgaben", "wochenaufgaben", "aufgaben", "bestellungen", "lieferungen"]);
+  }
+  res.json(rows[0].category_order);
+});
+
+router.put("/todo/category-order", async (req, res) => {
+  const { marketId, tenantId = "1", categoryOrder } = req.body;
+  if (!marketId || !Array.isArray(categoryOrder)) return res.status(400).json({ error: "marketId and categoryOrder required" });
+  await pool.query(
+    `INSERT INTO todo_category_order (market_id, tenant_id, category_order)
+     VALUES ($1,$2,$3::jsonb)
+     ON CONFLICT (tenant_id, market_id) DO UPDATE SET category_order=$3::jsonb, updated_at=NOW()`,
+    [marketId, tenantId, JSON.stringify(categoryOrder)]
+  );
   res.json({ ok: true });
 });
 
@@ -66,7 +122,6 @@ router.get("/todo/daily-completions", async (req, res) => {
   const { marketId, date, weekStart } = req.query as Record<string, string>;
   if (!marketId) return res.status(400).json({ error: "marketId required" });
   if (weekStart) {
-    // Alle Erledigungen von Montag bis Samstag der Woche zurückgeben (für Wochenaufgaben-Check)
     const { rows } = await pool.query(
       `SELECT * FROM todo_daily_completions
        WHERE market_id=$1
@@ -123,21 +178,22 @@ router.get("/todo/adhoc-tasks", async (req, res) => {
   if (!marketId) return res.status(400).json({ error: "marketId required" });
   let q = `SELECT * FROM todo_adhoc_tasks WHERE market_id=$1 AND tenant_id=$2`;
   if (includeCompleted !== "true") q += ` AND is_completed=false`;
-  q += ` ORDER BY CASE priority WHEN 'hoch' THEN 1 WHEN 'mittel' THEN 2 ELSE 3 END, deadline NULLS LAST, created_at DESC`;
+  q += ` ORDER BY CASE task_type WHEN 'sofort' THEN 0 WHEN 'woche' THEN 1 ELSE 2 END,
+    CASE priority WHEN 'hoch' THEN 1 WHEN 'mittel' THEN 2 ELSE 3 END, deadline NULLS LAST, created_at DESC`;
   const { rows } = await pool.query(q, [marketId, tenantId]);
   res.json(rows);
 });
 
 router.post("/todo/adhoc-tasks", async (req, res) => {
-  const { marketId, tenantId = "1", title, description, priority = "mittel", deadline, photoData, pin } = req.body;
+  const { marketId, tenantId = "1", title, description, priority = "mittel", deadline, photoData, pin, taskType = "heute" } = req.body;
   if (!marketId || !title || !pin) return res.status(400).json({ error: "marketId, title, pin required" });
   const user = await validatePin(pin, tenantId);
   if (!user) return res.status(401).json({ error: "Ungültige PIN" });
   const notifyAt = deadline ? new Date(deadline) : null;
   const { rows } = await pool.query(
-    `INSERT INTO todo_adhoc_tasks (market_id, tenant_id, title, description, priority, deadline, photo_data, created_by_pin, created_by_name, notify_at)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-    [marketId, tenantId, title, description || null, priority, deadline || null, photoData || null, pin, user.name, notifyAt]
+    `INSERT INTO todo_adhoc_tasks (market_id, tenant_id, title, description, priority, deadline, photo_data, created_by_pin, created_by_name, notify_at, task_type)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+    [marketId, tenantId, title, description || null, priority, deadline || null, photoData || null, pin, user.name, notifyAt, taskType]
   );
   res.json(rows[0]);
 });
@@ -202,37 +258,34 @@ router.put("/todo/till-assignments", async (req, res) => {
 router.get("/todo/market-users", async (req, res) => {
   const { marketId, tenantId = "1" } = req.query as Record<string, string>;
   if (!marketId) return res.status(400).json({ error: "marketId required" });
-  // Determine how many employees are explicitly assigned to this market.
-  // Fallback: if fewer than 3 are assigned (initial setup not done yet),
-  // show ALL active employees so the schedule is never empty.
+  // Alle aktiven Nutzer (alle Rollen) — Bereichsleitung/Marktleiter/Admin auch anzeigen
+  const ALL_ROLES = `u.role IN ('USER','MARKTLEITER','BEREICHSLEITUNG','ADMIN','SUPERADMIN')`;
   const countRes = await pool.query(
     `SELECT COUNT(*) AS cnt
      FROM user_market_assignments uma
      JOIN users u ON u.id = uma.user_id
      WHERE uma.market_id = $1 AND u.tenant_id = $2
-       AND u.status = 'aktiv' AND u.role IN ('USER','MARKTLEITER')`,
+       AND u.status = 'aktiv' AND ${ALL_ROLES}`,
     [marketId, tenantId]
   );
   const assignedCount = parseInt(countRes.rows[0].cnt, 10);
 
   let rows: any[];
   if (assignedCount >= 3) {
-    // Proper assignments exist — show only assigned employees
     const r = await pool.query(
       `SELECT u.id, u.name, u.first_name, u.last_name, u.initials, u.role
        FROM users u
        JOIN user_market_assignments uma ON uma.user_id = u.id AND uma.market_id = $1
-       WHERE u.tenant_id = $2 AND u.status = 'aktiv' AND u.role IN ('USER','MARKTLEITER')
+       WHERE u.tenant_id = $2 AND u.status = 'aktiv' AND ${ALL_ROLES}
        ORDER BY COALESCE(NULLIF(trim(u.name),''), trim(u.first_name||' '||u.last_name))`,
       [marketId, tenantId]
     );
     rows = r.rows;
   } else {
-    // No/few assignments yet — show all active employees as fallback
     const r = await pool.query(
       `SELECT u.id, u.name, u.first_name, u.last_name, u.initials, u.role
        FROM users u
-       WHERE u.tenant_id = $1 AND u.status = 'aktiv' AND u.role IN ('USER','MARKTLEITER')
+       WHERE u.tenant_id = $1 AND u.status = 'aktiv' AND ${ALL_ROLES}
        ORDER BY COALESCE(NULLIF(trim(u.name),''), trim(u.first_name||' '||u.last_name))`,
       [tenantId]
     );
