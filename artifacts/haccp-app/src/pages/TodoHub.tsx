@@ -8,8 +8,6 @@ import { ClipboardList, TableProperties, CheckCircle2, AlertCircle, ChevronLeft 
 const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
-const WEEKDAY_NAMES = ["", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
-
 export default function TodoHub() {
   const { selectedMarketId } = useAppStore();
   const [pendingStandard, setPendingStandard] = useState<number | null>(null);
@@ -17,7 +15,9 @@ export default function TodoHub() {
 
   const today = new Date();
   const todayStr = today.toISOString().split("T")[0];
-  const weekday = today.getDay() === 0 ? 7 : today.getDay();
+  const rawDay = today.getDay(); // 0=So, 1=Mo ... 6=Sa
+  const isSundayToday = rawDay === 0;
+  const weekday = isSundayToday ? 6 : rawDay; // Sonntag → Samstag für API-Abfrage (keine Sonntagsaufgaben)
 
   useEffect(() => {
     if (!selectedMarketId) return;
@@ -52,7 +52,7 @@ export default function TodoHub() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">To-Do & Einsatzplan</h1>
-              <p className="text-sm text-white/70">{WEEKDAY_NAMES[weekday]}, {today.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}</p>
+              <p className="text-sm text-white/70">{today.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}</p>
             </div>
           </div>
         </PageHeader>

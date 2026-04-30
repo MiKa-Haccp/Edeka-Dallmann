@@ -9,7 +9,7 @@ import { Plus, Pencil, Trash2, Loader2, X, Save, Flame, Minus, ArrowDown, ImageP
 const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
-const WEEKDAY_NAMES = ["", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+const WEEKDAY_NAMES = ["", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 const PRIORITIES = [
   { value: "hoch",    label: "Hoch",    icon: Flame,    color: "text-red-600"   },
   { value: "mittel",  label: "Mittel",  icon: Minus,    color: "text-amber-600" },
@@ -292,11 +292,11 @@ export default function TodoVerwaltung() {
   };
 
   const filtered = filterDay !== null ? tasks.filter(t => t.weekday === filterDay) : tasks;
-  const ALL_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6, 7];
+  const ALL_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
   const WEEKDAY_DISPLAY: Record<number, string> = {
     0: "Täglich",
     1: "Montag", 2: "Dienstag", 3: "Mittwoch", 4: "Donnerstag",
-    5: "Freitag", 6: "Samstag", 7: "Sonntag",
+    5: "Freitag", 6: "Samstag",
   };
   const byDay = ALL_WEEKDAYS.reduce((acc, d) => {
     acc[d] = filtered.filter(t => t.weekday === d);

@@ -31,7 +31,7 @@ const CATEGORY_ORDER = ["tagesaufgaben", "wochenaufgaben", "aufgaben", "bestellu
 const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
-const WEEKDAY_NAMES = ["", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
+const WEEKDAY_NAMES = ["", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 
 const PRIORITY_CONFIG = {
   hoch:   { label: "Hoch",    icon: Flame,    color: "text-red-600",   bg: "bg-red-50",   border: "border-red-200",   badge: "bg-red-100 text-red-700"    },
@@ -314,7 +314,11 @@ export default function TodoTagesliste() {
   const [completions, setCompletions] = useState<Completion[]>([]);
   const [adhocTasks, setAdhocTasks] = useState<AdhocTask[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = new Date();
+    if (d.getDay() === 0) d.setDate(d.getDate() - 1); // Sonntag → zurück zu Samstag
+    return d;
+  });
 
   const [pinStandardId, setPinStandardId] = useState<{ id: number; title: string } | null>(null);
   const [pinAdhocId, setPinAdhocId] = useState<number | null>(null);
@@ -347,7 +351,12 @@ export default function TodoTagesliste() {
 
   const completionMap = new Map(completions.map(c => [c.task_id, c]));
   const moveDate = (days: number) => {
-    setSelectedDate(d => { const n = new Date(d); n.setDate(n.getDate() + days); return n; });
+    setSelectedDate(d => {
+      const n = new Date(d);
+      n.setDate(n.getDate() + days);
+      if (n.getDay() === 0) n.setDate(n.getDate() + (days > 0 ? 1 : -1)); // Sonntag überspringen
+      return n;
+    });
   };
 
   // Standard task handlers
@@ -470,7 +479,7 @@ export default function TodoTagesliste() {
               <div>
                 <h1 className="text-xl font-bold text-white">Meine Aufgaben</h1>
                 <p className="text-sm text-white/70">
-                  {WEEKDAY_NAMES[weekday]}, {selectedDate.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                  {selectedDate.toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })}
                   {totalOpen > 0 && <span className="ml-2 font-semibold text-white">· {totalOpen} offen</span>}
                 </p>
               </div>
