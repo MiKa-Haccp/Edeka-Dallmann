@@ -384,6 +384,7 @@ export default function TodoTagesliste() {
   const [weeklyCompletions, setWeeklyCompletions] = useState<Completion[]>([]);
   const [adhocTasks, setAdhocTasks] = useState<AdhocTask[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
     if (d.getDay() === 0) d.setDate(d.getDate() - 1); // Sonntag → Samstag
@@ -419,6 +420,7 @@ export default function TodoTagesliste() {
   const load = useCallback(async () => {
     if (!selectedMarketId) return;
     setLoading(true);
+    setLoadError(null);
     try {
       const [tRes, cRes, aRes, wRes, catRes] = await Promise.all([
         fetch(`${BASE}/todo/standard-tasks?marketId=${selectedMarketId}&weekday=${weekday}`),
@@ -427,11 +429,21 @@ export default function TodoTagesliste() {
         fetch(`${BASE}/todo/daily-completions?marketId=${selectedMarketId}&weekStart=${weekStart}`),
         fetch(`${BASE}/todo/category-order?marketId=${selectedMarketId}`),
       ]);
-      setStandardTasks(await tRes.json());
-      setCompletions(await cRes.json());
-      setAdhocTasks(await aRes.json());
-      setWeeklyCompletions(await wRes.json());
-      if (catRes.ok) setCategoryOrder(await catRes.json());
+      if (!tRes.ok) { setLoadError(`Fehler beim Laden der Aufgaben (${tRes.status})`); return; }
+      const [tasks, comps, adhoc, weekly] = await Promise.all([
+        tRes.json(), cRes.json(), aRes.json(), wRes.json(),
+      ]);
+      if (!Array.isArray(tasks)) { setLoadError("Server-Fehler: Ungültige Aufgaben-Daten erhalten. Bitte Seite neu laden."); return; }
+      setStandardTasks(tasks);
+      setCompletions(Array.isArray(comps) ? comps : []);
+      setAdhocTasks(Array.isArray(adhoc) ? adhoc : []);
+      setWeeklyCompletions(Array.isArray(weekly) ? weekly : []);
+      if (catRes.ok) {
+        const catData = await catRes.json();
+        if (Array.isArray(catData)) setCategoryOrder(catData);
+      }
+    } catch (e) {
+      setLoadError("Verbindungsfehler – Server nicht erreichbar. Bitte Seite neu laden.");
     } finally { setLoading(false); }
   }, [selectedMarketId, weekday, dateStr, weekStart]);
 
@@ -649,10 +661,19 @@ export default function TodoTagesliste() {
           );
         })()}
 
+        {!isHoliday && loadError && (
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-center">
+            <Info className="w-8 h-8 text-red-400 mx-auto mb-2" />
+            <p className="text-red-700 font-semibold text-sm">{loadError}</p>
+            <button onClick={load} className="mt-3 px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-xl hover:bg-red-700 transition-colors">
+              Erneut versuchen
+            </button>
+          </div>
+        )}
         {!isHoliday && loading && (
           <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
         )}
-        {!isHoliday && !loading && (
+        {!isHoliday && !loading && !loadError && (
           <>
             {/* ── STANDARD-AUFGABEN nach Kategorie gruppiert ── */}
             {categoryOrder.map(cat => {

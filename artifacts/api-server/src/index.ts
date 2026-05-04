@@ -1,6 +1,7 @@
 import { execSync } from "child_process";
 import { fileURLToPath } from "url";
 import path from "path";
+import { pool } from "@workspace/db";
 import app from "./app";
 import { startNotificationCron } from "./services/notificationEngine";
 import { startMonatsberichtCron } from "./routes/monatsbericht";
@@ -38,9 +39,54 @@ try {
   console.error("[DB] Schema-Synchronisierung fehlgeschlagen – Server startet trotzdem:", err);
 }
 
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-  startNotificationCron();
-  startMonatsberichtCron();
-  startTuevDeadlineCron();
+// ── Todo-Modul: Manuelle Migrations (ADD COLUMN IF NOT EXISTS) ─────────────
+// Diese Spalten werden per ALTER TABLE verwaltet (nicht per Drizzle-Schema),
+// daher müssen sie bei jedem Start geprüft und ggf. ergänzt werden.
+async function runTodoMigrations() {
+  try {
+    console.log("[DB] Todo-Migrationen laufen...");
+
+    // todo_standard_tasks: sort_order für manuelle Reihenfolge
+    await pool.query(`
+      ALTER TABLE todo_standard_tasks
+        ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0
+    `);
+
+    // todo_adhoc_tasks: task_type (heute / sofort / woche)
+    await pool.query(`
+      ALTER TABLE todo_adhoc_tasks
+        ADD COLUMN IF NOT EXISTS task_type TEXT NOT NULL DEFAULT 'heute'
+    `);
+
+    // todo_adhoc_tasks: category (in welcher Kategorie-Sektion erscheinen)
+    await pool.query(`
+      ALTER TABLE todo_adhoc_tasks
+        ADD COLUMN IF NOT EXISTS category TEXT
+    `);
+
+    // todo_category_order für benutzerdefinierte Kategoriereihenfolge
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS todo_category_order (
+        id SERIAL PRIMARY KEY,
+        tenant_id INTEGER NOT NULL DEFAULT 1,
+        market_id INTEGER NOT NULL,
+        category_order JSONB NOT NULL DEFAULT '["tagesaufgaben","wochenaufgaben","aufgaben","bestellungen","lieferungen"]',
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE(tenant_id, market_id)
+      )
+    `);
+
+    console.log("[DB] Todo-Migrationen abgeschlossen.");
+  } catch (err) {
+    console.error("[DB] Todo-Migrationen fehlgeschlagen:", err);
+  }
+}
+
+runTodoMigrations().then(() => {
+  app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+    startNotificationCron();
+    startMonatsberichtCron();
+    startTuevDeadlineCron();
+  });
 });
