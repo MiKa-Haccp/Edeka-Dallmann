@@ -223,9 +223,8 @@ function PhotoDialog({ taskTitle, currentPhoto, onSave, onDelete, onClose }: {
 }
 
 const TASK_TYPES = [
-  { value: "heute",  label: "Heute erledigen",     color: "border-orange-300 bg-orange-50 text-orange-700",   activeColor: "border-orange-500 bg-orange-500 text-white",   desc: "Erscheint nur heute" },
-  { value: "sofort", label: "Sofort erledigen!",    color: "border-red-300 bg-red-50 text-red-700",            activeColor: "border-red-500 bg-red-500 text-white",         desc: "Dringend, sofort sichtbar" },
-  { value: "woche",  label: "Zusatz-Wochentodo",    color: "border-blue-300 bg-blue-50 text-blue-700",         activeColor: "border-blue-600 bg-blue-600 text-white",        desc: "Diese ganze Woche sichtbar" },
+  { value: "sofort", label: "Sofort erledigen!", icon: "🔴", color: "border-red-300 bg-red-50 text-red-700",   activeColor: "border-red-500 bg-red-500 text-white",  desc: "Bleibt bis erledigt — tagesübergreifend" },
+  { value: "woche",  label: "Zusatz-Wochentodo",  icon: "📅", color: "border-blue-300 bg-blue-50 text-blue-700", activeColor: "border-blue-600 bg-blue-600 text-white", desc: "Diese ganze Woche sichtbar" },
 ];
 
 const ADHOC_CATEGORIES = [
@@ -247,7 +246,7 @@ function NewAdhocDialog({ onSave, onClose }: {
   const [deadline, setDeadline] = useState("");
   const [photoData, setPhotoData] = useState("");
   const [pin, setPin] = useState("");
-  const [taskType, setTaskType] = useState("heute");
+  const [taskType, setTaskType] = useState<"heute" | "sofort" | "woche">("heute");
   const [category, setCategory] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -287,19 +286,26 @@ function NewAdhocDialog({ onSave, onClose }: {
           {/* Aufgaben-Typ */}
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Art der Aufgabe</label>
-            <div className="mt-2 grid grid-cols-3 gap-2">
+            <div className="mt-2 grid grid-cols-2 gap-2">
               {TASK_TYPES.map(tt => (
                 <button
                   key={tt.value}
                   type="button"
-                  onClick={() => setTaskType(tt.value)}
+                  onClick={() => setTaskType(taskType === tt.value ? "heute" : tt.value as "sofort" | "woche")}
                   className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 text-center transition-colors ${taskType === tt.value ? tt.activeColor : tt.color}`}
                 >
+                  <span className="text-lg">{tt.icon}</span>
                   <span className="text-xs font-bold leading-tight">{tt.label}</span>
                   <span className={`text-[10px] leading-tight ${taskType === tt.value ? "text-white/80" : "opacity-70"}`}>{tt.desc}</span>
                 </button>
               ))}
             </div>
+            {taskType === "heute" && (
+              <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
+                Normale Aufgabe — erscheint heute in der Liste
+              </p>
+            )}
           </div>
           {/* Kategorie / Position in der Liste */}
           <div>

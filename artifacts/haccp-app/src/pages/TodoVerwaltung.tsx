@@ -254,14 +254,19 @@ export default function TodoVerwaltung() {
   const load = useCallback(async () => {
     if (!selectedMarketId) return;
     setLoading(true);
-    const [tasksRes, catRes] = await Promise.all([
-      fetch(`${BASE}/todo/standard-tasks?marketId=${selectedMarketId}`),
-      fetch(`${BASE}/todo/category-order?marketId=${selectedMarketId}`),
-    ]);
-    const data = await tasksRes.json();
-    setTasks(data);
-    if (catRes.ok) setCategoryOrder(await catRes.json());
-    setLoading(false);
+    try {
+      const [tasksRes, catRes] = await Promise.all([
+        fetch(`${BASE}/todo/standard-tasks?marketId=${selectedMarketId}`),
+        fetch(`${BASE}/todo/category-order?marketId=${selectedMarketId}`),
+      ]);
+      const data = await tasksRes.json();
+      setTasks(Array.isArray(data) ? data : []);
+      if (catRes.ok) setCategoryOrder(await catRes.json());
+    } catch {
+      setTasks([]);
+    } finally {
+      setLoading(false);
+    }
   }, [selectedMarketId]);
 
   useEffect(() => { load(); }, [load]);
