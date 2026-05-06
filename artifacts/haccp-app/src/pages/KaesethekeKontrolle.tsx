@@ -407,11 +407,15 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
                         )}
                         <div className="flex items-center gap-2">
                           <label className="text-xs text-muted-foreground w-36 shrink-0">Kerntemp. Garen <span className="text-muted-foreground/60">≥{minT}°C</span></label>
-                          <div className="relative flex-1">
-                            <input type="text" inputMode="numeric" placeholder="z.B. 75" value={inp.kernTemp} onChange={e=>setKT(p,e.target.value.replace(/\D/g,""))}
-                              className={`w-full border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary pr-16 ${gSt==="warn"?"border-red-400 bg-red-50":gSt==="ok"?"border-green-400 bg-green-50":""}`}/>
-                            {gSt!=="none"&&<span className={`absolute right-2 top-1.5 text-[10px] font-bold ${gSt==="ok"?"text-green-600":"text-red-600"}`}>{gSt==="ok"?"i.O.":"ABWEICH."}</span>}
-                          </div>
+                          <TempScrollPicker
+                            value={inp.kernTemp}
+                            onChange={v=>setKT(p,v)}
+                            hotRange
+                            minVal={p==="Fisch"?60:72}
+                            status={gSt}
+                            className="flex-1"
+                          />
+                          {gSt!=="none"&&<span className={`text-xs font-semibold shrink-0 ${gSt==="ok"?"text-green-600":"text-red-600"}`}>{gSt==="ok"?"i.O.":"ABWEICH."}</span>}
                         </div>
                       </div>
                     )}
@@ -424,11 +428,14 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
                 <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                   <div className="flex items-center gap-2">
                     <label className="text-xs font-medium text-amber-800 w-36 shrink-0">Heißhalten Theke <span className="text-amber-600/70">≥60°C</span> <span className="text-red-500">*</span></label>
-                    <div className="relative flex-1">
-                      <input type="text" inputMode="numeric" placeholder="z.B. 65" value={sharedHeissTemp} onChange={e=>setSharedHeissTemp(e.target.value.replace(/\D/g,""))}
-                        className={`w-full border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 pr-16 ${hSt==="warn"?"border-red-400 bg-red-50":hSt==="ok"?"border-green-400 bg-green-50":"border-amber-300"}`}/>
-                      {hSt!=="none"&&<span className={`absolute right-2 top-1.5 text-[10px] font-bold ${hSt==="ok"?"text-green-600":"text-red-600"}`}>{hSt==="ok"?"i.O.":"ABWEICH."}</span>}
-                    </div>
+                    <TempScrollPicker
+                      value={sharedHeissTemp}
+                      onChange={setSharedHeissTemp}
+                      hotRange
+                      minVal={60}
+                      status={hSt}
+                      className="flex-1"
+                    />
                   </div>
                   <p className="text-[10px] text-amber-600 mt-1.5">Gilt für alle ausgewählten Produkte</p>
                 </div>
@@ -694,18 +701,30 @@ function HeisseThekeEditModal({entry,onConfirm,onClose}:{
           <div className="space-y-3">
             <div>
               <label className="text-xs font-medium text-muted-foreground block mb-1">Kerntemp. Garen <span className="text-muted-foreground/60">≥{entry.produkt==="Fisch"?"60":"72"}°C</span></label>
-              <div className="relative">
-                <input type="text" inputMode="numeric" placeholder="z.B. 75" value={kernTemp} onChange={e=>setKernTemp(e.target.value.replace(/\D/g,""))}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${gSt==="warn"?"border-red-400 bg-red-50":gSt==="ok"?"border-green-400 bg-green-50":""}`} autoFocus/>
-                {gSt!=="none"&&<span className={`absolute right-2 top-2 text-xs font-semibold ${gSt==="ok"?"text-green-600":"text-red-600"}`}>{gSt==="ok"?"i.O.":"ABWEICHUNG"}</span>}
+              <div className="flex items-center gap-2">
+                <TempScrollPicker
+                  value={kernTemp}
+                  onChange={setKernTemp}
+                  hotRange
+                  minVal={entry.produkt==="Fisch"?60:72}
+                  status={gSt}
+                  className="flex-1"
+                />
+                {gSt!=="none"&&<span className={`text-xs font-semibold shrink-0 ${gSt==="ok"?"text-green-600":"text-red-600"}`}>{gSt==="ok"?"i.O.":"ABWEICHUNG"}</span>}
               </div>
             </div>
             <div>
               <label className="text-xs font-medium text-muted-foreground block mb-1">Heißhalten <span className="text-muted-foreground/60">≥60°C</span> <span className="text-red-500">*</span></label>
-              <div className="relative">
-                <input type="text" inputMode="numeric" placeholder="z.B. 65" value={heissTemp} onChange={e=>setHeissTemp(e.target.value.replace(/\D/g,""))}
-                  className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${hSt==="warn"?"border-red-400 bg-red-50":hSt==="ok"?"border-green-400 bg-green-50":""}`}/>
-                {hSt!=="none"&&<span className={`absolute right-2 top-2 text-xs font-semibold ${hSt==="ok"?"text-green-600":"text-red-600"}`}>{hSt==="ok"?"i.O.":"ABWEICHUNG"}</span>}
+              <div className="flex items-center gap-2">
+                <TempScrollPicker
+                  value={heissTemp}
+                  onChange={setHeissTemp}
+                  hotRange
+                  minVal={60}
+                  status={hSt}
+                  className="flex-1"
+                />
+                {hSt!=="none"&&<span className={`text-xs font-semibold shrink-0 ${hSt==="ok"?"text-green-600":"text-red-600"}`}>{hSt==="ok"?"i.O.":"ABWEICHUNG"}</span>}
               </div>
             </div>
             <div>

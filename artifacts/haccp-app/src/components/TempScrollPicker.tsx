@@ -10,12 +10,15 @@ interface TempScrollPickerProps {
   status?: "ok" | "warn" | "none";
   disabled?: boolean;
   className?: string;
+  hotRange?: boolean;
 }
 
-function buildValues(maxVal?: number, unit?: string): number[] {
+function buildValues(maxVal?: number, unit?: string, hotRange?: boolean): { vals: number[]; step: number } {
   let lo: number, hi: number, step: number;
   if (unit && unit.includes("%")) {
     lo = 50; hi = 100; step = 1;
+  } else if (hotRange) {
+    lo = 40; hi = 120; step = 1;
   } else if (maxVal !== undefined && maxVal <= -10) {
     lo = -30; hi = -5; step = 0.1;
   } else {
@@ -25,7 +28,7 @@ function buildValues(maxVal?: number, unit?: string): number[] {
   for (let v = hi; v >= lo - step / 2; v = Math.round((v - step) * 100) / 100) {
     vals.push(Math.round(v * 100) / 100);
   }
-  return vals;
+  return { vals, step };
 }
 
 export function TempScrollPicker({
@@ -37,14 +40,20 @@ export function TempScrollPicker({
   status = "none",
   disabled,
   className = "",
+  hotRange = false,
 }: TempScrollPickerProps) {
   const [open, setOpen] = useState(false);
   const wrapRef   = useRef<HTMLDivElement>(null);
   const activeRef = useRef<HTMLLIElement>(null);
 
-  const values   = buildValues(maxVal, unit);
-  const startVal = maxVal ?? values[0];
-  const numVal   = value ? parseFloat(value.replace(",", ".")) : null;
+  const { vals: values, step } = buildValues(maxVal, unit, hotRange);
+  const isWholeNum = step >= 1;
+  const fmt = (v: number) => isWholeNum ? v.toFixed(0) : v.toFixed(1);
+
+  const startVal = hotRange
+    ? (minVal ?? 65)
+    : (maxVal ?? values[0]);
+  const numVal = value ? parseFloat(value.replace(",", ".")) : null;
 
   useEffect(() => {
     if (!open) return;
@@ -58,9 +67,6 @@ export function TempScrollPicker({
   useEffect(() => {
     if (open) setTimeout(() => activeRef.current?.scrollIntoView({ block: "center" }), 30);
   }, [open]);
-
-  const isHumidity = !!(unit && unit.includes("%"));
-  const fmt = (v: number) => isHumidity ? v.toFixed(0) : v.toFixed(1);
 
   const select = (v: number) => { onChange(fmt(v)); setOpen(false); };
 
@@ -79,7 +85,7 @@ export function TempScrollPicker({
     className,
   ].join(" ");
 
-  const Icon = unit === "%" ? Droplets : Thermometer;
+  const Icon = (unit && unit.includes("%")) ? Droplets : Thermometer;
 
   return (
     <div ref={wrapRef} className="relative">
