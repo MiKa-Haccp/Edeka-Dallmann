@@ -279,8 +279,9 @@ function buildTuevHtml(opts: {
   nachbesserungUnterschrift: string;
   hatFoto: boolean;
   istBild: boolean;
+  nachricht?: string;
 }): string {
-  const { marktName, year, aktionsplanDatum, massnahmen, nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift, hatFoto, istBild } = opts;
+  const { marktName, year, aktionsplanDatum, massnahmen, nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift, hatFoto, istBild, nachricht } = opts;
   const fristStr = aktionsplanDatum ? new Date(aktionsplanDatum).toLocaleDateString("de-DE") : "–";
   const pruefungStr = nachbesserungDatum ? new Date(nachbesserungDatum).toLocaleDateString("de-DE") : "–";
 
@@ -320,12 +321,20 @@ function buildTuevHtml(opts: {
          <p style="color:#92400e;font-size:13px;margin:0;">⏳ Maßnahmen noch nicht abschließend bestätigt</p>
        </div>`;
 
+  const nachrichtBlock = nachricht?.trim()
+    ? `<div style="margin-bottom:20px;padding:14px 16px;background:#eff6ff;border-left:4px solid #1a3a6b;border-radius:0 8px 8px 0;">
+         <p style="font-size:11px;font-weight:700;color:#1a3a6b;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px;">Nachricht / Kommentar</p>
+         <p style="font-size:14px;color:#111;margin:0;white-space:pre-wrap;">${nachricht.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>
+       </div>`
+    : "";
+
   return `<div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;">
     <div style="background:#1a3a6b;color:white;padding:22px 26px;border-radius:8px 8px 0 0;">
       <h2 style="margin:0;font-size:20px;">TÜV Aktionsplan & Maßnahmenumsetzung</h2>
       <p style="margin:5px 0 0;opacity:0.8;font-size:13px;">EDEKA Dallmann – ${marktName} | Jahr ${year}</p>
     </div>
     <div style="background:#fff;padding:22px 26px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px;">
+      ${nachrichtBlock}
 
       <h3 style="color:#1a3a6b;font-size:15px;border-bottom:2px solid #e5e7eb;padding-bottom:8px;margin:0 0 12px;">Aktionsplan</h3>
       <table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:12px;">
@@ -362,11 +371,13 @@ router.post("/send-tuev-aktionsplan-email", async (req, res) => {
     aktionsplanFoto, aktionsplanDatum,
     massnahmen,
     nachbesserungName, nachbesserungDatum, nachbesserungUnterschrift,
+    nachricht,
   } = req.body as {
     marketId?: number; marktName: string; year: number;
     aktionsplanFoto?: string; aktionsplanDatum?: string;
     massnahmen?: { nr: string; massnahme: string; durchgefuehrtVon: string; datum?: string; pinBestaetigtVon?: string }[];
     nachbesserungName?: string; nachbesserungDatum?: string; nachbesserungUnterschrift?: string;
+    nachricht?: string;
   };
 
   const global = await getGlobalSettings();
@@ -424,6 +435,7 @@ router.post("/send-tuev-aktionsplan-email", async (req, res) => {
     nachbesserungUnterschrift: nachbesserungUnterschrift || "",
     hatFoto: attachments.length > 0,
     istBild,
+    nachricht: nachricht || "",
   });
 
   const statusLabel = nachbesserungDatum ? "abgeschlossen" : "offen";

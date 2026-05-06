@@ -652,6 +652,8 @@ function TuevPanel({ year }: { year: number }) {
   const [pinLoading, setPinLoading] = useState(false);
   const [pinError, setPinError] = useState("");
   const [emailSending, setEmailSending] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [emailNachricht, setEmailNachricht] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -817,6 +819,7 @@ function TuevPanel({ year }: { year: number }) {
           nachbesserungName,
           nachbesserungDatum,
           nachbesserungUnterschrift,
+          nachricht: emailNachricht || undefined,
         }),
       });
       const data = await res.json();
@@ -824,6 +827,8 @@ function TuevPanel({ year }: { year: number }) {
         toast({ title: "E-Mail fehlgeschlagen", description: data.error || `Fehler ${res.status}`, variant: "destructive" });
       } else {
         toast({ title: "E-Mail gesendet", description: `TÜV-Aktionsplan wurde an ${data.recipient} übermittelt.` });
+        setEmailModalOpen(false);
+        setEmailNachricht("");
       }
     } catch (err: any) {
       toast({ title: "Netzwerkfehler", description: err?.message || "E-Mail konnte nicht gesendet werden.", variant: "destructive" });
@@ -964,13 +969,132 @@ function TuevPanel({ year }: { year: number }) {
           {(massnahmen.length > 0 || aktFoto) && daten && !editMode && (
             <div className="flex justify-end">
               <button
-                onClick={handleSendQmEmail}
-                disabled={emailSending}
-                className="flex items-center gap-2 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-40 transition-colors shadow-sm"
+                onClick={() => setEmailModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] transition-colors shadow-sm"
               >
-                {emailSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                <Mail className="w-4 h-4" />
                 An QM-Abteilung senden
               </button>
+            </div>
+          )}
+
+          {/* QM E-Mail Vorschau-Modal */}
+          {emailModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+                {/* Header */}
+                <div className="bg-[#1a3a6b] text-white px-5 py-4 rounded-t-2xl flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
+                      <Mail className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm">An QM-Abteilung senden</h3>
+                      <p className="text-xs opacity-75">TÜV Aktionsplan {year} – {MARKT_NAMEN[selectedMarketId || 1]}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => { setEmailModalOpen(false); setEmailNachricht(""); }}
+                    className="w-7 h-7 flex items-center justify-center hover:bg-white/20 rounded-lg transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Scrollbarer Inhalt */}
+                <div className="overflow-y-auto flex-1 p-5 space-y-4">
+                  {/* Vorschau-Karte */}
+                  <div className="bg-[#1a3a6b]/4 border border-[#1a3a6b]/15 rounded-xl p-4 space-y-3">
+                    <p className="text-xs font-bold text-[#1a3a6b] uppercase tracking-wide">Vorschau E-Mail-Inhalt</p>
+
+                    {/* Aktionsplan Foto-Vorschau */}
+                    {aktFoto && aktFoto.startsWith("data:image/") ? (
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Aktionsplan-Bild (Anhang)</p>
+                        <img src={aktFoto} alt="Aktionsplan Vorschau"
+                          className="w-full max-h-40 object-contain rounded-lg border border-border/40 bg-gray-50" />
+                      </div>
+                    ) : aktFoto && (aktFoto.startsWith("data:application/pdf") || aktFoto.startsWith("[")) ? (
+                      <div className="flex items-center gap-3 px-3 py-2.5 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
+                          <FileText className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold text-blue-800">PDF-Dokument</p>
+                          <p className="text-[10px] text-blue-600">Wird als Anhang beigefügt</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-border/40 rounded-lg">
+                        <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <p className="text-xs text-muted-foreground">Kein Aktionsplan-Dokument hochgeladen</p>
+                      </div>
+                    )}
+
+                    {/* Maßnahmen-Übersicht */}
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Erforderliche Nachbesserungen</p>
+                      {massnahmen.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">Keine Maßnahmen eingetragen</p>
+                      ) : (
+                        <div className="space-y-1">
+                          {massnahmen.map((m, i) => (
+                            <div key={i} className="flex items-start gap-2 text-xs">
+                              <span className="font-bold text-[#1a3a6b] shrink-0 w-7">{m.nr}</span>
+                              <span className="text-foreground flex-1 line-clamp-1">{m.massnahme || <span className="italic text-muted-foreground">–</span>}</span>
+                              {m.pinBestaetigtVon && (
+                                <span className="text-green-600 font-semibold shrink-0">✓</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bestätigung */}
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Bestätigung Betriebsleitung</p>
+                      {nachbesserungDatum ? (
+                        <div className="flex items-center gap-2 text-xs text-green-700 font-medium">
+                          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                          <span>Bestätigt von {nachbesserungName || "–"} am {new Date(nachbesserungDatum).toLocaleDateString("de-DE")}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-xs text-amber-600">
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span>Noch nicht bestätigt</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Nachricht-Textarea */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-foreground uppercase tracking-wide">
+                      Nachricht / Kommentar <span className="font-normal text-muted-foreground normal-case">(optional)</span>
+                    </label>
+                    <textarea
+                      value={emailNachricht}
+                      onChange={(e) => setEmailNachricht(e.target.value)}
+                      rows={4}
+                      placeholder="Ergänzende Hinweise für die QM-Abteilung..."
+                      className="w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 focus:border-[#1a3a6b]/40"
+                    />
+                    <p className="text-[10px] text-muted-foreground">Dieser Text erscheint als hervorgehobene Nachricht am Anfang der E-Mail.</p>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="border-t border-border/40 px-5 py-4 flex gap-2 shrink-0">
+                  <button onClick={() => { setEmailModalOpen(false); setEmailNachricht(""); }}
+                    className="flex-1 px-4 py-2.5 border border-border/60 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors">
+                    Abbrechen
+                  </button>
+                  <button onClick={handleSendQmEmail} disabled={emailSending}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-40 transition-colors">
+                    {emailSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                    Jetzt senden
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
