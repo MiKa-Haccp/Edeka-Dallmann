@@ -14,8 +14,8 @@ interface TempScrollPickerProps {
 
 function buildValues(maxVal?: number, unit?: string): number[] {
   let lo: number, hi: number, step: number;
-  if (unit === "%") {
-    lo = 50; hi = 100; step = 0.5;
+  if (unit && unit.includes("%")) {
+    lo = 50; hi = 100; step = 1;
   } else if (maxVal !== undefined && maxVal <= -10) {
     lo = -30; hi = -5; step = 0.1;
   } else {
@@ -59,7 +59,10 @@ export function TempScrollPicker({
     if (open) setTimeout(() => activeRef.current?.scrollIntoView({ block: "center" }), 30);
   }, [open]);
 
-  const select = (v: number) => { onChange(v.toFixed(1)); setOpen(false); };
+  const isHumidity = !!(unit && unit.includes("%"));
+  const fmt = (v: number) => isHumidity ? v.toFixed(0) : v.toFixed(1);
+
+  const select = (v: number) => { onChange(fmt(v)); setOpen(false); };
 
   const isActive  = (v: number) => numVal !== null && Math.abs(v - numVal) < 0.05;
   const isDefault = (v: number) => numVal === null && Math.abs(v - startVal) < 0.05;
@@ -83,7 +86,7 @@ export function TempScrollPicker({
       <div onClick={() => { if (!disabled) setOpen(s => !s); }} className={triggerCls}>
         <Icon className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0" />
         <span className={`flex-1 text-center font-bold tabular-nums ${value ? "text-foreground" : "text-muted-foreground/40"}`}>
-          {numVal !== null ? `${numVal.toFixed(1)} ${unit}` : `— ${unit}`}
+          {numVal !== null ? `${fmt(numVal)} ${unit}` : `— ${unit}`}
         </span>
       </div>
 
@@ -107,7 +110,7 @@ export function TempScrollPicker({
                     : "text-foreground hover:bg-blue-50",
                   ].join(" ")}
                 >
-                  {v.toFixed(1)} {unit}
+                  {fmt(v)} {unit}
                 </li>
               );
             })}

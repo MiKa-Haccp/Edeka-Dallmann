@@ -305,7 +305,7 @@ type ProduktInput = { selected: boolean; kernTemp: string; customName: string };
 
 function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
   day:number; year:number; month:number;
-  onConfirm:(items:{produkt:string;kernTempGaren:string;tempHeißhalten:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean}[])=>void;
+  onConfirm:(items:{produkt:string;kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean}[])=>void;
   onClose:()=>void;
 }){
   const [step,setStep]=useState<"form"|"pin">("form");
@@ -347,12 +347,12 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
       const data=await res.json();
       if(data.valid){
         if(defektMode){
-          onConfirm([{produkt:"",kernTempGaren:"",tempHeißhalten:"",massnahme:defektGrund||"Defekt / nicht in Betrieb",kuerzel:data.initials,userId:data.userId,defekt:true}]);
+          onConfirm([{produkt:"",kernTempGaren:"",tempHeisshalten:"",massnahme:defektGrund||"Defekt / nicht in Betrieb",kuerzel:data.initials,userId:data.userId,defekt:true}]);
         } else {
           const items=selected.map(p=>{
             const inp=inputs[p];
             const finalProdukt=p==="Sonstiges"?inp.customName.trim():p;
-            return{produkt:finalProdukt,kernTempGaren:inp.kernTemp,tempHeißhalten:sharedHeissTemp,massnahme,kuerzel:data.initials,userId:data.userId,defekt:false};
+            return{produkt:finalProdukt,kernTempGaren:inp.kernTemp,tempHeisshalten:sharedHeissTemp,massnahme,kuerzel:data.initials,userId:data.userId,defekt:false};
           });
           onConfirm(items);
         }
@@ -408,7 +408,7 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
                         <div className="flex items-center gap-2">
                           <label className="text-xs text-muted-foreground w-36 shrink-0">Kerntemp. Garen <span className="text-muted-foreground/60">≥{minT}°C</span></label>
                           <div className="relative flex-1">
-                            <input type="text" inputMode="decimal" placeholder="z.B. 75,0" value={inp.kernTemp} onChange={e=>setKT(p,e.target.value)}
+                            <input type="text" inputMode="numeric" placeholder="z.B. 75" value={inp.kernTemp} onChange={e=>setKT(p,e.target.value.replace(/\D/g,""))}
                               className={`w-full border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary pr-16 ${gSt==="warn"?"border-red-400 bg-red-50":gSt==="ok"?"border-green-400 bg-green-50":""}`}/>
                             {gSt!=="none"&&<span className={`absolute right-2 top-1.5 text-[10px] font-bold ${gSt==="ok"?"text-green-600":"text-red-600"}`}>{gSt==="ok"?"i.O.":"ABWEICH."}</span>}
                           </div>
@@ -425,7 +425,7 @@ function HeisseThekeModal({day,year,month,onConfirm,onClose}:{
                   <div className="flex items-center gap-2">
                     <label className="text-xs font-medium text-amber-800 w-36 shrink-0">Heißhalten Theke <span className="text-amber-600/70">≥60°C</span> <span className="text-red-500">*</span></label>
                     <div className="relative flex-1">
-                      <input type="text" inputMode="decimal" placeholder="z.B. 65,0" value={sharedHeissTemp} onChange={e=>setSharedHeissTemp(e.target.value)}
+                      <input type="text" inputMode="numeric" placeholder="z.B. 65" value={sharedHeissTemp} onChange={e=>setSharedHeissTemp(e.target.value.replace(/\D/g,""))}
                         className={`w-full border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 pr-16 ${hSt==="warn"?"border-red-400 bg-red-50":hSt==="ok"?"border-green-400 bg-green-50":"border-amber-300"}`}/>
                       {hSt!=="none"&&<span className={`absolute right-2 top-1.5 text-[10px] font-bold ${hSt==="ok"?"text-green-600":"text-red-600"}`}>{hSt==="ok"?"i.O.":"ABWEICH."}</span>}
                     </div>
@@ -654,7 +654,7 @@ function TempTab({art,entries,year,month,marketId,onSaved,onDeleted,adminSession
 // ─── Modal: Heiße Theke Eintrag bearbeiten ────────────────────────────────────
 function HeisseThekeEditModal({entry,onConfirm,onClose}:{
   entry:KontrolleEntry;
-  onConfirm:(data:{kernTempGaren:string;tempHeißhalten:string;massnahme:string;kuerzel:string;userId:number|null;aenderungsgrund:string})=>void;
+  onConfirm:(data:{kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null;aenderungsgrund:string})=>void;
   onClose:()=>void;
 }){
   const [step,setStep]=useState<"form"|"pin">("form");
@@ -674,7 +674,7 @@ function HeisseThekeEditModal({entry,onConfirm,onClose}:{
     try{
       const res=await fetch(`${BASE}/users/verify-pin`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({pin,tenantId:1})});
       const data=await res.json();
-      if(data.valid){onConfirm({kernTempGaren:kernTemp,tempHeißhalten:heissTemp,massnahme,kuerzel:data.initials,userId:data.userId,aenderungsgrund});}
+      if(data.valid){onConfirm({kernTempGaren:kernTemp,tempHeisshalten:heissTemp,massnahme,kuerzel:data.initials,userId:data.userId,aenderungsgrund});}
       else setError("PIN ungültig.");
     }catch{setError("Verbindungsfehler.");}
     finally{setLoading(false);}
@@ -695,7 +695,7 @@ function HeisseThekeEditModal({entry,onConfirm,onClose}:{
             <div>
               <label className="text-xs font-medium text-muted-foreground block mb-1">Kerntemp. Garen <span className="text-muted-foreground/60">≥{entry.produkt==="Fisch"?"60":"72"}°C</span></label>
               <div className="relative">
-                <input type="text" inputMode="decimal" placeholder="z.B. 75,0" value={kernTemp} onChange={e=>setKernTemp(e.target.value)}
+                <input type="text" inputMode="numeric" placeholder="z.B. 75" value={kernTemp} onChange={e=>setKernTemp(e.target.value.replace(/\D/g,""))}
                   className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${gSt==="warn"?"border-red-400 bg-red-50":gSt==="ok"?"border-green-400 bg-green-50":""}`} autoFocus/>
                 {gSt!=="none"&&<span className={`absolute right-2 top-2 text-xs font-semibold ${gSt==="ok"?"text-green-600":"text-red-600"}`}>{gSt==="ok"?"i.O.":"ABWEICHUNG"}</span>}
               </div>
@@ -703,7 +703,7 @@ function HeisseThekeEditModal({entry,onConfirm,onClose}:{
             <div>
               <label className="text-xs font-medium text-muted-foreground block mb-1">Heißhalten <span className="text-muted-foreground/60">≥60°C</span> <span className="text-red-500">*</span></label>
               <div className="relative">
-                <input type="text" inputMode="decimal" placeholder="z.B. 65,0" value={heissTemp} onChange={e=>setHeissTemp(e.target.value)}
+                <input type="text" inputMode="numeric" placeholder="z.B. 65" value={heissTemp} onChange={e=>setHeissTemp(e.target.value.replace(/\D/g,""))}
                   className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${hSt==="warn"?"border-red-400 bg-red-50":hSt==="ok"?"border-green-400 bg-green-50":""}`}/>
                 {hSt!=="none"&&<span className={`absolute right-2 top-2 text-xs font-semibold ${hSt==="ok"?"text-green-600":"text-red-600"}`}>{hSt==="ok"?"i.O.":"ABWEICHUNG"}</span>}
               </div>
@@ -786,16 +786,16 @@ function HeisseThekeTab({entries,year,month,marketId,onSaved,onDeleted,adminSess
     return m;
   },[entries]);
 
-  const handleSave=async(day:number,items:{produkt:string;kernTempGaren:string;tempHeißhalten:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean}[])=>{
+  const handleSave=async(day:number,items:{produkt:string;kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null;defekt:boolean}[])=>{
     if(isLocked)return;
     await Promise.all(items.map(data=>
-      fetch(`${BASE}/kaesetheke-kontrolle`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marketId,year,month,day,kontrolleArt:"heisse_theke",produkt:data.produkt,kernTempGaren:data.kernTempGaren,tempHeißhalten:data.tempHeißhalten,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:data.defekt})})
+      fetch(`${BASE}/kaesetheke-kontrolle`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({marketId,year,month,day,kontrolleArt:"heisse_theke",produkt:data.produkt,kernTempGaren:data.kernTempGaren,tempHeisshalten:data.tempHeisshalten,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:data.defekt})})
     ));
     setModal(null);onSaved();
     window.dispatchEvent(new Event("kaesetheke-updated"));
   };
-  const handleUpdate=async(id:number,data:{kernTempGaren:string;tempHeißhalten:string;massnahme:string;kuerzel:string;userId:number|null;aenderungsgrund:string})=>{
-    await fetch(`${BASE}/kaesetheke-kontrolle/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({kernTempGaren:data.kernTempGaren,tempHeißhalten:data.tempHeißhalten,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:false,aenderungsgrund:data.aenderungsgrund})});
+  const handleUpdate=async(id:number,data:{kernTempGaren:string;tempHeisshalten:string;massnahme:string;kuerzel:string;userId:number|null;aenderungsgrund:string})=>{
+    await fetch(`${BASE}/kaesetheke-kontrolle/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({kernTempGaren:data.kernTempGaren,tempHeisshalten:data.tempHeisshalten,massnahme:data.massnahme,kuerzel:data.kuerzel,userId:data.userId,defekt:false,aenderungsgrund:data.aenderungsgrund})});
     setEditEntry(null);onSaved();
     window.dispatchEvent(new Event("kaesetheke-updated"));
   };
