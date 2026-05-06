@@ -233,9 +233,9 @@ function TaskForm({
 // ── Hauptkomponente ──────────────────────────────────────────────────────────
 
 export default function TodoVerwaltung() {
-  const { selectedMarketId, adminSession } = useAppStore();
+  const { selectedMarketId, adminSession, hasPermission } = useAppStore();
   const isAdmin = adminSession?.role === "SUPERADMIN" || adminSession?.role === "ADMIN"
-    || adminSession?.role === "MARKTLEITER" || adminSession?.role === "BEREICHSLEITUNG";
+    || hasPermission("todo.manage");
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
@@ -375,7 +375,7 @@ export default function TodoVerwaltung() {
   if (!isAdmin) {
     return (
       <AppLayout>
-        <div className="p-10 text-center text-muted-foreground">Kein Zugriff – nur für Marktleiter und Admins.</div>
+        <div className="p-10 text-center text-muted-foreground">Kein Zugriff – nur für Benutzer mit Todo-Verwaltungsrechten.</div>
       </AppLayout>
     );
   }

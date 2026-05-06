@@ -66,7 +66,6 @@ const MODULES: ModuleCard[] = [
     bgColor: "bg-indigo-50",
     available: true,
     badge: "Aktiv",
-    requiredRoles: ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER"],
   },
   {
     id: "verwaltung",
@@ -78,7 +77,6 @@ const MODULES: ModuleCard[] = [
     bgColor: "bg-teal-50",
     available: true,
     badge: "Verwaltung",
-    requiredRoles: ["SUPERADMIN", "ADMIN", "BEREICHSLEITUNG", "MARKTLEITER"],
   },
   {
     id: "system",
@@ -118,11 +116,16 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    fetch(`${API_BASE}/module-visibility?tenantId=1`)
+    // Rollen-spezifische Sichtbarkeit laden wenn eingeloggt
+    const role = adminSession?.role;
+    const url = role
+      ? `${API_BASE}/module-visibility?tenantId=1&role=${encodeURIComponent(role)}`
+      : `${API_BASE}/module-visibility?tenantId=1`;
+    fetch(url)
       .then(r => r.json())
       .then(data => setModuleSettings(data.settings || {}))
       .catch(() => {});
-  }, []);
+  }, [adminSession?.role]);
 
   return (
     <AppLayout>

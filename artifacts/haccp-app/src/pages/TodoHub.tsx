@@ -9,7 +9,10 @@ const NoWrap = ({ children }: { children: ReactNode }) => <>{children}</>;
 const BASE = import.meta.env.VITE_API_URL || "/api";
 
 export default function TodoHub() {
-  const { selectedMarketId } = useAppStore();
+  const { selectedMarketId, adminSession, hasPermission } = useAppStore();
+  const isSuperOrAdmin = adminSession?.role === "SUPERADMIN" || adminSession?.role === "ADMIN";
+  const canKassen = isSuperOrAdmin || hasPermission("todo.kassen");
+  const canManageTodos = isSuperOrAdmin || hasPermission("todo.manage");
   const [pendingStandard, setPendingStandard] = useState<number | null>(null);
   const [openAdhoc, setOpenAdhoc] = useState<number | null>(null);
 
@@ -86,19 +89,36 @@ export default function TodoHub() {
             </div>
           </Link>
 
-          <Link href="/todo-kassen">
-            <div className="bg-white rounded-2xl border border-border/60 shadow-sm p-5 hover:shadow-md hover:border-purple-300 transition-all cursor-pointer group">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-purple-100 rounded-xl group-hover:bg-purple-200 transition-colors">
-                  <TableProperties className="w-6 h-6 text-purple-700" />
-                </div>
-                <div>
-                  <h2 className="font-bold text-foreground">Kasseneinteilung</h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">Schicht- und Kassenplan für heute</p>
+          {canKassen && (
+            <Link href="/todo-kassen">
+              <div className="bg-white rounded-2xl border border-border/60 shadow-sm p-5 hover:shadow-md hover:border-purple-300 transition-all cursor-pointer group">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-purple-100 rounded-xl group-hover:bg-purple-200 transition-colors">
+                    <TableProperties className="w-6 h-6 text-purple-700" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-foreground">Kasseneinteilung</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">Schicht- und Kassenplan für heute</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </Link>
+            </Link>
+          )}
+          {canManageTodos && (
+            <Link href="/todo-verwaltung">
+              <div className="bg-white rounded-2xl border border-border/60 shadow-sm p-5 hover:shadow-md hover:border-teal-300 transition-all cursor-pointer group">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-teal-50 rounded-xl group-hover:bg-teal-100 transition-colors">
+                    <ClipboardList className="w-6 h-6 text-teal-700" />
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-foreground">Aufgaben verwalten</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">Standardaufgaben und Vorlagen einrichten</p>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          )}
         </div>
       </div>
     </AppLayout>

@@ -96,9 +96,10 @@ function useAmpel(selectedMarketId: number | null): AmpelColor {
 }
 
 function TodoSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { adminSession, selectedMarketId } = useAppStore();
-  const isAdmin = adminSession?.role === "SUPERADMIN" || adminSession?.role === "ADMIN"
-    || adminSession?.role === "MARKTLEITER" || adminSession?.role === "BEREICHSLEITUNG";
+  const { adminSession, selectedMarketId, hasPermission } = useAppStore();
+  const isSuperOrAdmin = adminSession?.role === "SUPERADMIN" || adminSession?.role === "ADMIN";
+  const canManageTodos = isSuperOrAdmin || hasPermission("todo.manage");
+  const canKassen = isSuperOrAdmin || hasPermission("todo.kassen");
 
   const ampel = useAmpel(selectedMarketId);
 
@@ -120,13 +121,15 @@ function TodoSidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
         <NavLink href="/todo" label="Übersicht" icon={CheckSquare} onNavigate={onNavigate} />
         <NavLink href="/todo-tagesliste" label="ToDo's" icon={ClipboardList} onNavigate={onNavigate} ampel={ampel} />
-        {isAdmin && (
+        {canManageTodos && (
           <NavLink href="/todo-verwaltung" label="Aufgaben verwalten" icon={ClipboardList} onNavigate={onNavigate} />
         )}
-        {isAdmin && (
+        {canManageTodos && (
           <NavLink href="/todo-zusatz-protokoll" label="Zusatzaufgaben Protokoll" icon={History} onNavigate={onNavigate} />
         )}
-        <NavLink href="/todo-kassen" label="Kasseneinteilung" icon={TableProperties} onNavigate={onNavigate} />
+        {canKassen && (
+          <NavLink href="/todo-kassen" label="Kasseneinteilung" icon={TableProperties} onNavigate={onNavigate} />
+        )}
       </div>
     </>
   );
