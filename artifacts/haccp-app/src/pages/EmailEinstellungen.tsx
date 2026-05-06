@@ -23,6 +23,7 @@ interface GlobalSettings {
   smtpPort: number;
   fromName: string | null;
   defaultRecipient: string | null;
+  qmEmail: string | null;
   enabled: boolean;
   hasPassword: boolean;
   updatedAt: string;
@@ -221,6 +222,7 @@ export default function EmailEinstellungen() {
   const [smtpHost, setSmtpHost] = useState("smtp.ionos.de");
   const [smtpPort, setSmtpPort] = useState("587");
   const [defaultRecipient, setDefaultRecipient] = useState("qm.suedbayern@edeka.de");
+  const [qmEmail, setQmEmail] = useState("");
   const [enabled, setEnabled] = useState(false);
   const [globalSaved, setGlobalSaved] = useState(false);
 
@@ -237,6 +239,7 @@ export default function EmailEinstellungen() {
         setSmtpHost(d.smtpHost || "smtp.ionos.de");
         setSmtpPort(String(d.smtpPort || 587));
         setDefaultRecipient(d.defaultRecipient || "qm.suedbayern@edeka.de");
+        setQmEmail(d.qmEmail || "");
         setEnabled(d.enabled || false);
         setGlobalSaved(true);
       })
@@ -251,7 +254,7 @@ export default function EmailEinstellungen() {
     const res = await fetch(`${BASE}/admin/email-settings`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", "x-admin-email": adminSession!.email },
-      body: JSON.stringify({ smtpHost, smtpPort: parseInt(smtpPort), defaultRecipient, enabled }),
+      body: JSON.stringify({ smtpHost, smtpPort: parseInt(smtpPort), defaultRecipient, qmEmail, enabled }),
     });
     const data = await res.json();
     setSaving(false);
@@ -325,7 +328,15 @@ export default function EmailEinstellungen() {
                   <input type="email" value={defaultRecipient} onChange={(e) => setDefaultRecipient(e.target.value)}
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
                     placeholder="qm.suedbayern@edeka.de" />
-                  <p className="text-xs text-muted-foreground mt-1">An diese Adresse werden alle Formulare gesendet.</p>
+                  <p className="text-xs text-muted-foreground mt-1">An diese Adresse werden Produktfehlermeldungen & Probeentnahmen gesendet.</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">QM-Empfänger (TÜV Aktionsplan)</label>
+                  <input type="email" value={qmEmail} onChange={(e) => setQmEmail(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-300"
+                    placeholder="qm.suedbayern@edeka.de" />
+                  <p className="text-xs text-muted-foreground mt-1">An diese Adresse werden TÜV-Aktionspläne gesendet. Leer = Standard-Empfänger wird verwendet.</p>
                 </div>
 
                 {saveResult && <StatusPill ok={saveResult.ok} msg={saveResult.msg} />}

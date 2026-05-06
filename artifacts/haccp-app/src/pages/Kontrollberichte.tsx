@@ -13,10 +13,16 @@ import {
   Plus, Loader2, Save, X, Camera, ChevronDown, ChevronUp,
   Trash2, ExternalLink, AlertCircle, CheckCircle2, Clock,
   Building2, CalendarCheck, ThumbsUp, ThumbsDown, AlertTriangle,
-  ChevronLeft, ChevronRight, Upload, Pencil, Trash, KeyRound,
+  ChevronLeft, ChevronRight, Upload, Pencil, Trash, KeyRound, Mail,
 } from "lucide-react";
 
 const BASE = import.meta.env.VITE_API_URL || "/api";
+
+const MARKT_NAMEN: Record<number, string> = {
+  1: "Leeder",
+  2: "Buching",
+  3: "Marktoberdorf",
+};
 
 type Kategorie = "lebensmittelkontrolle" | "tuev" | "bio" | "sonstige";
 type Ergebnis = "bestanden" | "bestanden_mit_auflagen" | "nicht_bestanden" | "";
@@ -645,6 +651,7 @@ function TuevPanel({ year }: { year: number }) {
   const [pinValue, setPinValue] = useState("");
   const [pinLoading, setPinLoading] = useState(false);
   const [pinError, setPinError] = useState("");
+  const [emailSending, setEmailSending] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -793,6 +800,38 @@ function TuevPanel({ year }: { year: number }) {
     } finally { setSaving(false); }
   };
 
+  const handleSendQmEmail = async () => {
+    setEmailSending(true);
+    try {
+      const marktName = MARKT_NAMEN[selectedMarketId || 1] || "Unbekannt";
+      const res = await fetch(`${BASE}/send-tuev-aktionsplan-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          marketId: selectedMarketId || 1,
+          marktName,
+          year,
+          aktionsplanFoto: aktFoto || undefined,
+          aktionsplanDatum: aktionsplanDatum || undefined,
+          massnahmen,
+          nachbesserungName,
+          nachbesserungDatum,
+          nachbesserungUnterschrift,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast({ title: "E-Mail fehlgeschlagen", description: data.error || `Fehler ${res.status}`, variant: "destructive" });
+      } else {
+        toast({ title: "E-Mail gesendet", description: `TÜV-Aktionsplan wurde an ${data.recipient} übermittelt.` });
+      }
+    } catch (err: any) {
+      toast({ title: "Netzwerkfehler", description: err?.message || "E-Mail konnte nicht gesendet werden.", variant: "destructive" });
+    } finally {
+      setEmailSending(false);
+    }
+  };
+
   const handlePinSign = async () => {
     if (pinValue.length !== 4) return;
     setPinLoading(true); setPinError("");
@@ -921,6 +960,19 @@ function TuevPanel({ year }: { year: number }) {
               </div>
             );
           })()}
+
+          {(massnahmen.length > 0 || aktFoto) && daten && !editMode && (
+            <div className="flex justify-end">
+              <button
+                onClick={handleSendQmEmail}
+                disabled={emailSending}
+                className="flex items-center gap-2 px-4 py-2.5 bg-[#1a3a6b] text-white rounded-xl text-sm font-bold hover:bg-[#2d5aa0] disabled:opacity-40 transition-colors shadow-sm"
+              >
+                {emailSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                An QM-Abteilung senden
+              </button>
+            </div>
+          )}
 
           {(massnahmen.length > 0 || aktFoto) && (
             <div className="bg-white rounded-2xl border border-border/60 shadow-sm">
