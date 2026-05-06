@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useFilePaste } from "@/hooks/useFileUpload";
+import { useFilePaste, compressImage } from "@/hooks/useFileUpload";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { useAppStore } from "@/store/use-app-store";
@@ -158,21 +158,15 @@ export default function RindfleischEtikettierung() {
     load();
   }
 
-  const handleFotoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFotoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => { if (ev.target?.result) setFotoBase64(ev.target.result as string); };
-    reader.readAsDataURL(file);
+    setFotoBase64(await compressImage(file));
     e.target.value = "";
   };
 
-  useFilePaste((file) => {
-    if (file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = ev => { if (ev.target?.result) setFotoBase64(ev.target.result as string); };
-      reader.readAsDataURL(file);
-    }
+  useFilePaste(async (file) => {
+    if (file.type.startsWith("image/")) setFotoBase64(await compressImage(file));
   });
 
   return (
@@ -356,7 +350,7 @@ export default function RindfleischEtikettierung() {
                       ) : (
                         <button onClick={() => fileRef.current?.click()}
                           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                          onDrop={(e) => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f && f.type.startsWith("image/")) { const reader = new FileReader(); reader.onload = ev => { if (ev.target?.result) setFotoBase64(ev.target.result as string); }; reader.readAsDataURL(f); } }}
+                          onDrop={async (e) => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f && f.type.startsWith("image/")) setFotoBase64(await compressImage(f)); }}
                           className="w-full aspect-video rounded-xl border-2 border-dashed border-gray-300 hover:border-[#c73d00] hover:bg-orange-50/40 flex flex-col items-center justify-center gap-2 transition-all">
                           <Camera className="w-8 h-8 text-muted-foreground"/>
                           <span className="text-sm text-muted-foreground">Etikett fotografieren oder hierher ziehen</span>

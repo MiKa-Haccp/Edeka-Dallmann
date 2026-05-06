@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useState, useCallback, useRef } from "react";
-import { useFilePaste } from "@/hooks/useFileUpload";
+import { useFilePaste, compressImage } from "@/hooks/useFileUpload";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Link } from "wouter";
@@ -86,19 +86,13 @@ function NewTaskDialog({ onSave, onClose }: {
   const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => setPhotoData(ev.target?.result as string);
-    reader.readAsDataURL(file);
+    setPhotoData(await compressImage(file));
   };
-  useFilePaste((file) => {
-    if (file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = ev => setPhotoData(ev.target?.result as string);
-      reader.readAsDataURL(file);
-    }
+  useFilePaste(async (file) => {
+    if (file.type.startsWith("image/")) setPhotoData(await compressImage(file));
   });
 
   const handleSubmit = async () => {
@@ -153,7 +147,7 @@ function NewTaskDialog({ onSave, onClose }: {
               ) : (
                 <button onClick={() => fileRef.current?.click()}
                   onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                  onDrop={(e) => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f && f.type.startsWith("image/")) { const reader = new FileReader(); reader.onload = ev => setPhotoData(ev.target?.result as string); reader.readAsDataURL(f); } }}
+                  onDrop={async (e) => { e.preventDefault(); e.stopPropagation(); const f = e.dataTransfer.files?.[0]; if (f && f.type.startsWith("image/")) setPhotoData(await compressImage(f)); }}
                   className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-border/60 rounded-xl text-sm text-muted-foreground hover:border-[#0f766e]/40 hover:text-[#0f766e] w-full justify-center transition-colors">
                   <Camera className="w-4 h-4" /> Foto aufnehmen, hierher ziehen oder auswählen
                 </button>
