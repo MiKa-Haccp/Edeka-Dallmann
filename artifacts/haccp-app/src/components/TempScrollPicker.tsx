@@ -46,6 +46,7 @@ export function TempScrollPicker({
   const [open, setOpen] = useState(false);
   const [dropPos, setDropPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
+  const dropRef    = useRef<HTMLDivElement>(null);
   const activeRef  = useRef<HTMLLIElement>(null);
 
   const { vals: values, step } = buildValues(maxVal, unit, hotRange);
@@ -75,16 +76,17 @@ export function TempScrollPicker({
     const close = (e: MouseEvent) => {
       const target = e.target as Node;
       if (triggerRef.current?.contains(target)) return;
+      if (dropRef.current?.contains(target)) return;
       setOpen(false);
     };
-    const onScroll = () => setOpen(false);
+    const onResize = () => calcPos();
     document.addEventListener("mousedown", close);
-    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
     return () => {
       document.removeEventListener("mousedown", close);
-      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
     };
-  }, [open]);
+  }, [open, calcPos]);
 
   useEffect(() => {
     if (open) setTimeout(() => activeRef.current?.scrollIntoView({ block: "center" }), 30);
@@ -120,6 +122,7 @@ export function TempScrollPicker({
 
       {open && dropPos && createPortal(
         <div
+          ref={dropRef}
           style={{ position: "fixed", top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999 }}
           className="bg-white border border-border/60 rounded-xl shadow-xl overflow-hidden"
         >
@@ -132,7 +135,7 @@ export function TempScrollPicker({
                 <li
                   key={v}
                   ref={active || def ? activeRef : undefined}
-                  onMouseDown={(e) => { e.preventDefault(); select(v); }}
+                  onMouseDown={() => select(v)}
                   className={[
                     "px-3 py-1.5 text-sm font-mono cursor-pointer transition-colors text-right tabular-nums",
                     active ? "bg-[#1a3a6b] text-white font-bold"
