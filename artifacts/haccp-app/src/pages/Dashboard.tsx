@@ -116,11 +116,12 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    // Rollen-spezifische Sichtbarkeit laden wenn eingeloggt
-    const role = adminSession?.role;
-    const url = role
-      ? `${API_BASE}/module-visibility?tenantId=1&role=${encodeURIComponent(role)}`
-      : `${API_BASE}/module-visibility?tenantId=1`;
+    // Rollen-spezifische Sichtbarkeit laden.
+    // Mitarbeiter (nicht eingeloggt) werden als USER behandelt, da sie sich
+    // nicht über Admin-Login anmelden können. So greift die Modul-Matrix für
+    // die Rolle "Mitarbeiter" auch im nicht-eingeloggten Zustand.
+    const role = adminSession?.role || "USER";
+    const url = `${API_BASE}/module-visibility?tenantId=1&role=${encodeURIComponent(role)}`;
     fetch(url)
       .then(r => r.json())
       .then(data => setModuleSettings(data.settings || {}))
