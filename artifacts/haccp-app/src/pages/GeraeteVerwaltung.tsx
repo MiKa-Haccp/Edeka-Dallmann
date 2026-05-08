@@ -35,12 +35,11 @@ interface RegLink {
   device_name: string | null;
 }
 
-type LinkStatus = "aktiv" | "gesperrt" | "verwendet" | "abgelaufen";
+type LinkStatus = "aktiv" | "gesperrt" | "verwendet";
 
 function getLinkStatus(link: RegLink): LinkStatus {
   if (link.cancelled_at) return "gesperrt";
   if (link.used_at) return "verwendet";
-  if (new Date() > new Date(link.expires_at)) return "abgelaufen";
   return "aktiv";
 }
 
@@ -48,7 +47,6 @@ const STATUS_CONFIG: Record<LinkStatus, { label: string; bg: string; text: strin
   aktiv:      { label: "Aktiv",      bg: "bg-green-100",  text: "text-green-700",  dot: "bg-green-500" },
   gesperrt:   { label: "Gesperrt",   bg: "bg-red-100",    text: "text-red-700",    dot: "bg-red-500" },
   verwendet:  { label: "Verwendet",  bg: "bg-blue-100",   text: "text-blue-700",   dot: "bg-blue-500" },
-  abgelaufen: { label: "Abgelaufen", bg: "bg-amber-100",  text: "text-amber-700",  dot: "bg-amber-500" },
 };
 
 function formatDate(iso: string) {
@@ -83,7 +81,6 @@ export default function GeraeteVerwaltung() {
   const [showLinkForm, setShowLinkForm] = useState(false);
   const [linkDeviceName, setLinkDeviceName] = useState("");
   const [linkEmail, setLinkEmail] = useState("");
-  const [linkExpiryDays, setLinkExpiryDays] = useState(30);
   const [creatingLink, setCreatingLink] = useState(false);
   const [createdLink, setCreatedLink] = useState<{ regUrl: string; shortCode: string; emailSent: boolean } | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -161,7 +158,6 @@ export default function GeraeteVerwaltung() {
           deviceNameHint: linkDeviceName.trim() || undefined,
           email: linkEmail.trim() || undefined,
           appBaseUrl,
-          expiryDays: linkExpiryDays,
         }),
       });
       const data = await res.json();
@@ -499,20 +495,9 @@ export default function GeraeteVerwaltung() {
                     <p className="text-xs text-muted-foreground mt-1">Falls angegeben, wird der Link automatisch per E-Mail versendet</p>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1.5 flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> Gültigkeitsdauer
-                    </label>
-                    <select
-                      value={linkExpiryDays}
-                      onChange={(e) => setLinkExpiryDays(Number(e.target.value))}
-                      className="w-full border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a3a6b]/20 bg-white"
-                    >
-                      <option value={7}>7 Tage</option>
-                      <option value={30}>30 Tage</option>
-                      <option value={90}>90 Tage</option>
-                      <option value={365}>1 Jahr</option>
-                    </select>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+                    <Clock className="w-3.5 h-3.5 text-[#1a3a6b]" />
+                    <span>Code ist <strong className="text-[#1a3a6b]">unbegrenzt gültig</strong> – läuft erst, wenn er verwendet oder gesperrt wird.</span>
                   </div>
 
                   <button
@@ -641,7 +626,7 @@ export default function GeraeteVerwaltung() {
                               </span>
                               {isActive && (
                                 <span className="flex items-center gap-1 text-xs text-green-700 font-medium">
-                                  <Clock className="w-3 h-3" />Gültig bis {formatDateShort(link.expires_at)}
+                                  <Clock className="w-3 h-3" />Unbegrenzt gültig
                                 </span>
                               )}
                               {status === "verwendet" && link.device_name && (
@@ -657,11 +642,6 @@ export default function GeraeteVerwaltung() {
                               {status === "gesperrt" && link.cancelled_at && (
                                 <span className="flex items-center gap-1 text-xs text-red-600 font-medium">
                                   <ShieldOff className="w-3 h-3" />Gesperrt {formatDateShort(link.cancelled_at)}
-                                </span>
-                              )}
-                              {status === "abgelaufen" && (
-                                <span className="flex items-center gap-1 text-xs text-amber-600">
-                                  <Clock className="w-3 h-3" />Abgelaufen {formatDateShort(link.expires_at)}
                                 </span>
                               )}
                             </div>

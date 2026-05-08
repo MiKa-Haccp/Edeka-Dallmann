@@ -127,7 +127,9 @@ router.post("/device/create-reg-link", async (req, res) => {
   };
 
   const key = randomBytes(24).toString("hex");
-  const expiresAt = new Date(Date.now() + expiryDays * 24 * 60 * 60 * 1000);
+  // Codes laufen nicht mehr ab – Spalte expires_at wird mit fernem Datum gefüllt (NOT NULL Spalte)
+  const expiresAt = new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000);
+  void expiryDays;
 
   // Kurzen 6-Zeichen-Code generieren (Großbuchstaben + Ziffern, ohne mehrdeutige Zeichen)
   const CHARSET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -183,7 +185,7 @@ router.post("/device/create-reg-link", async (req, res) => {
               <p style="margin: 0 0 8px; font-size: 13px; color: #6b7280;">Falls der Link nicht funktioniert, können Sie diesen Code direkt in der App eingeben:</p>
               <p style="margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 6px; color: #1a3a6b; text-align: center;">${shortCode}</p>
             </div>
-            <p style="color: #9ca3af; font-size: 12px;">Dieser Link ist ${expiryDays} Tage gültig. Einmalige Nutzung – nach der Registrierung ist das Gerät dauerhaft freigeschaltet.</p>
+            <p style="color: #9ca3af; font-size: 12px;">Einmalige Nutzung – nach der Registrierung ist das Gerät dauerhaft freigeschaltet. Der Code bleibt unbegrenzt gültig, bis er verwendet oder gesperrt wird.</p>
             <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
             <p style="color: #9ca3af; font-size: 12px; margin-bottom: 0;">EDEKA Dallmann HACCP Management System</p>
           </div>
@@ -222,10 +224,6 @@ router.get("/device/reg-link/:key", async (req, res) => {
     res.status(400).json({ valid: false, error: "Dieser Link wurde bereits verwendet." });
     return;
   }
-  if (new Date() > new Date(link.expires_at)) {
-    res.status(400).json({ valid: false, error: "Dieser Link ist abgelaufen." });
-    return;
-  }
 
   res.json({ valid: true, deviceNameHint: link.device_name_hint || "", tenantId: link.tenant_id });
 });
@@ -255,10 +253,6 @@ router.post("/device/use-reg-link", async (req, res) => {
   }
   if (link.used_at) {
     res.status(400).json({ authorized: false, error: "Dieser Link wurde bereits verwendet." });
-    return;
-  }
-  if (new Date() > new Date(link.expires_at)) {
-    res.status(400).json({ authorized: false, error: "Dieser Link ist abgelaufen. Bitte einen neuen Link anfordern." });
     return;
   }
 
@@ -298,10 +292,6 @@ router.get("/device/reg-link-by-code/:code", async (req, res) => {
     res.status(400).json({ valid: false, error: "Dieser Code wurde bereits verwendet." });
     return;
   }
-  if (new Date() > new Date(link.expires_at)) {
-    res.status(400).json({ valid: false, error: "Dieser Code ist abgelaufen." });
-    return;
-  }
 
   res.json({ valid: true, key: link.key, deviceNameHint: link.device_name_hint || "", tenantId: link.tenant_id });
 });
@@ -331,10 +321,6 @@ router.post("/device/use-reg-code", async (req, res) => {
   }
   if (link.used_at) {
     res.status(400).json({ authorized: false, error: "Dieser Code wurde bereits verwendet." });
-    return;
-  }
-  if (new Date() > new Date(link.expires_at)) {
-    res.status(400).json({ authorized: false, error: "Dieser Code ist abgelaufen. Bitte einen neuen Code anfordern." });
     return;
   }
 
