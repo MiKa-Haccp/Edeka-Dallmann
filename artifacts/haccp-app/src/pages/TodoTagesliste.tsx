@@ -293,18 +293,6 @@ function NewAdhocDialog({ onSave, onClose }: {
               </p>
             )}
           </div>
-          {/* Kategorie / Position in der Liste */}
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Wo soll die Aufgabe erscheinen?</label>
-            <select
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-              className="mt-1 w-full border border-border/60 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0f766e]/30"
-            >
-              {ADHOC_CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
-            <p className="text-[10px] text-muted-foreground mt-1">Kategorie wählen um direkt in der Kategorie-Sektion zu erscheinen.</p>
-          </div>
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Titel *</label>
             <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Was muss erledigt werden?"
@@ -667,6 +655,61 @@ export default function TodoTagesliste() {
         )}
         {!isHoliday && !loading && !loadError && (
           <>
+            {/* ── TO-DO'S (alle manuell eingegebenen Aufgaben, immer ganz oben) ── */}
+            {openAdhoc.filter(t => !t.category).length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <Zap className="w-4 h-4 text-orange-500" />
+                  <span className="text-xs font-bold uppercase tracking-wide text-orange-600">To-Do&apos;s</span>
+                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">{openAdhoc.filter(t => !t.category).length}</span>
+                </div>
+                <div className="space-y-2">
+                  {openAdhoc.filter(t => !t.category).map(task => {
+                    const conf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.mittel;
+                    const PIcon = conf.icon;
+                    const isOverdue = task.deadline && new Date(task.deadline) < new Date();
+                    const isSofort = task.task_type === "sofort";
+                    const isWoche = task.task_type === "woche";
+                    return (
+                      <div key={task.id} className={`bg-white rounded-2xl overflow-hidden border-l-4 ${isSofort ? "border-2 border-red-300 border-l-red-500" : isWoche ? "border border-border/60 border-l-blue-400" : "border border-border/60 border-l-orange-300"} ${isOverdue ? "border-red-200" : ""}`}>
+                        {task.photo_data && (
+                          <button onClick={() => setEnlargedPhoto(task.photo_data)} className="w-full block">
+                            <img src={task.photo_data} alt="Foto" className="w-full h-28 object-cover hover:opacity-90 transition-opacity" />
+                          </button>
+                        )}
+                        <div className="p-4 flex items-start gap-3">
+                          <button onClick={() => setPinAdhocId(task.id)} className="shrink-0 mt-0.5">
+                            <Circle className={`w-5 h-5 ${isSofort ? "text-red-400/70" : isWoche ? "text-blue-400/60" : "text-orange-400/60"}`} />
+                          </button>
+                          <div className="min-w-0 flex-1">
+                            <p className={`text-sm text-foreground ${isSofort ? "font-bold" : "font-semibold"}`}>{task.title}</p>
+                            {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              <PIcon className={`w-3 h-3 ${conf.color}`} />
+                              <span className={`text-[10px] font-semibold ${conf.color}`}>{conf.label}</span>
+                              {isSofort && <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5"><Flame className="w-2.5 h-2.5" /> Sofort</span>}
+                              {isWoche && <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">Diese Woche</span>}
+                              {task.deadline && (
+                                <span className={`text-xs flex items-center gap-0.5 ${isOverdue ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
+                                  <Clock className="w-3 h-3" />
+                                  {new Date(task.deadline).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} Uhr
+                                </span>
+                              )}
+                              {task.created_by_name && <span className="text-[10px] text-muted-foreground">von {task.created_by_name}</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button onClick={() => setPinAdhocId(task.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg" title="Erledigt"><CheckCircle2 className="w-4 h-4" /></button>
+                            {isAdmin && <button onClick={() => handleAdhocDelete(task.id)} className="p-1.5 text-muted-foreground hover:text-red-500 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* ── STANDARD-AUFGABEN nach Kategorie gruppiert ── */}
             {categoryOrder.map(cat => {
               const catConf = CATEGORY_CONFIG[cat] ?? CATEGORY_CONFIG.aufgaben;
@@ -826,152 +869,6 @@ export default function TodoTagesliste() {
                 </div>
               );
             })}
-
-            {/* ── SOFORT-AUFGABEN (dringend) ── */}
-            {openSofort.length > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Flame className="w-4 h-4 text-red-600 animate-pulse" />
-                  <span className="text-xs font-bold uppercase tracking-wide text-red-700">Sofort erledigen!</span>
-                  <span className="text-xs bg-red-200 text-red-800 px-2 py-0.5 rounded-full font-bold">{openSofort.length}</span>
-                </div>
-                <div className="space-y-2">
-                  {openSofort.map(task => {
-                    const conf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.hoch;
-                    const PIcon = conf.icon;
-                    const isOverdue = task.deadline && new Date(task.deadline) < new Date();
-                    return (
-                      <div key={task.id} className={`bg-white rounded-xl border-2 border-red-300 overflow-hidden`}>
-                        {task.photo_data && (
-                          <button onClick={() => setEnlargedPhoto(task.photo_data)} className="w-full block">
-                            <img src={task.photo_data} alt="Foto" className="w-full h-28 object-cover hover:opacity-90 transition-opacity" />
-                          </button>
-                        )}
-                        <div className="p-3 flex items-start gap-3">
-                          <button onClick={() => setPinAdhocId(task.id)} className="shrink-0 mt-0.5"><Circle className="w-5 h-5 text-red-400/70" /></button>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-bold text-sm text-foreground">{task.title}</p>
-                            {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
-                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                              {task.deadline && (
-                                <span className={`text-xs flex items-center gap-0.5 ${isOverdue ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
-                                  <Clock className="w-3 h-3" />
-                                  {new Date(task.deadline).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} Uhr
-                                </span>
-                              )}
-                              {task.created_by_name && <span className="text-[10px] text-muted-foreground">von {task.created_by_name}</span>}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button onClick={() => setPinAdhocId(task.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg" title="Erledigt"><CheckCircle2 className="w-4 h-4" /></button>
-                            {isAdmin && <button onClick={() => handleAdhocDelete(task.id)} className="p-1.5 text-muted-foreground hover:text-red-500 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* ── ZUSATZ-WOCHENTODOS ── */}
-            {openWoche.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3 px-1">
-                  <CalendarRange className="w-4 h-4 text-blue-600" />
-                  <span className="text-xs font-bold uppercase tracking-wide text-blue-700">Zusatz-Wochentodos</span>
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-semibold">{openWoche.length}</span>
-                </div>
-                <div className="space-y-2">
-                  {openWoche.map(task => {
-                    const conf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.mittel;
-                    const PIcon = conf.icon;
-                    const isOverdue = task.deadline && new Date(task.deadline) < new Date();
-                    return (
-                      <div key={task.id} className={`bg-white rounded-2xl border overflow-hidden border-l-4 border-l-blue-400 ${isOverdue ? "border-red-200" : "border-border/60"}`}>
-                        {task.photo_data && (
-                          <button onClick={() => setEnlargedPhoto(task.photo_data)} className="w-full block">
-                            <img src={task.photo_data} alt="Foto" className="w-full h-28 object-cover hover:opacity-90 transition-opacity" />
-                          </button>
-                        )}
-                        <div className="p-4 flex items-start gap-3">
-                          <button onClick={() => setPinAdhocId(task.id)} className="shrink-0 mt-0.5"><Circle className="w-5 h-5 text-blue-400/60" /></button>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-sm text-foreground">{task.title}</p>
-                            {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
-                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                              <PIcon className={`w-3 h-3 ${conf.color}`} />
-                              <span className={`text-[10px] font-semibold ${conf.color}`}>{conf.label}</span>
-                              <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">Diese Woche</span>
-                              {task.deadline && (
-                                <span className={`text-xs flex items-center gap-0.5 ${isOverdue ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
-                                  <Clock className="w-3 h-3" />
-                                  {new Date(task.deadline).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} Uhr
-                                </span>
-                              )}
-                              {task.created_by_name && <span className="text-[10px] text-muted-foreground">von {task.created_by_name}</span>}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button onClick={() => setPinAdhocId(task.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg" title="Erledigt"><CheckCircle2 className="w-4 h-4" /></button>
-                            {isAdmin && <button onClick={() => handleAdhocDelete(task.id)} className="p-1.5 text-muted-foreground hover:text-red-500 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* ── HEUTE-AUFGABEN (standard adhoc) ── */}
-            {openHeute.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-3 px-1">
-                  <Zap className="w-4 h-4 text-orange-500" />
-                  <span className="text-xs font-bold uppercase tracking-wide text-orange-600">Zusätzliche Aufgaben</span>
-                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">{openHeute.length}</span>
-                </div>
-                <div className="space-y-2">
-                  {openHeute.map(task => {
-                    const conf = PRIORITY_CONFIG[task.priority as keyof typeof PRIORITY_CONFIG] ?? PRIORITY_CONFIG.mittel;
-                    const PIcon = conf.icon;
-                    const isOverdue = task.deadline && new Date(task.deadline) < new Date();
-                    return (
-                      <div key={task.id} className={`bg-white rounded-2xl border overflow-hidden border-l-4 border-l-orange-300 ${isOverdue ? "border-red-200" : "border-border/60"}`}>
-                        {task.photo_data && (
-                          <button onClick={() => setEnlargedPhoto(task.photo_data)} className="w-full block">
-                            <img src={task.photo_data} alt="Foto" className="w-full h-28 object-cover hover:opacity-90 transition-opacity" />
-                          </button>
-                        )}
-                        <div className="p-4 flex items-start gap-3">
-                          <button onClick={() => setPinAdhocId(task.id)} className="shrink-0 mt-0.5"><Circle className="w-5 h-5 text-orange-400/60" /></button>
-                          <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-sm text-foreground">{task.title}</p>
-                            {task.description && <p className="text-xs text-muted-foreground mt-0.5">{task.description}</p>}
-                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                              <PIcon className={`w-3 h-3 ${conf.color}`} />
-                              <span className={`text-[10px] font-semibold ${conf.color}`}>{conf.label}</span>
-                              {task.deadline && (
-                                <span className={`text-xs flex items-center gap-0.5 ${isOverdue ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
-                                  <Clock className="w-3 h-3" />
-                                  {new Date(task.deadline).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} Uhr
-                                </span>
-                              )}
-                              {task.created_by_name && <span className="text-[10px] text-muted-foreground">von {task.created_by_name}</span>}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button onClick={() => setPinAdhocId(task.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg" title="Erledigt"><CheckCircle2 className="w-4 h-4" /></button>
-                            {isAdmin && <button onClick={() => handleAdhocDelete(task.id)} className="p-1.5 text-muted-foreground hover:text-red-500 rounded-lg"><Trash2 className="w-3.5 h-3.5" /></button>}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             {/* Leerer Zustand – Alle erledigt (nur für heute) */}
             {isToday && openStandard.length === 0 && openAdhoc.length === 0 && (standardTasks.length > 0 || doneAdhoc.length > 0) && (
