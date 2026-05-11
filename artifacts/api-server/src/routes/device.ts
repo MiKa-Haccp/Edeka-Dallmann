@@ -271,14 +271,18 @@ router.post("/device/use-reg-link", async (req, res) => {
 
     res.json({ authorized: true, token, deviceId: device.id, deviceName: device.name });
   } catch (err: unknown) {
-    const e = err as { message?: string; code?: string; detail?: string; constraint?: string };
-    console.error("[Device] use-reg-link Fehler:", err);
+    const e = err as { message?: string; code?: string; detail?: string; constraint?: string; cause?: { message?: string; code?: string; detail?: string; constraint?: string; hint?: string; column?: string; table?: string } };
+    const cause = e?.cause || {};
+    console.error("[Device] use-reg-link Fehler:", err, "cause:", cause);
     res.status(500).json({
       authorized: false,
-      error: `Server-Fehler: ${e?.message || "unbekannt"}`,
-      detail: e?.detail || null,
-      pgCode: e?.code || null,
-      constraint: e?.constraint || null,
+      error: `Server-Fehler: ${cause.message || e?.message || "unbekannt"}`,
+      detail: cause.detail || e?.detail || null,
+      pgCode: cause.code || e?.code || null,
+      constraint: cause.constraint || e?.constraint || null,
+      hint: cause.hint || null,
+      column: cause.column || null,
+      table: cause.table || null,
     });
   }
 });
@@ -351,14 +355,18 @@ router.post("/device/use-reg-code", async (req, res) => {
 
     res.json({ authorized: true, token, deviceId: device.id, deviceName: device.name });
   } catch (err: unknown) {
-    const e = err as { message?: string; code?: string; detail?: string; constraint?: string };
-    console.error("[Device] use-reg-code Fehler:", err);
+    const e = err as { message?: string; code?: string; detail?: string; constraint?: string; cause?: { message?: string; code?: string; detail?: string; constraint?: string; hint?: string; column?: string; table?: string } };
+    const cause = e?.cause || {};
+    console.error("[Device] use-reg-code Fehler:", err, "cause:", cause);
     res.status(500).json({
       authorized: false,
-      error: `Server-Fehler: ${e?.message || "unbekannt"}`,
-      detail: e?.detail || null,
-      pgCode: e?.code || null,
-      constraint: e?.constraint || null,
+      error: `Server-Fehler: ${cause.message || e?.message || "unbekannt"}`,
+      detail: cause.detail || e?.detail || null,
+      pgCode: cause.code || e?.code || null,
+      constraint: cause.constraint || e?.constraint || null,
+      hint: cause.hint || null,
+      column: cause.column || null,
+      table: cause.table || null,
     });
   }
 });

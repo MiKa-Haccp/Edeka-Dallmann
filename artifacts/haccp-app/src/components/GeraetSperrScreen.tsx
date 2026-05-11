@@ -85,7 +85,7 @@ export function GeraetSperrScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: trimmedCode, deviceName: codeDeviceName.trim() }),
       });
-      let data: { authorized?: boolean; token?: string; error?: string; detail?: string; pgCode?: string; constraint?: string } = {};
+      let data: { authorized?: boolean; token?: string; error?: string; detail?: string; pgCode?: string; constraint?: string; hint?: string; column?: string; table?: string } = {};
       try {
         data = await res.json();
       } catch {
@@ -100,6 +100,9 @@ export function GeraetSperrScreen() {
         const parts = [data.error || `HTTP ${res.status}`];
         if (data.detail) parts.push(`Detail: ${data.detail}`);
         if (data.constraint) parts.push(`Constraint: ${data.constraint}`);
+        if (data.column) parts.push(`Spalte: ${data.column}`);
+        if (data.table) parts.push(`Tabelle: ${data.table}`);
+        if (data.hint) parts.push(`Hinweis: ${data.hint}`);
         if (data.pgCode) parts.push(`(${data.pgCode})`);
         setError(parts.join(" — "));
       }
@@ -172,7 +175,7 @@ export function GeraetSperrScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: regKey, deviceName: linkDeviceName.trim() }),
       });
-      let data: { authorized?: boolean; token?: string; error?: string; detail?: string; pgCode?: string; constraint?: string } = {};
+      let data: { authorized?: boolean; token?: string; error?: string; detail?: string; pgCode?: string; constraint?: string; hint?: string; column?: string; table?: string } = {};
       try {
         data = await res.json();
       } catch {
@@ -187,6 +190,9 @@ export function GeraetSperrScreen() {
         const parts = [data.error || `HTTP ${res.status}`];
         if (data.detail) parts.push(`Detail: ${data.detail}`);
         if (data.constraint) parts.push(`Constraint: ${data.constraint}`);
+        if (data.column) parts.push(`Spalte: ${data.column}`);
+        if (data.table) parts.push(`Tabelle: ${data.table}`);
+        if (data.hint) parts.push(`Hinweis: ${data.hint}`);
         if (data.pgCode) parts.push(`(${data.pgCode})`);
         setError(parts.join(" — "));
       }
