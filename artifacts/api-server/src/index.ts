@@ -82,7 +82,74 @@ async function runTodoMigrations() {
   }
 }
 
-runTodoMigrations().then(() => {
+// ── Sequence-Reparatur: SERIAL-Sequenzen auf MAX(id)+1 setzen ─────────────
+// Wenn Daten mit expliziten IDs importiert wurden (z.B. via Backup-Restore
+// oder Drizzle-Push), bleibt die zugehörige Sequence auf 1 stehen. Beim
+// nächsten Insert wirft Postgres dann "duplicate key value violates unique
+// constraint". Diese Routine synchronisiert alle Sequenzen automatisch.
+async function fixSequences() {
+  try {
+    console.log("[DB] Sequence-Reparatur läuft...");
+    // Erfasst sowohl SERIAL- als auch IDENTITY-Spalten via pg_get_serial_sequence,
+    // das in beiden Fällen die zugehörige Sequenz liefert.
+    const result = await pool.query<{
+      table_name: string;
+      column_name: string;
+      sequence_name: string;
+    }>(`
+      SELECT
+        c.relname AS table_name,
+        a.attname AS column_name,
+        pg_get_serial_sequence(quote_ident(n.nspname) || '.' || quote_ident(c.relname), a.attname) AS sequence_name
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      JOIN pg_attribute a ON a.attrelid = c.oid
+      WHERE n.nspname = 'public'
+        AND c.relkind = 'r'
+        AND a.attnum > 0
+        AND NOT a.attisdropped
+        AND pg_get_serial_sequence(quote_ident(n.nspname) || '.' || quote_ident(c.relname), a.attname) IS NOT NULL
+    `);
+
+    let fixed = 0;
+    let skipped = 0;
+    for (const row of result.rows) {
+      try {
+        const ident = (s: string) => '"' + s.replace(/"/g, '""') + '"';
+        const tableQ = ident(row.table_name);
+        const columnQ = ident(row.column_name);
+
+        const maxRes = await pool.query<{ m: string | null }>(
+          `SELECT COALESCE(MAX(${columnQ}), 0)::bigint AS m FROM ${tableQ}`
+        );
+        const seqRes = await pool.query<{ last_value: string; is_called: boolean }>(
+          `SELECT last_value, is_called FROM ${row.sequence_name}`
+        );
+        const maxVal = BigInt(maxRes.rows[0]?.m ?? 0);
+        const lastValue = BigInt(seqRes.rows[0]?.last_value ?? 0);
+        const isCalled = seqRes.rows[0]?.is_called ?? false;
+        // Wert, der beim nächsten nextval() vergeben würde
+        const nextEmit = isCalled ? lastValue + 1n : lastValue;
+        // Nur reparieren, wenn die nächste Vergabe eine Kollision erzeugen würde.
+        // Sequenzen werden NIE zurückgesetzt – nur erhöht.
+        if (maxVal >= nextEmit) {
+          const target = maxVal + 1n;
+          await pool.query(`SELECT setval($1, $2, false)`, [row.sequence_name, target.toString()]);
+          fixed++;
+        } else {
+          skipped++;
+        }
+      } catch (e) {
+        console.warn(`[DB] Sequence-Fix fehlgeschlagen für ${row.table_name}.${row.column_name}:`, e);
+      }
+    }
+    console.log(`[DB] Sequence-Reparatur abgeschlossen: ${fixed} repariert, ${skipped} bereits korrekt.`);
+  } catch (err) {
+    console.error("[DB] Sequence-Reparatur fehlgeschlagen:", err);
+  }
+}
+
+runTodoMigrations().then(() => fixSequences()).then(() => {
   app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
     startNotificationCron();
