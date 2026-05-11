@@ -232,43 +232,55 @@ router.get("/device/reg-link/:key", async (req, res) => {
 router.post("/device/use-reg-link", async (req, res) => {
   const { key, deviceName } = req.body as { key?: string; deviceName?: string };
 
-  if (!key || !deviceName?.trim()) {
-    res.status(400).json({ authorized: false, error: "Key und Gerätename sind erforderlich." });
-    return;
+  try {
+    if (!key || !deviceName?.trim()) {
+      res.status(400).json({ authorized: false, error: "Key und Gerätename sind erforderlich." });
+      return;
+    }
+
+    const r = await pool.query(
+      `SELECT * FROM device_reg_links WHERE key = $1`,
+      [key]
+    );
+    const link = r.rows[0];
+
+    if (!link) {
+      res.status(404).json({ authorized: false, error: "Registrierungslink nicht gefunden." });
+      return;
+    }
+    if (link.cancelled_at) {
+      res.status(400).json({ authorized: false, error: "Dieser Link wurde vom Administrator gesperrt." });
+      return;
+    }
+    if (link.used_at) {
+      res.status(400).json({ authorized: false, error: "Dieser Link wurde bereits verwendet." });
+      return;
+    }
+
+    const token = randomBytes(32).toString("hex");
+
+    const [device] = await db
+      .insert(registeredDevicesTable)
+      .values({ tenantId: link.tenant_id, name: deviceName.trim(), token, isActive: true })
+      .returning();
+
+    await pool.query(
+      `UPDATE device_reg_links SET used_at = NOW(), device_id = $1 WHERE key = $2`,
+      [device.id, key]
+    );
+
+    res.json({ authorized: true, token, deviceId: device.id, deviceName: device.name });
+  } catch (err: unknown) {
+    const e = err as { message?: string; code?: string; detail?: string; constraint?: string };
+    console.error("[Device] use-reg-link Fehler:", err);
+    res.status(500).json({
+      authorized: false,
+      error: `Server-Fehler: ${e?.message || "unbekannt"}`,
+      detail: e?.detail || null,
+      pgCode: e?.code || null,
+      constraint: e?.constraint || null,
+    });
   }
-
-  const r = await pool.query(
-    `SELECT * FROM device_reg_links WHERE key = $1`,
-    [key]
-  );
-  const link = r.rows[0];
-
-  if (!link) {
-    res.status(404).json({ authorized: false, error: "Registrierungslink nicht gefunden." });
-    return;
-  }
-  if (link.cancelled_at) {
-    res.status(400).json({ authorized: false, error: "Dieser Link wurde vom Administrator gesperrt." });
-    return;
-  }
-  if (link.used_at) {
-    res.status(400).json({ authorized: false, error: "Dieser Link wurde bereits verwendet." });
-    return;
-  }
-
-  const token = randomBytes(32).toString("hex");
-
-  const [device] = await db
-    .insert(registeredDevicesTable)
-    .values({ tenantId: link.tenant_id, name: deviceName.trim(), token, isActive: true })
-    .returning();
-
-  await pool.query(
-    `UPDATE device_reg_links SET used_at = NOW(), device_id = $1 WHERE key = $2`,
-    [device.id, key]
-  );
-
-  res.json({ authorized: true, token, deviceId: device.id, deviceName: device.name });
 });
 
 // ===== NEU: Registrierungscode validieren (vor dem Aktivieren prüfen) =====
@@ -298,45 +310,57 @@ router.get("/device/reg-link-by-code/:code", async (req, res) => {
 
 // ===== NEU: Registrierungscode aktivieren =====
 router.post("/device/use-reg-code", async (req, res) => {
-  const { code, deviceName } = req.body as { code?: string; deviceName?: string };
+  try {
+    const { code, deviceName } = req.body as { code?: string; deviceName?: string };
 
-  if (!code || !deviceName?.trim()) {
-    res.status(400).json({ authorized: false, error: "Code und Gerätename sind erforderlich." });
-    return;
+    if (!code || !deviceName?.trim()) {
+      res.status(400).json({ authorized: false, error: "Code und Gerätename sind erforderlich." });
+      return;
+    }
+
+    const r = await pool.query(
+      `SELECT * FROM device_reg_links WHERE upper(short_code) = $1`,
+      [code.toUpperCase().trim()]
+    );
+    const link = r.rows[0];
+
+    if (!link) {
+      res.status(404).json({ authorized: false, error: "Ungültiger Registrierungscode." });
+      return;
+    }
+    if (link.cancelled_at) {
+      res.status(400).json({ authorized: false, error: "Dieser Code wurde vom Administrator gesperrt." });
+      return;
+    }
+    if (link.used_at) {
+      res.status(400).json({ authorized: false, error: "Dieser Code wurde bereits verwendet." });
+      return;
+    }
+
+    const token = randomBytes(32).toString("hex");
+
+    const [device] = await db
+      .insert(registeredDevicesTable)
+      .values({ tenantId: link.tenant_id, name: deviceName.trim(), token, isActive: true })
+      .returning();
+
+    await pool.query(
+      `UPDATE device_reg_links SET used_at = NOW(), device_id = $1 WHERE id = $2`,
+      [device.id, link.id]
+    );
+
+    res.json({ authorized: true, token, deviceId: device.id, deviceName: device.name });
+  } catch (err: unknown) {
+    const e = err as { message?: string; code?: string; detail?: string; constraint?: string };
+    console.error("[Device] use-reg-code Fehler:", err);
+    res.status(500).json({
+      authorized: false,
+      error: `Server-Fehler: ${e?.message || "unbekannt"}`,
+      detail: e?.detail || null,
+      pgCode: e?.code || null,
+      constraint: e?.constraint || null,
+    });
   }
-
-  const r = await pool.query(
-    `SELECT * FROM device_reg_links WHERE upper(short_code) = $1`,
-    [code.toUpperCase().trim()]
-  );
-  const link = r.rows[0];
-
-  if (!link) {
-    res.status(404).json({ authorized: false, error: "Ungültiger Registrierungscode." });
-    return;
-  }
-  if (link.cancelled_at) {
-    res.status(400).json({ authorized: false, error: "Dieser Code wurde vom Administrator gesperrt." });
-    return;
-  }
-  if (link.used_at) {
-    res.status(400).json({ authorized: false, error: "Dieser Code wurde bereits verwendet." });
-    return;
-  }
-
-  const token = randomBytes(32).toString("hex");
-
-  const [device] = await db
-    .insert(registeredDevicesTable)
-    .values({ tenantId: link.tenant_id, name: deviceName.trim(), token, isActive: true })
-    .returning();
-
-  await pool.query(
-    `UPDATE device_reg_links SET used_at = NOW(), device_id = $1 WHERE id = $2`,
-    [device.id, link.id]
-  );
-
-  res.json({ authorized: true, token, deviceId: device.id, deviceName: device.name });
 });
 
 // ===== NEU: Alle Registrierungslinks auflisten =====

@@ -85,15 +85,27 @@ export function GeraetSperrScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: trimmedCode, deviceName: codeDeviceName.trim() }),
       });
-      const data = await res.json();
+      let data: { authorized?: boolean; token?: string; error?: string; detail?: string; pgCode?: string; constraint?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        const text = await res.text().catch(() => "");
+        setError(`Server-Antwort unlesbar (HTTP ${res.status}): ${text.slice(0, 200) || "leer"}`);
+        return;
+      }
       if (data.authorized && data.token) {
         setSuccess(true);
         finishRegistration(data.token, setDeviceToken, setDeviceAuthorized);
       } else {
-        setError(data.error || "Registrierung fehlgeschlagen.");
+        const parts = [data.error || `HTTP ${res.status}`];
+        if (data.detail) parts.push(`Detail: ${data.detail}`);
+        if (data.constraint) parts.push(`Constraint: ${data.constraint}`);
+        if (data.pgCode) parts.push(`(${data.pgCode})`);
+        setError(parts.join(" — "));
       }
-    } catch {
-      setError("Verbindungsfehler. Bitte versuchen Sie es erneut.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`Netzwerk-Fehler: ${msg}`);
     } finally {
       setIsLoading(false);
     }
@@ -160,15 +172,27 @@ export function GeraetSperrScreen() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ key: regKey, deviceName: linkDeviceName.trim() }),
       });
-      const data = await res.json();
+      let data: { authorized?: boolean; token?: string; error?: string; detail?: string; pgCode?: string; constraint?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        const text = await res.text().catch(() => "");
+        setError(`Server-Antwort unlesbar (HTTP ${res.status}): ${text.slice(0, 200) || "leer"}`);
+        return;
+      }
       if (data.authorized && data.token) {
         setSuccess(true);
         finishRegistration(data.token, setDeviceToken, setDeviceAuthorized);
       } else {
-        setError(data.error || "Registrierung fehlgeschlagen.");
+        const parts = [data.error || `HTTP ${res.status}`];
+        if (data.detail) parts.push(`Detail: ${data.detail}`);
+        if (data.constraint) parts.push(`Constraint: ${data.constraint}`);
+        if (data.pgCode) parts.push(`(${data.pgCode})`);
+        setError(parts.join(" — "));
       }
-    } catch {
-      setError("Verbindungsfehler. Bitte versuchen Sie es erneut.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(`Netzwerk-Fehler: ${msg}`);
     } finally {
       setIsLoading(false);
     }
